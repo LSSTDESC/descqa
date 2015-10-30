@@ -56,8 +56,8 @@
 ##  BCC QA-specific keywords  ##
 ################################
 
-pathToBCC:          /home/ricker/Projects/surveys/des/bcc/qa/source/tests/bccqa
-updateScript:       /home/ricker/Projects/surveys/des/bcc/qa/source/tests/flashTest/updateScript
+pathToBCC:          /home/ricker/Projects/surveys/lsst/desc/code/descqa
+updateScript:       /home/ricker/Projects/surveys/lsst/desc/code/descqa/flashTest/updateScript
 flashSite:          <FQHostname>
 
 useModule:  bccModule

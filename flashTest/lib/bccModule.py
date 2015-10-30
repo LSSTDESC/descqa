@@ -139,8 +139,7 @@ class BCCSetupper(SetupperTemplate):
     pathToFlashTest = self.masterDict["pathToFlashTest"]  # guaranteed to exist by flashTest.py
 
     pathToSimData   = self.masterDict["pathToSimData"]
-    pathToMockData  = self.masterDict["pathToMockData"]
-    pathToRealData  = self.masterDict["pathToRealData"]
+    pathToObsData   = self.masterDict["pathToObsData"]
 
     setupName      = self.masterDict.get("setupName","")
     setupOptions   = self.masterDict.get("setupOptions","")
@@ -154,8 +153,8 @@ class BCCSetupper(SetupperTemplate):
     self.masterDict["pathToFlashExe"] = os.path.join(pathToBuildDir, "bccqa.sh")
 
     # setup script
-    script = "%s/setup.py %s %s %s %s %s %s" % \
-      (pathToBCC, setupName, setupOptions, pathToBuildDir, pathToSimData, pathToMockData, pathToRealData)
+    script = "%s/setup.py %s %s %s %s %s" % \
+      (pathToBCC, setupName, setupOptions, pathToBuildDir, pathToSimData, pathToObsData)
 
     # record setup invocation
     open(os.path.join(pathToBuildDir, "setup_call"),"w").write(script)

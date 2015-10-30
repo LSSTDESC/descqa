@@ -10,9 +10,9 @@ import sys, os, os.path, shutil, stat
 
 def usage(is_from_main):
     if is_from_main:
-        print "catalog setup arguments: script-name build-dir simdata-dir mockdata-dir realdata-dir"
+        print "catalog setup arguments: script-name build-dir simdata-dir obsdata-dir"
     else:
-        print "usage: ./setup.py script-name build-dir simdata-dir mockdata-dir realdata-dir"
+        print "usage: ./setup.py script-name build-dir simdata-dir obsdata-dir"
     print
     sys.exit(1)
 
@@ -33,21 +33,20 @@ def parse_args():
             script   = args[0]
             builddir = args[1]
             simdir   = args[2]
-            mockdir  = args[3]
-            realdir  = args[4]
+            obsdir   = args[3]
         else:
             usage(is_from_main)
-    return rootdir, script, builddir, simdir, mockdir, realdir
+    return rootdir, script, builddir, simdir, obsdir
 
 
 # Main program
 
-rootdir, script, builddir, simdir, mockdir, realdir = parse_args()
+rootdir, script, builddir, simdir, obsdir = parse_args()
 
 script_fullpath      = os.path.join(rootdir, "catalog", "scripts", script)
-script_targetpath    = os.path.join(builddir, "bccqaScript.idl")
-globalpar_fullpath   = os.path.join(rootdir, "catalog", "bccqaGlobalConfig.idl")
-globalpar_targetpath = os.path.join(builddir, "bccqaGlobalConfig.idl")
+script_targetpath    = os.path.join(builddir, "descqa.py")
+globalpar_fullpath   = os.path.join(rootdir, "catalog", "descqaGlobalConfig.py")
+globalpar_targetpath = os.path.join(builddir, "descqaGlobalConfig.py")
 
 if not os.path.isfile(globalpar_fullpath):
     print "catalog setup: file %s not accessible" % globalpar_fullpath
@@ -63,20 +62,13 @@ shutil.copy(script_fullpath, script_targetpath)
 shutil.copy(globalpar_fullpath, globalpar_targetpath)
 
 os.chdir(builddir)
-f = open("bccqa.sh", "w")
+f = open("descqa.sh", "w")
 f.write("#!/bin/sh\n")
-f.write("export BCCQA_ROOT_DIR=%s\n" % rootdir)
-f.write("export BCCQA_BUILD_DIR=%s\n" % builddir)
-f.write("export BCCQA_SIM_DATA_DIR=%s\n" % simdir)
-f.write("export BCCQA_MOCK_DATA_DIR=%s\n" % mockdir)
-f.write("export BCCQA_REAL_DATA_DIR=%s\n" % realdir)
+f.write("export DESCQA_ROOT_DIR=%s\n" % rootdir)
+f.write("export DESCQA_BUILD_DIR=%s\n" % builddir)
+f.write("export DESCQA_SIM_DATA_DIR=%s\n" % simdir)
+f.write("export DESCQA_OBS_DATA_DIR=%s\n" % obsdir)
 
-# Kludge to get IDL working on orange.
-f.write("if [ `hostname` == \"orange\" ]; then\n")
-f.write("  source /afs/slac/g/ki/software/idl/idl82/bin/idl_setup.bash\n")
-f.write("fi\n")
-# End kludge
-
-f.write("idl %s %s" % (globalpar_targetpath, script_targetpath))
+f.write("%s" % script_targetpath)
 f.close()
-os.chmod("bccqa.sh", stat.S_IWUSR | stat.S_IREAD | stat.S_IEXEC)
+os.chmod("descqa.sh", stat.S_IWUSR | stat.S_IREAD | stat.S_IEXEC)

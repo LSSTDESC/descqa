@@ -1,98 +1,11 @@
-<orange>
-  <FitComparison>
-    <MSigmaTest>
-      setupName: nbody
-      setupOptions: m_sigma.idl
-      parfiles: <pathToBCC>/nbody/configs/aardvark_lb2600.par     \
-                <pathToBCC>/nbody/configs/chinchilla_lb1050.par   \
-                <pathToBCC>/nbody/configs/chinchilla_lb2600.par   \
-                <pathToBCC>/nbody/configs/chinchilla_lb4000.par   \
-                <pathToBCC>/nbody/configs/chinchilla_lb6000.par
-      setupDescription: N-body simulation halo M-sigma test for comparison with fit
-    </MSigmaTest>
-  </FitComparison>
+<tsoodzil>
   <L2DiffComparison>
-    <MassFunctionTest>
-      setupName: nbody
-      setupOptions: mass_function.idl
-      parfiles: <pathToBCC>/nbody/configs/aardvark_lb2600.par     \
-                <pathToBCC>/nbody/configs/chinchilla_lb1050.par   \
-                <pathToBCC>/nbody/configs/chinchilla_lb2600.par   \
-                <pathToBCC>/nbody/configs/chinchilla_lb4000.par   \
-                <pathToBCC>/nbody/configs/chinchilla_lb6000.par
-      setupDescription: N-body simulation halo mass function test with L2 norm error check
-    </MassFunctionTest>
-    <PowerSpectrumTest>
-      setupName: nbody
-      setupOptions: power_spectrum.idl
-      parfiles: <pathToBCC>/nbody/configs/aardvark_lb2600.par     \
-                <pathToBCC>/nbody/configs/beluga_lb1050.par       \
-                <pathToBCC>/nbody/configs/beluga_lb2600.par       \
-                <pathToBCC>/nbody/configs/beluga_lb4000.par       \
-                <pathToBCC>/nbody/configs/beluga_lb6000.par       \
-                <pathToBCC>/nbody/configs/chinchilla_lb1050.par   \
-                <pathToBCC>/nbody/configs/chinchilla_lb2600.par   \
-                <pathToBCC>/nbody/configs/chinchilla_lb4000.par   \
-                <pathToBCC>/nbody/configs/chinchilla_lb6000.par
-      setupDescription: N-body simulation matter power spectrum test with L2 norm error check
-    </PowerSpectrumTest>
+    <StellarMFTest>
+      setupName: catalog
+      setupOptions: stellar_mf_test.py
+      parfiles: <pathToBCC>/catalog/configs/planck_anlcat.par \
+                <pathToBCC>/catalog/configs/millennium_uwcat.par
+      setupDescription: Stellar mass function comparison with observations
+    </StellarMFTest>
   </L2DiffComparison>
-  <Inspection>
-    <PowerSpectrumTest>
-      setupName: nbody
-      setupOptions: power_spectrum.idl
-      parfiles: <pathToBCC>/nbody/configs/aardvark_lb2600.par     \
-                <pathToBCC>/nbody/configs/beluga_lb1050.par       \
-                <pathToBCC>/nbody/configs/beluga_lb2600.par       \
-                <pathToBCC>/nbody/configs/beluga_lb4000.par       \
-                <pathToBCC>/nbody/configs/beluga_lb6000.par       \
-                <pathToBCC>/nbody/configs/chinchilla_lb1050.par   \
-                <pathToBCC>/nbody/configs/chinchilla_lb2600.par   \
-                <pathToBCC>/nbody/configs/chinchilla_lb4000.par   \
-                <pathToBCC>/nbody/configs/chinchilla_lb6000.par
-      setupDescription: N-body simulation matter power spectrum test for human inspection
-    </PowerSpectrumTest>
-    <MassFunctionTest>
-      setupName: nbody
-      setupOptions: mass_function.idl
-      parfiles: <pathToBCC>/nbody/configs/aardvark_lc.par
-      setupDescription: N-body simulation halo mass function test for human inspection
-    </MassFunctionTest>
-    <MSigmaTest>
-      setupName: nbody
-      setupOptions: m_sigma.idl
-      parfiles: <pathToBCC>/nbody/configs/aardvark_lc.par
-      setupDescription: N-body simulation halo M-sigma test for human inspection
-    </MSigmaTest>
-    <RunAlexTest>
-      setupName: catalog
-      setupOptions: run_alex.idl
-      parfiles: <pathToBCC>/catalog/configs/alex.par
-      setupDescription: Alex's catalog tests
-    </RunAlexTest>
-    <RunMichaelTest>
-      setupName: catalog
-      setupOptions: run_michael.idl
-      parfiles: <pathToBCC>/catalog/configs/michael.par
-      setupDescription: Michael's catalog tests
-    </RunMichaelTest>
-    <RunSanityTest>
-      setupName: catalog
-      setupOptions: run_sanity.idl
-      parfiles: <pathToBCC>/catalog/configs/sanity.par
-      setupDescription: Sanity-check catalog tests
-    </RunSanityTest>
-    <RunDeepTest>
-      setupName: catalog
-      setupOptions: run_deep.idl
-      parfiles: <pathToBCC>/catalog/configs/deep.par
-      setupDescription: DEEP catalog comparison test
-    </RunDeepTest>
-    <RunSarahTest>
-      setupName: catalog
-      setupOptions: run_sarah.idl
-      parfiles: <pathToBCC>/catalog/configs/sarah.par
-      setupDescription: Sarah's catalog tests
-    </RunSarahTest>
-  </Inspection>
-</orange>
+</tsoodzil>

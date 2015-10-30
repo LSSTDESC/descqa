@@ -1,5 +1,5 @@
 #!/bin/sh
 
-echo Updating BCCQA/FlashTest code from Bitbucket repository...
+echo Updating DESCQA/FlashTest code from git repository...
 
-hg pull
+git pull

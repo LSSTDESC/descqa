@@ -44,4 +44,4 @@ if not os.path.isfile(parfile):
     print "catalog parfile setup: file %s not accessible" % parfile
     sys.exit(1)
 
-os.rename(parfile, "bccqaTestConfig.idl")
+os.rename(parfile, "descqaTestConfig.py")
