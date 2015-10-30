@@ -8,6 +8,7 @@ class GalaxyCatalog():
         self.galaxycatalog={}
 
 class ANLGalaxyCatalog(GalaxyCatalog):
+    #ANL Galaxy Catalog
 
     ##KWARG KEYS
     kw_zlo='zlo'
