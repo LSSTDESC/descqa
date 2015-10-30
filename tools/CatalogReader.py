@@ -3,16 +3,19 @@ from ANLReader import ANLReader
 
 class CatalogReader():
     """
-    Reads
+    Reads catalogs from different sources
     """
+    ANL='ANL'
+    UW='UW'
+    Chile='Chile'
     def __init__(self,filename=''):
         catType=self.gettype(filename)
         self.catalogs = {}
-        if (catType=="ANL"):
+        if (catType==self.ANL):
             self.catalogs[catType] = ANLReader(filename).catalog
-        elif(catType=="Chile"):
+        elif(catType==self.Chile):
             self.catalogs[catType] = ChileReader(filename).catalog
-        elif(catType=="UW"):
+        elif(catType==self.UW):
             self.catalogs[catType] = UWReader(filename).catalog
         else:
             return None

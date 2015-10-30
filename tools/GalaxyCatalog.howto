@@ -1,0 +1,13 @@
+import GalaxyCatalog
+#create instance of GalaxyCatalog class and initilaize with result of reader
+galcat=GalaxyCatalog.ANLGalaxyCatalog(readcat.catalogs["ANL"])
+#look at catalog  in 
+galcat.galaxycatalog.keys()
+#Method 1
+#setup arguments for reading stellar masses
+kwargs={galcat.kw_zlo:.09,galcat.kw_zhi:.11}
+#call method with appropriate arguments 
+#sm is a list of numpy arrays
+sm=galcat.get_quantities(['stellar_mass'],**kwargs)
+#Method 2 (direct)
+sm=galcat.get_quantities(['stellar_mass'],zlo=.09,zhi=.11)
