@@ -1,0 +1,2 @@
+#idl <pathToFlashExe>
+/bin/echo running idl <pathToFlashExe>

@@ -1,0 +1,24 @@
+# Configuration for flash_test viewer
+# 
+# The following variables must be set here:
+#
+#   pathToOutdir: <abs path to dir containing all output from "flash_test">
+#     pathToInfo: <abs path to root dir of info-files tree>
+#
+# All keywords should be set with a ':' according to the pattern:
+#
+#   keyword: value
+#
+# or:
+#
+#   keyword: value-1, value-2, ..., value-n
+#
+# Each variable/value pair must be on its own line, but otherwise
+# whitespace does not matter.
+#
+# Comments begin with a '#'
+#
+pathToOutdir: /home/ricker/Projects/surveys/des/bcc/qa/deploy/bccqa/run
+#pathToOutdir: /home/ricker/public_html/share/research/bccqa/run
+#pathToInfo:   /u/ki/pmricker/build/bcczookeeper/tests/flashTest
+siteTitle:    DES BCC Quality Assurance

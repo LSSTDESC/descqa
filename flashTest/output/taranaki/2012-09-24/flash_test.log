@@ -1,0 +1,14 @@
+FlashTest v1.0 started by ricker on Mon Sep 24 13:24:04 2012
+Original command-line: ./flashTest.py -u RunAlexTest
+This invocation: 2012-09-24
+--------------------------------------------------------------------------------
+13:24:04 Attempting to update BCC QA source at "/home/ricker/Projects/surveys/des/bcc/qa/source/tests/bccqa" with "/home/ricker/Projects/surveys/des/bcc/qa/source/tests/flashTest/updateScript"
+         BCC QA source was successfully updated
+--------------------------------------------------------------------------------
+         No "test.info" data provided
+13:24:05 Creating directory "/home/ricker/Projects/surveys/des/bcc/qa/source/tests/flashTest/output/taranaki/2012-09-24/RunAlexTest"
+         ** setup phase **
+ERROR:   No setup name provided.
+         Skipping this build.
+13:24:05 All tests completed.
+13:24:05 FlashTest complete. End of Logfile.

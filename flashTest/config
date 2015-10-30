@@ -1,0 +1,67 @@
+# Configuration for flashTest
+# 
+# The following variables can be set here:
+#
+#         pathToInfo: abs path to file containing "test.info" data
+#                     default: "<pathToFlashTest>/test.info"
+#
+#       pathToOutdir: abs path to directory for all FlashTest output
+#                     default: "<pathToFlashTest>/output" unless overridden
+#                              by the '-o' command-line option
+#
+#  pathToMainArchive: hostname:abs path to directory on remote machine where
+#                     gzipped tarfiles of each invocation's results are stored
+#                     OR simply an abs path if results are stored locally
+#                     default: None - no archiving will be done
+#
+#  pathToViewArchive: hostname:abs path to directory on remote machine where
+#                     each invocation's results minus certain large files (like
+#                     executables and checkpoint files) are stored for viewing
+#                     by FlashTestView OR simply an abs path if results are
+#                     stored locally
+#                     default: None - no archiving will be done
+#
+# pathToLocalArchive: abs path to directory on local machine where selected
+#                     files and directories from the main archive may be stored
+#                     for frequent access
+#                     default: None - a logfile error is raised if user attempts
+#                     to access the local archive when none is specified
+#
+#          useModule: name of python module in flashTest/lib where unprefixed
+#                     entryPoint, setupper, compiler, executer, and tester
+#                     classes can be found
+#
+# The keywords "entryPoint", "setupper", "compiler", "executer", and "tester"
+# can also be assigned values here where the value is written according to the
+# pattern "module-name.class-name" or simply "class-name" if a value has been
+# assigned to "useModule".
+#
+# All keywords should be assigned values according to the pattern:
+#
+#   keyword: value
+#
+# Each variable/value pair must be on its own line, but otherwise
+# whitespace does not matter.
+#
+# Comments begin with a '#'
+
+#pathToInfo:
+#pathToOutdir:
+#pathToMainArchive:
+#pathToViewArchive:
+#pathToLocalArchive:
+
+
+################################
+##  BCC QA-specific keywords  ##
+################################
+
+pathToBCC:          /home/ricker/Projects/surveys/des/bcc/qa/source/tests/bccqa
+updateScript:       /home/ricker/Projects/surveys/des/bcc/qa/source/tests/flashTest/updateScript
+flashSite:          <FQHostname>
+
+useModule:  bccModule
+entryPoint: BCCEntryPoint
+setupper:   BCCSetupper
+compiler:   BCCCompiler
+executer:   BCCExecuter
