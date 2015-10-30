@@ -1,5 +1,5 @@
 from UWReader import UWReader
-#from ANLReader import ANLReader
+from ANLReader import ANLReader
 
 class CatalogReader():
     """
