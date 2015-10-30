@@ -1,3 +1,6 @@
+from UWReader import UWReader
+#from ANLReader import ANLReader
+
 class CatalogReader():
     """
     Reads
@@ -5,19 +8,19 @@ class CatalogReader():
     def __init__(self,filename=''):
         type=self.gettype(filename)
         if (type=="ANL"):
-            return ANLReader(filename)
+            self.reader = ANLReader(filename)
         elif(type=="Chile"):
-            return ChileReader(filename)
+            self.reader = ChileReader(filename)
         elif(type=="UW"):
-            return UWReader(filename)
+            self.reader = UWReader(filename)
         else:
             return None
         #endif
 
     def gettype(self,filename):
         import os
-        if(len(filename)==0 or filename is None):
-            return None
+        if (len(filename)==0) or (filename is None):
+            raise ValueError('No filename provided')
         else:
             dirname,catfile=os.path.split(filename)
             subdirs=dirname.split('/')
