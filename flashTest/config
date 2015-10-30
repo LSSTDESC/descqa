@@ -57,6 +57,8 @@
 ################################
 
 pathToBCC:          /home/ricker/Projects/surveys/lsst/desc/code/descqa
+pathToSimData:      /home/ricker/Projects/surveys/lsst/desc/code/descqa/data
+pathToObsData:      /home/ricker/Projects/surveys/lsst/desc/code/descqa/data
 updateScript:       /home/ricker/Projects/surveys/lsst/desc/code/descqa/flashTest/updateScript
 flashSite:          <FQHostname>
 
