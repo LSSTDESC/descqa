@@ -6,13 +6,14 @@ class CatalogReader():
     Reads
     """
     def __init__(self,filename=''):
-        type=self.gettype(filename)
-        if (type=="ANL"):
-            self.reader = ANLReader(filename)
-        elif(type=="Chile"):
-            self.reader = ChileReader(filename)
-        elif(type=="UW"):
-            self.reader = UWReader(filename)
+        catType=self.gettype(filename)
+        self.catalogs = {}
+        if (catType=="ANL"):
+            self.catalogs[catType] = ANLReader(filename).catalog
+        elif(catType=="Chile"):
+            self.catalogs[catType] = ChileReader(filename).catalog
+        elif(catType=="UW"):
+            self.catalogs[catType] = UWReader(filename).catalog
         else:
             return None
         #endif
