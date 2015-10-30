@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 
-import os
+import os, sys
 
 # Root directory of DESC QA stuff.
 
 DESCQARootDir = os.environ['DESCQA_ROOT_DIR']
+
+# Make sure we pick up the local test config
+
+sys.path.append(os.environ['PWD'])
 
 # Locations of files to be read by all DESC QA scripts.
 

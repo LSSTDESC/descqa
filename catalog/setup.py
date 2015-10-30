@@ -29,7 +29,7 @@ def parse_args():
         else:
             is_from_main = 0
             rootdir = os.path.dirname(sys.argv[0])
-        if len(args) == 5:
+        if len(args) == 4:
             script   = args[0]
             builddir = args[1]
             simdir   = args[2]
@@ -68,6 +68,13 @@ f.write("export DESCQA_ROOT_DIR=%s\n" % rootdir)
 f.write("export DESCQA_BUILD_DIR=%s\n" % builddir)
 f.write("export DESCQA_SIM_DATA_DIR=%s\n" % simdir)
 f.write("export DESCQA_OBS_DATA_DIR=%s\n" % obsdir)
+sys.path.append(os.path.join(rootdir, 'functions'))
+sys.path.append(os.path.join(rootdir, 'catalog'))
+sys.path.append(os.path.join(rootdir, 'catalog', 'functions'))
+sys.path.append(os.path.join(rootdir, 'catalog', 'scripts'))
+sys.path.append(os.path.join(rootdir, 'tools'))
+sys.path.append(builddir)
+f.write("export PYTHONPATH=%s\n" % ':'.join(sys.path)[1:])
 
 f.write("%s" % script_targetpath)
 f.close()
