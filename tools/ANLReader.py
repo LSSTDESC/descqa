@@ -1,7 +1,5 @@
 import os
-import CatalogReader
 import numpy as np
-import GalaxyCatalog
 
 class ANLReader():
 
