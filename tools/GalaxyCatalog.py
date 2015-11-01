@@ -4,16 +4,17 @@ class GalaxyCatalog():
     """
     Makes cat object
     """
+    ##KWARG KEYS
+    zlo='zlo'
+    zhi='zhi'
+    stellar_mass='stellar_mass'
+
     def __init__(self):
         self.galaxycatalog={}
 
 class ANLGalaxyCatalog(GalaxyCatalog):
     #ANL Galaxy Catalog
 
-    ##KWARG KEYS
-    kw_zlo='zlo'
-    kw_zhi='zhi'
-    
     #VALUE ADDED DICT KEYS
     #By default nodeIndex written out for every galaxy
     redshift='redshift'
@@ -114,8 +115,6 @@ class ANLGalaxyCatalog(GalaxyCatalog):
     CFHT_O=[f+observed for f in CFHT]
     CFHT_RO=CFHT_R+CFHT_O
 
-    mockdatalist=[redshift,ra,dec,v_pec,log_stellarmass,metallicity,positionX,positionY,positionZ,velocityX,velocityY,velocityZ,disk_ra,disk_dec,disk_sigma0,disk_re,disk_index,disk_a,disk_b,disk_theta_los,disk_phi,log_disk_stellarmass,disk_age,disk_sfr,disk_metallicity,disk_ellipticity,bulge_ra,bulge_dec,bulge_sigma0,bulge_re,bulge_index,bulge_a,bulge_b,bulge_theta_los,bulge_phi,log_bulge_stellarmass,bulge_age,bulge_sfr,bulge_metallicity,agn_ra,agn_dec,agn_mass,agn_accretnrate]
-
     #ANL subclass
     def __init__(self,mockcat):
         if (type(mockcat)==dict):
@@ -123,9 +122,6 @@ class ANLGalaxyCatalog(GalaxyCatalog):
         else:
             self.galaxycatalog={}
         #endif
-
-
-
 
     def get_quantities(self,ids,*args,**kwargs):
         if(type(ids)==str):
@@ -135,22 +131,23 @@ class ANLGalaxyCatalog(GalaxyCatalog):
             return
         #endif
         data=[]
-        print ids
-        print kwargs
         for id in ids:
             print id
-            if(id=='stellar_mass'):
+            if(id==self.stellar_mass):
                 zlo=None
                 zhi=None
                 #parse kwargs
-                if(self.kw_zlo in kwargs.keys()):
-                    zlo=kwargs[self.kw_zlo]
-                if(self.kw_zhi in kwargs.keys()):
-                    zhi=kwargs[self.kw_zhi]
-                print zlo,zhi
-                if(zlo is not None and zhi is not None):
-                    sm=self.get_stellarmasses(zlo,zhi)
-                    data.append(sm)
+                if any(kwargs):
+                    if(self.zlo in kwargs.keys()):
+                        zlo=kwargs[self.zlo]
+                    if(self.zhi in kwargs.keys()):
+                        zhi=kwargs[self.zhi]
+                    print "Using zlo=",zlo,"zhi=",zhi
+                    if(zlo is not None and zhi is not None):
+                        sm=self.get_stellarmasses(zlo,zhi)
+                        data.append(sm)
+                    else:
+                        print "Must supply",self.kw_zlo,self.kw_zhi
                 else:
                     print "Must supply",self.kw_zlo,self.kw_zhi
                 #endif
@@ -168,8 +165,13 @@ class ANLGalaxyCatalog(GalaxyCatalog):
             maxz=max(self.galaxycatalog[key][self.redshift])
             if(minz<zhi and maxz>zlo):
                 print 'Adding',key,'data'
-                log_sm_x=self.galaxycatalog[key][self.log_stellarmass]
-                sm_x=np.power(10,log_sm_x)
+                if (self.galaxycatalog[key].has_key(self.stellarmass)):
+                    sm_x=self.galaxycatalog[key][self.stellarmass]
+                elif (self.galaxycatalog[key].has_key(self.log_stellarmass)):
+                    log_sm_x=self.galaxycatalog[key][self.log_stellarmass]
+                    sm_x=np.power(10,log_sm_x)
+                else:
+                    print "Data for",self.stellarmass,"or",self.log_stellarmass,"NOT available"
                 if (nout>0):
                     z=np.concatenate((sm,sm_x),axis=0)
                 else:
