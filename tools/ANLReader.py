@@ -27,7 +27,7 @@ class ANLReader():
             print "Opened hdf5 file:",hdfFile
             hdf5keys,hdf5attr=self.gethdf5group(hdfFile)
             mockcat={}
-            print "hdf5groups are",hdf5keys
+            #print "hdf5groups are",hdf5keys
             for key in hdf5keys:
                 if(key.find("Output")!=-1):
                     outgroup=hdfFile[key]

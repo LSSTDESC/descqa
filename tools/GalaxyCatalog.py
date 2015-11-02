@@ -132,7 +132,7 @@ class ANLGalaxyCatalog(GalaxyCatalog):
         #endif
         data=[]
         for id in ids:
-            print id
+            print "Requested data for",id
             if(id==self.stellar_mass):
                 zlo=None
                 zhi=None
@@ -147,9 +147,9 @@ class ANLGalaxyCatalog(GalaxyCatalog):
                         sm=self.get_stellarmasses(zlo,zhi)
                         data.append(sm)
                     else:
-                        print "Must supply",self.kw_zlo,self.kw_zhi
+                        print "Must supply",self.zlo,self.zhi
                 else:
-                    print "Must supply",self.kw_zlo,self.kw_zhi
+                    print "Must supply",self.zlo,self.zhi
                 #endif
             else:
                 print 'unknown option'
@@ -160,6 +160,7 @@ class ANLGalaxyCatalog(GalaxyCatalog):
 
     def get_stellarmasses(self,zlo,zhi):
         nout=0
+        sm=np.asarray([])
         for key in self.galaxycatalog.keys():
             minz=min(self.galaxycatalog[key][self.redshift])
             maxz=max(self.galaxycatalog[key][self.redshift])
