@@ -10,15 +10,16 @@ class CatalogReader():
     Chile='Chile'
     def __init__(self,filename=''):
         catType=self.gettype(filename)
-        self.catalogs = {}
         if (catType==self.ANL):
-            self.catalogs[catType] = ANLReader(filename).catalog
+            self.catalog = ANLReader(filename).catalog
         elif(catType==self.Chile):
-            self.catalogs[catType] = ChileReader(filename).catalog
+            self.catalog = ChileReader(filename).catalog
         elif(catType==self.UW):
-            self.catalogs[catType] = UWReader(filename).catalog
+            self.catalog = UWReader(filename).catalog
         else:
             return None
+
+        self.catType = catType
         #endif
 
     def gettype(self,filename):

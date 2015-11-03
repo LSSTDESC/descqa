@@ -1,6 +1,7 @@
 import numpy as np
+from CatalogReader import CatalogReader
 
-class GalaxyCatalog():
+class GalaxyCatalog(CatalogReader):
     """
     Makes cat object
     """
@@ -9,8 +10,19 @@ class GalaxyCatalog():
     zhi='zhi'
     stellar_mass='stellar_mass'
 
-    def __init__(self):
-        self.galaxycatalog={}
+    def __init__(self, filename):
+        self.reader = CatalogReader(filename)
+
+    def get_quantities(self, quantitiesList, **kwargs):
+
+        catType = self.reader.catType
+        if type(quantitiesList)==str:
+            quantitiesList=[quantitiesList]
+        if catType == 'UW':
+            uwData = load_UW_data(self.reader.catalog, quantitiesList, **kwargs).data
+            return uwData
+        if catType == 'ANL':
+            anlData = load_ANL_data()
 
 class ANLGalaxyCatalog(GalaxyCatalog):
     #ANL Galaxy Catalog
@@ -184,3 +196,40 @@ class ANLGalaxyCatalog(GalaxyCatalog):
         #endfor
         return sm
 
+class load_UW_data():
+
+    def __init__(self, catalog, dataLabels, **kwargs):
+        self.catalog = catalog
+        self.dataLabels = dataLabels
+        self.data = self.parse_labels(**kwargs)
+
+    def parse_labels(self, **kwargs):
+        for dataLabel in self.dataLabels:
+            if dataLabel=='stellar mass function':
+                data = self.load_stellar_masses(**kwargs)
+        return data
+
+    def load_stellar_masses(self, **kwargs):
+
+        if 'kw_zlo' in kwargs.keys():
+            zMin = kwargs['kw_zlo']
+        else:
+            zMin = None
+
+        if 'kw_zhi' in kwargs.keys():
+            zMax = kwargs['kw_zhi']
+        else:
+            zMax = None
+
+        print str("Getting Stellar Masses with (zLo, zHi) = (%s, %s)") %(zMin, zMax)
+
+        if (zMin is None) and (zMax is None):
+            stellar_mass = self.catalog['mass_stellar']
+        elif (zMin is not None) and (zMax is not None):
+            stellar_mass = self.catalog['mass_stellar'][np.where((zMin < self.catalog['redshift']) & (self.catalog['redshift'] < zMax))]
+        elif zMin is None:
+            stellar_mass = self.catalog['mass_stellar'][np.where(self.catalog['redshift'] < zMax)]
+        elif zMax is None:
+            stellar_mass = self.catalog['mass_stellar'][np.where(zMin < self.catalog['redshift'])]
+
+        return stellar_mass*1e10
