@@ -18,13 +18,13 @@ class GalaxyCatalog(CatalogReader):
         if type(quantitiesList)==str:
             quantitiesList=[quantitiesList]
         if catType == 'UW':
-            uwData = load_UW_data(self.reader.catalog, quantitiesList, **kwargs).data
+            uwData = get_uw_data(self.reader.catalog, quantitiesList, **kwargs).data
             return uwData
         if catType == 'ANL':
-            anlData = load_ANL_data(self.reader.catalog, quantitiesList, **kwargs).data
+            anlData = get_ANL_data(self.reader.catalog, quantitiesList, **kwargs).data
             return anlData
 
-class load_ANL_data():
+class get_ANL_data():
     #ANL Galaxy Catalog
 
     #VALUE ADDED DICT KEYS
@@ -202,7 +202,7 @@ class load_ANL_data():
         #endfor
         return sm
 
-class load_UW_data():
+class get_uw_data():
 
     def __init__(self, catalog, dataLabels, **kwargs):
         self.catalog = catalog
@@ -212,10 +212,10 @@ class load_UW_data():
     def parse_labels(self, **kwargs):
         for dataLabel in self.dataLabels:
             if dataLabel=='stellar mass function':
-                data = self.load_stellar_masses(**kwargs)
+                data = self.get_stellar_masses(**kwargs)
         return data
 
-    def load_stellar_masses(self, **kwargs):
+    def get_stellar_masses(self, **kwargs):
 
         if 'kw_zlo' in kwargs.keys():
             zMin = kwargs['kw_zlo']
