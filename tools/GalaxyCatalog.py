@@ -6,9 +6,8 @@ class GalaxyCatalog(CatalogReader):
     Makes cat object
     """
     ##KWARG KEYS
-    zlo='zlo'
-    zhi='zhi'
-    stellar_mass='stellar_mass'
+    #'kw_zlo' for lower bound on redshift of catalog objects
+    #'kw_zhi' for higher bound on redshift of catalog objects
 
     def __init__(self, filename):
         self.reader = CatalogReader(filename)
@@ -22,14 +21,18 @@ class GalaxyCatalog(CatalogReader):
             uwData = load_UW_data(self.reader.catalog, quantitiesList, **kwargs).data
             return uwData
         if catType == 'ANL':
-            anlData = load_ANL_data(self.reader.catalog, quantitiesList, **kwargs)
+            anlData = load_ANL_data(self.reader.catalog, quantitiesList, **kwargs).data
             return anlData
 
-class ANLGalaxyCatalog(GalaxyCatalog):
+class load_ANL_data():
     #ANL Galaxy Catalog
 
     #VALUE ADDED DICT KEYS
     #By default nodeIndex written out for every galaxy
+    stellar_mass='stellar mass function'
+    zlo='kw_zlo'
+    zhi='kw_zhi'
+
     redshift='redshift'
     ra='ra'
     dec='dec'
@@ -129,12 +132,11 @@ class ANLGalaxyCatalog(GalaxyCatalog):
     CFHT_RO=CFHT_R+CFHT_O
 
     #ANL subclass
-    def __init__(self,mockcat):
-        if (type(mockcat)==dict):
-            self.galaxycatalog=mockcat
-        else:
-            self.galaxycatalog={}
-        #endif
+    def __init__(self, mockcat, dataLabels, **kwargs):
+
+        self.catalog = mockcat
+        self.dataLabels = dataLabels
+        self.data = self.get_quantities(self.dataLabels, **kwargs)
 
     def get_quantities(self,ids,*args,**kwargs):
         if(type(ids)==str):
@@ -169,20 +171,23 @@ class ANLGalaxyCatalog(GalaxyCatalog):
             #endif
 
         #endfor
-        return data
+        if len(data)==1:
+            return data[0]
+        else:
+            return data
 
     def get_stellarmasses(self,zlo,zhi):
         nout=0
         sm=np.asarray([])
-        for key in self.galaxycatalog.keys():
-            minz=min(self.galaxycatalog[key][self.redshift])
-            maxz=max(self.galaxycatalog[key][self.redshift])
+        for key in self.catalog.keys():
+            minz=min(self.catalog[key][self.redshift])
+            maxz=max(self.catalog[key][self.redshift])
             if(minz<zhi and maxz>zlo):
                 print 'Adding',key,'data'
-                if (self.galaxycatalog[key].has_key(self.stellarmass)):
-                    sm_x=self.galaxycatalog[key][self.stellarmass]
-                elif (self.galaxycatalog[key].has_key(self.log_stellarmass)):
-                    log_sm_x=self.galaxycatalog[key][self.log_stellarmass]
+                if (self.catalog[key].has_key(self.stellarmass)):
+                    sm_x=self.catalog[key][self.stellarmass]
+                elif (self.catalog[key].has_key(self.log_stellarmass)):
+                    log_sm_x=self.catalog[key][self.log_stellarmass]
                     sm_x=np.power(10,log_sm_x)
                 else:
                     print "Data for",self.stellarmass,"or",self.log_stellarmass,"NOT available"
