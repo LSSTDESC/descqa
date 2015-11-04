@@ -22,7 +22,8 @@ class GalaxyCatalog(CatalogReader):
             uwData = load_UW_data(self.reader.catalog, quantitiesList, **kwargs).data
             return uwData
         if catType == 'ANL':
-            anlData = load_ANL_data()
+            anlData = load_ANL_data(self.reader.catalog, quantitiesList, **kwargs)
+            return anlData
 
 class ANLGalaxyCatalog(GalaxyCatalog):
     #ANL Galaxy Catalog

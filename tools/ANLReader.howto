@@ -3,4 +3,4 @@ filename='../../../results/galacticus_outputs_v0.9.4/mocks/ANL/planck_p10_merger
 # create instance of catalog reader class
 readcat=CatalogReader.CatalogReader(filename=filename)
 #look at catalog (stored in readcat.catalogs)
-readcat.catalogs["ANL"].keys()
+readcat.catalog.keys()
