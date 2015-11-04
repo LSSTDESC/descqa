@@ -16,7 +16,7 @@ def usage():
 
 def gen_stellar_mf(fn, zlo, zhi):
     Nbins = 25      # might need to choose this another way
-    gc = GalaxyCatalog(fn)
+    gc = GalaxyCatalog.GalaxyCatalog(fn)
     if gc:
         masses = gc.get_quantities("stellar mass function", kw_zlo=zlo, kw_zhi=zhi)
         logm = np.log10(masses)
