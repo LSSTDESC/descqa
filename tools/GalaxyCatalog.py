@@ -30,8 +30,8 @@ class get_ANL_data():
     #VALUE ADDED DICT KEYS
     #By default nodeIndex written out for every galaxy
     stellar_mass='stellar mass function'
-    zlo='kw_zlo'
-    zhi='kw_zhi'
+    kw_zlo='kw_zlo'
+    kw_zhi='kw_zhi'
 
     redshift='redshift'
     ra='ra'
@@ -153,18 +153,18 @@ class get_ANL_data():
                 zhi=None
                 #parse kwargs
                 if any(kwargs):
-                    if(self.zlo in kwargs.keys()):
-                        zlo=kwargs[self.zlo]
-                    if(self.zhi in kwargs.keys()):
-                        zhi=kwargs[self.zhi]
+                    if(self.kw_zlo in kwargs.keys()):
+                        zlo=kwargs[self.kw_zlo]
+                    if(self.kw_zhi in kwargs.keys()):
+                        zhi=kwargs[self.kw_zhi]
                     print "Using zlo=",zlo,"zhi=",zhi
                     if(zlo is not None and zhi is not None):
                         sm=self.get_stellarmasses(zlo,zhi)
                         data.append(sm)
                     else:
-                        print "Must supply",self.zlo,self.zhi
+                        print "Must supply",self.kw_zlo,self.kw_zhi
                 else:
-                    print "Must supply",self.zlo,self.zhi
+                    print "Must supply",self.kw_zlo,self.kw_zhi
                 #endif
             else:
                 print 'unknown option'
