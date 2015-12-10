@@ -150,7 +150,7 @@ class BCCSetupper(SetupperTemplate):
               "Skipping this build.")
       return False
 
-    self.masterDict["pathToFlashExe"] = os.path.join(pathToBuildDir, "bccqa.sh")
+    self.masterDict["pathToFlashExe"] = os.path.join(pathToBuildDir, "descqa.sh")
 
     # setup script
     script = "%s/setup.py %s %s %s %s %s" % \

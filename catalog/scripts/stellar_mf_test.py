@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # DESCQA catalog test: read mock galaxy catalog from an N-body simulation and
-# generate the stellar mass function.
+# generate the stellar mass function. Plot it and an observational stellar mass function.
 
 import numpy as np
 import matplotlib.pyplot as mp
@@ -23,6 +23,7 @@ def gen_stellar_mf(fn, zlo, zhi):
         mhist, mbins = np.histogram(logm, Nbins)
         binctr = (mbins[1:] + mbins[:Nbins])/2.
         binwid = mbins[1:] - mbins[:Nbins]
+# TODO: need to compute volume based on zlo and zhi, sky coverage, and completeness
         return binctr, binwid, mhist
     else:
         print("could not read galaxy catalog from %s" % fn)

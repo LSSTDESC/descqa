@@ -1,4 +1,4 @@
-<tsoodzil>
+<grackle>
   <L2DiffComparison>
     <StellarMFTest>
       setupName: catalog
@@ -8,4 +8,4 @@
       setupDescription: Stellar mass function comparison with observations
     </StellarMFTest>
   </L2DiffComparison>
-</tsoodzil>
+</grackle>
