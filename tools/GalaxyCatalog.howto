@@ -1,13 +1,16 @@
 import GalaxyCatalog
 #create instance of GalaxyCatalog class and initilaize with result of reader
-galcat=GalaxyCatalog.ANLGalaxyCatalog(readcat.catalogs["ANL"])
-#look at catalog  in 
-galcat.galaxycatalog.keys()
+filename='../../../results/galacticus_outputs_v0.9.4/mocks/ANL/planck_p10_mergertrees_root100_250k_nbody_0.9.4Planck_lcd4.5z3_BH_LSSTugrizy4ROref4_mock.hdf5'
+galcat=GalaxyCatalog.GalaxyCatalog(filename)
+#look at catalog  in
+galcat.reader.catalog.keys()
+#look at catalog type with
+galcat.reader.catType
 #Method 1
 #setup arguments for reading stellar masses
 kwargs={galcat.kw_zlo:.09,galcat.kw_zhi:.11}
-#call method with appropriate arguments 
+#call method with appropriate arguments
 #sm is a list of numpy arrays
-sm=galcat.get_quantities(['stellar_mass'],**kwargs)
+sm=galcat.get_quantities(['stellar mass function'],**kwargs)
 #Method 2 (direct)
-sm=galcat.get_quantities(['stellar_mass'],zlo=.09,zhi=.11)
+sm=galcat.get_quantities(['stellar mass function'],kw_zlo=.09,kw_zhi=.11)

@@ -1,21 +1,38 @@
 import numpy as np
+from CatalogReader import CatalogReader
 
-class GalaxyCatalog():
+class GalaxyCatalog(CatalogReader):
     """
     Makes cat object
     """
-    def __init__(self):
-        self.galaxycatalog={}
+    ##KWARG KEYS
+    #'kw_zlo' for lower bound on redshift of catalog objects
+    #'kw_zhi' for higher bound on redshift of catalog objects
 
-class ANLGalaxyCatalog(GalaxyCatalog):
+    def __init__(self, filename):
+        self.reader = CatalogReader(filename)
+
+    def get_quantities(self, quantitiesList, **kwargs):
+
+        catType = self.reader.catType
+        if type(quantitiesList)==str:
+            quantitiesList=[quantitiesList]
+        if catType == 'UW':
+            uwData = get_uw_data(self.reader.catalog, quantitiesList, **kwargs).data
+            return uwData
+        if catType == 'ANL':
+            anlData = get_ANL_data(self.reader.catalog, quantitiesList, **kwargs).data
+            return anlData
+
+class get_ANL_data():
     #ANL Galaxy Catalog
 
-    ##KWARG KEYS
-    kw_zlo='zlo'
-    kw_zhi='zhi'
-    
     #VALUE ADDED DICT KEYS
     #By default nodeIndex written out for every galaxy
+    stellar_mass='stellar mass function'
+    kw_zlo='kw_zlo'
+    kw_zhi='kw_zhi'
+
     redshift='redshift'
     ra='ra'
     dec='dec'
@@ -114,18 +131,12 @@ class ANLGalaxyCatalog(GalaxyCatalog):
     CFHT_O=[f+observed for f in CFHT]
     CFHT_RO=CFHT_R+CFHT_O
 
-    mockdatalist=[redshift,ra,dec,v_pec,log_stellarmass,metallicity,positionX,positionY,positionZ,velocityX,velocityY,velocityZ,disk_ra,disk_dec,disk_sigma0,disk_re,disk_index,disk_a,disk_b,disk_theta_los,disk_phi,log_disk_stellarmass,disk_age,disk_sfr,disk_metallicity,disk_ellipticity,bulge_ra,bulge_dec,bulge_sigma0,bulge_re,bulge_index,bulge_a,bulge_b,bulge_theta_los,bulge_phi,log_bulge_stellarmass,bulge_age,bulge_sfr,bulge_metallicity,agn_ra,agn_dec,agn_mass,agn_accretnrate]
-
     #ANL subclass
-    def __init__(self,mockcat):
-        if (type(mockcat)==dict):
-            self.galaxycatalog=mockcat
-        else:
-            self.galaxycatalog={}
-        #endif
+    def __init__(self, mockcat, dataLabels, **kwargs):
 
-
-
+        self.catalog = mockcat
+        self.dataLabels = dataLabels
+        self.data = self.get_quantities(self.dataLabels, **kwargs)
 
     def get_quantities(self,ids,*args,**kwargs):
         if(type(ids)==str):
@@ -135,22 +146,23 @@ class ANLGalaxyCatalog(GalaxyCatalog):
             return
         #endif
         data=[]
-        print ids
-        print kwargs
         for id in ids:
-            print id
-            if(id=='stellar_mass'):
+            print "Requested data for",id
+            if(id==self.stellar_mass):
                 zlo=None
                 zhi=None
                 #parse kwargs
-                if(self.kw_zlo in kwargs.keys()):
-                    zlo=kwargs[self.kw_zlo]
-                if(self.kw_zhi in kwargs.keys()):
-                    zhi=kwargs[self.kw_zhi]
-                print zlo,zhi
-                if(zlo is not None and zhi is not None):
-                    sm=self.get_stellarmasses(zlo,zhi)
-                    data.append(sm)
+                if any(kwargs):
+                    if(self.kw_zlo in kwargs.keys()):
+                        zlo=kwargs[self.kw_zlo]
+                    if(self.kw_zhi in kwargs.keys()):
+                        zhi=kwargs[self.kw_zhi]
+                    print "Using zlo=",zlo,"zhi=",zhi
+                    if(zlo is not None and zhi is not None):
+                        sm=self.get_stellarmasses(zlo,zhi)
+                        data.append(sm)
+                    else:
+                        print "Must supply",self.kw_zlo,self.kw_zhi
                 else:
                     print "Must supply",self.kw_zlo,self.kw_zhi
                 #endif
@@ -159,17 +171,26 @@ class ANLGalaxyCatalog(GalaxyCatalog):
             #endif
 
         #endfor
-        return data
+        if len(data)==1:
+            return data[0]
+        else:
+            return data
 
     def get_stellarmasses(self,zlo,zhi):
         nout=0
-        for key in self.galaxycatalog.keys():
-            minz=min(self.galaxycatalog[key][self.redshift])
-            maxz=max(self.galaxycatalog[key][self.redshift])
+        sm=np.asarray([])
+        for key in self.catalog.keys():
+            minz=min(self.catalog[key][self.redshift])
+            maxz=max(self.catalog[key][self.redshift])
             if(minz<zhi and maxz>zlo):
                 print 'Adding',key,'data'
-                log_sm_x=self.galaxycatalog[key][self.log_stellarmass]
-                sm_x=np.power(10,log_sm_x)
+                if (self.catalog[key].has_key(self.stellarmass)):
+                    sm_x=self.catalog[key][self.stellarmass]
+                elif (self.catalog[key].has_key(self.log_stellarmass)):
+                    log_sm_x=self.catalog[key][self.log_stellarmass]
+                    sm_x=np.power(10,log_sm_x)
+                else:
+                    print "Data for",self.stellarmass,"or",self.log_stellarmass,"NOT available"
                 if (nout>0):
                     z=np.concatenate((sm,sm_x),axis=0)
                 else:
@@ -181,3 +202,40 @@ class ANLGalaxyCatalog(GalaxyCatalog):
         #endfor
         return sm
 
+class get_uw_data():
+
+    def __init__(self, catalog, dataLabels, **kwargs):
+        self.catalog = catalog
+        self.dataLabels = dataLabels
+        self.data = self.parse_labels(**kwargs)
+
+    def parse_labels(self, **kwargs):
+        for dataLabel in self.dataLabels:
+            if dataLabel=='stellar mass function':
+                data = self.get_stellar_masses(**kwargs)
+        return data
+
+    def get_stellar_masses(self, **kwargs):
+
+        if 'kw_zlo' in kwargs.keys():
+            zMin = kwargs['kw_zlo']
+        else:
+            zMin = None
+
+        if 'kw_zhi' in kwargs.keys():
+            zMax = kwargs['kw_zhi']
+        else:
+            zMax = None
+
+        print str("Getting Stellar Masses with (zLo, zHi) = (%s, %s)") %(zMin, zMax)
+
+        if (zMin is None) and (zMax is None):
+            stellar_mass = self.catalog['mass_stellar']
+        elif (zMin is not None) and (zMax is not None):
+            stellar_mass = self.catalog['mass_stellar'][np.where((zMin < self.catalog['redshift']) & (self.catalog['redshift'] < zMax))]
+        elif zMin is None:
+            stellar_mass = self.catalog['mass_stellar'][np.where(self.catalog['redshift'] < zMax)]
+        elif zMax is None:
+            stellar_mass = self.catalog['mass_stellar'][np.where(zMin < self.catalog['redshift'])]
+
+        return stellar_mass*1e10
