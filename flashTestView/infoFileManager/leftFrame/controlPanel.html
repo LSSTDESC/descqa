@@ -1,0 +1,348 @@
+<table id="buttonstable">
+  <tr>
+    <td class="button1">
+      <input type="image" src="leftFrame/images/view.gif" onclick="javascript:viewFiles()"
+       title="view all &quot;test.info&quot; data under selected nodes">
+    </td>
+    <td class="button1">
+      <input type="image" src="leftFrame/images/edit.gif" onclick="javascript:editFiles()"
+       title="hand-edit &quot;test.info&quot; data under selected nodes">
+    </td>
+    <td class="button1">
+      <input type="image" src="leftFrame/images/clear.gif" onclick="javacript:clearCheckboxes()"
+       title="clear all checkboxes">
+    </td>
+    <td class="button1">
+      <input type="image" src="leftFrame/images/undo.gif" onclick="javacript:undoChanges()"
+       title="undo last change">
+    </td>
+    <td class="button1">
+      <input type="image" src="leftFrame/images/home.gif" onclick="javascript:home()"
+       title="return to info-file-manager home">
+    </td>
+    <td class="button1">
+      <input type="image" src="leftFrame/images/bigboard.gif" onclick="javascript:bigBoard()"
+       title="return to FlashTestView home">
+    </td>
+  </tr>
+  <tr>
+    <td class="buttontext">view</td>
+    <td class="buttontext">edit</td>
+    <td class="buttontext">clear</td>
+    <td class="buttontext">undo</td>
+    <td class="buttontext">home</td>
+    <td class="buttontext">main</td>
+  </tr>
+</table>
+
+<!-- value of 'display' filled in by "leftFrame.py" -->
+<table id="nodeControls" %s>
+  <tr>
+    <td colspan="2" align="center">
+      <b>NODE/<a class="everblue" onclick="javascript:switchControls()">TEXT</a> MANAGEMENT</b>
+    </td>
+  </tr>
+  <tr>
+    <td class="desc">
+      <center><b>find nodes</b></center>
+      Locate nodes of given name under selected node(s).
+    </td>
+    <td class="button2">
+      <input id="findNodesArrow" type="image" src="leftFrame/images/downArrow.gif" border="0"
+         onclick="javascript:hideShowBlock('findNodes')">
+    </td>
+  </tr>
+  <tr id="findNodes" name="controlBlock" style="display:none"
+      firstInput="node" partOf="nodeControls">
+    <td class="entry">
+      <input name="node" type="text" onkeypress="javascript:goIfEnter(event, 'find_nodes', 'findNodes')"><br>
+      name of node to find
+    </td>
+    <td class="button2">
+      <input type="image" src="leftFrame/images/greenarrow.gif" border="0"
+         onclick="javascript:checkNodeManagementInput('find_nodes', 'findNodes')">
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2">
+      <hr>
+    </td>
+  </tr>
+  <tr>
+    <td class="desc">
+      <center><b>add node</b></center>
+      Create new child node under selected node(s).
+    </td>
+    <td class="button2">
+      <input id="addNodesArrow" type="image" src="leftFrame/images/downArrow.gif" border="0"
+         onclick="javascript:hideShowBlock('addNodes')">
+    </td>
+  </tr>
+  <tr id="addNodes" name="controlBlock" style="display:none"
+      firstInput="node" partOf="nodeControls">
+    <td class="entry">
+      <input name="node" type="text" onkeypress="javascript:goIfEnter(event, 'add_node', 'addNodes')"><br>
+      name of new node
+    </td>
+    <td class="button2">
+      <input type="image" src="leftFrame/images/greenarrow.gif" border="0"
+         onclick="javascript:checkNodeManagementInput('add_node', 'addNodes')">
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2">
+      <hr>
+    </td>
+  </tr>
+  <tr>
+    <td class="desc">
+      <center><b>remove node</b></center>
+      Remove selected node(s).
+    </td>
+    <td class="button2">
+      <input id="removeNodesArrow" type="image" src="leftFrame/images/downArrow.gif" border="0"
+         onclick="javascript:hideShowBlock('removeNodes')">
+    </td>
+  </tr>
+  <tr id="removeNodes" name="controlBlock" style="display:none"
+      firstInput="node" partOf="nodeControls">
+    <td class="entry">
+      <input name="node" type="checkbox"><br>
+        remove children / &quot;test.info&quot; data also?
+    </td>
+    <td class="button2">
+      <input type="image" src="leftFrame/images/greenarrow.gif" border="0"
+         onclick="javascript:checkNodeManagementInput('remove_node', 'removeNodes')">
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2">
+      <hr>
+    </td>
+  </tr>
+  <tr>
+    <td class="desc">
+      <center><b>rename node</b></center>
+      Rename selected node(s).
+    </td>
+    <td class="button2">
+      <input id="renameNodesArrow" type="image" src="leftFrame/images/downArrow.gif" border="0"
+         onclick="javascript:hideShowBlock('renameNodes')">
+    </td>
+  </tr>
+  <tr id="renameNodes" name="controlBlock" style="display:none"
+      firstInput="node" partOf="nodeControls">
+    <td class="entry">
+      <input name="node" type="text" onkeypress="javascript:goIfEnter(event, 'rename_node', 'renameNodes')"><br>
+      new name for selected node.
+    </td>
+    <td class="button2">
+      <input type="image" src="leftFrame/images/greenarrow.gif" border="0"
+         onclick="javascript:checkNodeManagementInput('rename_node', 'renameNodes')">
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2">
+      <hr>
+    </td>
+  </tr>
+  <tr>
+    <td class="desc">
+      <center><b>clone branch</b></center>
+      Recursively copy all children and text of selected node(s)
+      into new sibling-node.
+    </td>
+    <td class="button2">
+      <input id="cloneBranchArrow" type="image" src="leftFrame/images/downArrow.gif" border="0"
+         onclick="javascript:hideShowBlock('cloneBranch')">
+    </td>
+  </tr>
+  <tr id="cloneBranch" name="controlBlock" style="display:none"
+      firstInput="node" partOf="nodeControls">
+    <td class="entry">
+      <input name="node" type="text" onkeypress="javascript:goIfEnter(event, 'clone_branch', 'cloneBranch')"><br>
+      name of new node
+    </td>
+    <td class="button2">
+      <input type="image" src="leftFrame/images/greenarrow.gif" border="0"
+         onclick="javascript:checkNodeManagementInput('clone_branch', 'cloneBranch')">
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2">
+      <hr>
+    </td>
+  </tr>
+  <tr>
+    <td class="desc">
+      <center><b>extend branch</b></center>
+      Create new node below selected node(s). All children and text
+      of selected node(s) will pass to new node.
+    </td>
+    <td class="button2">
+      <input id="extendBranchArrow" type="image" src="leftFrame/images/downArrow.gif" border="0"
+         onclick="javascript:hideShowBlock('extendBranch')">
+    </td>
+  </tr>
+  <tr id="extendBranch" name="controlBlock" style="display:none"
+      firstInput="node" partOf="nodeControls">
+    <td class="entry">
+      <input name="node" type="text" onkeypress="javascript:goIfEnter(event, 'extend_branch', 'extendBranch')"><br>
+      name of new node
+    </td>
+    <td class="button2">
+      <input type="image" src="leftFrame/images/greenarrow.gif" border="0"
+         onclick="javascript:checkNodeManagementInput('extend_branch', 'extendBranch')">
+    </td>
+  </tr>
+</table>
+
+<!-- value of 'display' filled in by "leftFrame.py" -->
+<table id="fileControls" %s>
+  <tr>
+    <td colspan="2" align="center">
+      <b><a class="everblue" onclick="javascript:switchControls()">NODE</a>/TEXT MANAGEMENT</b>
+    </td>
+  </tr>
+  <tr>
+    <td class="desc">
+      <center><b>add/overwrite key</b></center>
+      Add or overwrite new key/value pair to all &quot;test.info&quot;
+      data under selected nodes.
+    </td>
+    <td class="button2">
+      <input id="addKeysArrow" type="image" src="leftFrame/images/downArrow.gif" border="0"
+         onclick="javascript:hideShowBlock('addKeys')">
+    </td>
+  </tr>
+  <tr id="addKeys" name="controlBlock" style="display:none"
+      firstInput="key" partOf="fileControls">
+    <td class="entry">
+      <input name="key" type="text" onkeypress="javascript:goIfEnter(event, 'add_key', 'addKeys')"><br>
+      new key<br>
+      <input name="val" type="text" onkeypress="javascript:goIfEnter(event, 'add_key', 'addKeys')"><br>
+      value<br>
+    </td>
+    <td class="button2">
+      <input type="image" src="leftFrame/images/greenarrow.gif" border="0"
+        onclick="javascript:checkInfoFileManagementInput('add_key', 'addKeys')">
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2">
+      <hr>
+    </td>
+  </tr>
+  <tr>
+    <td class="desc">
+      <center><b>append value</b></center>
+      Append new value to existing key in all
+      &quot;test.info&quot; data under selected nodes.<br>
+      If key is not found, no change will be made.
+    </td>
+    <td class="button2">
+      <input id="appendValuesArrow" type="image" src="leftFrame/images/downArrow.gif" border="0"
+         onclick="javascript:hideShowBlock('appendValues')">
+    </td>
+  </tr>
+  <tr id="appendValues" name="controlBlock" style="display:none"
+      firstInput="key" partOf="fileControls">
+    <td class="entry">
+      <input name="key" type="text" onkeypress="javascript:goIfEnter(event, 'append_val', 'appendValues')"><br>
+      key<br>
+      <input name="val" type="text" onkeypress="javascript:goIfEnter(event, 'append_val', 'appendValues')"><br>
+      value to append<br>
+    </td>
+    <td class="button2">
+      <input type="image" src="leftFrame/images/greenarrow.gif" border="0"
+        onclick="javascript:checkInfoFileManagementInput('append_val', 'appendValues')">
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2">
+      <hr>
+    </td>
+  </tr>
+  <tr>
+    <td class="desc">
+      <center><b>remove key</b></center>
+      Remove key and associated values from
+      all &quot;test.info&quot; data under
+      selected nodes.
+    </td>
+    <td class="button2">
+      <input id="removeKeysArrow" type="image" src="leftFrame/images/downArrow.gif" border="0"
+         onclick="javascript:hideShowBlock('removeKeys')">
+    </td>
+  </tr>
+  <tr id="removeKeys" name="controlBlock" style="display:none"
+      firstInput="key" partOf="fileControls">
+    <td class="entry">
+      <input name="key" type="text" onkeypress="javascript:goIfEnter(event, 'remove_key', 'removeKeys')"><br>
+      key to remove<br>
+      <input name="val" type="hidden" value="">
+    </td>
+    <td class="button2">
+      <input type="image" src="leftFrame/images/greenarrow.gif" border="0"
+        onclick="javascript:checkInfoFileManagementInput('remove_key', 'removeKeys')">
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2">
+      <hr>
+    </td>
+  </tr>
+  <tr>
+    <td class="desc">
+      <center><b>regex find</b></center>
+      Find text matching given regular expression in
+      all &quot;test.info&quot; data under selected nodes.
+    </td>
+    <td class="button2">
+      <input id="regexFindArrow" type="image" src="leftFrame/images/downArrow.gif" border="0"
+         onclick="javascript:hideShowBlock('regexFind')">
+    </td>
+  </tr>
+  <tr id="regexFind" name="controlBlock" style="display:none"
+      firstInput="key" partOf="fileControls">
+    <td class="entry">
+      <input name="key" type="text" onkeypress="javascript:goIfEnter(event, 'regex_find', 'regexFind')"><br>
+      regular expression to match<br>
+      <input name="val" type="hidden" value="">
+    </td>
+    <td class="button2">
+      <input type="image" src="leftFrame/images/greenarrow.gif" border="0"
+        onclick="javascript:checkInfoFileManagementInput('regex_find', 'regexFind')">
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2">
+      <hr>
+    </td>
+  </tr>
+  <tr>
+    <td class="desc">
+      <center><b>regex replace</b></center>
+      Replace text matching given regular expression
+      with given value in all &quot;test.info&quot;
+      data under selected nodes.
+    </td>
+    <td class="button2">
+      <input id="regexReplaceArrow" type="image" src="leftFrame/images/downArrow.gif" border="0"
+         onclick="javascript:hideShowBlock('regexReplace')">
+    </td>
+  </tr>
+  <tr id="regexReplace" name="controlBlock" style="display:none"
+      firstInput="key" partOf="fileControls">
+    <td class="entry">
+      <input name="key" type="text" onkeypress="javascript:goIfEnter(event, 'regex_replace', 'regexReplace')"><br>
+      regular expression to match<br>
+      <input name="val" type="text" onkeypress="javascript:goIfEnter(event, 'regex_replace', 'regexReplace')"><br>
+      value to insert<br>
+    </td>
+    <td class="button2">
+      <input type="image" src="leftFrame/images/greenarrow.gif" border="0"
+        onclick="javascript:checkInfoFileManagementInput('regex_replace', 'regexReplace')">
+    </td>
+  </tr>
+</table>

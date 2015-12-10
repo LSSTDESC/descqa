@@ -1,0 +1,6 @@
+import CatalogReader
+filename='../../../results/galacticus_outputs_v0.9.4/mocks/ANL/planck_p10_mergertrees_root100_250k_nbody_0.9.4Planck_lcd4.5z3_BH_LSSTugrizy4ROref4_mock.hdf5'
+# create instance of catalog reader class
+readcat=CatalogReader.CatalogReader(filename=filename)
+#look at catalog (stored in readcat.catalogs)
+readcat.catalog.keys()

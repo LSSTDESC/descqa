@@ -1,0 +1,2 @@
+In this directory we'll put scripts that set the parameters to be passed to
+the scripts in the tests/ directory for individual tests.
