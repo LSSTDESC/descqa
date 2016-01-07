@@ -59,6 +59,13 @@ methods are:
                  documentation for details). The generic get_cosmology merely
                  returns self.cosmology.
 
+  get_sky_area   Takes no arguments (other than self), and returns an Astropy
+                 Quantity object containing the sky area of the catalog. If you
+                 wish to use the generic interface, have your load method set
+                 self.sky_area equal to an astropy.units.Quantity object with
+                 the appropriate value. The default implementation sets this to
+                 4*pi steradians (all sky).
+
   get_quantities Takes two arguments (other than self), ids and filters. ids is
                  either a string or a list of strings indicating the names of
                  galaxy properties being requested. If it is a string, the
@@ -140,11 +147,9 @@ if gc:
     vol_zlo = gc.get_cosmology().comoving_volume(zlo)
     # these are both Astropy Quantity objects with units of Mpc**3
     delta_vol = float((vol_zhi-vol_zlo) / u.Mpc**3)
-    mhist = mhist / bin_width / delta_vol
+    area_factor = float(gc.get_sky_area() / (4.*np.pi*u.sr))
+    mhist = mhist / bin_width / (area_factor*delta_vol)
     # mhist should now contain # galaxies per Mpc**3 per dex.
-
-We are still working on a way to incorporate sky coverage in the interface;
-stay tuned.
 
 Finally, once you are happy with YourGalaxyCatalog.py, place it into the
 catalog/functions subdirectory of the descqa git repository. It will then

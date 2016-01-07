@@ -27,12 +27,13 @@ def gen_stellar_mf(fn, zlo, zhi):
         Vhi = gc.get_cosmology().comoving_volume(zhi)
         Vlo = gc.get_cosmology().comoving_volume(zlo)
         dV = float((Vhi - Vlo)/u.Mpc**3)
-        # TODO: need to consider sky coverage and completeness in volume
-        mhmin = (mhist - np.sqrt(mhist)) / binwid / dV
-        mhmax = (mhist + np.sqrt(mhist)) / binwid / dV
+        # TODO: need to consider completeness in volume
+        af = float(gc.get_sky_area() / (4.*np.pi*u.sr))
+        mhmin = (mhist - np.sqrt(mhist)) / binwid / (af*dV)
+        mhmax = (mhist + np.sqrt(mhist)) / binwid / (af*dV)
         print 'binctr = ', binctr
         print 'mhist = ', mhist
-        mhist = mhist / binwid / dV
+        mhist = mhist / binwid / (af*dV)
         return binctr, binwid, mhist, mhmin, mhmax
     else:
         print("could not read galaxy catalog from %s" % fn)

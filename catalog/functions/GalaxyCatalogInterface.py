@@ -12,6 +12,7 @@ import importlib
 import os.path
 from descqaGlobalConfig import *
 import numpy as np
+import astropy.units as u
 
 # Galaxy catalog base class.
 
@@ -21,12 +22,14 @@ class GalaxyCatalog(object):
 
     type_ext      A string giving the file name extension, for catalogs that use
                   the default method for determining file type.
+
     filters       A dictionary whose keys are strings giving the names of
                   filters supported by the catalog class, and whose values are
                   the methods used to apply these constraints (or True if they
                   are supported but handled via a different mechanism). The
                   default implementation sets this dictionary to include keys
                   that should be supported by all catalogs.
+
     quantities    A dictionary whose keys are strings giving the names of
                   quantities that can be requested from the catalog, and whose
                   values are the methods used to request these quantities. The
@@ -35,13 +38,10 @@ class GalaxyCatalog(object):
                   values for the filters. The default implementation sets this
                   dictionary to include keys that should be supported by all
                   catalogs.
-    derived       A dictionary whose keys are the names of derived quantities
-                  and whose values are tuples containing the string name of a
-                  corresponding stored quantity (actually present in the file)
-                  and a pointer to the function used to compute the derived
-                  quantity from the stored one. Some catalogs may support
-                  having the stored quantity be a tuple of stored quantity
-                  names.
+
+    sky_area      The sky area covered by the catalog as an Astropy Quantity
+                  object.
+
     cosmology     Should be set by load routines to an Astropy.cosmology object
                   encoding the cosmology used to generate the catalog. This
                   allows calling programs to compute things like comoving
@@ -54,12 +54,12 @@ class GalaxyCatalog(object):
                   }
     quantities  = {'stellar_mass'         : None     # stellar mass in M_sun
                   }
-    derived     = {}
+    sky_area    = 4.*np.pi*u.sr   # all sky by default
     cosmology   = None
 
     def __init__(self, fn=None):
         """
-        Default GalaxyCatalog initializer takes one optional filename argument.
+        Default GalaxyCatalog constructor takes one optional filename argument.
         If present, the referenced catalog is checked for validity and loaded
         if possible. If it is not valid, a ValueError is raised. If no argument
         is given, an instance of the class is created without internal data.
@@ -95,6 +95,12 @@ class GalaxyCatalog(object):
         assumed in generating this catalog.
         """
         return self.cosmology
+
+    def get_sky_area(self):
+        """
+        Return the sky area covered by the catalog as an Astropy Quantity.
+        """
+        return self.sky_area
 
     def get_quantities(self, ids, filters):
         """
