@@ -6,6 +6,13 @@ import os, sys
 
 DESCQARootDir = os.environ['DESCQA_ROOT_DIR']
 
+# Catalog test path and subdirectories.
+
+DESCQACatalogTestDir     = os.path.join(DESCQARootDir, 'catalog')
+DESCQACatalogConfigDir   = os.path.join(DESCQACatalogTestDir, 'configs')
+DESCQACatalogFunctionDir = os.path.join(DESCQACatalogTestDir, 'functions')
+DESCQACatalogScriptDir   = os.path.join(DESCQACatalogTestDir, 'scripts')
+
 # Make sure we pick up the local test config
 
 sys.path.append(os.environ['PWD'])

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Setup script for the BCC QA tools. This is mainly for use by flashTest but
+# Setup script for the DESC QA tools. This is mainly for use by flashTest but
 # can also be invoked directly by users.
 
 # At the moment this doesn't do anything. None of the current tools requires

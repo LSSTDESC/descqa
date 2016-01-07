@@ -1,9 +1,0 @@
-In order to add new catalogs to this validation framework you need to provide two new pieces of code.
-
-1) Catalog Reader (for example, see UWReader.py):
-  This piece of code reads your catalog file and stores it in a reader object that also keeps track
-  of the catalog type. This reader object will be used by the GalaxyCatalog getters defined next.
-
-2) Galaxy Catalog getter (see GalaxyCatalog.py and then class get_UW_data):
-  This piece of code provides getters for your specific catalog. These should then be able to be accessed
-  by the user from the get_quantities method of GalaxyCatalog.GalaxyCatalog.

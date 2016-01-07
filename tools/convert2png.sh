@@ -1,7 +1,14 @@
 #!/bin/bash
 
+# Convert a directory full of Postscript or Encapsulated Postscript files to PNG.
+
 ## input the path to the plots' folder eg:
-## > convert2png ~shansen/myplots/
+## ./convert2png ~shansen/myplots/
+
+if [[ $# != 1 ]]; then
+    echo usage: $0 directory
+    exit 1
+fi
 
 for i in $( ls $1/*.eps )
 do

@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
-# Setup script for the BCC QA catalog tests. This is mainly for use by flashTest
+# Setup script for the DESC QA catalog tests. This is mainly for use by flashTest
 # but can also be invoked directly by users.
 
-# At the moment this copies the requested IDL script to a run directory and then
-# creates an executable shell script there that runs IDL on it.
+# At the moment this copies the requested script and parameter file to a run
+# directory and then creates an executable shell script there that sets appropriate
+# environment variables and runs it.
 
 import sys, os, os.path, shutil, stat
 
@@ -74,7 +75,8 @@ sys.path.append(os.path.join(rootdir, 'catalog', 'functions'))
 sys.path.append(os.path.join(rootdir, 'catalog', 'scripts'))
 sys.path.append(os.path.join(rootdir, 'tools'))
 sys.path.append(builddir)
-f.write("export PYTHONPATH=%s\n" % ':'.join(sys.path)[1:])
+#f.write("export PYTHONPATH=%s\n" % ':'.join(sys.path)[1:]) # why did I do this?
+f.write("export PYTHONPATH=%s\n" % ':'.join(sys.path))
 
 f.write("%s" % script_targetpath)
 f.close()

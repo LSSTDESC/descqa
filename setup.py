@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-# Setup script for the BCC QA tests. This is mainly for use by flashTest but
-# can also be invoked directly by users. Some of the BCC QA tools are purely
-# IDL, while others involve some compiled code. This script wraps the
+# Setup script for the DESC QA tests. This is mainly for use by flashTest but
+# can also be invoked directly by users. Some of the DESC QA tools are Python
+# or IDL, while others involve some compiled code. This script wraps the
 # appropriate actions needed to build the code if needed and to move the
 # necessary scripts and executables to the place they need to go.
 
