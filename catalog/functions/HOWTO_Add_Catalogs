@@ -141,7 +141,7 @@ if gc:
     # masses now contains an array of stellar masses for galaxies with
     # redshifts between zlo and zhi, in units of Msun.
     log_masses = np.log10(masses)
-    mhist, mbins = np.histogram(logm, Nbins)
+    mhist, mbins = np.histogram(log_masses, Nbins)
     bin_width = mbins[1:] - mbins[:Nbins]
     vol_zhi = gc.get_cosmology().comoving_volume(zhi)
     vol_zlo = gc.get_cosmology().comoving_volume(zlo)
