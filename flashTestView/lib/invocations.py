@@ -343,6 +343,7 @@ class InvocationList:
         mostRecent=sorted(self.invocations)[0]	
       	
       for invocationDir in invocationDirs:
+       try:
         for invocation in self.invocations[:]:
           if invocation.name == invocationDir:
             if invocation.html == "" or invocation.name == mostRecent.name:
@@ -450,7 +451,7 @@ class InvocationList:
           errorLines.append(logMsg)
           statsBody = "<br>".join(errorLines)
 
-          html = ("<a href=viewer/viewBuilds.py?target_dir=%s " % pathToInvocationDir +
+          html = ("<a href=viewer/viewBuilds.cgi?target_dir=%s " % pathToInvocationDir +
                   "onMouseOver=\"appear('%s','%s')\" " % (statsHeader, statsBody) +
                   "onMouseOut=\"disappear()\">%s</a>" % invocationDir)
           if lightColor == GREEN:
@@ -464,6 +465,10 @@ class InvocationList:
             html += "&nbsp;<b>!</b>"
 
           newInvocations.append(Invocation(invocationDir, html))
+
+       except Exception,e:
+        print "Exception:",e,"; continuing"
+
 
       if len(newInvocations) > 0:
         self.invocations.extend(newInvocations)
