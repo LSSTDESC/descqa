@@ -3,11 +3,11 @@
 
 [if-any setupDescription]
   <h1>[setupDescription]&nbsp;
-  (<a href="viewBuilds.py?target_dir=[pathToInvocationDir]" target="_top">[invocationDir]</a>)
+  (<a href="viewBuilds.cgi?target_dir=[pathToInvocationDir]" target="_top">[invocationDir]</a>)
   </h1>
 [else]
   <h1>[buildDir]&nbsp;
-  (<a href="viewBuilds.py?target_dir=[pathToInvocationDir]" target="_top">[invocationDir]</a>)
+  (<a href="viewBuilds.cgi?target_dir=[pathToInvocationDir]" target="_top">[invocationDir]</a>)
   </h1>
 [end]
 
@@ -17,7 +17,7 @@
 <td>Log file</td>
 <td>
 [if-any pathToFlashTestLog]
-  <a href="viewTextFile.py?target_file=[pathToFlashTestLog]&sought_build=[buildDir]">contents</a>
+  <a href="viewTextFile.cgi?target_file=[pathToFlashTestLog]&sought_build=[buildDir]">contents</a>
 [else]
   <i>no log file</i>
 [end]
@@ -31,13 +31,13 @@
   [if-any setupCall]
     <td>
     [if-any pathToSetupOutput]
-      <a href="viewTextFile.py?target_file=[pathToSetupOutput]">stdout</a>
+      <a href="viewTextFile.cgi?target_file=[pathToSetupOutput]">stdout</a>
     [else]
       <i>no stdout</i>
     [end]
     &nbsp;
     [if-any pathToSetupError]
-      <a href="viewTextFile.py?target_file=[pathToSetupError]">stderr</a>
+      <a href="viewTextFile.cgi?target_file=[pathToSetupError]">stderr</a>
     [else]
       <i>no stderr</i>
     [end]
@@ -51,15 +51,15 @@
     <td>Test compilation[if-any gmakeFailed] <i>(failed)</i>[end]</td>
     <td>
     [if-any pathToGmakeCall]
-      <a href="viewTextFile.py?target_file=[pathToGmakeCall]">script</a>
+      <a href="viewTextFile.cgi?target_file=[pathToGmakeCall]">script</a>
       &nbsp;
     [end]
     [if-any pathToGmakeOutput]
-      <a href="viewTextFile.py?target_file=[pathToGmakeOutput]">stdout/stderr</a>
+      <a href="viewTextFile.cgi?target_file=[pathToGmakeOutput]">stdout/stderr</a>
       &nbsp;
     [end]
     [if-any pathToGmakeError]
-      <a href="viewTextFile.py?target_file=[pathToGmakeError]">stderr</a>
+      <a href="viewTextFile.cgi?target_file=[pathToGmakeError]">stderr</a>
       &nbsp;
     [end]
     [if-any compilationTime]
@@ -76,7 +76,7 @@
 
       <td>
       [for runs]
-        <a href="viewBuild.py?target_dir=[fullBuildPath]&target_tag=run_[runs.name]" target="_top">[runs.htmlDescription]</a>
+        <a href="viewBuild.cgi?target_dir=[fullBuildPath]&target_tag=run_[runs.name]" target="_top">[runs.htmlDescription]</a>
         [if-any runs.runFailed]
           &nbsp; <font color="red"><i>failed</i></font>
         [end]
@@ -119,7 +119,7 @@
           <td>Log files:&nbsp;</td>
           <td>
 	  [for runs.logfiles]	
-            <a href="viewTextFile.py?target_file=[runs.logfiles.path]">[runs.logfiles.filename]</a><br>
+            <a href="viewTextFile.cgi?target_file=[runs.logfiles.path]">[runs.logfiles.filename]</a><br>
 	  [end]	
           </td>
           </tr>
@@ -129,7 +129,7 @@
           <tr valign="top">
           <td>Stdout/stderr:&nbsp;</td>
           <td>
-          <a href="viewTextFile.py?target_file=[runs.pathToFlashOutput]">contents</a>
+          <a href="viewTextFile.cgi?target_file=[runs.pathToFlashOutput]">contents</a>
           </td>
           </tr>
         [end]
@@ -139,7 +139,7 @@
           <td>Expectations:&nbsp;</td>
           <td>
 	  [for runs.theoryFiles]	
-            <a href="viewTextFile.py?target_file=[runs.theoryFiles.path]">[runs.theoryFiles.filename]</a><br>
+            <a href="viewTextFile.cgi?target_file=[runs.theoryFiles.path]">[runs.theoryFiles.filename]</a><br>
 	  [end]	
           </td>
           </tr>
@@ -150,7 +150,7 @@
           <td>Outputs:&nbsp;</td>
           <td>
 	  [for runs.plotFiles]	
-            <a href="viewTextFile.py?target_file=[runs.plotFiles.path]">[runs.plotFiles.filename]</a><br>
+            <a href="viewTextFile.cgi?target_file=[runs.plotFiles.path]">[runs.plotFiles.filename]</a><br>
 	  [end]	
           </td>
           </tr>
@@ -161,7 +161,7 @@
           <td>Plots:&nbsp;</td>
           <td>
 	  [for runs.imgfiles]	
-            <a href="viewImageFile.py?target_file=[runs.imgfiles.path]">[runs.imgfiles.filename]</a><br>
+            <a href="viewImageFile.cgi?target_file=[runs.imgfiles.path]">[runs.imgfiles.filename]</a><br>
           [end]	
           </td>
           </tr>
@@ -173,7 +173,7 @@
         [if-any runs.showTest]
           [if-any runs.testOutputFile]
             [for runs.testOutputFile]
-              <a href="viewHtmlFile.py?target_file=[runs.testOutputFile.path]">contents</a>
+              <a href="viewHtmlFile.cgi?target_file=[runs.testOutputFile.path]">contents</a>
             [end]
             [if-any runs.testFailed]
               [if-any runs.changedFromPrevious]
@@ -192,7 +192,7 @@
         </table>
 
         <br>
-        <a href="viewBuild.py?target_dir=[fullBuildPath]" target="_top">Return to top</a>
+        <a href="viewBuild.cgi?target_dir=[fullBuildPath]" target="_top">Return to top</a>
 
       [end]
 
