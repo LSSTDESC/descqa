@@ -46,8 +46,8 @@
 # Comments begin with a '#'
 
 #pathToInfo:
-#pathToOutdir:
-#pathToMainArchive:
+pathToOutdir:         /project/projectdirs/lsst/descqa/run
+pathToMainArchive:    /project/projectdirs/lsst/descqa/archive
 #pathToViewArchive:
 #pathToLocalArchive:
 
@@ -56,12 +56,13 @@
 ##  BCC QA-specific keywords  ##
 ################################
 
-pathToBCC:          /home/ricker/Projects/surveys/lsst/desc/code/descqa
-pathToSimData:      /home/ricker/Projects/surveys/lsst/desc/code/descqa/data
-pathToObsData:      /home/ricker/Projects/surveys/lsst/desc/code/descqa/data
-updateScript:       /home/ricker/Projects/surveys/lsst/desc/code/descqa/flashTest/updateScript
-flashSite:          <FQHostname>
+pathToBCC:          /project/projectdirs/lsst/descqa/src
+pathToSimData:      /project/projectdirs/lsst/descqa/catalog
+pathToObsData:      /project/projectdirs/lsst/descqa/src/data
+updateScript:       /project/projectdirs/lsst/descqa/src/flashTest/updateScript
+site:               edison
 
+errTol: 1.0
 useModule:  bccModule
 entryPoint: BCCEntryPoint
 setupper:   BCCSetupper

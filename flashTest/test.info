@@ -1,11 +1,13 @@
-<grackle>
+<edison>
   <L2DiffComparison>
     <StellarMFTest>
       setupName: catalog
       setupOptions: stellar_mf_test.py
-      parfiles: <pathToBCC>/catalog/configs/planck_anlcat.par \
-                <pathToBCC>/catalog/configs/millennium_uwcat.par
+      parfiles: <pathToBCC>/catalog/configs/liwhite_stanfordcat.par \
+                <pathToBCC>/catalog/configs/mb2_stanfordcat.par \
+                <pathToBCC>/catalog/configs/mb2_cmucat.par \
+                <pathToBCC>/catalog/configs/liwhite_cmucat.par
       setupDescription: Stellar mass function comparison with observations
     </StellarMFTest>
   </L2DiffComparison>
-</grackle>
+</edison>

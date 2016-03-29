@@ -444,8 +444,15 @@ def main():
 
   if len(dirs) > 0:
     suffixes = [dir[len(dateStr):].strip("_") for dir in dirs]
-    suffixes.sort()
-    highestSuffix = suffixes[len(suffixes)-1]
+    intsuffixes=[]
+    for d in dirs:
+        try:
+            intsuffixes.append( int(d.split('_')[1] ) )
+        except:
+            intsuffixes.append(0)
+    intsuffixes.sort()
+    highestSuffix=intsuffixes[len(intsuffixes)-1]
+
     if highestSuffix == "":
       newSuffix = 2
     else:
@@ -462,6 +469,7 @@ def main():
     os.mkdir(pathToInvocationDir)
   except:
     __abort("Unable to create directory %s" % pathToInvocationDir)
+    
 
   # create a ".lock" file so that FlashTestView
   # will ignore it until the invocation is complete
