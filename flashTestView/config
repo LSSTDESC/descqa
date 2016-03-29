@@ -18,7 +18,7 @@
 #
 # Comments begin with a '#'
 #
-pathToOutdir: /home/ricker/Projects/surveys/des/bcc/qa/deploy/bccqa/run
+pathToOutdir: /project/projectdirs/lsst/descqa/run
 #pathToOutdir: /home/ricker/public_html/share/research/bccqa/run
 #pathToInfo:   /u/ki/pmricker/build/bcczookeeper/tests/flashTest
 siteTitle:    DES BCC Quality Assurance
