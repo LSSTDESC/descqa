@@ -116,7 +116,7 @@ function launchEditor(startNode, pathToInfo) {
       queryStr = "start_node=" + startNode + "&" + checkboxesAsQueryStr;
     }
     queryStr += "&edit_files=1";
-    location = "../infoFileManager/home.py?" + queryStr
+    location = "../infoFileManager/home.cgi?" + queryStr
   }
 }
 
