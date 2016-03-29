@@ -135,6 +135,6 @@ else:
 # Issue verdict
 
 if (L2 > threshold) or (np.isnan(L2)):
-    print "FAILURE"
+    print "Almost! But you need to get to L2 = %G"%(threshold)
 else:
     print "SUCCESS"
