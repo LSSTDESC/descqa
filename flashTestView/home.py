@@ -22,127 +22,131 @@ def rewriteFileMap(fileMapDict):
 
 # FlashTest's main results board showing red or green lights
 # for FlashTest invocations with failures or no failures.
+try:
 
 # first purge all files over 24 hours old from "tmp"
-purgeTmp.purgeTmp()
+    #purgeTmp.purgeTmp()
 
-if os.path.isfile("config"):
-  configDict = littleParser.parseFile("config")
-  siteTitle = configDict.get("siteTitle", [])
+    if os.path.isfile("config"):
+      configDict = littleParser.parseFile("config")
+      siteTitle = configDict.get("siteTitle", [])
 
-print "Content-type: text/html\n"
-print "<head>"
-print "<title>%s</title>" % siteTitle
+    print "Content-type: text/html\n"
+    print "<head>"
+    print "<title>%s</title>" % siteTitle
 
 # next three lines ensure browsers don't cache, as caching can cause false
 # appearances of the "please wait while the table is being regenerated" if
 # the user uses the browser's "back" button.
-print "<meta http-equiv=\"cache-control\" content=\"no-cache\">"
-print "<meta http-equiv=\"Pragma\" content=\"no-cache\">"
-print "<meta http-equiv=\"Expires\" content=\"-1\">"
+    print "<meta http-equiv=\"cache-control\" content=\"no-cache\">"
+    print "<meta http-equiv=\"Pragma\" content=\"no-cache\">"
+    print "<meta http-equiv=\"Expires\" content=\"-1\">"
 
-print open("style.css","r").read()
-print "<script src=\"lib/vanishPleaseWait.js\"></script>"
-print "<script src=\"lib/statsWindow.js\"></script>"
-print "<script src=\"lib/redirect.js\"></script>"
-print "</head>"
+    print open("style.css","r").read()
+    print "<script src=\"lib/vanishPleaseWait.js\"></script>"
+    print "<script src=\"lib/statsWindow.js\"></script>"
+    print "<script src=\"lib/redirect.js\"></script>"
+    print "</head>"
 
 
 # make sure website has write permissions in this folder
-cwd = os.getcwd()
-if not os.access(cwd, os.W_OK):
-  msg = ("The web-server does not have write permissions in directory \"%s\"<br>" % cwd +
-         "This permission must be granted for FlashTestView to function correctly.")
-  abort(msg)
+    cwd = os.getcwd()
+    if not os.access(cwd, os.W_OK):
+      msg = ("The web-server does not have write permissions in directory \"%s\"<br>" % cwd +
+             "This permission must be granted for FlashTestView to function correctly.")
+      abort(msg)
 
 # Generate fileMapDict from "fileMap", a text file that maps
 # paths to output directories to their associated ".pick" files.
-if os.path.isfile(fileMap):
-  # Paul, uncomment the lines below and delete this line when you've fixed the file permissions
-  if not os.access(fileMap, os.R_OK + os.W_OK):
-    msg = ("The web-server does not have read and/or write permissions on file \"%s\"<br>" % os.path.join(cwd, fileMap) +
-           "This permission must be granted for FlashTestView to function correctly.")
-    abort(msg)
-  else:
-    fileMapDict = littleParser.parseFile(fileMap)
-else:
-  fileMapDict = {}
-
-if os.path.isfile("config"):
-  configDict = littleParser.parseFile("config")
-  pathsToOutdirs = configDict.get("pathToOutdir", [])  # returns a string if only one value
-                                                       # associated with key, else a list
-
-  # Make 'pathToOutdir' into a list if it's not one already.
-  # If the list has more than one element, we'll eventually
-  # use it to make the drop-down menu that lets the user
-  # visualize different collections of FlashTest data
-  if not isinstance(pathsToOutdirs, list):
-    pathsToOutdirs = [pathsToOutdirs]
-
-  # delete any .pick files whose corresponding path
-  # no longer appears in 'configDict' and eliminate
-  # the appropriate entry in 'fileMapDict'
-  fileMapNeedsRewrite = False
-  try:
-      for key in fileMapDict.keys()[:]:
-        if key not in pathsToOutdirs:
-          try:
-            os.remove(fileMapDict[key])
-          except:
-            pass
-          del fileMapDict[key]
-          fileMapNeedsRewrite = True
-  except Exception,e:
-    print "exception: ", e
-
-  if fileMapNeedsRewrite:
-    rewriteFileMap(fileMapDict)
-
-else:
-  configDict = {}
-  pathsToOutdirs = []
-
-pickFile = ""
-form = cgi.FieldStorage()
-pathToTargetDir = form.getvalue("target_dir")
-thisPageNum = form.getvalue("page")
-
-if pathToTargetDir:
-  if configDict:
-    if pathToTargetDir in pathsToOutdirs:
-      if not os.path.isdir(pathToTargetDir):
-        if fileMapDict.has_key(pathToTargetDir):
-          del fileMapDict[pathToTargetDir]
-          rewriteFileMap(fileMapDict)
-        abort("\"%s\" does not exist or is not a directory." % pathToTargetDir)
+    if os.path.isfile(fileMap):
+      # Paul, uncomment the lines below and delete this line when you've fixed the file permissions
+      if not os.access(fileMap, os.R_OK + os.W_OK):
+        msg = ("The web-server does not have read and/or write permissions on file \"%s\"<br>" % os.path.join(cwd, fileMap) +
+               "This permission must be granted for FlashTestView to function correctly.")
+        abort(msg)
+      else:
+        fileMapDict = littleParser.parseFile(fileMap)
     else:
-      abort("Directory \"%s\" not listed as a value for key \"pathToOutdir\" in \"config\".<br>" % pathToTargetDir +
-            "Add this directory to \"config\" and reload this page.")
-  else:
-    abort("File \"config\" either does not exist or does not contain any values.<br>"+
-          "Create a \"config\" file if necessary and add the following text:<br><br>" +
-          "pathToOutdir: %s<br><br>" % pathToTargetDir +
-          "Then reload this page.")
-else:
-  if configDict:
-    if pathsToOutdirs:
-      pathToTargetDir = pathsToOutdirs[0]
-      if not os.path.isdir(pathToTargetDir):
-        if fileMapDict.has_key(pathToTargetDir):
-          del fileMapDict[pathToTargetDir]
-          rewriteFileMap(fileMapDict)
-        abort("\"%s\" as listed in \"config\"<br>" % pathToTargetDir +
-              "does not exist or is not a directory.")
+      fileMapDict = {}
+
+    if os.path.isfile("config"):
+      configDict = littleParser.parseFile("config")
+      pathsToOutdirs = configDict.get("pathToOutdir", [])  # returns a string if only one value
+                                                           # associated with key, else a list
+
+      # Make 'pathToOutdir' into a list if it's not one already.
+      # If the list has more than one element, we'll eventually
+      # use it to make the drop-down menu that lets the user
+      # visualize different collections of FlashTest data
+      if not isinstance(pathsToOutdirs, list):
+        pathsToOutdirs = [pathsToOutdirs]
+
+      # delete any .pick files whose corresponding path
+      # no longer appears in 'configDict' and eliminate
+      # the appropriate entry in 'fileMapDict'
+      fileMapNeedsRewrite = False
+      try:
+          for key in fileMapDict.keys()[:]:
+            if key not in pathsToOutdirs:
+              try:
+                os.remove(fileMapDict[key])
+              except:
+                pass
+              del fileMapDict[key]
+              fileMapNeedsRewrite = True
+      except Exception,e:
+        print "exception: ", e
+
+      if fileMapNeedsRewrite:
+        rewriteFileMap(fileMapDict)
+
     else:
-      abort("You must add at least one value to the key \"pathToOutdir\" in \"config\"<br>" +
-            "where that value is a path to a top-level FlashTest output directory.")
-  else:
-    abort("File \"config\" either does not exist or does not contain any values.<br>" +
-          "Create a \"config\" file if necessary and add the following text:<br><br>" +
-          "pathToOutdir: [path/to/outdir]<br><br>" +
-          "where [path/to/outdir] is an absolute path to a top-level FlashTest output directory.<br>" +
+      configDict = {}
+      pathsToOutdirs = []
+
+    pickFile = ""
+    form = cgi.FieldStorage()
+    pathToTargetDir = form.getvalue("target_dir")
+    thisPageNum = form.getvalue("page")
+
+    if pathToTargetDir:
+      if configDict:
+        if pathToTargetDir in pathsToOutdirs:
+          if not os.path.isdir(pathToTargetDir):
+            if fileMapDict.has_key(pathToTargetDir):
+              del fileMapDict[pathToTargetDir]
+              rewriteFileMap(fileMapDict)
+            abort("\"%s\" does not exist or is not a directory." % pathToTargetDir)
+        else:
+          abort("Directory \"%s\" not listed as a value for key \"pathToOutdir\" in \"config\".<br>" % pathToTargetDir +
+                "Add this directory to \"config\" and reload this page.")
+      else:
+        abort("File \"config\" either does not exist or does not contain any values.<br>"+
+              "Create a \"config\" file if necessary and add the following text:<br><br>" +
+              "pathToOutdir: %s<br><br>" % pathToTargetDir +
+              "Then reload this page.")
+    else:
+      if configDict:
+        if pathsToOutdirs:
+          pathToTargetDir = pathsToOutdirs[0]
+          if not os.path.isdir(pathToTargetDir):
+            if fileMapDict.has_key(pathToTargetDir):
+              del fileMapDict[pathToTargetDir]
+              rewriteFileMap(fileMapDict)
+            abort("\"%s\" as listed in \"config\"<br>" % pathToTargetDir +
+                  "does not exist or is not a directory.")
+        else:
+          abort("You must add at least one value to the key \"pathToOutdir\" in \"config\"<br>" +
+                "where that value is a path to a top-level FlashTest output directory.")
+      else:
+        abort("File \"config\" either does not exist or does not contain any values.<br>" +
+              "Create a \"config\" file if necessary and add the following text:<br><br>" +
+              "pathToOutdir: [path/to/outdir]<br><br>" +
+              "where [path/to/outdir] is an absolute path to a top-level FlashTest output directory.<br>" +
           "Then reload this page.")
+except:
+    import traceback
+    traceback.print_exc(file=sys.stdout)
 
 # At this point we know that 'pathToTargetDir' is defined, that it is
 # an extant directory, and that that directory is listed in "config"
@@ -286,7 +290,7 @@ try:
     print "</html>"
 except Exception,e:
     pass
-    #import traceback
-    #traceback.print_exc(file=sys.stdout)
-    #print "Exception: ", e
+    import traceback
+    traceback.print_exc(file=sys.stdout)
+    print "Exception: ", e
 
