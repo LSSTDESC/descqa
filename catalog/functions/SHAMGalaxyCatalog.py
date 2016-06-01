@@ -4,7 +4,24 @@
 import os
 import numpy as np
 from GalaxyCatalogInterface import GalaxyCatalog
-import astropy.cosmology
+
+
+class _FunctionWrapper:
+    def __init__(self, d, k):
+        self._d = d
+        self._k = k
+    
+    def __call__(self, quantity, filters):
+        return self._d[self._k]
+
+class _FunctionWrapperHack:
+    def __init__(self, d, k):
+        self._d = d
+        self._k = k
+    
+    def __call__(self, quantity, filters):
+        return 1.e-10 * self._d[self._k]
+
 
 class SHAMGalaxyCatalog(GalaxyCatalog):
     """
@@ -17,35 +34,41 @@ class SHAMGalaxyCatalog(GalaxyCatalog):
         self.redshift = 0.062496
         self.box_size = 100.0
         self.lightcone = False
-        self.quantities  = { 'stellar_mass': self._stored_quantity_wrapper('sm'),
-                             'halo_id':      self._stored_quantity_wrapper('id'),
-                             'positionX':    self._stored_quantity_wrapper('x'),
-                             'positionY':    self._stored_quantity_wrapper('y'),
-                             'positionZ':    self._stored_quantity_wrapper('z'),
+        self._data = {}
+        self.quantities  = { 'stellar_mass': _FunctionWrapper(self._data, 'sm'),
+                             'halo_id':      _FunctionWrapper(self._data, 'id'),
+                             'positionX':    _FunctionWrapper(self._data, 'x'),
+                             'positionY':    _FunctionWrapper(self._data, 'y'),
+                             'positionZ':    _FunctionWrapper(self._data, 'z'),
+                             'velocityX':    _FunctionWrapper(self._data, 'vx'),
+                             'velocityY':    _FunctionWrapper(self._data, 'vy'),
+                             'velocityZ':    _FunctionWrapper(self._data, 'vz'),
+                             'mass':    _FunctionWrapperHack(self._data, 'mvir'),
                            }
 
         return GalaxyCatalog.__init__(self, fn)
 
-    def load(self, fn=None):
+    def load(self, fn):
         """
         Given a catalog path, attempt to read the catalog and set up its
         internal data structures.
         """
         if fn is None:
             fn = os.path.join(self.root_path, 'SHAM_{0:.5f}.npy'.format(1.0/(1.0+self.redshift)))
-        self._data = np.load(fn)
+        cat = np.load(fn)
 
-        print "WARNING: Initializing cosmology using built-in astropy cosmology LambdaCDM"
-        self.cosmology = astropy.cosmology.LambdaCDM(H0   = 70.2,
-                Om0  = 0.275,
-                Ode0 = 0.725)
-         
+        halos = np.load(os.path.join(self.root_path, 'MBII-DMO', 'hlist_{0:.5f}.npy'.format(1.0/(1.0+self.redshift))))
+        s = halos.argsort(order='id')
+        halos = halos[s[np.searchsorted(halos['id'], cat['id'], sorter=s)]]
+        assert (halos['id'] == cat['id']).all()
+
+        for name in cat.dtype.names:
+            self._data[name] = cat[name]
+
+        for name in halos.dtype.names:
+            if name == 'id':
+                continue
+            self._data[name] = halos[name]
+
         return self
 
-    def _stored_quantity_wrapper(self, name):
-        """
-        Return the requested property of galaxies in the catalog as a NumPy
-        array. This is for properties that are explicitly stored in the
-        catalog.
-        """
-        return (lambda quantity, filters: self._data[name])
