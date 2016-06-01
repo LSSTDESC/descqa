@@ -24,8 +24,8 @@ def rewriteFileMap(fileMapDict):
 # for FlashTest invocations with failures or no failures.
 try:
 
-# first purge all files over 24 hours old from "tmp"
-    #purgeTmp.purgeTmp()
+    # first purge all files over 24 hours old from "tmp"
+    purgeTmp.purgeTmp()
 
     if os.path.isfile("config"):
       configDict = littleParser.parseFile("config")
@@ -35,9 +35,9 @@ try:
     print "<head>"
     print "<title>%s</title>" % siteTitle
 
-# next three lines ensure browsers don't cache, as caching can cause false
-# appearances of the "please wait while the table is being regenerated" if
-# the user uses the browser's "back" button.
+    # next three lines ensure browsers don't cache, as caching can cause false
+    # appearances of the "please wait while the table is being regenerated" if
+    # the user uses the browser's "back" button.
     print "<meta http-equiv=\"cache-control\" content=\"no-cache\">"
     print "<meta http-equiv=\"Pragma\" content=\"no-cache\">"
     print "<meta http-equiv=\"Expires\" content=\"-1\">"
@@ -49,15 +49,15 @@ try:
     print "</head>"
 
 
-# make sure website has write permissions in this folder
+    # make sure website has write permissions in this folder
     cwd = os.getcwd()
     if not os.access(cwd, os.W_OK):
       msg = ("The web-server does not have write permissions in directory \"%s\"<br>" % cwd +
              "This permission must be granted for FlashTestView to function correctly.")
       abort(msg)
 
-# Generate fileMapDict from "fileMap", a text file that maps
-# paths to output directories to their associated ".pick" files.
+    # Generate fileMapDict from "fileMap", a text file that maps
+    # paths to output directories to their associated ".pick" files.
     if os.path.isfile(fileMap):
       # Paul, uncomment the lines below and delete this line when you've fixed the file permissions
       if not os.access(fileMap, os.R_OK + os.W_OK):
@@ -180,16 +180,16 @@ try:
       fileMapDict[pathToTargetDir] = newFileName
       rewriteFileMap(fileMapDict)
 
-# At this point, 'bigBoard' exists, and is updated.
+    # At this point, 'bigBoard' exists, and is updated.
 
-# floating div which will be populated with the stats
-# from one invocation when user hovers over a datestamp
+    # floating div which will be populated with the stats
+    # from one invocation when user hovers over a datestamp
     print "<div id=\"statsWindow\">"
     print "<div id=\"statsHeader\"></div>"
     print "<div id=\"statsBody\"></div>"
     print "</div>"
 
-# start main page
+    # start main page
     print "<div id=\"readmeDiv\">"
     print "<a href=\"/website/codesupport/flash_howtos/home.py?submit=flashTest-HOWTO.txt\">FlashTest HOW-TO</a>"
     print "</div>"
@@ -198,7 +198,7 @@ try:
     print "<h1>FlashTest Invocations</h1>"
     print "</div>"
 
-# make bar with navigation to other "pages" of results.
+    # make bar with navigation to other "pages" of results.
     invocationsPerPage = int(configDict.get("invocationsPerPage", 50))
 
     numRows = bigBoard.numRows
@@ -270,8 +270,8 @@ try:
       startRow = 0
       endRow   = numRows-1
 
-# generate drop-down menu for easy switching between
-# FlashTest output directories if more than 1 available.
+    # generate drop-down menu for easy switching between
+    # FlashTest output directories if more than 1 available.
     if len(pathsToOutdirs) > 1:
       print "<div id=\"menuDiv\">"
       print "<select onchange=\"javascript: redirect(this)\">"
