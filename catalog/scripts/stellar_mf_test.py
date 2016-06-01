@@ -22,6 +22,9 @@ def gen_stellar_mf(fn, zlo, zhi):
     gc = loadCatalog(fn)
     if gc:
         masses = gc.get_quantities("stellar_mass", {'zlo': zlo, 'zhi': zhi})
+        # remove NaN masses
+        nan_masses = np.isnan(masses)
+        masses = masses[~nan_masses]
         logm = np.log10(masses)
         mhist, mbins = np.histogram(logm, Nbins)
         binctr = (mbins[1:] + mbins[:Nbins])/2.
@@ -37,8 +40,6 @@ def gen_stellar_mf(fn, zlo, zhi):
             vol = gc.box_size**3.0
         mhmin = (mhist - np.sqrt(mhist)) / binwid / vol
         mhmax = (mhist + np.sqrt(mhist)) / binwid / vol
-        print 'binctr = ', binctr
-        print 'mhist = ', mhist
         mhist = mhist / binwid / vol
         return binctr, binwid, mhist, mhmin, mhmax
     else:
