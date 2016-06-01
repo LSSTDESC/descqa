@@ -1,0 +1,18 @@
+#!/usr/bin/env python
+
+import os
+import numpy as np
+
+sim_folder = os.environ['DESCQA_SIM_DATA_DIR']
+obs_folder = os.environ['DESCQA_OBS_DATA_DIR']
+
+sim_name = 'ANL catalog'
+obs_name = 'SDSS'
+
+sim_catalog = sim_folder + '/planck_p10_mergertrees_root100_250k_nbody_0.9.4Planck_lcd10z3_BH_LSSTugrizy4ROref6_mock.hdf5.ANL'
+obs_catalog = obs_folder + '/SDSS/wprp_Reddick-Tinker_sm-9.8.dat'
+
+sm_cut = 10.0**9.8
+njack = 10
+zmax = 40.0
+rbins = np.logspace(-1.0, 1.3, 14)
