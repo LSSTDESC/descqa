@@ -3,11 +3,44 @@
     <StellarMFTest>
       setupName: catalog
       setupOptions: stellar_mf_test.py
-      parfiles: <pathToBCC>/catalog/configs/liwhite_stanfordcat.par \
-                <pathToBCC>/catalog/configs/mb2_stanfordcat.par \
-                <pathToBCC>/catalog/configs/mb2_cmucat.par \
-                <pathToBCC>/catalog/configs/liwhite_cmucat.par
+      parfiles: <pathToBCC>/catalog/configs/stellar_mf_test/liwhite_stanfordcat.par \
+                <pathToBCC>/catalog/configs/stellar_mf_test/mb2_stanfordcat.par \
+                <pathToBCC>/catalog/configs/stellar_mf_test/mb2_cmucat.par \
+                <pathToBCC>/catalog/configs/stellar_mf_test/mb2_yalecat.par \
+                <pathToBCC>/catalog/configs/stellar_mf_test/mb2_ihodcat.par \
+                <pathToBCC>/catalog/configs/stellar_mf_test/liwhite_cmucat.par \
+                <pathToBCC>/catalog/configs/stellar_mf_test/liwhite_ihodcat.par
       setupDescription: Stellar mass function comparison with observations
     </StellarMFTest>
+    <AverageStellarMassHaloMassTest>
+      setupName: catalog
+      setupOptions: stellarmass_halomass_test.py
+      parfiles: <pathToBCC>/catalog/configs/average_stellar_mass_halo_mass/mb2_cmucat.par \
+                <pathToBCC>/catalog/configs/average_stellar_mass_halo_mass/mb2_stanfordcat_mb2.par \
+                <pathToBCC>/catalog/configs/average_stellar_mass_halo_mass/mb2_stanfordcat_liwhite.par
+      setupDescription: Average Stellar mass - Halo mass comparison
+    </AverageStellarMassHaloMassTest>
+    <WpRpTest>
+      setupName: catalog
+      setupOptions: wprp.py
+      parfiles: <pathToBCC>/catalog/configs/wprp/liwhite_stanfordcat.par \
+                <pathToBCC>/catalog/configs/wprp/mb2_stanfordcat.par
+      setupDescription: wp(rp) comparison
+    </WpRpTest>
+    <amf>
+      setupName: catalog
+      setupOptions: amf.py
+      parfiles: <pathToBCC>/catalog/configs/amf/mb2_cmucat.par
+      setupDescription: amf
+    </amf>
   </L2DiffComparison>
+  <Comparison>
+    <ColorColorPlot>
+      setupName: catalog
+      setupOptions: color_color_plot.py
+      parfiles: <pathToBCC>/catalog/configs/color_color_plot/mb2_cmucat.par
+      setupDescription: Color color plot
+    </ColorColorPlot>
+  </Comparison>
 </edison>
+
