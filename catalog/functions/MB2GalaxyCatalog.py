@@ -19,6 +19,9 @@ class MB2GalaxyCatalog(GalaxyCatalog):
                         }
         self.quantities = {
                              'redshift':              self._get_stored_property,
+                             'positionX':             self._get_derived_property,  # Position returned in Mpc/h
+                             'positionY':             self._get_derived_property,
+                             'positionZ':             self._get_derived_property,
                              'mass':                  self._get_stored_property,
                              'stellar_mass':          self._get_derived_property,
                              'gas_mass':              self._get_stored_property,
@@ -32,7 +35,10 @@ class MB2GalaxyCatalog(GalaxyCatalog):
 
         self.derived      = {
                              #'stellar_mass':       (('mass_stellar', 1.e10), self._multiply)
-                             'stellar_mass':       (('stellar_mass', .701 * 1.e10), self._multiply)
+                             'stellar_mass':       (('stellar_mass', .701 * 1.e10), self._multiply),
+                             'positionX':       (('x', 1.e-3), self._multiply), # Position stored in kpc/h
+                             'positionY':       (('y', 1.e-3), self._multiply),
+                             'positionZ':       (('z', 1.e-3), self._multiply), 
                             }
 
         self.Ngals        = 0
@@ -109,4 +115,3 @@ class MB2GalaxyCatalog(GalaxyCatalog):
         """
         factor = factor_tuple[0]
         return propList * factor
-
