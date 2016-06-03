@@ -23,8 +23,9 @@
     <WpRpTest>
       setupName: catalog
       setupOptions: wprp.py
-      parfiles: <pathToBCC>/catalog/configs/wprp/liwhite_stanfordcat.par \
-                <pathToBCC>/catalog/configs/wprp/mb2_stanfordcat.par
+      parfiles: <pathToBCC>/catalog/configs/wprp/sdss_stanfordcat_liwhite.par \
+                <pathToBCC>/catalog/configs/wprp/sdss_stanfordcat_mb2.par \
+                <pathToBCC>/catalog/configs/wprp/sdss_cmucat_mb2.par
       setupDescription: wp(rp) comparison
     </WpRpTest>
     <amf>
