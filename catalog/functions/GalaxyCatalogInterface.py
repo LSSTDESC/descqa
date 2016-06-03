@@ -194,7 +194,6 @@ catalog_class_registry = {}
 files = glob.glob(os.path.join(DESCQACatalogFunctionDir, '*GalaxyCatalog.py'))
 
 for this_file in files:
-    print('importing %s' % this_file)
     class_name = os.path.basename(this_file).split('.')[0]
     module = importlib.import_module(class_name)
     catalog_class_registry[class_name] = getattr(module, class_name)
