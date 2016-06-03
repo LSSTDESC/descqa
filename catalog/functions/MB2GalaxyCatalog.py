@@ -2,7 +2,6 @@
 
 from GalaxyCatalogInterface import GalaxyCatalog
 import numpy as np
-import astropy.cosmology
 from astropy.table import Table
 import astropy.units as u
 
@@ -22,6 +21,7 @@ class MB2GalaxyCatalog(GalaxyCatalog):
                              'positionX':             self._get_derived_property,  # Position returned in Mpc/h
                              'positionY':             self._get_derived_property,
                              'positionZ':             self._get_derived_property,
+                             'velocityZ':             self._get_stored_property,   # Velocity returned in km/sec
                              'mass':                  self._get_stored_property,
                              'stellar_mass':          self._get_derived_property,
                              'gas_mass':              self._get_stored_property,
@@ -34,7 +34,6 @@ class MB2GalaxyCatalog(GalaxyCatalog):
                            }
 
         self.derived      = {
-                             #'stellar_mass':       (('mass_stellar', 1.e10), self._multiply)
                              'stellar_mass':       (('stellar_mass', .701 * 1.e10), self._multiply),
                              'positionX':       (('x', 1.e-3), self._multiply), # Position stored in kpc/h
                              'positionY':       (('y', 1.e-3), self._multiply),
@@ -65,6 +64,9 @@ class MB2GalaxyCatalog(GalaxyCatalog):
         if type(filters) is not dict:
             raise TypeError("construct_mask: filters must be given as dict")
         mask = np.ones((self.Ngals), dtype=np.bool_)
+        mask = mask & (np.isfinite(self.catalog['x'])) # filter out NaN positions from catalog
+        mask = mask & (np.isfinite(self.catalog['y']))
+        mask = mask & (np.isfinite(self.catalog['z']))
         for filter_name in filters.keys():
             if filter_name == 'zlo':
                 mask = mask & (filters[filter_name] < self.catalog['redshift'])
