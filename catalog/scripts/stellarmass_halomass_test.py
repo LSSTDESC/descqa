@@ -22,7 +22,7 @@ def gen_stellarmass_halomass(fn, zlo, zhi):
     gc = loadCatalog(fn)
     if gc:
         stellarmasses = gc.get_quantities("stellar_mass", {'zlo': zlo, 'zhi': zhi})
-        masses = (gc.get_quantities("mass", {'zlo': zlo, 'zhi': zhi}))*0.701*(1.0e10)
+        masses = (gc.get_quantities("mass", {'zlo': zlo, 'zhi': zhi}))
         nan_masses = np.isnan(masses)
         stellarmasses = stellarmasses[~nan_masses]
         masses = masses[~nan_masses]
@@ -76,5 +76,5 @@ mp.xlabel(r'$\log M_{halo}\ (M_\odot)$')
 mp.ylabel(r'Average $M_{stellarmass}\ (M_\odot)$')
 mp.savefig("stellarmass_halomass_test.png")
 
-write_file("theory_output_avgstellarmass.txt", sbinctr, savg_smass, savg_smassmin, savg_smassmax)
-write_file("plot_output_avgstellarmass.txt", obinctr, oavg_smass, oavg_smassmin, oavg_smassmax)
+write_file("validation_output_avgstellarmass.txt", sbinctr, savg_smass, savg_smassmin, savg_smassmax)
+write_file("catalog_output_avgstellarmass.txt", obinctr, oavg_smass, oavg_smassmin, oavg_smassmax)
