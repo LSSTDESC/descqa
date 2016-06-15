@@ -14,15 +14,6 @@ class _FunctionWrapper:
     def __call__(self, quantity, filters):
         return self._d[self._k]
 
-class _FunctionWrapperHack:
-    def __init__(self, d, k):
-        self._d = d
-        self._k = k
-    
-    def __call__(self, quantity, filters):
-        return 1.e-10 * self._d[self._k]
-
-
 class SHAMGalaxyCatalog(GalaxyCatalog):
     """
     SHAM galaxy catalog class.
@@ -43,7 +34,7 @@ class SHAMGalaxyCatalog(GalaxyCatalog):
                              'velocityX':    _FunctionWrapper(self._data, 'vx'),
                              'velocityY':    _FunctionWrapper(self._data, 'vy'),
                              'velocityZ':    _FunctionWrapper(self._data, 'vz'),
-                             'mass':    _FunctionWrapperHack(self._data, 'mvir'),
+                             'mass':         _FunctionWrapper(self._data, 'mvir'),
                            }
 
         return GalaxyCatalog.__init__(self, fn)
