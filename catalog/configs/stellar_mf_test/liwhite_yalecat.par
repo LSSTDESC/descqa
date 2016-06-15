@@ -1,0 +1,16 @@
+#!/usr/bin/env python
+
+import os
+
+sim_folder = os.environ['DESCQA_SIM_DATA_DIR']
+obs_folder = os.environ['DESCQA_OBS_DATA_DIR']
+
+sim_catalog = sim_folder + '/YaleCAM_rho-1.0_sigma0.2_z0.0.hdf5.yale'
+obs_catalog = obs_folder + '/LIWHITE/StellarMassFunction/tab.txt'
+obs_catalog_usecols = (0,4)
+
+#obs_catalog_avgstrm = obs_folder + '/MASSIVEBLACKII/StellarMassHaloMass/tab.txt'
+#obs_catalog_avgstrm_usecols = (0,2,3,4)
+
+zlo = 0.05
+zhi = 0.15
