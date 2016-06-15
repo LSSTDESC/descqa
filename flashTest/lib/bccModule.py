@@ -253,6 +253,8 @@ class BCCExecuter(ExecuterTemplate):
     for item in items:
       if re.match(".*?plot_output.*?.txt$", item):
         outputFiles.append(item)
+      if re.match(".*?catalog_output.*?.txt$", item):
+        outputFiles.append(item)
 
     # record number and names of output files in the run summary
     open(pathToRunSummary,"a").write("numOutputFiles: %s\n" % len(outputFiles))
@@ -264,6 +266,8 @@ class BCCExecuter(ExecuterTemplate):
     items = os.listdir(pathToRunDir)
     for item in items:
       if re.match(".*?theory_output.*?.txt$", item):
+        theoryFiles.append(item)
+      if re.match(".*?validation_output.*?.txt$", item):
         theoryFiles.append(item)
 
     # record number and names of theory/fit files in the run summary
