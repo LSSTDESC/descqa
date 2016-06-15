@@ -41,12 +41,12 @@ wp, wp_cov = projected_correlation(points, rbins, zmax, box_size, njack)
 rp = np.sqrt(rbins[1:]*rbins[:-1])
 wp_err = np.sqrt(np.diag(wp_cov))
 
-np.savetxt('plot_output.txt', np.vstack((rp, wp, wp_err)).T, header='rp wp wp_err')
+np.savetxt('catalog_output.txt', np.vstack((rp, wp, wp_err)).T, header='rp wp wp_err')
 l = plt.loglog(rp, wp, label=sim_name);
 plt.fill_between(rp, wp+wp_err, np.where(wp > wp_err, wp-wp_err, 1.0), alpha=0.3, color=l[0].get_color(), lw=0);
 
 rp, wp, wp_err = np.loadtxt(obs_catalog, unpack=True)
-np.savetxt('theory_output.txt', np.vstack((rp, wp, wp_err)).T, header='rp wp wp_err')
+np.savetxt('validation_output.txt', np.vstack((rp, wp, wp_err)).T, header='rp wp wp_err')
 l = plt.loglog(rp, wp, label=obs_name);
 plt.fill_between(rp, wp+wp_err, np.where(wp > wp_err, wp-wp_err, 1.0), alpha=0.3, color=l[0].get_color(), lw=0);
 

@@ -91,5 +91,5 @@ mp.xlabel(r'$\log M_*\ (M_\odot)$')
 mp.ylabel(r'$dN/dV\, d\log M\ ({\rm Mpc}^{-3}\,{\rm dex}^{-1})$')
 mp.savefig("stellar_mf_test.png")
 
-write_file("theory_output.txt", sbinctr, shist, shmin, shmax)
-write_file("plot_output.txt", obinctr, ohist, ohmin, ohmax)
+write_file("validation_output.txt", sbinctr, shist, shmin, shmax)
+write_file("catalog_output.txt", obinctr, ohist, ohmin, ohmax)
