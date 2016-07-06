@@ -212,10 +212,16 @@ if len(runs) > 0:
       if re.match(".*?_chk_\d+$", item):
         checkfileQueryStr = "target_file=%s" % os.path.join(run.fullPath, item)
         run.checkfiles.append(Checkfile(checkfileQueryStr, item))
-      elif re.match(".*?theory_output\d*\.txt", item):
+      elif re.match(".*?theory_output\d*\.txt", item):  # deprecated: name changed to validation_output
         pathToTheoryFile = os.path.join(run.fullPath, item)
         run.theoryFiles.append(Datfile(pathToTheoryFile, item))
-      elif re.match(".*?plot_output\d*\.txt", item):
+      elif re.match(".*?validation_output\d*\.txt", item): # new name for theory output
+        pathToTheoryFile = os.path.join(run.fullPath, item)
+        run.theoryFiles.append(Datfile(pathToTheoryFile, item))
+      elif re.match(".*?plot_output\d*\.txt", item):    # deprecated: name changed to catalog_output
+        pathToPlotFile = os.path.join(run.fullPath, item)
+        run.plotFiles.append(Datfile(pathToPlotFile, item))
+      elif re.match(".*?catalog_output\d*\.txt", item): # new name for plot output
         pathToPlotFile = os.path.join(run.fullPath, item)
         run.plotFiles.append(Datfile(pathToPlotFile, item))
       elif item.endswith(".dat"):

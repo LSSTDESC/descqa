@@ -1,6 +1,6 @@
 <body>
 <div id="top">
-  <span id="dateRef"><a class="everblue" href="../home.py">&lt;&lt;</a> [date]</span>
+  <span id="dateRef"><a class="everblue" href="../home.cgi">&lt;&lt;</a> [date]</span>
   <span id="links">[links]</span>
 </div>
 <div id="viewBuildsL">
@@ -81,7 +81,7 @@
     [else]
       <input type="checkbox" style="visibility: hidden">
     [end]
-    <a href="viewBuild.py?target_dir=[buildTuples.pathToBuild]">[buildTuples.build]</a>
+    <a href="viewBuild.cgi?target_dir=[buildTuples.pathToBuild]">[buildTuples.build]</a>
     [if-any buildTuples.failed]
       &nbsp;- <font color="red">[buildTuples.exitStatus]</font>
     [else]

@@ -1,0 +1,13 @@
+#!/usr/bin/env python
+
+import os
+
+sim_folder = os.environ['DESCQA_SIM_DATA_DIR']
+obs_folder = os.environ['DESCQA_OBS_DATA_DIR']
+
+sim_catalog = sim_folder + '/iHODcatalog_v0.h5.iHOD'
+obs_catalog = obs_folder + '/MASSIVEBLACKII/StellarMassFunction/tab.txt'
+obs_catalog_usecols = (0,1)
+
+zlo = 0.05
+zhi = 0.15

@@ -22,261 +22,275 @@ def rewriteFileMap(fileMapDict):
 
 # FlashTest's main results board showing red or green lights
 # for FlashTest invocations with failures or no failures.
+try:
 
-# first purge all files over 24 hours old from "tmp"
-purgeTmp.purgeTmp()
+    # first purge all files over 24 hours old from "tmp"
+    purgeTmp.purgeTmp()
 
-if os.path.isfile("config"):
-  configDict = littleParser.parseFile("config")
-  siteTitle = configDict.get("siteTitle", [])
+    if os.path.isfile("config"):
+      configDict = littleParser.parseFile("config")
+      siteTitle = configDict.get("siteTitle", [])
 
-print "Content-type: text/html\n"
-print "<head>"
-print "<title>%s</title>" % siteTitle
+    print "Content-type: text/html\n"
+    print "<head>"
+    print "<title>%s</title>" % siteTitle
 
-# next three lines ensure browsers don't cache, as caching can cause false
-# appearances of the "please wait while the table is being regenerated" if
-# the user uses the browser's "back" button.
-print "<meta http-equiv=\"cache-control\" content=\"no-cache\">"
-print "<meta http-equiv=\"Pragma\" content=\"no-cache\">"
-print "<meta http-equiv=\"Expires\" content=\"-1\">"
+    # next three lines ensure browsers don't cache, as caching can cause false
+    # appearances of the "please wait while the table is being regenerated" if
+    # the user uses the browser's "back" button.
+    print "<meta http-equiv=\"cache-control\" content=\"no-cache\">"
+    print "<meta http-equiv=\"Pragma\" content=\"no-cache\">"
+    print "<meta http-equiv=\"Expires\" content=\"-1\">"
 
-print open("style.css","r").read()
-print "<script src=\"lib/vanishPleaseWait.js\"></script>"
-print "<script src=\"lib/statsWindow.js\"></script>"
-print "<script src=\"lib/redirect.js\"></script>"
-print "</head>"
+    print open("style.css","r").read()
+    print "<script src=\"lib/vanishPleaseWait.js\"></script>"
+    print "<script src=\"lib/statsWindow.js\"></script>"
+    print "<script src=\"lib/redirect.js\"></script>"
+    print "</head>"
 
-# make sure website has write permissions in this folder
-cwd = os.getcwd()
-if not os.access(cwd, os.W_OK):
-  msg = ("The web-server does not have write permissions in directory \"%s\"<br>" % cwd +
-         "This permission must be granted for FlashTestView to function correctly.")
-  abort(msg)
 
-# Generate fileMapDict from "fileMap", a text file that maps
-# paths to output directories to their associated ".pick" files.
-if os.path.isfile(fileMap):
-  # Paul, uncomment the lines below and delete this line when you've fixed the file permissions
-  if not os.access(fileMap, os.R_OK + os.W_OK):
-    msg = ("The web-server does not have read and/or write permissions on file \"%s\"<br>" % os.path.join(cwd, fileMap) +
-           "This permission must be granted for FlashTestView to function correctly.")
-    abort(msg)
-  else:
-    fileMapDict = littleParser.parseFile(fileMap)
-else:
-  fileMapDict = {}
+    # make sure website has write permissions in this folder
+    cwd = os.getcwd()
+    if not os.access(cwd, os.W_OK):
+      msg = ("The web-server does not have write permissions in directory \"%s\"<br>" % cwd +
+             "This permission must be granted for FlashTestView to function correctly.")
+      abort(msg)
 
-if os.path.isfile("config"):
-  configDict = littleParser.parseFile("config")
-  pathsToOutdirs = configDict.get("pathToOutdir", [])  # returns a string if only one value
-                                                       # associated with key, else a list
+    # Generate fileMapDict from "fileMap", a text file that maps
+    # paths to output directories to their associated ".pick" files.
+    if os.path.isfile(fileMap):
+      # Paul, uncomment the lines below and delete this line when you've fixed the file permissions
+      if not os.access(fileMap, os.R_OK + os.W_OK):
+        msg = ("The web-server does not have read and/or write permissions on file \"%s\"<br>" % os.path.join(cwd, fileMap) +
+               "This permission must be granted for FlashTestView to function correctly.")
+        abort(msg)
+      else:
+        fileMapDict = littleParser.parseFile(fileMap)
+    else:
+      fileMapDict = {}
 
-  # Make 'pathToOutdir' into a list if it's not one already.
-  # If the list has more than one element, we'll eventually
-  # use it to make the drop-down menu that lets the user
-  # visualize different collections of FlashTest data
-  if not isinstance(pathsToOutdirs, list):
-    pathsToOutdirs = [pathsToOutdirs]
+    if os.path.isfile("config"):
+      configDict = littleParser.parseFile("config")
+      pathsToOutdirs = configDict.get("pathToOutdir", [])  # returns a string if only one value
+                                                           # associated with key, else a list
 
-  # delete any .pick files whose corresponding path
-  # no longer appears in 'configDict' and eliminate
-  # the appropriate entry in 'fileMapDict'
-  fileMapNeedsRewrite = False
-  for key in fileMapDict.keys()[:]:
-    if key not in pathsToOutdirs:
+      # Make 'pathToOutdir' into a list if it's not one already.
+      # If the list has more than one element, we'll eventually
+      # use it to make the drop-down menu that lets the user
+      # visualize different collections of FlashTest data
+      if not isinstance(pathsToOutdirs, list):
+        pathsToOutdirs = [pathsToOutdirs]
+
+      # delete any .pick files whose corresponding path
+      # no longer appears in 'configDict' and eliminate
+      # the appropriate entry in 'fileMapDict'
+      fileMapNeedsRewrite = False
       try:
-        os.remove(fileMapDict[key])
-      except:
-        pass
-      del fileMapDict[key]
-      fileMapNeedsRewrite = True
+          for key in fileMapDict.keys()[:]:
+            if key not in pathsToOutdirs:
+              try:
+                os.remove(fileMapDict[key])
+              except:
+                pass
+              del fileMapDict[key]
+              fileMapNeedsRewrite = True
+      except Exception,e:
+        print "exception: ", e
 
-  if fileMapNeedsRewrite:
-    rewriteFileMap(fileMapDict)
+      if fileMapNeedsRewrite:
+        rewriteFileMap(fileMapDict)
 
-else:
-  configDict = {}
-  pathsToOutdirs = []
-
-pickFile = ""
-form = cgi.FieldStorage()
-pathToTargetDir = form.getvalue("target_dir")
-thisPageNum = form.getvalue("page")
-
-if pathToTargetDir:
-  if configDict:
-    if pathToTargetDir in pathsToOutdirs:
-      if not os.path.isdir(pathToTargetDir):
-        if fileMapDict.has_key(pathToTargetDir):
-          del fileMapDict[pathToTargetDir]
-          rewriteFileMap(fileMapDict)
-        abort("\"%s\" does not exist or is not a directory." % pathToTargetDir)
     else:
-      abort("Directory \"%s\" not listed as a value for key \"pathToOutdir\" in \"config\".<br>" % pathToTargetDir +
-            "Add this directory to \"config\" and reload this page.")
-  else:
-    abort("File \"config\" either does not exist or does not contain any values.<br>"+
-          "Create a \"config\" file if necessary and add the following text:<br><br>" +
-          "pathToOutdir: %s<br><br>" % pathToTargetDir +
-          "Then reload this page.")
-else:
-  if configDict:
-    if pathsToOutdirs:
-      pathToTargetDir = pathsToOutdirs[0]
-      if not os.path.isdir(pathToTargetDir):
-        if fileMapDict.has_key(pathToTargetDir):
-          del fileMapDict[pathToTargetDir]
-          rewriteFileMap(fileMapDict)
-        abort("\"%s\" as listed in \"config\"<br>" % pathToTargetDir +
-              "does not exist or is not a directory.")
-    else:
-      abort("You must add at least one value to the key \"pathToOutdir\" in \"config\"<br>" +
-            "where that value is a path to a top-level FlashTest output directory.")
-  else:
-    abort("File \"config\" either does not exist or does not contain any values.<br>" +
-          "Create a \"config\" file if necessary and add the following text:<br><br>" +
-          "pathToOutdir: [path/to/outdir]<br><br>" +
-          "where [path/to/outdir] is an absolute path to a top-level FlashTest output directory.<br>" +
-          "Then reload this page.")
+      configDict = {}
+      pathsToOutdirs = []
 
+    pickFile = ""
+    form = cgi.FieldStorage()
+    pathToTargetDir = form.getvalue("target_dir")
+    thisPageNum = form.getvalue("page")
+
+    if pathToTargetDir:
+      if configDict:
+        if pathToTargetDir in pathsToOutdirs:
+          if not os.path.isdir(pathToTargetDir):
+            if fileMapDict.has_key(pathToTargetDir):
+              del fileMapDict[pathToTargetDir]
+              rewriteFileMap(fileMapDict)
+            abort("\"%s\" does not exist or is not a directory." % pathToTargetDir)
+        else:
+          abort("Directory \"%s\" not listed as a value for key \"pathToOutdir\" in \"config\".<br>" % pathToTargetDir +
+                "Add this directory to \"config\" and reload this page.")
+      else:
+        abort("File \"config\" either does not exist or does not contain any values.<br>"+
+              "Create a \"config\" file if necessary and add the following text:<br><br>" +
+              "pathToOutdir: %s<br><br>" % pathToTargetDir +
+              "Then reload this page.")
+    else:
+      if configDict:
+        if pathsToOutdirs:
+          pathToTargetDir = pathsToOutdirs[0]
+          if not os.path.isdir(pathToTargetDir):
+            if fileMapDict.has_key(pathToTargetDir):
+              del fileMapDict[pathToTargetDir]
+              rewriteFileMap(fileMapDict)
+            abort("\"%s\" as listed in \"config\"<br>" % pathToTargetDir +
+                  "does not exist or is not a directory.")
+        else:
+          abort("You must add at least one value to the key \"pathToOutdir\" in \"config\"<br>" +
+                "where that value is a path to a top-level FlashTest output directory.")
+      else:
+        abort("File \"config\" either does not exist or does not contain any values.<br>" +
+              "Create a \"config\" file if necessary and add the following text:<br><br>" +
+              "pathToOutdir: [path/to/outdir]<br><br>" +
+              "where [path/to/outdir] is an absolute path to a top-level FlashTest output directory.<br>" +
+          "Then reload this page.")
+except:
+    import traceback
+    traceback.print_exc(file=sys.stdout)
 
 # At this point we know that 'pathToTargetDir' is defined, that it is
 # an extant directory, and that that directory is listed in "config"
-
-if fileMapDict.has_key(pathToTargetDir):
-  pickFile = fileMapDict[pathToTargetDir]
-  bigBoard = pickle.load(open(pickFile))
-  if bigBoard.isOutOfDate():
-    print "<body onLoad=\"vanishPleaseWait(); statsWindowInit()\">"
-    print "<div id=\"pleasewait\">"
-    print "FlashTest has generated new data since the last time this page was viewed.<br>"
-    print "Please wait while the table is being regenerated."
-    print "</div>"
-    sys.stdout.flush()
-    bigBoard.quickRegenerate()
-    pickle.dump(bigBoard, open(pickFile, "w"))
-  else:
-    print "<body onLoad=\"statsWindowInit()\">"
-else:
-  print "<body onLoad=\"vanishPleaseWait(); statsWindowInit()\">"
-  print "<div id=\"pleasewait\">"
-  print "Please wait while FlashTestView generates a table for \"%s\"." % pathToTargetDir
-  print "</div>"
-  sys.stdout.flush()
-  bigBoard = invocations.BigBoard(pathToTargetDir)
-  newFile, newFileName = tempfile.mkstemp(suffix=".pick", prefix="", dir=os.getcwd())
-  os.chmod(newFileName, 256 + 32 + 4 + 128 + 16)  # make 'newFile' readable by all,
-                                                  # writeable by owner and group
-  pickle.dump(bigBoard, os.fdopen(newFile, "w"))
-  fileMapDict[pathToTargetDir] = newFileName
-  rewriteFileMap(fileMapDict)
-
-# At this point, 'bigBoard' exists, and is updated.
-
-# floating div which will be populated with the stats
-# from one invocation when user hovers over a datestamp
-print "<div id=\"statsWindow\">"
-print "<div id=\"statsHeader\"></div>"
-print "<div id=\"statsBody\"></div>"
-print "</div>"
-
-# start main page
-print "<div id=\"readmeDiv\">"
-print "<a href=\"/website/codesupport/flash_howtos/home.py?submit=flashTest-HOWTO.txt\">FlashTest HOW-TO</a>"
-print "</div>"
-print "<div class=\"clearBlock\">&nbsp;</div>"
-print "<div id=\"titleDiv\">"
-print "<h1>FlashTest Invocations</h1>"
-print "</div>"
-
-# make bar with navigation to other "pages" of results.
-invocationsPerPage = int(configDict.get("invocationsPerPage", 50))
-
-numRows = bigBoard.numRows
-
-if numRows > invocationsPerPage:
-  lastPageNum = ((numRows-1) / invocationsPerPage) + 1
-  try:
-    thisPageNum = int(thisPageNum)
-  except:
-    # No page number in query-string, so 'thisPageNum' was None.
-    # Either that or some joker entered a non-numerical value in URL bar.
-    thisPageNum = lastPageNum
-  else:
-    if thisPageNum < 1:
-      # some joker entered '0', probably
-      thisPageNum = 1
-    elif thisPageNum > lastPageNum:
-      # some joker entered something too high
-      thisPageNum = lastPageNum
-
-  # This is tricky because the *smaller* the value of 'thisPageNum',
-  # the further we reach back in time, and the *greater* the indices
-  # of the invocations we need to examine. Therefore, to help with the
-  # arithmetic, we create 'reversedPageNum', whose value gets higher
-  # with the indices (but not the dates) of the invocations.
-  reversedPageNum = (lastPageNum + 1) - thisPageNum
-
-  print "<div class=\"clearBlock\">&nbsp;</div>"
-  print "<div id=\"pagesDiv\">"
-  if thisPageNum > 1:
-    # print a "<<" (previous page link)
-    endRow  = bigBoard.getInvocationName(reversedPageNum*invocationsPerPage)
-    startRow = bigBoard.getInvocationName(((reversedPageNum+1)*invocationsPerPage)-1)
-    print ("<a class=\"everblue\" " +
-           "href=\"/website/testsuite/home.py?target_dir=%s&page=%s\" " % (pathToTargetDir, thisPageNum-1) +
-           "title=\"%s thru %s\">&lt;&lt;</a>" % (startRow, endRow))
-  else:
-    # print a "dummy link"
-    print "<span style=\"color: gray\">&lt;&lt;</span>"
-
-  for i in range(1, lastPageNum + 1):
-    if i == thisPageNum:
-      print "<span style=\"color: gray\">%s</span>" % i # not a link, since we're already on this page
+try:
+    if fileMapDict.has_key(pathToTargetDir):
+      pickFile = fileMapDict[pathToTargetDir]
+      bigBoard = pickle.load(open(pickFile))
+      if bigBoard.isOutOfDate():
+        print "<body onLoad=\"vanishPleaseWait(); statsWindowInit()\">"
+        print "<div id=\"pleasewait\">"
+        print "FlashTest has generated new data since the last time this page was viewed.<br>"
+        print "Please wait while the table is being regenerated."
+        print "</div>"
+        sys.stdout.flush()
+        bigBoard.quickRegenerate()
+        pickle.dump(bigBoard, open(pickFile, "w"))
+      else:
+        print "<body onLoad=\"statsWindowInit()\">"
     else:
-      # see comment regarding 'reversedPageNum' above
-      reversedI = (lastPageNum + 1) - i
-      endRow  = bigBoard.getInvocationName((reversedI-1)*invocationsPerPage)
-      startRow = bigBoard.getInvocationName((reversedI*invocationsPerPage)-1)
-      print ("<a class=\"everblue\" " +
-             "href=\"/website/testsuite/home.py?target_dir=%s&page=%s\" " % (pathToTargetDir, i) +
-             "title=\"%s thru %s\">%s</a>" % (startRow, endRow, i))
+      print "table being generated"
+      print "<body onLoad=\"vanishPleaseWait(); statsWindowInit()\">"
+      print "<div id=\"pleasewait\">"
+      print "Please wait while FlashTestView generates a table for \"%s\"." % pathToTargetDir
+      print "</div>"
+      sys.stdout.flush()
+      bigBoard = invocations.BigBoard(pathToTargetDir)
+      newFile, newFileName = tempfile.mkstemp(suffix=".pick", prefix="", dir=os.getcwd())
+      os.chmod(newFileName, 256 + 32 + 4 + 128 + 16)  # make 'newFile' readable by all,
+                                                      # writeable by owner and group
+      pickle.dump(bigBoard, os.fdopen(newFile, "w"))
+      fileMapDict[pathToTargetDir] = newFileName
+      rewriteFileMap(fileMapDict)
 
-  if thisPageNum < lastPageNum:
-    # print a ">>" (next page link)
-    endRow  = bigBoard.getInvocationName((reversedPageNum-2)*invocationsPerPage)
-    startRow = bigBoard.getInvocationName(((reversedPageNum-1)*invocationsPerPage)-1)
-    print ("<a class=\"everblue\" " +
-           "href=\"/website/testsuite/home.py?target_dir=%s&page=%s\" " % (pathToTargetDir, thisPageNum+1) +
-           "title=\"%s thru %s\">&gt;&gt;</a>" % (startRow, endRow))
-  else:
-    # print a "dummy link"
-    print "<span style=\"color: gray\">&gt;&gt;</span>"
+    # At this point, 'bigBoard' exists, and is updated.
 
-  print "</div>"
+    # floating div which will be populated with the stats
+    # from one invocation when user hovers over a datestamp
+    print "<div id=\"statsWindow\">"
+    print "<div id=\"statsHeader\"></div>"
+    print "<div id=\"statsBody\"></div>"
+    print "</div>"
 
-  startRow = (reversedPageNum - 1) * invocationsPerPage
-  endRow   = min((startRow + invocationsPerPage - 1), numRows-1)
-else:
-  startRow = 0
-  endRow   = numRows-1
+    # start main page
+    print "<div id=\"readmeDiv\">"
+    print "<a href=\"/website/codesupport/flash_howtos/home.py?submit=flashTest-HOWTO.txt\">FlashTest HOW-TO</a>"
+    print "</div>"
+    print "<div class=\"clearBlock\">&nbsp;</div>"
+    print "<div id=\"titleDiv\">"
+    print "<h1>FlashTest Invocations</h1>"
+    print "</div>"
 
-# generate drop-down menu for easy switching between
-# FlashTest output directories if more than 1 available.
-if len(pathsToOutdirs) > 1:
-  print "<div id=\"menuDiv\">"
-  print "<select onchange=\"javascript: redirect(this)\">"
-  print "<option>&nbsp;</option>"
-  for pathToOutdir in pathsToOutdirs:
-    if pathToOutdir != pathToTargetDir:
-      print "<option value=\"%s\">%s</option>" % (pathToOutdir, pathToOutdir)
-  print "</select>"
-  print "</div>"
+    # make bar with navigation to other "pages" of results.
+    invocationsPerPage = int(configDict.get("invocationsPerPage", 50))
 
-print "<div class=\"clearBlock\">&nbsp;</div>"
+    numRows = bigBoard.numRows
 
-bigBoard.spewHtml(sys.stdout, startRow, endRow)
+    if numRows > invocationsPerPage:
+      lastPageNum = ((numRows-1) / invocationsPerPage) + 1
+      try:
+        thisPageNum = int(thisPageNum)
+      except:
+        # No page number in query-string, so 'thisPageNum' was None.
+        # Either that or some joker entered a non-numerical value in URL bar.
+        thisPageNum = lastPageNum
+      else:
+        if thisPageNum < 1:
+          # some joker entered '0', probably
+          thisPageNum = 1
+        elif thisPageNum > lastPageNum:
+          # some joker entered something too high
+          thisPageNum = lastPageNum
 
-print "</body>"
-print "</html>"
+      # This is tricky because the *smaller* the value of 'thisPageNum',
+      # the further we reach back in time, and the *greater* the indices
+      # of the invocations we need to examine. Therefore, to help with the
+      # arithmetic, we create 'reversedPageNum', whose value gets higher
+      # with the indices (but not the dates) of the invocations.
+      reversedPageNum = (lastPageNum + 1) - thisPageNum
+
+      print "<div class=\"clearBlock\">&nbsp;</div>"
+      print "<div id=\"pagesDiv\">"
+      if thisPageNum > 1:
+        # print a "<<" (previous page link)
+        endRow  = bigBoard.getInvocationName(reversedPageNum*invocationsPerPage)
+        startRow = bigBoard.getInvocationName(((reversedPageNum+1)*invocationsPerPage)-1)
+        print ("<a class=\"everblue\" " +
+               "href=\"/website/testsuite/home.py?target_dir=%s&page=%s\" " % (pathToTargetDir, thisPageNum-1) +
+               "title=\"%s thru %s\">&lt;&lt;</a>" % (startRow, endRow))
+      else:
+        # print a "dummy link"
+        print "<span style=\"color: gray\">&lt;&lt;</span>"
+
+      for i in range(1, lastPageNum + 1):
+        if i == thisPageNum:
+          print "<span style=\"color: gray\">%s</span>" % i # not a link, since we're already on this page
+        else:
+          # see comment regarding 'reversedPageNum' above
+          reversedI = (lastPageNum + 1) - i
+          endRow  = bigBoard.getInvocationName((reversedI-1)*invocationsPerPage)
+          startRow = bigBoard.getInvocationName((reversedI*invocationsPerPage)-1)
+          print ("<a class=\"everblue\" " +
+                 "href=\"/website/testsuite/home.py?target_dir=%s&page=%s\" " % (pathToTargetDir, i) +
+                 "title=\"%s thru %s\">%s</a>" % (startRow, endRow, i))
+
+      if thisPageNum < lastPageNum:
+        # print a ">>" (next page link)
+        endRow  = bigBoard.getInvocationName((reversedPageNum-2)*invocationsPerPage)
+        startRow = bigBoard.getInvocationName(((reversedPageNum-1)*invocationsPerPage)-1)
+        print ("<a class=\"everblue\" " +
+               "href=\"/website/testsuite/home.py?target_dir=%s&page=%s\" " % (pathToTargetDir, thisPageNum+1) +
+               "title=\"%s thru %s\">&gt;&gt;</a>" % (startRow, endRow))
+      else:
+        # print a "dummy link"
+        print "<span style=\"color: gray\">&gt;&gt;</span>"
+
+      print "</div>"
+
+      startRow = (reversedPageNum - 1) * invocationsPerPage
+      endRow   = min((startRow + invocationsPerPage - 1), numRows-1)
+    else:
+      startRow = 0
+      endRow   = numRows-1
+
+    # generate drop-down menu for easy switching between
+    # FlashTest output directories if more than 1 available.
+    if len(pathsToOutdirs) > 1:
+      print "<div id=\"menuDiv\">"
+      print "<select onchange=\"javascript: redirect(this)\">"
+      print "<option>&nbsp;</option>"
+      for pathToOutdir in pathsToOutdirs:
+        if pathToOutdir != pathToTargetDir:
+          print "<option value=\"%s\">%s</option>" % (pathToOutdir, pathToOutdir)
+      print "</select>"
+      print "</div>"
+
+    print "<div class=\"clearBlock\">&nbsp;</div>"
+
+    bigBoard.spewHtml(sys.stdout, startRow, endRow)
+
+    print "</body>"
+    print "</html>"
+except Exception,e:
+    pass
+    import traceback
+    traceback.print_exc(file=sys.stdout)
+    print "Exception: ", e
+

@@ -24,9 +24,10 @@ if (targetFile.find(pathToOutdir) == 0) and \
   print "<html><title></title><body>"
   if targetFile:
     try:
-      print "<img src=\"data:image/png;base64,{0}\" width=\"100%\">".format(open(targetFile, 'rb').read().encode("base64").replace("\n", ""))
+      #print "<img src=\"data:image/png;base64,{0}\" width=\"100%\">".format(open(targetFile, 'rb').read().encode("base64").replace("\n", ""))
+      print "<img src=\"data:image/png;base64,%s\" width=\"100%%\">" % (open(targetFile, 'rb').read().encode("base64").replace("\n", ""))
     except Exception, e:
-      print "Error opening file<br>"
+      print "Error opening file<br>", targetFile
       print e
   print "</body></html>"
 

@@ -53,7 +53,7 @@ if targetFile:
   else:
     print "Content-type: text/html\n"
     print "<html><title></title><body>"
-    print "Access denied"
+    print "Access denied",pathToOutdir,targetFile
     print "</body></html>"
 else:
   print "Content-type: text/html\n"
