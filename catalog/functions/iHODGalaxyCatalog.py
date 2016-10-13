@@ -19,11 +19,12 @@ class iHODGalaxyCatalog(GalaxyCatalog):
                         }
         self.quantities = {
                              'redshift':          self._get_stored_property,
-                             'x':                 self._get_stored_property,
-                             'y':                 self._get_stored_property,
-                             'z':                 self._get_stored_property,
-                             'mshp':              self._get_stored_property,
+                             'positionX':                 self._get_stored_property,
+                             'positionY':                 self._get_stored_property,
+                             'positionZ':                 self._get_stored_property,
+                             'velocityZ':                 self._get_stored_property,
                              'stellar_mass':      self._get_stored_property,
+                             'mass':      self._get_stored_property,
                            }
 
         self.Ngals        = 0

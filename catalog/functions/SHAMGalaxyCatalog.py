@@ -10,7 +10,7 @@ class _FunctionWrapper:
     def __init__(self, d, k):
         self._d = d
         self._k = k
-    
+
     def __call__(self, quantity, filters):
         return self._d[self._k]
 
