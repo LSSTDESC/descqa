@@ -44,7 +44,7 @@ class MB2GalaxyCatalog(GalaxyCatalog):
         self.Ngals        = 0
         self.sky_area     = 4.*np.pi*u.sr   # all sky by default
         self.lightcone    = False
-        self.box_size     = 100.0
+        self.box_size     = 100.0 / self.h
         return GalaxyCatalog.__init__(self, fn)
 
     def load(self, fn):
