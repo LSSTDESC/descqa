@@ -35,11 +35,11 @@ class MB2GalaxyCatalog(GalaxyCatalog):
                            }
 
         self.derived      = {
-                             'mass':            (('mass', self.h * 1.e10), self._multiply),
-                             'stellar_mass':    (('stellar_mass', self.h * 1.e10), self._multiply),
-                             'positionX':       (('x', self.h * 1.e-3), self._multiply), # Position stored in kpc/h
-                             'positionY':       (('y', self.h * 1.e-3), self._multiply),
-                             'positionZ':       (('z', self.h * 1.e-3), self._multiply), 
+                             'mass':            (('mass', 1.e10 / self.h), self._multiply),
+                             'stellar_mass':    (('stellar_mass', 1.e10 / self.h), self._multiply),
+                             'positionX':       (('x', 1.e-3 / self.h), self._multiply), # Position stored in kpc/h
+                             'positionY':       (('y', 1.e-3 / self.h), self._multiply),
+                             'positionZ':       (('z', 1.e-3 / self.h), self._multiply), 
                             }
         self.Ngals        = 0
         self.sky_area     = 4.*np.pi*u.sr   # all sky by default
