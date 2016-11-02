@@ -30,6 +30,7 @@ class SAGGalaxyCatalog(GalaxyCatalog):
 
     def __init__(self, fn=None):
         self.type_ext   = 'hdf5'
+        self.box_size   = 100.0
         self.filters    = { 'zlo':          True,
                             'zhi':          True
                           }
