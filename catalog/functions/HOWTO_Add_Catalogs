@@ -155,3 +155,45 @@ Finally, once you are happy with YourGalaxyCatalog.py, place it into the
 catalog/functions subdirectory of the descqa git repository. It will then
 automatically be found and imported by the loadCatalog convenience function
 defined in GalaxyCatalogInterface.py.
+
+ADDED NOTES REGARDING TESTS AND UNITS
+
+Your catalog can have any variable names that you choose and any units that you choose.
+If your names and/or units do not match the names and units EXPECTED in the tests then you need to 
+add certain lines of code to your reader, as described below.
+
+For each name that doesn't match the name and/or units in your catalog add:
+
+in the section defining self.quantities  = {
+
+           'name':          self._get_derived_property,
+
+in the section defining self.derived     = {
+           'name':      ('catalog_name',       conversion),
+
+where conversion is the required operation to convert the catalog_name to the expected name and correct units. Examples are:
+
+           'stellar_mass':      ('log_stellarmass', self._unlog10),
+           'mass':              ('log_halomass',  self._unlog10),
+           'mass':            (('mass', .701 * 1.e10), self._multiply)
+           'positionX':       (('x', 1.e-3), self._multiply), # Position stored in kpc/h
+
+Here is a table of the tests, expected names and expected units
+
+TEST                           QUANTITY      	  EXPECTED NAM	     EXPECTED UNITS
+Stellar mass function	       stellar mass  	  stellar_mass	     M_sun
+
+Halo mass function	       halo mass     	  mass 		     M_sun
+
+Stellar mass versus halo mass  halo mass     	  mass               M_sun
+                               stellar mass  	  stellar_mass       M_sun
+
+2-pt Correlation function      x position    	  positionX	     Mpc
+       		 	       y position    	  positionY	     Mpc
+			       z position    	  positionZ	     Mpc
+
+color-color distribution       SDSS u rest-frame  SDSS:u:rest:	     AB magnitude
+	    		       SDSS g rest-frame  SDSS:g:rest:	     AB magnitude
+			       SDSS r rest-frame  SDSS:r:rest:	     AB magnitude
+			       SDSS i rest-frame  SDSS:i:rest:	     AB magnitude
+			       SDSS z rest-frame  SDSS:z:rest:	     AB magnitude
