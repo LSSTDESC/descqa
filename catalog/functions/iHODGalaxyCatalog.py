@@ -18,19 +18,19 @@ class iHODGalaxyCatalog(GalaxyCatalog):
                           'zhi':                   True
                         }
         self.quantities = {
-                             'redshift':          self._get_stored_property,
-                             'x':                 self._get_stored_property,
-                             'y':                 self._get_stored_property,
-                             'z':                 self._get_stored_property,
-                             'mshp':              self._get_stored_property,
+                             'positionX':                 self._get_stored_property,
+                             'positionY':                 self._get_stored_property,
+                             'positionZ':                 self._get_stored_property,
+                             'velocityZ':                 self._get_stored_property,
                              'stellar_mass':      self._get_stored_property,
+                             'mass':      self._get_stored_property,
                            }
 
         self.Ngals        = 0
         self.sky_area     = 4.*np.pi*u.sr   # all sky by default
         self.cosmology    = None
-	self.lightcone    = False
-	self.box_size     = 100.0
+        self.lightcone    = False
+        self.box_size     = 100.0 / 0.701
         return GalaxyCatalog.__init__(self, fn)
 
     def load(self, fn):
@@ -38,7 +38,12 @@ class iHODGalaxyCatalog(GalaxyCatalog):
         Given a catalog path, attempt to read the catalog and set up its
         internal data structures.
         """
-        self.catalog = self._read_rec_from_hdf5(fn, group='galaxy')
+        self.catalog = self._read_rec_from_hdf5(fn, group='galaxy')   
+        # turam: Add placeholder redshift; confirm correctness
+        self.redshift = (1.0 / 0.941176) - 1.0
+        # turam: Confirm cosmology is correct
+        self.cosmology = astropy.cosmology.FlatLambdaCDM(H0=70.1, Om0=0.275, Ob0=0.046)
+
         self.Ngals = len(self.catalog)
         return self
 
@@ -52,9 +57,9 @@ class iHODGalaxyCatalog(GalaxyCatalog):
         mask = np.ones((self.Ngals), dtype=np.bool_)
         for filter_name in filters.keys():
             if filter_name == 'zlo':
-                mask = mask & (filters[filter_name] < self.catalog['redshift'])
+                mask = mask & (filters[filter_name] < self.redshift)
             elif filter_name == 'zhi':
-                mask = mask & (filters[filter_name] > self.catalog['redshift'])
+                mask = mask & (filters[filter_name] > self.redshift)
         return mask
 
     def _get_stored_property(self, quantity, filters):
