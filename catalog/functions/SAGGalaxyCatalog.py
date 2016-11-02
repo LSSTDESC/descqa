@@ -29,20 +29,33 @@ class SAGGalaxyCatalog(GalaxyCatalog):
     """
 
     def __init__(self, fn=None):
-        self.type_ext   = 'hdf5'
+        self.type_ext   = 'sag'
         self.filters    = { 'zlo':          True,
                             'zhi':          True
                           }
         self.quantities = { 'redshift'    : self._get_stored_property,
                             'M_star_disk' : self._get_stored_property,
                             'M_star_bulge': self._get_stored_property,
+                            'X'           : self._get_stored_property,
+                            'Y'           : self._get_stored_property,
+                            'Z'           : self._get_stored_property,
                             'stellar_mass': self._get_derived_property,
+                            'positionX'   : self._get_derived_property,
+                            'positionY'   : self._get_derived_property,
+                            'positionZ'   : self._get_derived_property,
+                            'velocityZ'   : self._get_derived_property,
                           }
 
-        self.derived    = {'stellar_mass' : ('M_star_disk', 'M_star_bulge', self._add)} 
+        self.derived    = { 'stellar_mass' : ('M_star_disk', 'M_star_bulge', self._add),
+                            'positionX'   : 'X',
+                            'positionY'   : 'Y',
+                            'positionZ'   : 'Z',
+                            'velocityZ'   : 'Vz',
+                          } 
         self.catalog    = {}
         self.sky_area   = 4.0 * np.pi * u.sr # All sky by default
         self.cosmology = None
+        self.lightcone = False
         return GalaxyCatalog.__init__(self, fn)
 
     def load(self, fn):
@@ -51,10 +64,13 @@ class SAGGalaxyCatalog(GalaxyCatalog):
         internal data structures.
         """
         self.catalog = self.SAGcollection(fn)
+        self.box_size = float(self.catalog.boxSizeMpc)
         
-        self.cosmology = astropy.cosmology.LambdaCDM(H0 = self.catalog.readAttr('H0')[0],
+        self.cosmology = astropy.cosmology.LambdaCDM(H0 = self.catalog.readAttr('Hubble_h')[0],
                                                      Om0 = self.catalog.readAttr('Omega')[0],
                                                      Ode0 = self.catalog.readAttr('OmegaLambda')[0])
+        # turam added: use first redshift
+        self.redshift = self.catalog.redshift[0]
 
         return self
 
@@ -73,26 +89,33 @@ class SAGGalaxyCatalog(GalaxyCatalog):
         in the catalog but can be computed from properties that are via
         a simple function call.
         """
-        zrange = [filters['zlo'], filters['zhi']]
+        if 'zlo' in filters.keys() and 'zhi' in filters.keys():
+            zrange = [filters['zlo'], filters['zhi']]
+        else:
+            zrange = None
         stored_qty_rec = self.derived[quantity]
-        stored_qty_name_1 = stored_qty_rec[0]
-        stored_qty_name_2 = stored_qty_rec[1]
-        stored_qty_func = stored_qty_rec[2]
-        qty_array_1 = self.catalog.readDataset(dsname=stored_qty_name_1,\
-                                               zrange=zrange)
-        qty_array_2 = self.catalog.readDataset(dsname=stored_qty_name_2,\
-                                               zrange=zrange)
+        if type(stored_qty_rec) is tuple:
+          stored_qty_name_1 = stored_qty_rec[0]
+          stored_qty_name_2 = stored_qty_rec[1]
+          stored_qty_func = stored_qty_rec[2]
+          qty_array_1 = self.catalog.readDataset(dsname=stored_qty_name_1,\
+                                                 zrange=zrange)
+          qty_array_2 = self.catalog.readDataset(dsname=stored_qty_name_2,\
+                                                 zrange=zrange)
 
-        propList = [qty_array_1, qty_array_2]
+          propList = [qty_array_1, qty_array_2]
 
-        return stored_qty_func(propList=propList)
+          return stored_qty_func(propList=propList)
+        else:
+          return self.catalog.readDataset(dsname=stored_qty_rec,\
+                                                 zrange=zrange)
 
     def _add(self, propList):
         """
         Routine that returns element-wise addition of two arrays.
         """
-        return sum(propList)
-
+        x = sum(propList)
+        return x
 
     class SAGcollection():
         """
@@ -112,7 +135,12 @@ class SAGGalaxyCatalog(GalaxyCatalog):
             self.boxSizeMpc = 0
             self.zminidx    = -1
             import os
-            filename = os.path.split(os.path.split(filename)[0])[0] 
+            # turam : Disable this path munging: for DESCQA we are passing in the 
+            #         directory with a ".sag" extension to trigger the reader instead
+            #         of the name of an individual hdf5 file; for example:
+            #         filename was: sag_directory/snapshot/file.hdf5
+            #         filename under DESCQA: sag_directory
+            #filename = os.path.split(os.path.split(filename)[0])[0] 
             print(filename)
 
             if 0 != boxSizeMpc:
@@ -154,7 +182,6 @@ class SAGGalaxyCatalog(GalaxyCatalog):
             for i in range(self.nz):
                 self.redshift.append(float(self.dataList[i].readAttr('Redshift')))
 
-
             # If the outputs are not ordered in subfolders, then they are mixed up:
                 filesindir = 0
                 if 0 == self.nz:
@@ -186,7 +213,6 @@ class SAGGalaxyCatalog(GalaxyCatalog):
 
                 self.zminidx = self.redshift.index(min(self.redshift))
                 self.reduced = self.dataList[0].reduced
-
 
         def clear(self):
             del self.snaptag[:]
