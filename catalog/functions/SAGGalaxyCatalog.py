@@ -36,7 +36,16 @@ class SAGGalaxyCatalog(GalaxyCatalog):
         self.quantities = { 'redshift'    : self._get_stored_property,
                             'M_star_disk' : self._get_stored_property,
                             'M_star_bulge': self._get_stored_property,
-                            'stellar_mass': self._get_derived_property,
+                            'Halo/M200c'  : self._get_stored_property,
+                            'X'           : self._get_stored_property,
+                            'Y'           : self._get_stored_property,
+                            'Z'           : self._get_stored_property,
+                            'Vx'          : self._get_stored_property,
+                            'Vy'          : self._get_stored_property,
+                            'Vz'          : self._get_stored_property,
+                            'Galaxy_Type' : self._get_stored_property,
+                            'SFR'         : self._get_stored_property,
+                            'stellar_mass': self._get_derived_property
                           }
 
         self.derived    = {'stellar_mass' : ('M_star_disk', 'M_star_bulge', self._add)} 
