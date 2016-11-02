@@ -45,7 +45,10 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
                              'metallicity':           self._get_stored_property,
                              'sfr':                   self._get_stored_property,
                              'ellipticity':           self._get_stored_property,
-                             'positionX':             self._get_stored_property,
+                             #'positionX':             self._get_derived_property, #units are in physical Mpc
+                             #'positionY':             self._get_derived_property,
+                             #'positionZ':             self._get_derived_property,
+                             'positionX':             self._get_stored_property, #units are now in comoving Mpc
                              'positionY':             self._get_stored_property,
                              'positionZ':             self._get_stored_property,
                              'velocityX':             self._get_stored_property,
@@ -85,16 +88,17 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
                              'agn_dec':               self._get_stored_property,
                              'agn_mass':              self._get_stored_property,
                              'agn_accretnrate':       self._get_stored_property,
-                             'SDSS_u:rest:':          None,    # don't have a way to return these yet
-                             'SDSS_g:rest:':          None,
-                             'SDSS_r:rest:':          None,
-                             'SDSS_i:rest:':          None,
-                             'SDSS_z:rest:':          None,
-                             'SDSS_u:observed:':      None,
-                             'SDSS_g:observed:':      None,
-                             'SDSS_r:observed:':      None,
-                             'SDSS_i:observed:':      None,
-                             'SDSS_z:observed:':      None,
+                             'SDSS_u:rest:':          self._get_stored_property,
+                             'SDSS_g:rest:':          self._get_stored_property,
+                             'SDSS_r:rest:':          self._get_stored_property,
+                             'SDSS_i:rest:':          self._get_stored_property,
+                             'SDSS_z:rest:':          self._get_stored_property,
+                             'SDSS_u:observed:':      self._get_stored_property,
+                             'SDSS_g:observed:':      self._get_stored_property,
+                             'SDSS_r:observed:':      self._get_stored_property,
+                             'SDSS_i:observed:':      self._get_stored_property,
+                             'SDSS_z:observed:':      self._get_stored_property,
+                             'invscalefactor':        self._get_derived_property,
                              'DES_g:rest:':           None,
                              'DES_r:rest:':           None,
                              'DES_i:rest:':           None,
@@ -133,11 +137,15 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
                             'mass':              ('log_halomass',  self._unlog10),
                             'disk_stellarmass':  ('log_disk_stellarmass',  self._unlog10),
                             'bulge_stellarmass': ('log_bulge_stellarmass', self._unlog10)}
+                            #'positionX'        : (('positionX',1.05),self._multiply),  #convert to comoving *1/scale-factor
+                            #'positionY'        : (('positionY',1.05),self._multiply),
+                            #'positionZ'        : (('positionZ',1.05),self._multiply)}
+        
         self.catalog     = {}
         self.sky_area    = 4.*np.pi*u.sr   # all sky by default
         self.cosmology   = None
         self.lightcone   = False
-        self.box_size    = 142
+        self.box_size    = None
         return GalaxyCatalog.__init__(self, fn)
 
 
@@ -149,17 +157,30 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
 
         hdfFile = h5py.File(fn, 'r')
         hdfKeys, hdfAttrs = self._gethdf5group(hdfFile)
+        print "load using keys: ", hdfKeys
         self.catalog = {}
         for key in hdfKeys:
-            if 'Output' in key:
+            #if 'Output' in key:
+            if 'Output19' in key:
                 outgroup = hdfFile[key]
                 dataKeys, dataAttrs = self._gethdf5group(outgroup)
                 self.catalog[key] = self._gethdf5arrays(outgroup)
-            elif key == 'cosmology':
+            elif key == 'parameters' or key == 'Parameters':
                 mydict = self._gethdf5attributes(hdfFile, key)
                 self.cosmology = astropy.cosmology.LambdaCDM(H0   = mydict['H_0'],
                                                              Om0  = mydict['Omega_Matter'],
                                                              Ode0 = mydict['Omega_DE'])
+                self.box_size=mydict['boxSize']   #already in Mpc
+                self.sigma_8=mydict['sigma_8']
+                self.n_s=mydict['N_s']
+
+        # turam added - use first redshift
+        #print self.catalog.items()[0], type(self.catalog.items()[0])
+        #print self.catalog.values()[0]['redshift']
+        self.redshift = self.catalog.values()[0]['redshift'][0]
+
+        print "box_size after loading = ", self.box_size
+
         # TODO: how to get sky area?
         hdfFile.close()
         return self
@@ -211,15 +232,30 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
         in the catalog but can be computed from properties that are via
         a simple function call.
         """
+        print "in get_derived_property: ", quantity, filters
         props = []
+
+        #if 'position' in quantity:
+        #  return np.asarray()
+
         stored_qty_rec = self.derived[quantity]
         stored_qty_name = stored_qty_rec[0]
         stored_qty_fctn = stored_qty_rec[1]
+        print 'stored_qty:', stored_qty_name, stored_qty_fctn
         for haloID in self.catalog.keys():
             halo = self.catalog[haloID]
+            print 'haloID = ', haloID, halo
             if self._check_halo(halo, filters):
-                if stored_qty_name in halo.keys():
-                    props.extend(stored_qty_fctn( halo[stored_qty_name] ))
+                #if stored_qty_name in halo.keys():
+                #    props.extend(stored_qty_fctn( halo[stored_qty_name] ))
+                if type(stored_qty_name) is tuple and stored_qty_name[0] in halo.keys():
+                    print 'branch1: ', quantity
+                    values = halo[stored_qty_name[0]]
+                    props.extend(stored_qty_fctn(values, stored_qty_name[1:]))
+                else:
+                    print 'branch2: ', quantity
+                    if stored_qty_name in halo.keys():
+                        props.extend(stored_qty_fctn( halo[stored_qty_name] ))
         return np.asarray(props)
 
     # Functions for computing derived values
@@ -277,3 +313,21 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
             arraydict[str(key)]=array
         #endfor
         return arraydict
+
+    def _multiply(self, propList, factor_tuple):
+        """
+        Multiplication routine -- derived quantity is equal to a stored
+        quantity times some factor. Additional args for the derived quantity
+        routines are passed in as a tuple, so extract the factor first.
+        """
+        print "in _multiply: ", propList, " ; factor_tuple: ", factor_tuple
+        factor = factor_tuple[0]
+        return propList * factor
+
+    def _add(self, propList):
+        """
+        Routine that returns element-wise addition of two arrays.
+        """
+        x = sum(propList)
+        return x
+
