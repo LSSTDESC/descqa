@@ -1,10 +1,10 @@
 # SHAM galaxy catalog class
-# Contact: Yao-Yuan Mao <yymao@stanford.edu>
+# Contact: Yao-Yuan Mao <yymao.astro@gmail.com>
 
 import os
 import numpy as np
 from GalaxyCatalogInterface import GalaxyCatalog
-
+from astropy.cosmology import FlatLambdaCDM
 
 class _FunctionWrapper:
     def __init__(self, d, k):
@@ -23,7 +23,10 @@ class SHAMGalaxyCatalog(GalaxyCatalog):
         self.type_ext = 'npy'
         self.root_path= '/global/project/projectdirs/lsst/descqa/catalog'
         self.redshift = 0.062496
-        self.box_size = 100.0
+        self.cosmology = FlatLambdaCDM(H0=70.2, Om0=0.275, Ob0=0.046)
+        self._h = self.cosmology.H0.value / 100.0
+        self.box_size = (100.0/self._h)
+        self.overdensity = 97.7
         self.lightcone = False
         self._data = {}
         self.quantities  = { 'stellar_mass': _FunctionWrapper(self._data, 'sm'),
@@ -44,13 +47,12 @@ class SHAMGalaxyCatalog(GalaxyCatalog):
         Given a catalog path, attempt to read the catalog and set up its
         internal data structures.
         """
-        if fn is None:
-            fn = os.path.join(self.root_path, 'SHAM_{0:.5f}.npy'.format(1.0/(1.0+self.redshift)))
         cat = np.load(fn)
 
         halos = np.load(os.path.join(self.root_path, 'MBII-DMO', 'hlist_{0:.5f}.npy'.format(1.0/(1.0+self.redshift))))
         s = halos.argsort(order='id')
         halos = halos[s[np.searchsorted(halos['id'], cat['id'], sorter=s)]]
+        del s
         assert (halos['id'] == cat['id']).all()
 
         for name in cat.dtype.names:
@@ -60,6 +62,9 @@ class SHAMGalaxyCatalog(GalaxyCatalog):
             if name == 'id':
                 continue
             self._data[name] = halos[name]
+        
+        for name in ('x', 'y', 'z', 'mvir'):
+            self._data[name] /= self._h
 
         return self
 
