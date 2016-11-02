@@ -82,7 +82,8 @@ class BigBoard:
           # it will stay in the correct place when 'invocationList'
           # is sorted, but with no html, so it will produce no link
           # on the big board
-          invocationList.invocations.insert(i, Invocation(allInvocations[i], ""))
+          invocationList.invocations.insert(i, Invocation(allInvocations[i], "",
+            os.stat(os.path.join(self.pathToOutdir,invocationList.siteDir, allInvocations[i]))[8]))
           # If an invocation directory is removed, it may result in
           # an entire row of these "empty" Invocation instances, so
           # we'll check for any such empty row and delete it.
@@ -341,7 +342,7 @@ class InvocationList:
         mostRecent = ""
       else:
         mostRecent=sorted(self.invocations)[0]	
-      	
+      
       for invocationDir in invocationDirs:
        try:
         for invocation in self.invocations[:]:
@@ -463,8 +464,7 @@ class InvocationList:
 
           if changedFromPrevious:
             html += "&nbsp;<b>!</b>"
-
-          newInvocations.append(Invocation(invocationDir, html))
+          newInvocations.append(Invocation(invocationDir, html, os.stat(os.path.join(self.pathToSiteDir, invocationDir))[8]))
 
        except Exception,e:
         print "Exception:",e,"; continuing"
@@ -485,12 +485,14 @@ class Invocation:
   encapsulates data visible for a single FlashTest invocation, (a
   date, possibly with a suffix) at the top level of FlashTestView
   """
-  def __init__(self, name, html):
+  def __init__(self, name, html, modifiedTime=None):
     self.name = name
     self.html = html  # all html and javascript that goes inside
                       # the table cell for this invocation
+    self.modifiedTime = modifiedTime
 
   def __cmp__(self, other):
+    #return -cmp(self.modifiedTime, other.modifiedTime)  # Invocation instances will sort so that the
     return -cmp(self.name, other.name)  # Invocation instances will sort so that the
                                         # names appear in reverse lexicographical order
                                         # (b/c we want the most recent date at the top)

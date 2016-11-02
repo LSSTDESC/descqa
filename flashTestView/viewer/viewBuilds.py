@@ -237,7 +237,7 @@ try:
           elif line.startswith("WARNING:"):
             totalWarnings += 1
         queryStr = "target_file=%s" % os.path.join (pathToTargetDir, "flash_test.log")
-        link = "<a href=\"viewTextFile.cgi?%s\" target=\"_blank\">FlashTest Log</a>" % queryStr
+        link = "<a href=\"viewTextFile.cgi?%s\" target=\"_blank\">DESCQA Log</a>" % queryStr
         if totalErrors > 0:
           link += "<font color=\"red\">"
           if totalErrors == 1:

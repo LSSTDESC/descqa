@@ -173,7 +173,7 @@
         [if-any runs.showTest]
           [if-any runs.testOutputFile]
             [for runs.testOutputFile]
-              <a href="viewHtmlFile.cgi?target_file=[runs.testOutputFile.path]">contents</a>
+              <a href="viewHtmlFile.cgi?target_file=[runs.testOutputFile.path]">contents</a> [if-any runs.testResult]&nbsp;([runs.testResult])[end]
             [end]
             [if-any runs.testFailed]
               [if-any runs.changedFromPrevious]

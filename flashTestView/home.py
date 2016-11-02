@@ -25,7 +25,7 @@ def rewriteFileMap(fileMapDict):
 try:
 
     # first purge all files over 24 hours old from "tmp"
-    purgeTmp.purgeTmp()
+    #purgeTmp.purgeTmp()
 
     if os.path.isfile("config"):
       configDict = littleParser.parseFile("config")
@@ -53,7 +53,7 @@ try:
     cwd = os.getcwd()
     if not os.access(cwd, os.W_OK):
       msg = ("The web-server does not have write permissions in directory \"%s\"<br>" % cwd +
-             "This permission must be granted for FlashTestView to function correctly.")
+             "This permission must be granted for DESCQA to function correctly.")
       abort(msg)
 
     # Generate fileMapDict from "fileMap", a text file that maps
@@ -62,7 +62,7 @@ try:
       # Paul, uncomment the lines below and delete this line when you've fixed the file permissions
       if not os.access(fileMap, os.R_OK + os.W_OK):
         msg = ("The web-server does not have read and/or write permissions on file \"%s\"<br>" % os.path.join(cwd, fileMap) +
-               "This permission must be granted for FlashTestView to function correctly.")
+               "This permission must be granted for DESCQA to function correctly.")
         abort(msg)
       else:
         fileMapDict = littleParser.parseFile(fileMap)
@@ -137,12 +137,12 @@ try:
                   "does not exist or is not a directory.")
         else:
           abort("You must add at least one value to the key \"pathToOutdir\" in \"config\"<br>" +
-                "where that value is a path to a top-level FlashTest output directory.")
+                "where that value is a path to a top-level DESCQA output directory.")
       else:
         abort("File \"config\" either does not exist or does not contain any values.<br>" +
               "Create a \"config\" file if necessary and add the following text:<br><br>" +
               "pathToOutdir: [path/to/outdir]<br><br>" +
-              "where [path/to/outdir] is an absolute path to a top-level FlashTest output directory.<br>" +
+              "where [path/to/outdir] is an absolute path to a top-level DESCQA  output directory.<br>" +
           "Then reload this page.")
 except:
     import traceback
@@ -151,25 +151,31 @@ except:
 # At this point we know that 'pathToTargetDir' is defined, that it is
 # an extant directory, and that that directory is listed in "config"
 try:
+    shouldGenerate=False
     if fileMapDict.has_key(pathToTargetDir):
       pickFile = fileMapDict[pathToTargetDir]
-      bigBoard = pickle.load(open(pickFile))
-      if bigBoard.isOutOfDate():
-        print "<body onLoad=\"vanishPleaseWait(); statsWindowInit()\">"
-        print "<div id=\"pleasewait\">"
-        print "FlashTest has generated new data since the last time this page was viewed.<br>"
-        print "Please wait while the table is being regenerated."
-        print "</div>"
-        sys.stdout.flush()
-        bigBoard.quickRegenerate()
-        pickle.dump(bigBoard, open(pickFile, "w"))
+      if os.path.exists(pickFile):
+        bigBoard = pickle.load(open(pickFile))
+        if bigBoard.isOutOfDate():
+          print "<body onLoad=\"vanishPleaseWait(); statsWindowInit()\">"
+          print "<div id=\"pleasewait\">"
+          print "DESCQA has generated new data since the last time this page was viewed.<br>"
+          print "Please wait while the table is being regenerated."
+          print "</div>"
+          sys.stdout.flush()
+          bigBoard.quickRegenerate()
+          pickle.dump(bigBoard, open(pickFile, "w"))
+        else:
+          print "<body onLoad=\"statsWindowInit()\">"
       else:
-        print "<body onLoad=\"statsWindowInit()\">"
-    else:
+          # pickFile does not exist; generate
+          shouldGenerate=True
+
+    if shouldGenerate:
       print "table being generated"
       print "<body onLoad=\"vanishPleaseWait(); statsWindowInit()\">"
       print "<div id=\"pleasewait\">"
-      print "Please wait while FlashTestView generates a table for \"%s\"." % pathToTargetDir
+      print "Please wait while DESCQA generates a table for \"%s\"." % pathToTargetDir
       print "</div>"
       sys.stdout.flush()
       bigBoard = invocations.BigBoard(pathToTargetDir)
@@ -191,11 +197,11 @@ try:
 
     # start main page
     print "<div id=\"readmeDiv\">"
-    print "<a href=\"/website/codesupport/flash_howtos/home.py?submit=flashTest-HOWTO.txt\">FlashTest HOW-TO</a>"
+    print "<!-- <a href=\"/website/codesupport/flash_howtos/home.py?submit=flashTest-HOWTO.txt\">DESCQA HOW-TO</a> -->"
     print "</div>"
     print "<div class=\"clearBlock\">&nbsp;</div>"
     print "<div id=\"titleDiv\">"
-    print "<h1>FlashTest Invocations</h1>"
+    print "<h1>DESCQA Invocations</h1>"
     print "</div>"
 
     # make bar with navigation to other "pages" of results.
