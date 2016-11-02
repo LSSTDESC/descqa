@@ -101,6 +101,12 @@ class SAGGalaxyCatalog(GalaxyCatalog):
         Routine that returns element-wise addition of two arrays.
         """
         return sum(propList)
+    
+    def _multiply(self, propList, scalar):
+        """
+        Routine that returns the input array multiplied by a scalar factor.
+        """
+        return propList * scalar
 
 
     class SAGcollection():
