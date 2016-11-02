@@ -4,6 +4,7 @@ from GalaxyCatalogInterface import GalaxyCatalog
 import numpy as np
 from astropy.table import Table
 import astropy.units as u
+import astropy.cosmology
 
 class MB2GalaxyCatalog(GalaxyCatalog):
     """
@@ -54,6 +55,10 @@ class MB2GalaxyCatalog(GalaxyCatalog):
         """
         self.catalog = Table.read(fn, path='data')
         self.Ngals = len(self.catalog)
+
+        # turam added - use first redshift
+        self.redshift = self.catalog['redshift'][0]
+        self.cosmology = astropy.cosmology.FlatLambdaCDM(H0=70.1, Om0 = 0.275) # confirm this!
 
         return self
 
