@@ -25,6 +25,8 @@ def gen_stellar_mf(fn, zlo, zhi):
         # remove NaN masses
         nan_masses = np.isnan(masses)
         masses = masses[~nan_masses]
+        nonzeromasses = np.nonzero(masses)
+        masses = masses[nonzeromasses]
         logm = np.log10(masses)
         mhist, mbins = np.histogram(logm, Nbins)
         binctr = (mbins[1:] + mbins[:Nbins])/2.
@@ -50,6 +52,11 @@ def read_obs_mf(fn, usecols):
     binctr, mhist = np.loadtxt(fn, unpack=True, usecols=usecols)
     binctr = np.log10(binctr)
     mhist = np.log10(mhist)
+    # testing
+    #h=0.702
+    #binctr = np.log10(binctr/(h*h))
+    #mhist = np.log10(mhist*h**3)
+    # end testing
     mhmax = mhist + 0.01 # TODO: implement real errorbar
     mhmin = mhist - 0.01 
     return binctr, mhist, mhmin, mhmax
@@ -91,5 +98,5 @@ mp.xlabel(r'$\log M_*\ (M_\odot)$')
 mp.ylabel(r'$dN/dV\, d\log M\ ({\rm Mpc}^{-3}\,{\rm dex}^{-1})$')
 mp.savefig("stellar_mf_test.png")
 
-write_file("validation_output.txt", sbinctr, shist, shmin, shmax)
-write_file("catalog_output.txt", obinctr, ohist, ohmin, ohmax)
+write_file("catalog_output.txt", sbinctr, shist, shmin, shmax)
+write_file("validation_output.txt", obinctr, ohist, ohmin, ohmax)
