@@ -5,7 +5,7 @@ import os
 sim_folder = os.environ['DESCQA_SIM_DATA_DIR']
 obs_folder = os.environ['DESCQA_OBS_DATA_DIR']
 
-sim_catalog = sim_folder + '/YaleCAM_rho-1.0_sigma0.2_z0.0.hdf5.yale'
+sim_catalog = sim_folder + '/yale_cam_age_matching_LiWhite_2009_rho-1.0_sigma0.2_z0.0.hdf5.yale'
 obs_catalog = obs_folder + '/MASSIVEBLACKII/StellarMassFunction/tab.txt'
 obs_catalog_usecols = (0,1)
 
