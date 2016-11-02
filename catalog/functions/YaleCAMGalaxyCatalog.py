@@ -16,7 +16,11 @@ __all__ = ['YaleCAMGalaxyCatalog']
 
 class YaleCAMGalaxyCatalog(GalaxyCatalog):
     """
-    Yale CAM galaxy catalog class
+    Yale CAM galaxy catalog class.
+    
+    Notes
+    -----
+    The Yale CAM galaxy mocks store all physical properties internally in units where h=1.
     """
     
     def __init__(self, fn=None):
@@ -34,13 +38,11 @@ class YaleCAMGalaxyCatalog(GalaxyCatalog):
         self.root_path = '/global/project/projectdirs/lsst/descqa/'
         
         # set fixed properties
-        self.simulation = 'Massive Black'
-        #self.cosmology = FlatLambdaCDM(H0=70.1 * u.km / u.s / u.Mpc , Om0 = 0.275)
-        #self.box_size = 100.0 * u.Mpc #h=1
-        #self.volume = self.box_size**3.0 #h=1
+        self.lightcone = False
         self.cosmology = FlatLambdaCDM(H0=70.1, Om0 = 0.275)
-        self.box_size = 100.0 
-        self.volume = self.box_size**3.0 #h=1
+        self.simulation = 'Massive Black'
+        self.box_size = 100.0 / self.cosmology.h
+        self.volume = self.box_size**3.0
         
         # translates between desc keywords to those used in the stored mock
         # note: all appropriate quantities are in h=1 units.
@@ -51,13 +53,17 @@ class YaleCAMGalaxyCatalog(GalaxyCatalog):
                              'positionX':    self._stored_property_wrapper('x'),
                              'positionY':    self._stored_property_wrapper('y'),
                              'positionZ':    self._stored_property_wrapper('z'),
+                             'velocityX':    self._stored_property_wrapper('vx'),
+                             'velocityY':    self._stored_property_wrapper('vy'),
                              'velocityZ':    self._stored_property_wrapper('vz'),
+                             'absmag_r':    self._stored_property_wrapper('absmag_r'),
+                             'absmag_g':    self._stored_property_wrapper('absmag_g'),
+                             'g-r':    self._stored_property_wrapper('g-r')
                            }
-        self.lightcone = False
         
         return GalaxyCatalog.__init__(self, fn)
     
-    def load(self, fn='YaleCAM_rho-1.0_sigma0.2_z0.0.hdf5'):
+    def load(self, fn='yale_cam_age_matching_LiWhite_2009_z0.0.hdf5'):
         """
         load mock galaxy catalog
         
@@ -69,12 +75,24 @@ class YaleCAMGalaxyCatalog(GalaxyCatalog):
         
         #extract mock parameters from filename
         nums = re.findall(r"[-+]?\d*\.\d+|\d+", fn)
-        self.rho_ssfr = float(nums[0])
-        self.sigma_smhm = float(nums[1])
-        self.redshift = float(nums[2])
+        self.redshift = float(nums[-2])
         
         f = h5py.File(fn, 'r')
-        self._data = f.get('data')
+        toplevel=f.keys()[0]
+        self._data = f.get(toplevel)
+                        
+        #convert quantities into physical units given the cosmology
+        #see 'notes' section of the Yale CAM class.
+        #see arXiv:1308.4150
+        #cast hdf5 data as numpy array to allow modification of data without modifying file contents
+        self.Xdata=np.array(self._data)
+        self.Xdata['stellar_mass'] = self._data['stellar_mass']/(self.cosmology.h)**2
+        self.Xdata['x'] = self._data['x']/(self.cosmology.h)
+        self.Xdata['y'] = self._data['y']/(self.cosmology.h)
+        self.Xdata['z'] = self._data['z']/(self.cosmology.h)
+        self.Xdata['halo_mvir'] = self._data['halo_mvir']/(self.cosmology.h)
+        self.Xdata['absmag_r'] = self._data['absmag_r'] + 5.0*np.log10(self.cosmology.h)
+        self.Xdata['absmag_g'] = self._data['absmag_g'] + 5.0*np.log10(self.cosmology.h)
         
         #how many galaxies are in the catalog?
         self.Ngals = len(self._data)
@@ -133,7 +151,7 @@ class YaleCAMGalaxyCatalog(GalaxyCatalog):
         filter_mask = self._construct_mask(filters)
         
         #return requested data as an array
-        return self._data[quantity][np.where(filter_mask)]
+        return self.Xdata[quantity][np.where(filter_mask)]
     
     def _stored_property_wrapper(self, name):
         """
@@ -147,4 +165,4 @@ class YaleCAMGalaxyCatalog(GalaxyCatalog):
         """
         
         return (lambda quantity, filter : self._get_stored_property(name, filter))
-        
+
