@@ -31,6 +31,7 @@ class SAGGalaxyCatalog(GalaxyCatalog):
     def __init__(self, fn=None):
         self.type_ext   = 'hdf5'
         self.box_size   = 100.0
+        self.h = 0.67769998
         self.filters    = { 'zlo':          True,
                             'zhi':          True
                           }
@@ -52,13 +53,13 @@ class SAGGalaxyCatalog(GalaxyCatalog):
                           }
 
         self.derived    = {
-                            'stellar_mass' : (('M_star_disk', 'M_star_bulge'), 1./0.7, self._add_and_multiply),
-                            'mass'         : (('Halo/M200c'), 1./0.7, self._multiply),
-                            'positionX'    : (('X'), 1./0.7 * 1.0e-3, self._multiply),
-                            'positionY'    : (('Y'), 1./0.7 * 1.0e-3, self._multiply),
-                            'positionZ'    : (('Z'), 1./0.7 * 1.0e-3, self._multiply),
-                            'M_star_bulge' : (('M_star_bulge'), 1./0.7, self._multiply),
-                            'M_star_disk' : (('M_star_disk'), 1./0.7, self._multiply)
+                            'stellar_mass' : (('M_star_disk', 'M_star_bulge'), 1./self.h, self._add_and_multiply),
+                            'mass'         : (('Halo/M200c'), 1./self.h, self._multiply),
+                            'positionX'    : (('X'), 1./self.h * 1.0e-3, self._multiply),
+                            'positionY'    : (('Y'), 1./self.h * 1.0e-3, self._multiply),
+                            'positionZ'    : (('Z'), 1./self.h * 1.0e-3, self._multiply),
+                            'M_star_bulge' : (('M_star_bulge'), 1./self.h, self._multiply),
+                            'M_star_disk' : (('M_star_disk'), 1./self.h, self._multiply)
                           }
 
         self.catalog    = {}
