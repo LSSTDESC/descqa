@@ -17,13 +17,14 @@ class MB2GalaxyCatalog(GalaxyCatalog):
                           'zlo':                   True,
                           'zhi':                   True
                         }
+        self.h          = 0.702
         self.quantities = {
                              'redshift':              self._get_stored_property,
-                             'positionX':             self._get_derived_property,  # Position returned in Mpc/h
+                             'positionX':             self._get_derived_property,  # Position returned in Mpc, stored in kpc/h 
                              'positionY':             self._get_derived_property,
                              'positionZ':             self._get_derived_property,
                              'velocityZ':             self._get_stored_property,   # Velocity returned in km/sec
-                             'mass':                  self._get_derived_property,
+                             'mass':                  self._get_derived_property,  # Masses returned in Msun but stored in 1e10 Msun/h
                              'stellar_mass':          self._get_derived_property,
                              'gas_mass':              self._get_stored_property,
                              'sfr':                   self._get_stored_property,
@@ -35,17 +36,16 @@ class MB2GalaxyCatalog(GalaxyCatalog):
                            }
 
         self.derived      = {
-                             'mass':            (('mass', .701 * 1.e10), self._multiply),
-                             'stellar_mass':    (('stellar_mass', .701 * 1.e10), self._multiply),
-                             'positionX':       (('x', 1.e-3), self._multiply), # Position stored in kpc/h
-                             'positionY':       (('y', 1.e-3), self._multiply),
-                             'positionZ':       (('z', 1.e-3), self._multiply), 
+                             'mass':            (('mass', 1.e10 / self.h), self._multiply),
+                             'stellar_mass':    (('stellar_mass', 1.e10 / self.h), self._multiply),
+                             'positionX':       (('x', 1.e-3 / self.h), self._multiply), # Position stored in kpc/h
+                             'positionY':       (('y', 1.e-3 / self.h), self._multiply),
+                             'positionZ':       (('z', 1.e-3 / self.h), self._multiply), 
                             }
-
         self.Ngals        = 0
         self.sky_area     = 4.*np.pi*u.sr   # all sky by default
         self.lightcone    = False
-        self.box_size     = 100.0
+        self.box_size     = 100.0 / self.h
         return GalaxyCatalog.__init__(self, fn)
 
     def load(self, fn):
