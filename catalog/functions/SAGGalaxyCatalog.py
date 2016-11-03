@@ -9,16 +9,16 @@ import astropy.units as u
 
 class SAGGalaxyCatalog(GalaxyCatalog):
     """
-    Semi-Analytic Galaxies (SAG) model galaxy catalog class. Uses generic 
+    Semi-Analytic Galaxies (SAG) model galaxy catalog class. Uses generic
     quantity and filter mechanisms defined by GalaxyCatalog base class. In
     addition, implements the use of 'stored' vs. 'derived' quantity getter
     methods.
     Additional data structures:
-    
+
     catalog       A dictionary whose keys are the names of the various stored
                   properties, and whose values are arrays containing the values
                   of these quantities for each of the galaxies in the catalog.
-    
+
     derived       A dictionary whose keys are the names of derived quantities
                   and whose values are tuples containing the string name of a
                   corresponding stored quantity (actually present in the file)
@@ -31,16 +31,19 @@ class SAGGalaxyCatalog(GalaxyCatalog):
     def __init__(self, fn=None):
         self.type_ext   = 'sag'
         self.box_size   = 100.0
+        self.h = 0.67769998
         self.filters    = { 'zlo':          True,
                             'zhi':          True
                           }
-        self.quantities = { 'redshift'    : self._get_stored_property,
-                            'M_star_disk' : self._get_stored_property,
-                            'M_star_bulge': self._get_stored_property,
-                            'Halo/M200c'  : self._get_stored_property,
-                            'X'           : self._get_stored_property,
-                            'Y'           : self._get_stored_property,
-                            'Z'           : self._get_stored_property,
+        self.quantities = {
+
+                            'mass'        : self._get_derived_property,
+                            'M_star_disk' : self._get_derived_property,
+                            'M_star_bulge': self._get_derived_property,
+                            'redshift'    : self._get_stored_property,
+                            'positionX'   : self._get_derived_property,
+                            'positionY'   : self._get_derived_property,
+                            'positionZ'   : self._get_derived_property,
                             'Vx'          : self._get_stored_property,
                             'Vy'          : self._get_stored_property,
                             'Vz'          : self._get_stored_property,
@@ -53,12 +56,16 @@ class SAGGalaxyCatalog(GalaxyCatalog):
                             'stellar_mass': self._get_derived_property
                           }
 
-        self.derived    = { 'stellar_mass' : ('M_star_disk', 'M_star_bulge', self._add),
-                            'positionX'   : 'X',
-                            'positionY'   : 'Y',
-                            'positionZ'   : 'Z',
-                            'velocityZ'   : 'Vz',
-                          } 
+        self.derived    = {
+                            'stellar_mass' : (('M_star_disk', 'M_star_bulge'), 1./self.h, self._add_and_multiply),
+                            'mass'         : (('Halo/M200c'), 1./self.h, self._multiply),
+                            'positionX'    : (('X'), 1./self.h * 1.0e-3, self._multiply),
+                            'positionY'    : (('Y'), 1./self.h * 1.0e-3, self._multiply),
+                            'positionZ'    : (('Z'), 1./self.h * 1.0e-3, self._multiply),
+                            'M_star_bulge' : (('M_star_bulge'), 1./self.h, self._multiply),
+                            'M_star_disk' : (('M_star_disk'), 1./self.h, self._multiply)
+                          }
+
         self.catalog    = {}
         self.sky_area   = 4.0 * np.pi * u.sr # All sky by default
         self.cosmology = None
@@ -72,7 +79,6 @@ class SAGGalaxyCatalog(GalaxyCatalog):
         """
         self.catalog = self.SAGcollection(fn)
         self.box_size = float(self.catalog.boxSizeMpc)
-        
         self.cosmology = astropy.cosmology.LambdaCDM(H0 = self.catalog.readAttr('Hubble_h')[0],
                                                      Om0 = self.catalog.readAttr('Omega')[0],
                                                      Ode0 = self.catalog.readAttr('OmegaLambda')[0])
@@ -101,28 +107,69 @@ class SAGGalaxyCatalog(GalaxyCatalog):
         else:
             zrange = None
         stored_qty_rec = self.derived[quantity]
-        if type(stored_qty_rec) is tuple:
-          stored_qty_name_1 = stored_qty_rec[0]
-          stored_qty_name_2 = stored_qty_rec[1]
-          stored_qty_func = stored_qty_rec[2]
-          qty_array_1 = self.catalog.readDataset(dsname=stored_qty_name_1,\
-                                                 zrange=zrange)
-          qty_array_2 = self.catalog.readDataset(dsname=stored_qty_name_2,\
-                                                 zrange=zrange)
+#        if type(stored_qty_rec) is tuple:
+#          stored_qty_name_1 = stored_qty_rec[0]
+#          stored_qty_name_2 = stored_qty_rec[1]
+#          stored_qty_func = stored_qty_rec[2]
+#          qty_array_1 = self.catalog.readDataset(dsname=stored_qty_name_1,\
+#                                                 zrange=zrange)
+#          qty_array_2 = self.catalog.readDataset(dsname=stored_qty_name_2,\
+#                                                 zrange=zrange)
+#
+#          propList = [qty_array_1, qty_array_2]
+#
+#          return stored_qty_func(propList=propList)
+#        else:
+#          return self.catalog.readDataset(dsname=stored_qty_rec,\
 
-          propList = [qty_array_1, qty_array_2]
+        stored_qty_name = stored_qty_rec[0]
+        stored_qty_func = stored_qty_rec[-1]
 
-          return stored_qty_func(propList=propList)
+        print(stored_qty_rec)
+        print(stored_qty_name)
+        print(stored_qty_func)
+
+        if type(stored_qty_name) is tuple:
+            stored_qty_name_0 = stored_qty_name[0]
+            stored_qty_name_1 = stored_qty_name[1]
+
+            qty_array_0 = self.catalog.readDataset(dsname=stored_qty_name_0,\
+                                               zrange=zrange)
+            qty_array_1 = self.catalog.readDataset(dsname=stored_qty_name_1,\
+                                               zrange=zrange)
+
+            propList = [qty_array_0, qty_array_1]
+
         else:
-          return self.catalog.readDataset(dsname=stored_qty_rec,\
-                                                 zrange=zrange)
+            propList = self.catalog.readDataset(dsname=stored_qty_name,\
+                                               zrange=zrange)
+
+
+        if len(stored_qty_rec) == 3:
+            stored_qty_value = stored_qty_rec[1]
+            print(stored_qty_value)
+            return stored_qty_func(propList, stored_qty_value)
+
+        else:
+            return stored_qty_func(propList=propList)
 
     def _add(self, propList):
         """
         Routine that returns element-wise addition of two arrays.
         """
         return sum(propList)
-    
+
+    def _multiply(self, propList, factor):
+        """
+        Multiplication routine -- derived quantity is equal to a stored
+        quantity times some factor. Additional args for the derived quantity
+        routines are passed in as a tuple, so extract the factor first.
+        """
+        return propList * factor
+
+    def _add_and_multiply(self, propList, factor):
+        return sum(propList) * factor
+
     class SAGcollection():
         """
         A collection of SAGdata objects of SAG. It assumes the outputs are ordered in
@@ -184,7 +231,7 @@ class SAGGalaxyCatalog(GalaxyCatalog):
                             print('Opening file '+sagname)
                             self.dataList[self.nz-1].addFile(sagname)
                             self.nfiles[self.nz-1] += 1
-            # and the corresponding redshifts: 
+            # and the corresponding redshifts:
             for i in range(self.nz):
                 self.redshift.append(float(self.dataList[i].readAttr('Redshift')))
 
@@ -244,7 +291,7 @@ class SAGGalaxyCatalog(GalaxyCatalog):
 
         def readDataset(self, dsname, multiSnaps=False, zrange=None, **kwargs):
             """
-            It searches for an unique or a set of redshifts or boxes and returns the 
+            It searches for an unique or a set of redshifts or boxes and returns the
             requested datasets.
             """
             for key in kwargs.keys():
@@ -299,7 +346,7 @@ class SAGGalaxyCatalog(GalaxyCatalog):
             return self.dataList[self.zminidx].readAttr(attname)
 
         def readUnits(self):
-            """ 
+            """
             It return an 'Units' object with the unit conversions of the catalog.
             """
             return self.dataList[self.zminidx].readUnits()
@@ -373,7 +420,7 @@ class SAGGalaxyCatalog(GalaxyCatalog):
            """
            The class 'SAGdata' stores a collection of hdf5 output files
            created by the SAG code. It can extract a particular array from
-           all the stored files and returns a unique np array with the 
+           all the stored files and returns a unique np array with the
            requested data.
            """
            def __init__(self, simname, boxSizeMpc):
@@ -395,7 +442,7 @@ class SAGGalaxyCatalog(GalaxyCatalog):
               self.reduced = False
               for fsag in self.dataList:
                  fsag.close()
-            
+
 
            def addFile(self, filename):
               """
@@ -409,7 +456,7 @@ class SAGGalaxyCatalog(GalaxyCatalog):
               self.filenames.append(filename)
               self.dataList.append(sag)
               self.nfiles += 1
-         
+
               if 1 == self.nfiles:
                  try:
                     attr = self.dataList[0].attrs['REDUCED_HDF5']
@@ -423,7 +470,6 @@ class SAGGalaxyCatalog(GalaxyCatalog):
               """
               It returns a unique np array of the requested dataset only
               if it exists in all loaded SAG files.
-
               The idxfilter can be created with np.where(condition), for example:
               >>> types = d.readDataset("Type")
               >>> row, col = np.where(types == 0)
@@ -443,7 +489,7 @@ class SAGGalaxyCatalog(GalaxyCatalog):
                  tmp = nparr[idxfilter]
                  del nparr
                  nparr = tmp
-            
+
               return nparr
 
 
@@ -475,14 +521,14 @@ class SAGGalaxyCatalog(GalaxyCatalog):
                     m_in_g = 1.989e33  # Msun
                     l_in_cm = 3.085678e21  # kpc
                     vel_in_cm_s = 1e5      # km/s
-    
+
                  h = float(self.readAttr('Hubble_h'))
-         
+
                  units = Units(l_in_cm, m_in_g, vel_in_cm_s, h)
                  return units
               else:
                  return None
-    
+
            def datasetList(self, fnum=0, group="/"):
               ks = []
               for tag in self.dataList[fnum][group].keys():
@@ -504,8 +550,8 @@ class SAGGalaxyCatalog(GalaxyCatalog):
                  tmp = np.where(np.in1d(dset, ids, assume_unique=True))[0]
                  idxs += tmp.tolist()
                  for _ in range(len(tmp)): boxes.append(i)
-              return np.array(idxs), np.array(boxes) 
-  
+              return np.array(idxs), np.array(boxes)
+
 
            def getGalaxies(self, dslist='all'):
               if dslist == 'all':
@@ -538,7 +584,3 @@ class SAGGalaxyCatalog(GalaxyCatalog):
                        l[l_idx] = self.dataList[i][dstag][:][idxs[l_idx]]
                     gal[dstag] = l
               return gal
-
-
-      
-     
