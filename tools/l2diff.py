@@ -50,6 +50,9 @@ parser.add_argument('-tx', '--theory-xcolumn', type=int,   default=1, \
 parser.add_argument('-ty', '--theory-ycolumn', type=int,   default=2, \
                     metavar='#', \
                     help='column containing theory y-values')
+parser.add_argument('-te',  '--theory-ecolumn',   type=int,   default=None, \
+                    metavar='#', \
+                    help='column containing theory errors')
 parser.add_argument('-dx', '--data-xcolumn',   type=int,   default=1, \
                     metavar='#', \
                     help='column containing data x-values')
@@ -71,6 +74,7 @@ result = vars(parser.parse_args())
 file1     = result['theory_file']
 xcol1     = result['theory_xcolumn']
 ycol1     = result['theory_ycolumn']
+ecol1     = result['theory_ecolumn']
 file2     = result['data_file']
 xcol2     = result['data_xcolumn']
 ycol2     = result['data_ycolumn']
@@ -88,7 +92,10 @@ if not os.path.isfile(file2):
     sys.exit(1)
 
 try:
-    x1, y1 = np.loadtxt(file1, usecols=(xcol1-1, ycol1-1), unpack=True)
+    if ecol1:
+        x1, y1, e1 = np.loadtxt(file1, usecols=(xcol1-1, ycol1-1, ecol1-1), unpack=True)
+    else:
+        x1, y1 = np.loadtxt(file1, usecols=(xcol1-1, ycol1-1), unpack=True)
     v1 = getvalid(file1)
 except:
     print "error while trying to read file %s." % file1
@@ -109,6 +116,8 @@ except:
 ok1 = np.where((x1 >= v1[0]) & (x1 <= v1[1]))
 x1  = x1[ok1]
 y1  = y1[ok1]
+if ecol1:
+    e1 = e1[ok1]
 
 ok2 = np.where((x2 >= v2[0]) & (x2 <= v2[1]))
 x2  = x2[ok2]
@@ -120,10 +129,17 @@ if ecol2:
 
 y1int = np.interp(x2, x1, y1)
 
-if ecol2:
-    L2 = (np.sum( (y2 - y1int)**2 / e2**2 ))**0.5
+if ecol1:
+    e1int = np.interp(x2, x1, e1)
+    if ecol2:
+        L2 = (np.sum( (y2 - y1int)**2 / (e1int**2 + e2**2) ))**0.5
+    else:
+        L2 = (np.sum( (y2 - y1int)**2 / e1int**2 ))**0.5
 else:
-    L2 = (np.sum( (y2 - y1int)**2 ))**0.5
+    if ecol2:
+        L2 = (np.sum( (y2 - y1int)**2 / e2**2 ))**0.5
+    else:
+        L2 = (np.sum( (y2 - y1int)**2 ))**0.5
 
 if npar:
     chi2red = L2**2 / (len(y2)-npar)

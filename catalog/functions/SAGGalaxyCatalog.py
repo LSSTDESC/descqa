@@ -30,20 +30,27 @@ class SAGGalaxyCatalog(GalaxyCatalog):
 
     def __init__(self, fn=None):
         self.type_ext   = 'sag'
+        self.box_size   = 100.0
         self.filters    = { 'zlo':          True,
                             'zhi':          True
                           }
         self.quantities = { 'redshift'    : self._get_stored_property,
                             'M_star_disk' : self._get_stored_property,
                             'M_star_bulge': self._get_stored_property,
+                            'Halo/M200c'  : self._get_stored_property,
                             'X'           : self._get_stored_property,
                             'Y'           : self._get_stored_property,
                             'Z'           : self._get_stored_property,
-                            'stellar_mass': self._get_derived_property,
+                            'Vx'          : self._get_stored_property,
+                            'Vy'          : self._get_stored_property,
+                            'Vz'          : self._get_stored_property,
+                            'Galaxy_Type' : self._get_stored_property,
+                            'SFR'         : self._get_stored_property,
                             'positionX'   : self._get_derived_property,
                             'positionY'   : self._get_derived_property,
                             'positionZ'   : self._get_derived_property,
                             'velocityZ'   : self._get_derived_property,
+                            'stellar_mass': self._get_derived_property
                           }
 
         self.derived    = { 'stellar_mass' : ('M_star_disk', 'M_star_bulge', self._add),
@@ -114,9 +121,8 @@ class SAGGalaxyCatalog(GalaxyCatalog):
         """
         Routine that returns element-wise addition of two arrays.
         """
-        x = sum(propList)
-        return x
-
+        return sum(propList)
+    
     class SAGcollection():
         """
         A collection of SAGdata objects of SAG. It assumes the outputs are ordered in

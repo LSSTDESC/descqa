@@ -18,6 +18,7 @@ class iHODGalaxyCatalog(GalaxyCatalog):
                           'zhi':                   True
                         }
         self.quantities = {
+                             'redshift':          self._get_stored_property,
                              'positionX':                 self._get_stored_property,
                              'positionY':                 self._get_stored_property,
                              'positionZ':                 self._get_stored_property,
