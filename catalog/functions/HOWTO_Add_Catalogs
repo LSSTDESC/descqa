@@ -188,9 +188,9 @@ Halo mass function	       halo mass     	  mass 		     M_sun
 Stellar mass versus halo mass  halo mass     	  mass               M_sun
                                stellar mass  	  stellar_mass       M_sun
 
-2-pt Correlation function      x position    	  positionX	     Mpc
-       		 	       y position    	  positionY	     Mpc
-			       z position    	  positionZ	     Mpc
+2-pt Correlation function      x position    	  positionX	     Mpc (comoving)
+       		 	       y position    	  positionY	     Mpc (comoving)
+			       z position    	  positionZ	     Mpc (comoving)
 
 color-color distribution       SDSS u rest-frame  SDSS:u:rest:	     AB magnitude
 	    		       SDSS g rest-frame  SDSS:g:rest:	     AB magnitude
