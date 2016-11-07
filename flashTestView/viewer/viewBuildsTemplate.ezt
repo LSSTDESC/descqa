@@ -1,4 +1,6 @@
 <body>
+<a href="../home.cgi" target="_top">Home</a>
+<br>
 <div id="top">
   <span id="dateRef"><a class="everblue" href="../home.cgi">&lt;&lt;</a> [date]</span>
   <span id="links">[links]</span>

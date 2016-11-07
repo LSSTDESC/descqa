@@ -50,9 +50,10 @@ class Imgfile:
   """
   encapsulates the data needed to locate image files
   """
-  def __init__(self, path, filename):
+  def __init__(self, path, filename, data=None):
     self.path = path
     self.filename = filename
+    self.data = data
 
 
 # -------------- form data ---------------- #
@@ -217,7 +218,6 @@ if len(runs) > 0:
     run.pathToAmrRuntimeParametersDump = None
     run.theoryFiles = []
     run.plotFiles   = []
-
     items = sorted(os.listdir(run.fullPath))
     for item in items:
       if re.match(".*?_chk_\d+$", item):
@@ -243,7 +243,8 @@ if len(runs) > 0:
 	run.datfiles.append(Datfile(pathToDatfile,item))
       elif item.endswith(".png"):
         pathToImgfile = os.path.join(run.fullPath, item)
-	run.imgfiles.append(Imgfile(pathToImgfile,item))
+        imgdata = open(pathToImgfile, 'rb').read().encode("base64").replace("\n", "")
+        run.imgfiles.append(Imgfile(pathToImgfile,item,imgdata))
       elif item.endswith(".log") and not item == "amr.log":
         pathToLogfile = os.path.join(run.fullPath, item)
 	run.logfiles.append(Logfile(pathToLogfile,item))

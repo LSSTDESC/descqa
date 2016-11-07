@@ -156,7 +156,7 @@ try:
       pickFile = fileMapDict[pathToTargetDir]
       if os.path.exists(pickFile):
         bigBoard = pickle.load(open(pickFile))
-        if bigBoard.isOutOfDate():
+        if 1:#bigBoard.isOutOfDate():
           print "<body onLoad=\"vanishPleaseWait(); statsWindowInit()\">"
           print "<div id=\"pleasewait\">"
           print "DESCQA has generated new data since the last time this page was viewed.<br>"
@@ -239,7 +239,7 @@ try:
         endRow  = bigBoard.getInvocationName(reversedPageNum*invocationsPerPage)
         startRow = bigBoard.getInvocationName(((reversedPageNum+1)*invocationsPerPage)-1)
         print ("<a class=\"everblue\" " +
-               "href=\"/website/testsuite/home.py?target_dir=%s&page=%s\" " % (pathToTargetDir, thisPageNum-1) +
+               "href=\"/project/lsst/descqa/flashTestView/home.cgi?target_dir=%s&page=%s\" " % (pathToTargetDir, thisPageNum-1) +
                "title=\"%s thru %s\">&lt;&lt;</a>" % (startRow, endRow))
       else:
         # print a "dummy link"
@@ -254,7 +254,7 @@ try:
           endRow  = bigBoard.getInvocationName((reversedI-1)*invocationsPerPage)
           startRow = bigBoard.getInvocationName((reversedI*invocationsPerPage)-1)
           print ("<a class=\"everblue\" " +
-                 "href=\"/website/testsuite/home.py?target_dir=%s&page=%s\" " % (pathToTargetDir, i) +
+                 "href=\"/project/lsst/descqa/flashTestView/home.cgi?target_dir=%s&page=%s\" " % (pathToTargetDir, i) +
                  "title=\"%s thru %s\">%s</a>" % (startRow, endRow, i))
 
       if thisPageNum < lastPageNum:
@@ -262,7 +262,7 @@ try:
         endRow  = bigBoard.getInvocationName((reversedPageNum-2)*invocationsPerPage)
         startRow = bigBoard.getInvocationName(((reversedPageNum-1)*invocationsPerPage)-1)
         print ("<a class=\"everblue\" " +
-               "href=\"/website/testsuite/home.py?target_dir=%s&page=%s\" " % (pathToTargetDir, thisPageNum+1) +
+               "href=\"/project/lsst/descqa/flashTestView/home.cgi?target_dir=%s&page=%s\" " % (pathToTargetDir, thisPageNum+1) +
                "title=\"%s thru %s\">&gt;&gt;</a>" % (startRow, endRow))
       else:
         # print a "dummy link"

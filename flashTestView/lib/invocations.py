@@ -1,4 +1,4 @@
-import os, re
+import os, re, sys
 import littleParser, xmlNode
 
 class BigBoard:
@@ -52,6 +52,7 @@ class BigBoard:
 
   def isOutOfDate(self):
     lastModified = str(os.stat(self.pathToOutdir)[8])
+    #print "BigBoard isOutOfDate:", lastModified, self.lastModified
     if lastModified != self.lastModified:
       # a directory has been added or removed
       return True
@@ -59,7 +60,10 @@ class BigBoard:
     # representation of the directories in 'pathToOutdir'
     for invocationList in self.invocationLists:
       if invocationList.isOutOfDate():
+        #print "Bboutofdate true"
         return True
+    #print "Bboutofdate false"
+    return True
     return False
 
   def realignGrid(self):
@@ -107,6 +111,7 @@ class BigBoard:
 
   def quickRegenerate(self):
 
+    #print "In quickRegenerate"
     if self.isOutOfDate():
       self.lastModified = str(os.stat(self.pathToOutdir)[8])
 
@@ -288,6 +293,8 @@ class InvocationList:
     Compare this instance's 'lastModified' member to the time of
     last modification on the site directory.
     """
+    return True
+    print self.lastModified, str(os.stat(self.pathToSiteDir)[8]), self.pathToSiteDir
     if self.lastModified != str(os.stat(self.pathToSiteDir)[8]):
       return True
     # else
@@ -300,7 +307,7 @@ class InvocationList:
     time of its associcated site directory.
     """
 
-    if self.isOutOfDate():
+    if 1:#self.isOutOfDate():
       self.lastModified = str(os.stat(self.pathToSiteDir)[8])
 
       datePat = re.compile("^\d\d\d\d-\d\d-\d\d.*")
@@ -314,6 +321,8 @@ class InvocationList:
 
       invocationDirs = [item for item in os.listdir(self.pathToSiteDir)
                         if os.path.isdir(os.path.join(self.pathToSiteDir, item))]
+
+      #print 'invocationDirs = ', invocationDirs
 
       # cull out directories that don't fit the pattern
       invocationDirs = [invocationDir for invocationDir in invocationDirs
@@ -344,8 +353,10 @@ class InvocationList:
         mostRecent=sorted(self.invocations)[0]	
       
       for invocationDir in invocationDirs:
+       #print 'regenerating', invocationDir
        try:
         for invocation in self.invocations[:]:
+          #print "inv = ", invocation.name, invocationDir
           if invocation.name == invocationDir:
             if invocation.html == "" or invocation.name == mostRecent.name:
               # this is a blank "place-holder" invocation that
@@ -452,9 +463,28 @@ class InvocationList:
           errorLines.append(logMsg)
           statsBody = "<br>".join(errorLines)
 
-          html = ("<a href=viewer/viewBuilds.cgi?target_dir=%s " % pathToInvocationDir +
+          html = ("<div style=\"float:left;width:150px\"><a href=viewer/viewBuilds.cgi?target_dir=%s " % pathToInvocationDir +
                   "onMouseOver=\"appear('%s','%s')\" " % (statsHeader, statsBody) +
                   "onMouseOut=\"disappear()\">%s</a>" % invocationDir)
+
+
+          """
+          pathToMasterDict = os.path.join(self.pathToOutdir, self.siteDir,
+                                        self.invocations[0].name, "masterDict")
+          print 'pathToMasterDict:',pathToMasterDict
+          if os.path.isfile(pathToMasterDict):
+            masterDict = littleParser.parseFile(pathToMasterDict)
+            masterDictPathsAndOpts = masterDict["pathsAndOpts"]
+            if type(masterDictPathsAndOpts)==type(""):
+                masterDictPathsAndOpts=[masterDictPathsAndOpts]
+            #print "masterDict:",masterDict
+            print 'masterDictPathsAndOpts:', masterDictPathsAndOpts, masterDictPathsAndOpts[0]
+            for path in masterDictPathsAndOpts:
+              print 'path=',path
+              testname=path.replace('/','_')
+              html += "<a href=viewer/viewBuild.cgi?target_dir=%s>%s</a>" % (os.path.join(pathToInvocationDir,path),testname)
+          """
+
           if lightColor == GREEN:
             html += "&nbsp;<img src=\"images/green.gif\">"
           elif lightColor == YELLOW:
@@ -464,10 +494,22 @@ class InvocationList:
 
           if changedFromPrevious:
             html += "&nbsp;<b>!</b>"
+
+          html += "</div><div>"
+
+          for item in items:
+              if item.startswith('Comparison') or item.startswith('L2Diff'):
+                itemname = item
+                itemname = itemname.replace('L2DiffComparison_','')
+                itemname = itemname.replace('Comparison_','')
+                html += "&nbsp;<a href=viewer/viewBuild.cgi?target_dir=%s>%s</a>" % (os.path.join(pathToInvocationDir,item),itemname)
+          html += "</div>"
           newInvocations.append(Invocation(invocationDir, html, os.stat(os.path.join(self.pathToSiteDir, invocationDir))[8]))
 
        except Exception,e:
         print "Exception:",e,"; continuing"
+        import traceback
+        traceback.print_exc(file=sys.stdout)
 
 
       if len(newInvocations) > 0:

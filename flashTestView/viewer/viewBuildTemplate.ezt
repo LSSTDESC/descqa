@@ -1,5 +1,6 @@
 <body>
 <base target="rightframe">
+<a href="../home.cgi" target="_top">Home</a> - <a href="viewBuilds.cgi?target_dir=[pathToInvocationDir]" target="_top">[invocationDir]</a>
 
 [if-any setupDescription]
   <h1>[setupDescription]&nbsp;
@@ -92,6 +93,8 @@
         <hr>
         <a name="run_[runs.name]"></a><h2>[runs.htmlDescription] [if-any runs.runFailed]<i>(failed)</i>[end]</h2>
 
+<table>
+<tr><td>
         <table class="indenttable">
 
         <tr valign="top">
@@ -160,9 +163,9 @@
           <tr valign="top">
           <td>Plots:&nbsp;</td>
           <td>
-	  [for runs.imgfiles]	
+	        [for runs.imgfiles]	
             <a href="viewImageFile.cgi?target_file=[runs.imgfiles.path]">[runs.imgfiles.filename]</a><br>
-          [end]	
+            [end]	
           </td>
           </tr>
         [end]
@@ -190,6 +193,16 @@
         </tr>
 
         </table>
+</td>
+<td>
+[for runs.imgfiles]	
+<a href="viewImageFile.cgi?target_file=[runs.imgfiles.path]">
+<img src="data:image/png;base64,[runs.imgfiles.data]" width="100%">
+</a>
+[end]	
+</td>
+</tr>
+</table>
 
         <br>
         <a href="viewBuild.cgi?target_dir=[fullBuildPath]" target="_top">Return to top</a>
