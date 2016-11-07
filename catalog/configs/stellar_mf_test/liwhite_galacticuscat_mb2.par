@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
-import os
+from descqaGlobalConfig import *
 
-sim_folder = os.environ['DESCQA_SIM_DATA_DIR']
-obs_folder = os.environ['DESCQA_OBS_DATA_DIR']
+sim = get_sim_catalog(GALACTICUS_MB2)
+sim_catalog = sim.path
+obs = get_obs_catalog(LIWHITE_STELLAR_MASS)
+obs_catalog = obs.path
+obs_catalog_usecols = obs.columns
 
-sim_catalog = sim_folder + '/galacticus_mb2_anl.hdf5.galacticus'
-obs_catalog = obs_folder + '/LIWHITE/StellarMassFunction/massfunc_data.txt'
-obs_catalog_usecols = (0,4)
 
 zlo = 0.05
 zhi = 0.15
