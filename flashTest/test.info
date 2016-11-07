@@ -22,6 +22,8 @@
       parfiles: <pathToBCC>/catalog/configs/average_stellar_mass_halo_mass/mb2_cmucat.par \
                 <pathToBCC>/catalog/configs/average_stellar_mass_halo_mass/mb2_stanfordcat_mb2.par \
                 <pathToBCC>/catalog/configs/average_stellar_mass_halo_mass/mb2_stanfordcat_liwhite.par \
+                <pathToBCC>/catalog/configs/average_stellar_mass_halo_mass/mb2_ihodcat.par \
+                <pathToBCC>/catalog/configs/average_stellar_mass_halo_mass/mb2_sagcat.par \
                 <pathToBCC>/catalog/configs/average_stellar_mass_halo_mass/mb2_galacticuscat_mb2.par \
                 <pathToBCC>/catalog/configs/average_stellar_mass_halo_mass/mb2_yalecat_liwhite.par \
                 <pathToBCC>/catalog/configs/average_stellar_mass_halo_mass/mb2_yalecat_mb2.par
@@ -33,6 +35,7 @@
       parfiles: <pathToBCC>/catalog/configs/wprp/sdss_stanfordcat_liwhite.par \
                 <pathToBCC>/catalog/configs/wprp/sdss_stanfordcat_mb2.par \
                 <pathToBCC>/catalog/configs/wprp/sdss_cmucat_mb2.par \
+                <pathToBCC>/catalog/configs/wprp/sdss_ihodcat.par \
                 <pathToBCC>/catalog/configs/wprp/sdss_galacticuscat_mb2.par \
                 <pathToBCC>/catalog/configs/wprp/sdss_yalecat_mb2.par \
                 <pathToBCC>/catalog/configs/wprp/sdss_yalecat_liwhite.par \
@@ -43,13 +46,13 @@
       setupName: catalog
       setupOptions: halo_mf.py
       parfiles: <pathToBCC>/catalog/configs/halo_mf/cmucat.par \
-        <pathToBCC>/catalog/configs/halo_mf/galacticuscat.par \
-        <pathToBCC>/catalog/configs/halo_mf/ihodcat.par \
-        <pathToBCC>/catalog/configs/halo_mf/sagcat_mb2.par \
-        <pathToBCC>/catalog/configs/halo_mf/stanfordcat.par \
-        <pathToBCC>/catalog/configs/halo_mf/stanfordcat_mb2.par \
-        <pathToBCC>/catalog/configs/halo_mf/yalecat_mb2.par \
-        <pathToBCC>/catalog/configs/halo_mf/yalecat_liwhite.par
+                <pathToBCC>/catalog/configs/halo_mf/galacticuscat.par \
+                <pathToBCC>/catalog/configs/halo_mf/ihodcat.par \
+                <pathToBCC>/catalog/configs/halo_mf/sagcat_mb2.par \
+                <pathToBCC>/catalog/configs/halo_mf/stanfordcat.par \
+                <pathToBCC>/catalog/configs/halo_mf/stanfordcat_mb2.par \
+                <pathToBCC>/catalog/configs/halo_mf/yalecat_mb2.par \
+                <pathToBCC>/catalog/configs/halo_mf/yalecat_liwhite.par
       setupDescription: halo_mf
     </halo_mf>
   </L2DiffComparison>
@@ -58,7 +61,7 @@
       setupName: catalog
       setupOptions: color_color_plot.py
       parfiles: <pathToBCC>/catalog/configs/color_color_plot/mb2_cmucat.par \
-          <pathToBCC>/catalog/configs/color_color_plot/galacticuscat.par
+                <pathToBCC>/catalog/configs/color_color_plot/galacticuscat.par
       setupDescription: Color color plot
     </ColorColorPlot>
   </Comparison>
