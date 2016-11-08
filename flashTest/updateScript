@@ -1,5 +1,0 @@
-#!/bin/sh
-
-echo Updating DESCQA/FlashTest code from git repository...
-
-git pull

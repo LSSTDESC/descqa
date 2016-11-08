@@ -342,6 +342,8 @@ if len(runs) > 0:
     else:
       run.showRun = None
 
+    run.showRun = True # this line added by Yao-Yuan Mao to show all runs
+
     pathToTestOutput = os.path.join(run.fullPath, "test_output")
     run.testResult=''
     if os.path.isfile(pathToTestOutput) and os.stat(pathToTestOutput)[6] > 0:

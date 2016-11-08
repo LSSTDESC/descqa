@@ -1,0 +1,34 @@
+0.3089
+0.0486
+0.6774
+0.816
+0.9667
+-1.0
+0.0
+1.686
+CMB
+TINK
+0.0
+600.0
+1.0E12
+1.0E16
+50.0
+
+!--------------------------------------------------
+input.par file contains (in this order!):
+
+omega_0           -- total matter fraction
+omega_bar         -- baryon fraction
+h                 -- hubble constant in 100 km/s/Mpc
+sigma_8           -- variance of the linear density field
+n_s               -- power spectrum index
+w_0               -- dark energy equation of state parameter
+w_a               -- ... (see the above, w = w_0 + w_a*(1-a)) 
+delta_c           -- linear overdensity at virialization
+transfer function -- options: CMB, BBKS, EBW, PD, HS, KH or EH
+fitting function  -- options: PS, ST, JEN, LANL, DELP, REED, REED06 or TINK
+redshift          -- z >= 0
+Delta             -- overdensity of SO halos; used only for Tinker MF
+minimal mass      -- range of masses which output will cover
+maximal mass      -- ... (see the above)
+k_max             -- maximum k for calculating sigma(k) integration

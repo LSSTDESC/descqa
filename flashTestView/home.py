@@ -1,17 +1,26 @@
 #!/usr/bin/env python
-import sys, os
-import cgi, pickle, tempfile
-import purgeTmp
-sys.path.insert(0, "lib")
-import invocations, littleParser
+try:
+  open('x','w').write('0')
+  import sys, os
+  import cgi, pickle, tempfile
+  open('x','w').write('0.1')
+  import purgeTmp
+  sys.path.insert(0, "lib")
+  import invocations, littleParser
+  open('x','w').write('0.5')
 
-fileMap = "fileMap"
+  fileMap = "fileMap"
+except:
+  import traceback
+  traceback.print_exc(file=open('x','w'))
+  sys.exit(1)
 
 def abort(msg):
   print "<body>"
   print msg
   print "</body>"
   print "</html>"
+  open('x','w').write(msg)
   sys.exit(0)
 
 def rewriteFileMap(fileMapDict):
@@ -19,6 +28,9 @@ def rewriteFileMap(fileMapDict):
   text = "# THIS IS A COMPUTER GENERATED FILE! DO NOT EDIT!\n"
   text += "\n".join(["%s: %s" % (key, fileMapDict[key]) for key in fileMapDict.keys()])
   open(fileMap,"w").write(text)
+
+
+open('x','w').write('1')
 
 # FlashTest's main results board showing red or green lights
 # for FlashTest invocations with failures or no failures.
@@ -48,12 +60,14 @@ try:
     print "<script src=\"lib/redirect.js\"></script>"
     print "</head>"
 
+    open('x','w').write('3')
 
     # make sure website has write permissions in this folder
     cwd = os.getcwd()
     if not os.access(cwd, os.W_OK):
       msg = ("The web-server does not have write permissions in directory \"%s\"<br>" % cwd +
              "This permission must be granted for DESCQA to function correctly.")
+      open('x','w').write(msg)
       abort(msg)
 
     # Generate fileMapDict from "fileMap", a text file that maps
@@ -63,12 +77,14 @@ try:
       if not os.access(fileMap, os.R_OK + os.W_OK):
         msg = ("The web-server does not have read and/or write permissions on file \"%s\"<br>" % os.path.join(cwd, fileMap) +
                "This permission must be granted for DESCQA to function correctly.")
+        open('x','w').write(msg)
         abort(msg)
       else:
         fileMapDict = littleParser.parseFile(fileMap)
     else:
       fileMapDict = {}
 
+    open('x','w').write('4')
     if os.path.isfile("config"):
       configDict = littleParser.parseFile("config")
       pathsToOutdirs = configDict.get("pathToOutdir", [])  # returns a string if only one value
@@ -144,7 +160,8 @@ try:
               "pathToOutdir: [path/to/outdir]<br><br>" +
               "where [path/to/outdir] is an absolute path to a top-level DESCQA  output directory.<br>" +
           "Then reload this page.")
-except:
+except Exception,e :   
+    print "Exception! ", e
     import traceback
     traceback.print_exc(file=sys.stdout)
 
@@ -152,11 +169,12 @@ except:
 # an extant directory, and that that directory is listed in "config"
 try:
     shouldGenerate=False
+    #shouldGenerate=True
     if fileMapDict.has_key(pathToTargetDir):
       pickFile = fileMapDict[pathToTargetDir]
       if os.path.exists(pickFile):
         bigBoard = pickle.load(open(pickFile))
-        if 1:#bigBoard.isOutOfDate():
+        if bigBoard.isOutOfDate():
           print "<body onLoad=\"vanishPleaseWait(); statsWindowInit()\">"
           print "<div id=\"pleasewait\">"
           print "DESCQA has generated new data since the last time this page was viewed.<br>"
@@ -172,7 +190,6 @@ try:
           shouldGenerate=True
 
     if shouldGenerate:
-      print "table being generated"
       print "<body onLoad=\"vanishPleaseWait(); statsWindowInit()\">"
       print "<div id=\"pleasewait\">"
       print "Please wait while DESCQA generates a table for \"%s\"." % pathToTargetDir
@@ -202,6 +219,7 @@ try:
     print "<div class=\"clearBlock\">&nbsp;</div>"
     print "<div id=\"titleDiv\">"
     print "<h1>DESCQA Invocations</h1>"
+    print "<h3>Sorting is alphabetical; I'll fix that later today -turam</h3>"
     print "</div>"
 
     # make bar with navigation to other "pages" of results.
@@ -239,7 +257,7 @@ try:
         endRow  = bigBoard.getInvocationName(reversedPageNum*invocationsPerPage)
         startRow = bigBoard.getInvocationName(((reversedPageNum+1)*invocationsPerPage)-1)
         print ("<a class=\"everblue\" " +
-               "href=\"/project/lsst/descqa/flashTestView/home.cgi?target_dir=%s&page=%s\" " % (pathToTargetDir, thisPageNum-1) +
+               "href=\"./home.cgi?target_dir=%s&page=%s\" " % (pathToTargetDir, thisPageNum-1) +
                "title=\"%s thru %s\">&lt;&lt;</a>" % (startRow, endRow))
       else:
         # print a "dummy link"
@@ -254,7 +272,7 @@ try:
           endRow  = bigBoard.getInvocationName((reversedI-1)*invocationsPerPage)
           startRow = bigBoard.getInvocationName((reversedI*invocationsPerPage)-1)
           print ("<a class=\"everblue\" " +
-                 "href=\"/project/lsst/descqa/flashTestView/home.cgi?target_dir=%s&page=%s\" " % (pathToTargetDir, i) +
+                 "href=\"./home.cgi?target_dir=%s&page=%s\" " % (pathToTargetDir, i) +
                  "title=\"%s thru %s\">%s</a>" % (startRow, endRow, i))
 
       if thisPageNum < lastPageNum:
@@ -262,7 +280,7 @@ try:
         endRow  = bigBoard.getInvocationName((reversedPageNum-2)*invocationsPerPage)
         startRow = bigBoard.getInvocationName(((reversedPageNum-1)*invocationsPerPage)-1)
         print ("<a class=\"everblue\" " +
-               "href=\"/project/lsst/descqa/flashTestView/home.cgi?target_dir=%s&page=%s\" " % (pathToTargetDir, thisPageNum+1) +
+               "href=\"./home.cgi?target_dir=%s&page=%s\" " % (pathToTargetDir, thisPageNum+1) +
                "title=\"%s thru %s\">&gt;&gt;</a>" % (startRow, endRow))
       else:
         # print a "dummy link"

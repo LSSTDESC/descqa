@@ -63,7 +63,7 @@ class BigBoard:
         #print "Bboutofdate true"
         return True
     #print "Bboutofdate false"
-    return True
+    #return True
     return False
 
   def realignGrid(self):
