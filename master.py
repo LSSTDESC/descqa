@@ -125,12 +125,12 @@ def run(validations_to_run, catalogs_to_run, output_dir, validation_data_dir, ca
 
                     # writing out files that the webserver needs
 
-                    #with open(output_paths['exec_detail'], 'w') as f:
-                    #    f.write('numProcs: 1\nwallClockTime: {0} second\nnumOutputFiles: {1}\nnumTheoryFiles: {1}\n'.format(\
-                    #            time.time()-start_time, int(success)))
+                    with open(output_paths['exec_detail'], 'w') as f:
+                        f.write('numProcs: 1\nwallClockTime: {0} second\nnumOutputFiles: {1}\nnumTheoryFiles: {1}\n'.format(\
+                                time.time()-start_time, int(success)))
 
-                    #with open(output_paths['status'], 'w') as f:
-                    #    f.write('0\n0\n')
+                    with open(output_paths['status'], 'w') as f:
+                        f.write('0\n0\n')
 
                 except:
                     # catalog-level error
@@ -139,8 +139,8 @@ def run(validations_to_run, catalogs_to_run, output_dir, validation_data_dir, ca
                         traceback.print_exc(file=f)
                     status_count['exec_fail'] += 1
 
-            #with open(pjoin(validation_dir, output_filenames['validation-level']['status']), 'w') as f:
-            #    f.write('0\n0\n0\n{}\n{}\n'.format(len(catalogs_to_run)-sum(status_count.values()), len(catalogs_to_run)))
+            with open(pjoin(validation_dir, output_filenames['validation-level']['status']), 'w') as f:
+                f.write('0\n0\n0\n{}\n{}\n'.format(len(catalogs_to_run)-sum(status_count.values()), len(catalogs_to_run)))
         
             with open(pjoin(output_dir, output_filenames['run-level']['status']), 'a') as f:
                 f.write('{0} - {1[exec_fail]}/{2} failed in execution; {1[test_fail]}/{2} failed in testing\n'.format(\

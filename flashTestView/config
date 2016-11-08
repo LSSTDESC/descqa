@@ -21,4 +21,4 @@
 pathToOutdir: /project/projectdirs/lsst/descqacmu/run
 #pathToOutdir: /home/ricker/public_html/share/research/bccqa/run
 #pathToInfo:   /u/ki/pmricker/build/bcczookeeper/tests/flashTest
-siteTitle:    DES BCC Quality Assurance
+siteTitle:    LSST DESC Quality Assurance

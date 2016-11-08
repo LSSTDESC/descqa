@@ -219,7 +219,6 @@ try:
     print "<div class=\"clearBlock\">&nbsp;</div>"
     print "<div id=\"titleDiv\">"
     print "<h1>DESCQA Invocations</h1>"
-    print "<h3>Sorting is alphabetical; I'll fix that later today -turam</h3>"
     print "</div>"
 
     # make bar with navigation to other "pages" of results.

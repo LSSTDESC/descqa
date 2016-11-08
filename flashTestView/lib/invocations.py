@@ -361,7 +361,7 @@ class InvocationList:
             if invocation.html == "" or invocation.name == mostRecent.name:
               # this is a blank "place-holder" invocation that
               # needs to be replaced by a real one, so remove it
-	      # Also remove most recent just in case that testrun is updated on the view site incrementally
+              # Also remove most recent just in case that testrun is updated on the view site incrementally
               self.invocations.remove(invocation)
             else:
               # there's already an invocation with this name, and
@@ -534,7 +534,7 @@ class Invocation:
     self.modifiedTime = modifiedTime
 
   def __cmp__(self, other):
-    #return -cmp(self.modifiedTime, other.modifiedTime)  # Invocation instances will sort so that the
-    return -cmp(self.name, other.name)  # Invocation instances will sort so that the
-                                        # names appear in reverse lexicographical order
-                                        # (b/c we want the most recent date at the top)
+    self_date, __, self_postfix = self.name.partition('_')
+    other_date, __, other_postfix = other.name.partition('_')
+    # self and other are swapped to show reserved order
+    return cmp(other_date, self_date) or cmp(int(other_postfix or 0), int(self_postfix or 0))

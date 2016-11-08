@@ -8,7 +8,6 @@ def L2Diff(dataset_1, dataset_2, threshold=1.0):
     checks the x values to see if interpolation is needed
     threshold sets criterion for passing the test
     """
-    success=False
     x1     = dataset_1['x']
     y1     = dataset_1['y']
     if(dataset_1.has_key('y+') and dataset_1.has_key('y-')):
@@ -26,12 +25,30 @@ def L2Diff(dataset_1, dataset_2, threshold=1.0):
     else:
         e2 = None
 
+    # Ensure ranges of catalog and validation data are the same
+    minx=max(np.min(x1),np.min(x2))
+    maxx=min(np.max(x1),np.max(x2))
+    select1=(x1>=minx) & (x1<=maxx)
+    select2=(x2>=minx) & (x2<=maxx)
+    y1=y1[select1]
+    y2=y2[select2]
+    if e1 is not None:
+        e1=e1[select1]
+    if e2 is not None:
+        e2=e2[select2]
+
     # Interpolate catalog data to data x-points and compute L2 norm and significance
 
-    y1int = np.interp(x2, x1, y1)
+    if not(np.all(x1==x2)):
+        y1int = np.interp(x2, x1, y1)
+        if e1 is not None:
+            e1int = np.interp(x2, x1, e1)
+    else:
+        y1int=y1
+        if e1 is not None:
+            e1int = e1
 
     if e1 is not None:
-        e1int = np.interp(x2, x1, e1)
         if e2 is not None:
             L2 = (np.sum( (y2 - y1int)**2 / (e1int**2 + e2**2) ))**0.5
         else:
@@ -40,15 +57,11 @@ def L2Diff(dataset_1, dataset_2, threshold=1.0):
         if e2 is not None:
             L2 = (np.sum( (y2 - y1int)**2 / e2**2 ))**0.5
         else:
-            L2 = (np.s (y2 - y1int)**2 ))**0.5
-
-    print "L2 = %G" % L2
+            L2 = (np.sum(y2 - y1int)**2 ))**0.5
 
     # Issue verdict
-
     if (L2 > threshold) or (np.isnan(L2)):
-        print "Almost! But you need to get to L2 = %G"%(threshold)
+        success=False
     else:
-        print "SUCCESS"
         success = True
     return L2, success

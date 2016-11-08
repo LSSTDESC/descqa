@@ -34,7 +34,7 @@ class YaleCAMGalaxyCatalog(GalaxyCatalog):
         """
         
         # set file type and location
-        self.type_ext = 'yale'
+        self.type_ext = 'hdf5'
         self.root_path = '/global/project/projectdirs/lsst/descqa/'
         
         # set fixed properties

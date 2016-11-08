@@ -2,6 +2,7 @@ from __future__ import (division, print_function, absolute_import)
 
 import os
 import numpy as np
+import importlib
 from warnings import warn
 import matplotlib
 matplotlib.use('Agg') # Must be before importing matplotlib.pyplot
@@ -128,7 +129,7 @@ class BinnedStellarMassFunctionTest(ValidationTest):
             #save results to files
             self.write_file(catalog_result, output_dict['catalog'])
             self.write_file(self.validation_data, output_dict['validation'])
-            self.write_summary_file(summary_result, output_dict['summary'])
+            self.write_summary_file(summary_result, test_passed, output_dict['summary'])
             
             return test_passed
             
@@ -278,7 +279,7 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         Parameters
         ----------
         result : 
-        
+
         savepath : string
             file to save result
         
@@ -293,10 +294,18 @@ class BinnedStellarMassFunctionTest(ValidationTest):
             f.write("%13.6e %13.6e %13.6e %13.6e\n" % (b, h, hn, hx))
         f.close()
     
-    def write_summary_file(self, result, savepath, comment=None):
+    def write_summary_file(self, result, test_passed, savepath, comment=None):
         """
-        
+        Parameters
+        ----------
+        result :
+        savepath : string
+            savepath : string 
         """
-        pass
-        
+        f = open(savepath, 'w')
+        if(test_passed):
+            f.write("SUCCESS: L2 = %G\n" %result)
+        else:
+            f.write("FAILED: L2 = %G is > threshold value %G\n" %(result,self.threshold))
+        f.close()
 
