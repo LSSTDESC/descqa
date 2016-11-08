@@ -169,6 +169,9 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         mhmin = (mhist - np.sqrt(mhist)) / binwid / vol
         mhmax = (mhist + np.sqrt(mhist)) / binwid / vol
         mhist = mhist / binwid / vol
+        mhist = np.log10(mhist)
+        mhmin = np.log10(mhmin)
+        mhmax = np.log10(mhmax)
         
         return binctr, binwid, mhist, mhmin, mhmax
     
@@ -193,8 +196,7 @@ class BinnedStellarMassFunctionTest(ValidationTest):
 
         result, test_passed = summary_method(catalog_result,self.validation_data,self.threshold)
 
-        #return result, test_passed
-        return 1.0, True
+        return result, test_passed
     
     def load_validation_data(self):
         """
@@ -230,12 +232,12 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         fig = mp.figure()
         
         #plot measurement from galaxy catalog
-        sbinctr, sbinwid, shist, shmin, shmax = result
+        sbinctr, sbinwid, shist, shmin, shmax = (result['x'], result['dx'], result['y'], result['y-'], result['y+'])
         mp.step(sbinctr, shist, where="mid", label=galaxy_catalog_name, color='blue')
         mp.fill_between(sbinctr, shmin, shmax, facecolor='blue', alpha=0.3, edgecolor='none')
         
         #plot comparison data
-        obinctr, ohist, ohmin, ohmax = self.validation_data
+        obinctr, ohist, ohmin, ohmax = (self.validation_data['x'], self.validation_data['y'], self.validation_data['y-'], self.validation_data['y+'])
         mp.errorbar(obinctr, ohist, yerr=[ohist-ohmin, ohmax-ohist], label=self._data_name, fmt='o',color='green')
         
         #add formatting
@@ -262,7 +264,7 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         """
         
         #unpack result
-        binctr, binwid, hist, hmin, hmax = result
+        binctr, binwid, hist, hmin, hmax = (result['x'], result['dx'], result['y'], result['y-'], result['y+'])
         
         #save result to file
         f = open(savepath, 'w')

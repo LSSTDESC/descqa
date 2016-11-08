@@ -30,6 +30,8 @@ def L2Diff(dataset_1, dataset_2, threshold=1.0):
     maxx=min(np.max(x1),np.max(x2))
     select1=(x1>=minx) & (x1<=maxx)
     select2=(x2>=minx) & (x2<=maxx)
+    x1=x1[select1]
+    x2=x2[select2]
     y1=y1[select1]
     y2=y2[select2]
     if e1 is not None:
@@ -57,7 +59,7 @@ def L2Diff(dataset_1, dataset_2, threshold=1.0):
         if e2 is not None:
             L2 = (np.sum( (y2 - y1int)**2 / e2**2 ))**0.5
         else:
-            L2 = (np.sum(y2 - y1int)**2 ))**0.5
+            L2 = (np.sum(y2 - y1int)**2 )**0.5
 
     # Issue verdict
     if (L2 > threshold) or (np.isnan(L2)):

@@ -157,7 +157,7 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
 
         hdfFile = h5py.File(fn, 'r')
         hdfKeys, hdfAttrs = self._gethdf5group(hdfFile)
-        print "load using keys: ", hdfKeys
+        #print "load using keys: ", hdfKeys
         self.catalog = {}
         for key in hdfKeys:
             #if 'Output' in key:
@@ -179,7 +179,7 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
         #print self.catalog.values()[0]['redshift']
         self.redshift = self.catalog.values()[0]['redshift'][0]
 
-        print "box_size after loading = ", self.box_size
+        #print "box_size after loading = ", self.box_size
 
         # TODO: how to get sky area?
         hdfFile.close()
@@ -232,7 +232,7 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
         in the catalog but can be computed from properties that are via
         a simple function call.
         """
-        print "in get_derived_property: ", quantity, filters
+        #print "in get_derived_property: ", quantity, filters
         props = []
 
         #if 'position' in quantity:
@@ -241,19 +241,19 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
         stored_qty_rec = self.derived[quantity]
         stored_qty_name = stored_qty_rec[0]
         stored_qty_fctn = stored_qty_rec[1]
-        print 'stored_qty:', stored_qty_name, stored_qty_fctn
+        #print 'stored_qty:', stored_qty_name, stored_qty_fctn
         for haloID in self.catalog.keys():
             halo = self.catalog[haloID]
-            print 'haloID = ', haloID, halo
+            #print 'haloID = ', haloID, halo
             if self._check_halo(halo, filters):
                 #if stored_qty_name in halo.keys():
                 #    props.extend(stored_qty_fctn( halo[stored_qty_name] ))
                 if type(stored_qty_name) is tuple and stored_qty_name[0] in halo.keys():
-                    print 'branch1: ', quantity
+                    #print 'branch1: ', quantity
                     values = halo[stored_qty_name[0]]
                     props.extend(stored_qty_fctn(values, stored_qty_name[1:]))
                 else:
-                    print 'branch2: ', quantity
+                    #print 'branch2: ', quantity
                     if stored_qty_name in halo.keys():
                         props.extend(stored_qty_fctn( halo[stored_qty_name] ))
         return np.asarray(props)
@@ -320,7 +320,7 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
         quantity times some factor. Additional args for the derived quantity
         routines are passed in as a tuple, so extract the factor first.
         """
-        print "in _multiply: ", propList, " ; factor_tuple: ", factor_tuple
+        #print "in _multiply: ", propList, " ; factor_tuple: ", factor_tuple
         factor = factor_tuple[0]
         return propList * factor
 

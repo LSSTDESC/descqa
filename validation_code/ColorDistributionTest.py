@@ -49,9 +49,6 @@ class ColorDistributionTest(ValidationTest):
             
             name : string
             
-            usecols : tuple
-            columns to use in data comparison file
-            (bin centers, number_density, err)
         """
         
         super(ValidationTest, self).__init__()
@@ -88,13 +85,13 @@ class ColorDistributionTest(ValidationTest):
         #the first photometric band
         if 'band1' in list(test_args.keys()):
             band1 = test_args['band1']
-            self.band1 = float(band1)
+            self.band1 = band1
         else:
             raise ValueError('band1 not found!')
         #the second photometric band
         if 'band2' in list(test_args.keys()):
             band2 = test_args['band2']
-            self.band2 = float(band2)
+            self.band2 = band2
         else:
             raise ValueError('band2 not found!')
 
@@ -119,20 +116,22 @@ class ColorDistributionTest(ValidationTest):
         """
         
         #make sure galaxy catalog has appropiate quantities
-        if not 'band1' in galaxy_catalog.quantities.keys():
+        if not self.band1 in galaxy_catalog.quantities.keys():
             #raise an informative warning
             msg = ('galaxy catalog does not have `band1` quantity, skipping the rest of the validation test.')
             warn(msg)
             #write to log file
             f = open(output_dict['log'], 'w')
             f.write(msg)
-        elif not 'band2' in galaxy_catalog.quantities.keys():
+            test_passed = False
+        elif not self.band2 in galaxy_catalog.quantities.keys():
             #raise an informative warning
             msg = ('galaxy catalog does not have `band2` quantity, skipping the rest of the validation test.')
             warn(msg)
             #write to log file
             f = open(output_dict['log'], 'w')
             f.write(msg)
+            test_passed = False
         else: #continue with the test
             
             #calculate color distribution in galaxy catalog
@@ -150,7 +149,7 @@ class ColorDistributionTest(ValidationTest):
             self.write_validation_file(self.validation_data, output_dict['validation'])
             self.write_summary_file(summary_result, output_dict['summary'])
             
-            return test_passed
+        return test_passed
             
     def color_distribution(self, galaxy_catalog):
         """
@@ -166,9 +165,9 @@ class ColorDistributionTest(ValidationTest):
         mag2 = galaxy_catalog.get_quantities(self.band2, {'zlo': self.zlo, 'zhi': self.zhi})
         
         #remove nonsensical magnitude values
-        mask = (mag1>0) & (mag1<50) & (mag2>0) & (mag2<50)
-        mag1 = mag1[mask]
-        mag2 = mag2[mask]
+        # mask = (mag1>0) & (mag1<50) & (mag2>0) & (mag2<50)
+        # mag1 = mag1[mask]
+        # mag2 = mag2[mask]
         
         #count galaxies
         hist, bins = np.histogram(mag1-mag2, bins=self.color_bins)
@@ -204,7 +203,7 @@ class ColorDistributionTest(ValidationTest):
         
         fn = os.path.join(self._data_directory, self._data_file)
         
-        binctr, hist = np.loadtxt(fn, unpack=True, usecols=self._data_args['usecols'])
+        binctr, hist = np.loadtxt(fn, unpack=True)
         
         return binctr, hist
     
@@ -232,7 +231,7 @@ class ColorDistributionTest(ValidationTest):
         
         #plot comparison data
         obinctr, ohist = self.validation_data
-        plt.step(obinctr, ohist, label=self._data_name, fmt='o',color='green')
+        plt.step(obinctr, ohist, label=self._data_name,color='green')
         
         #add formatting
         plt.legend(loc='best', frameon=False)
@@ -258,14 +257,14 @@ class ColorDistributionTest(ValidationTest):
         """
         
         #unpack result
-        binctr, hist, hmin, hmax = result
+        binctr, hist = result
         
         #save result to file
         f = open(savepath, 'w')
         if comment:
             f.write('# {0}\n'.format(comment))
-        for b, h, hn, hx in zip(binctr, hist, hmin, hmax):
-            f.write("%13.6e %13.6e %13.6e %13.6e\n" % (b, h, hn, hx))
+        for b, h in zip(binctr, hist):
+            f.write("%13.6e %13.6e\n" % (b, h))
         f.close()
     
     def write_validation_file(self, result, savepath, comment=None):
@@ -283,14 +282,14 @@ class ColorDistributionTest(ValidationTest):
         """
         
         #unpack result
-        binctr, hist, hmin, hmax = result
+        binctr, hist = result
         
         #save result to file
         f = open(savepath, 'w')
         if comment:
             f.write('# {0}\n'.format(comment))
-        for b, h, hn, hx in zip(binctr, hist, hmin, hmax):
-            f.write("%13.6e %13.6e %13.6e %13.6e\n" % (b, h, hn, hx))
+        for b, h in zip(binctr, hist):
+            f.write("%13.6e %13.6e\n" % (b, h))
         f.close()
     
     def write_summary_file(self, result, savepath, comment=None):

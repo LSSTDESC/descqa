@@ -142,6 +142,8 @@ if ((templateData["setupFailed"]) or
 else:
   templateData["showSetup"] = None
 
+templateData["showSetup"] = True # added by YYM
+
 pathToFlashH = os.path.join(targetDir, "Flash.h")
 if os.path.isfile(pathToFlashH):
   templateData["pathToFlashH"] = pathToFlashH
@@ -179,6 +181,7 @@ if ((templateData["gmakeFailed"]) or
 else:
   templateData["showCompilation"] = None
 
+templateData["showCompilation"] = True #added by YYM
 
 # we assume any directories in 'targetDir' to be the output
 # of a single *run* of Flash (i.e., the output resulting from
@@ -342,7 +345,7 @@ if len(runs) > 0:
     else:
       run.showRun = None
 
-    run.showRun = True # this line added by Yao-Yuan Mao to show all runs
+    run.showRun = True # this line added by Yao-Yuan Mao 
 
     pathToTestOutput = os.path.join(run.fullPath, "test_output")
     run.testResult=''
@@ -360,6 +363,8 @@ if len(runs) > 0:
       run.showTest = True
     else:
       run.showTest = None
+
+    run.showTest = True # this line added by Yao-Yuan Mao 
 
   templateData["runs"] = runs
 else:

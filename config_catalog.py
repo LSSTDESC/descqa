@@ -7,6 +7,7 @@ CATALOG_CONFIG = [ \
     {'name':'SHAM-LiWhite', 'file':'SHAM_0.94118.npy', 'reader':'SHAMGalaxyCatalog'},
     {'name':'SHAM-MB2', 'file':'SHAM_0.94118_MBII.npy', 'reader':'SHAMGalaxyCatalog'},
     {'name':'CAM-LiWhite', 'file':'yale_cam_age_matching_LiWhite_2009_z0.0.hdf5', 'reader':'YaleCAMGalaxyCatalog'},
-    {'name':'CAM-MB2', 'file':'yale_cam_age_matching_MBII_z0.0.hdf5', 'reader':'YaleCAMGalaxyCatalog'}
+    {'name':'CAM-MB2', 'file':'yale_cam_age_matching_MBII_z0.0.hdf5', 'reader':'YaleCAMGalaxyCatalog'},
+    {'name':'Galacticus', 'file':'galacticus_mb2_anl.hdf5.galacticus', 'reader':'GalacticusGalaxyCatalog'},
 ]
 
