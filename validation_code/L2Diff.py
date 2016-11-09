@@ -8,20 +8,24 @@ def L2Diff(dataset_1, dataset_2, threshold=1.0):
     checks the x values to see if interpolation is needed
     threshold sets criterion for passing the test
     """
-    x1     = dataset_1['x']
-    y1     = dataset_1['y']
+    #Clean up catalog data to remove nans and infs
+    mask=np.isfinite(np.vstack(dataset_1.values())).all(axis=0)
+    x1     = dataset_1['x'][mask]
+    y1     = dataset_1['y'][mask]
     if(dataset_1.has_key('y+') and dataset_1.has_key('y-')):
-        e1 = (dataset_1['y+']-dataset_1['y-'])/2.
+        e1 = (dataset_1['y+'][mask]-dataset_1['y-'][mask])/2.
     elif(dataset_1.has_key('dy')):
-        e1 = dataset_1['dy']
+        e1 = dataset_1['dy'][mask]
     else:
         e1 = None
-    x2     = dataset_2['x']
-    y2     = dataset_2['y']
+
+    mask=np.isfinite(np.vstack(dataset_2.values())).all(axis=0)
+    x2     = dataset_2['x'][mask]
+    y2     = dataset_2['y'][mask]
     if(dataset_2.has_key('y+') and dataset_2.has_key('y-')):
-        e2 = (dataset_2['y+']-dataset_2['y-'])/2.
+        e2 = (dataset_2['y+'][mask]-dataset_2['y-'][mask])/2.
     elif(dataset_2.has_key('dy')):
-        e2 = dataset_2['dy']
+        e2 = dataset_2['dy'][mask]
     else:
         e2 = None
 
@@ -40,7 +44,6 @@ def L2Diff(dataset_1, dataset_2, threshold=1.0):
         e2=e2[select2]
 
     # Interpolate catalog data to data x-points and compute L2 norm and significance
-
     if not(np.all(x1==x2)):
         y1int = np.interp(x2, x1, y1)
         if e1 is not None:

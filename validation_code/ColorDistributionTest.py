@@ -116,40 +116,32 @@ class ColorDistributionTest(ValidationTest):
         """
         
         #make sure galaxy catalog has appropiate quantities
-        if not self.band1 in galaxy_catalog.quantities.keys():
+        if not all(k in galaxy_catalog.quantities for k in (self.band1, self.band2)):
             #raise an informative warning
             msg = ('galaxy catalog does not have `band1` quantity, skipping the rest of the validation test.')
             warn(msg)
             #write to log file
-            f = open(output_dict['log'], 'w')
-            f.write(msg)
-            test_passed = False
-        elif not self.band2 in galaxy_catalog.quantities.keys():
-            #raise an informative warning
-            msg = ('galaxy catalog does not have `band2` quantity, skipping the rest of the validation test.')
-            warn(msg)
-            #write to log file
-            f = open(output_dict['log'], 'w')
-            f.write(msg)
-            test_passed = False
-        else: #continue with the test
+            with open(output_dict['log'], 'w') as f:
+                f.write(msg)
             
-            #calculate color distribution in galaxy catalog
-            binctr, hist = self.color_distribution(galaxy_catalog)
-            catalog_result = (binctr, hist)
+            return 2
+
+        #calculate color distribution in galaxy catalog
+        binctr, hist = self.color_distribution(galaxy_catalog)
+        catalog_result = (binctr, hist)
+        
+        #calculate summary statistic
+        summary_result, test_passed = self.calulcate_summary_statistic(catalog_result)
+        
+        #plot results
+        self.plot_result(catalog_result, galaxy_catalog_name, output_dict['figure'])
+        
+        #save results to files
+        self.write_result_file(catalog_result, output_dict['catalog'])
+        self.write_validation_file(self.validation_data, output_dict['validation'])
+        self.write_summary_file(summary_result, output_dict['summary'])
             
-            #calculate summary statistic
-            summary_result, test_passed = self.calulcate_summary_statistic(catalog_result)
-            
-            #plot results
-            self.plot_result(catalog_result, galaxy_catalog_name, output_dict['figure'])
-            
-            #save results to files
-            self.write_result_file(catalog_result, output_dict['catalog'])
-            self.write_validation_file(self.validation_data, output_dict['validation'])
-            self.write_summary_file(summary_result, output_dict['summary'])
-            
-        return test_passed
+        return (0 if test_passed else 1)
             
     def color_distribution(self, galaxy_catalog):
         """

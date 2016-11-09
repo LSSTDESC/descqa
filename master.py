@@ -22,15 +22,15 @@ output_filenames = {
 pjoin = os.path.join
 
 
-class RedirectBuffer():
+class ExceptionAndStdStreamCatcher():
     def __init__(self):
         self.output = ''
         self.has_exception = False
 
 
-class TryAndRedirectStdStreams():
-    def __init__(self, redirect_buffer):
-        self._buffer = redirect_buffer
+class CatchExceptionAndStdStream():
+    def __init__(self, catcher):
+        self._catcher = catcher
         self._stream = StringIO.StringIO()
 
     def __enter__(self):
@@ -45,8 +45,8 @@ class TryAndRedirectStdStreams():
         self._stream.flush()
         if exc_type:
             traceback.print_exception(exc_type, exc_value, exc_tb, file=self._stream)
-            self._buffer.has_exception = True
-        self._buffer.output = self._stream.getvalue()
+            self._catcher.has_exception = True
+        self._catcher.output = self._stream.getvalue()
         self._stream.close()
         sys.stdout = self._stdout
         sys.stderr = self._stderr
@@ -129,50 +129,61 @@ def make_all_subdirs(validations_to_run, catalogs_to_run, output_dir):
 
 def run(validations_to_run, catalogs_to_run, output_dir, validation_data_dir, catalog_data_dir, log):
     validation_instance_cache = {}
-    status = collections.defaultdict(dict)
+    
+    status_dict = collections.defaultdict(dict)
+    def set_status(status):
+        validation_name, catalog_name = final_output_dir.rstrip(os.path.sep).rsplit(os.path.sep)[-2:]
+        status = status.strip().upper()
+        if not any(status.endswith(t) for t in ('PASSED', 'FAILED', 'ERROR', 'SKIPPED')):
+            raise ValueError('status message not set correctly!')
+        with open(pjoin(final_output_dir, 'STATUS'), 'w') as f:
+            f.write(status + '\n')
+        status_dict[validation_name][catalog_name] = status
+
+    def write_to_traceback(msg):
+        with open(pjoin(final_output_dir, 'traceback.log'), 'a') as f:
+            f.write(msg)
     
     # loading catalog usually takes longer, so we put catalogs_to_run in outer loop
     for catalog in catalogs_to_run:
         # try loading the catalog
         log.info('loading "{}" catalog...'.format(catalog['name']))
-        buf = RedirectBuffer()
-        with TryAndRedirectStdStreams(buf):
+        catcher = ExceptionAndStdStreamCatcher()
+        with CatchExceptionAndStdStream(catcher):
             Reader = quick_import(catalog['reader'])
             gc = Reader(pjoin(catalog_data_dir, catalog['file']))
-        if buf.has_exception:
+        if catcher.has_exception:
             log.error('error occured when loading "{}" catalog...'.format(catalog['name']))
-            log.debug('stdout/stderr and traceback:\n' + buf.output)
-            gc = buf.output
-        elif buf.output:
-            log.debug('stdout/stderr while loading "{}" catalog:\n'.format(catalog['name']) + buf.output)
+            log.debug('stdout/stderr and traceback:\n' + catcher.output)
+            gc = catcher.output
+        elif catcher.output:
+            log.debug('stdout/stderr while loading "{}" catalog:\n'.format(catalog['name']) + catcher.output)
 
         # loop over validations_to_run
         for validation in validations_to_run:
             # get the final output path, set traceback file path
             final_output_dir = pjoin(output_dir, validation['name'], catalog['name'])
-            traceback_file = pjoin(final_output_dir, 'traceback.log')
 
             # if gc is an error message, log it and abort
             if isinstance(gc, basestring):
-                with open(traceback_file, 'a') as f:
-                    f.write(gc)
-                status[validation['name']][catalog['name']] = 'LOAD_CATALOG_ERROR'
+                write_to_traceback(gc)
+                set_status('LOAD_CATALOG_ERROR')
                 continue
 
             # try loading ValidationTest class/instance
             if validation['name'] not in validation_instance_cache:
-                buf = RedirectBuffer()
-                with TryAndRedirectStdStreams(buf):
+                catcher = ExceptionAndStdStreamCatcher()
+                with CatchExceptionAndStdStream(catcher):
                     ValidationTest = quick_import(validation['module'])
                     vt = ValidationTest(validation.get('test_args', {}), 
                                         pjoin(validation_data_dir, validation['data_dir']),
                                         validation.get('data_args', {}))
-                if buf.has_exception:
+                if catcher.has_exception:
                     log.error('error occured when preparing "{}" test'.format(validation['name']))
-                    log.debug('stdout/stderr and traceback:\n' + buf.output)
-                    vt = buf.output
-                elif buf.output:
-                    log.debug('stdout/stderr while preparing "{}" test:\n'.format(validation['name']) + buf.output)
+                    log.debug('stdout/stderr and traceback:\n' + catcher.output)
+                    vt = catcher.output
+                elif catcher.output:
+                    log.debug('stdout/stderr while preparing "{}" test:\n'.format(validation['name']) + catcher.output)
 
                 # cache the ValidationTest instance for future use
                 validation_instance_cache[validation['name']] = vt
@@ -182,35 +193,40 @@ def run(validations_to_run, catalogs_to_run, output_dir, validation_data_dir, ca
             
             #if vt is an error message, log it and abort
             if isinstance(vt, basestring): 
-                with open(traceback_file, 'a') as f:
-                    f.write(vt)
-                status[validation['name']][catalog['name']] = 'VALIDATION_TEST_MODULE_ERROR'
+                write_to_traceback(vt)
+                set_status('VALIDATION_TEST_MODULE_ERROR')
                 continue
 
             # set output paths for run_validation_test
             output_paths = {k: pjoin(final_output_dir, v) for k, v in output_filenames.iteritems()}
             
             # run validation test
-            buf = RedirectBuffer()
-            with TryAndRedirectStdStreams(buf):
-                success = vt.run_validation_test(gc, catalog['name'], output_paths)
+            catcher = ExceptionAndStdStreamCatcher()
+            with CatchExceptionAndStdStream(catcher):
+                error_code = vt.run_validation_test(gc, catalog['name'], output_paths)
 
-            if buf.output:
-                with open(traceback_file, 'a') as f:
-                    f.write(buf.output)
-                if buf.has_exception:
+            if catcher.output:
+                write_to_traceback(catcher.output)
+                if catcher.has_exception:
                     log.error('error occured when running "{}" test on "{}" catalog...'.format(validation['name'], catalog['name']))
-                    log.debug('stdout/stderr and traceback:\n' + buf.output)
-                    status[validation['name']][catalog['name']] = 'RUN_VALIDATION_TEST_ERROR'
+                    log.debug('stdout/stderr and traceback:\n' + catcher.output)
+                    set_status('RUN_VALIDATION_TEST_ERROR')
                 else:
-                    log.debug('stdout/stderr while running "{}" test on "{}" catalog:\n'.format(validation['name'], catalog['name']) + buf.output)
+                    log.debug('stdout/stderr while running "{}" test on "{}" catalog:\n'.format(validation['name'], catalog['name']) + catcher.output)
                 
-            if not buf.has_exception:
-                status[validation['name']][catalog['name']] = 'PASSED' if success else 'VALIDATION_TEST_FAILED'
+            if not catcher.has_exception:
+                if error_code == 1:
+                    set_status('VALIDATION_TEST_FAILED')
+                elif error_code:
+                    set_status('VALIDATION_TEST_SKIPPED')
+                else:
+                    set_status('VALIDATION_TEST_PASSED')
+
                 log.info('finishing "{}" test on "{}" catalog'.format(validation['name'], catalog['name']))
 
     # now back outside the two loops, return status
-    return status
+    return status_dict
+
 
 def get_status_report(status, validations_to_run, catalogs_to_run):
 
@@ -245,8 +261,9 @@ def interfacing_webview(status, validations_to_run, output_dir):
             f_top.write('{} - {}\n'.format(validation['name'], s))
             with open(pjoin(output_dir, validation['name'], 'errors'), 'w') as f_this:
                 f_this.write('0\n0\n{}\n{}\n{}\n'.format(\
-                        total-counter['VALIDATION_TEST_FAILED']-counter['PASSED'], 
-                        counter['VALIDATION_TEST_FAILED'], total))
+                        sum(counter[k] for k in counter if k.endswith('ERROR')), 
+                        sum(counter[k] for k in counter if k.endswith('FAILED')), 
+                        total))
 
 
 def main():
@@ -264,7 +281,7 @@ def main():
 
     log.debug('creating output directory...')
     output_dir = make_output_dir(args.root_output_dir, args.subdir)
-    snapshot_dir = pjoin(output_dir, 'snapshot')
+    snapshot_dir = pjoin(output_dir, '_snapshot')
     os.mkdir(snapshot_dir)
     log.info('output of this run is stored in {}'.format(output_dir))
 

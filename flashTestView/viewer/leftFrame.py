@@ -266,87 +266,88 @@ if len(runs) > 0:
     run.wallClockTime = None
     run.numCheckfiles = "0 checkfiles"
 
-    pathToRunHTMLInfo = os.path.join(run.fullPath, "run_html_info")
-    if os.path.isfile(pathToRunHTMLInfo):
-      runHTMLInfoDict = littleParser.parseFile(pathToRunHTMLInfo)
-      if runHTMLInfoDict.has_key("runDescription"):
-        run.htmlDescription = runHTMLInfoDict["runDescription"]
-      else:
-        run.htmlDescription = run.name
-    else:
-      run.htmlDescription = run.name
+    run.htmlDescription = run.name
+    #pathToRunHTMLInfo = os.path.join(run.fullPath, "run_html_info")
+    #if os.path.isfile(pathToRunHTMLInfo):
+    #  runHTMLInfoDict = littleParser.parseFile(pathToRunHTMLInfo)
+    #  if runHTMLInfoDict.has_key("runDescription"):
+    #    run.htmlDescription = runHTMLInfoDict["runDescription"]
+    #  else:
+    #    run.htmlDescription = run.name
+    #else:
+    #  run.htmlDescription = run.name
 
-    pathToRunSummary = os.path.join(run.fullPath, "run_summary")
-    if os.path.isfile(pathToRunSummary):
-      runSummaryDict = littleParser.parseFile(pathToRunSummary)
+    #pathToRunSummary = os.path.join(run.fullPath, "run_summary")
+    #if os.path.isfile(pathToRunSummary):
+    #  runSummaryDict = littleParser.parseFile(pathToRunSummary)
 
-      if runSummaryDict.has_key("numProcs"):
-        if runSummaryDict["numProcs"] == "1":
-          run.numProcs = "1 processor"
-        else:
-          run.numProcs = "%s processors" % runSummaryDict["numProcs"]
+    #  if runSummaryDict.has_key("numProcs"):
+    #    if runSummaryDict["numProcs"] == "1":
+    #      run.numProcs = "1 processor"
+    #    else:
+    #      run.numProcs = "%s processors" % runSummaryDict["numProcs"]
 
-      if runSummaryDict.has_key("wallClockTime"):
-        run.wallClockTime = runSummaryDict["wallClockTime"]
+    #  if runSummaryDict.has_key("wallClockTime"):
+    #    run.wallClockTime = runSummaryDict["wallClockTime"]
 
-      if runSummaryDict.has_key("numCheckfiles"):
-        numCheckfiles = int(runSummaryDict["numCheckfiles"].strip())
-        if numCheckfiles == 1:
-          run.numCheckfiles = "1 checkfile"
-        else:
-          run.numCheckfiles = "%s checkfiles" % numCheckfiles
+    #  if runSummaryDict.has_key("numCheckfiles"):
+    #    numCheckfiles = int(runSummaryDict["numCheckfiles"].strip())
+    #    if numCheckfiles == 1:
+    #      run.numCheckfiles = "1 checkfile"
+    #    else:
+    #      run.numCheckfiles = "%s checkfiles" % numCheckfiles
 
     run.runFailed           = None
     run.testFailed          = None
     run.changedFromPrevious = None
 
-    pathToErrorsFile = os.path.join(run.fullPath, "errors")
-    if os.path.isfile(pathToErrorsFile):
-      errorLines = open(pathToErrorsFile).read().strip().split("\n")
+    #pathToErrorsFile = os.path.join(run.fullPath, "errors")
+    #if os.path.isfile(pathToErrorsFile):
+    #  errorLines = open(pathToErrorsFile).read().strip().split("\n")
 
-      # A "!" at the end of the errors file means at least
-      # one run in this build had testing results different
-      # from the same run from the previous invocation.
-      if len(errorLines) == 3 and errorLines[2].strip() == "!":
-        run.changedFromPrevious = True
+    #  # A "!" at the end of the errors file means at least
+    #  # one run in this build had testing results different
+    #  # from the same run from the previous invocation.
+    #  if len(errorLines) == 3 and errorLines[2].strip() == "!":
+    #    run.changedFromPrevious = True
 
-      if int(errorLines[0].strip()) > 0:
-        run.runFailed = True
-      elif int(errorLines[1].strip()) > 0:
-        run.testFailed = True
+    #  if int(errorLines[0].strip()) > 0:
+    #    run.runFailed = True
+    #  elif int(errorLines[1].strip()) > 0:
+    #    run.testFailed = True
 
-    pathToFlashCall = os.path.join(run.fullPath, "bcc_call")
-    if os.path.isfile(pathToFlashCall):
-      run.pathToFlashCall = pathToFlashCall
-    else:
-      run.pathToFlashCall = None
+    run.pathToFlashCall = None
+    run.pathToFlashOutput = None
+    run.pathToFlashError = None
+    run.pathToDeletedFiles = None
+    run.showRun = None
+    
+    #pathToFlashCall = os.path.join(run.fullPath, "bcc_call")
+    #if os.path.isfile(pathToFlashCall):
+    #  run.pathToFlashCall = pathToFlashCall
 
-    pathToFlashOutput = os.path.join(run.fullPath, "bcc_output")
-    if os.path.isfile(pathToFlashOutput):
-      run.pathToFlashOutput = pathToFlashOutput
-    else:
-      run.pathToFlashOutput = None
+    #pathToFlashOutput = os.path.join(run.fullPath, "bcc_output")
+    #if os.path.isfile(pathToFlashOutput):
+    #  run.pathToFlashOutput = pathToFlashOutput
 
-    pathToFlashError = os.path.join(run.fullPath, "bcc_error")
-    if os.path.isfile(pathToFlashError):
-      run.pathToFlashError = pathToFlashError
-    else:
-      run.pathToFlashError = None
+    #pathToFlashError = os.path.join(run.fullPath, "bcc_error")
+    #if os.path.isfile(pathToFlashError):
+    #  run.pathToFlashError = pathToFlashError
 
-    pathToDeletedFiles = os.path.join(run.fullPath, "deleted_files")
-    if os.path.isfile(pathToDeletedFiles):
-      run.pathToDeletedFiles = pathToDeletedFiles
-    else:
-      run.pathToDeletedFiles = None
+    #pathToDeletedFiles = os.path.join(run.fullPath, "deleted_files")
+    #if os.path.isfile(pathToDeletedFiles):
+    #  run.pathToDeletedFiles = pathToDeletedFiles
 
-    if ((run.runFailed) or
-        (run.pathToFlashOutput and os.stat(run.pathToFlashOutput)[6] > 0)):
-      run.showRun = True
-    else:
-      run.showRun = None
+    #if ((run.runFailed) or
+    #    (run.pathToFlashOutput and os.stat(run.pathToFlashOutput)[6] > 0)):
+    #  run.showRun = True
 
-    pathToTestOutput = os.path.join(run.fullPath, "test_output")
+    run.testOutput = None
+    run.testOutputFile = None
+    run.showTest = None
     run.testResult=''
+    
+    pathToTestOutput = os.path.join(run.fullPath, "test_output")
     if os.path.isfile(pathToTestOutput) and os.stat(pathToTestOutput)[6] > 0:
       run.testOutput = open(pathToTestOutput).read().strip().replace("\n","<br>")
       testResult = [f.strip() for f in open(pathToTestOutput) if f.startswith('L2')]
@@ -359,8 +360,6 @@ if len(runs) > 0:
 
     if (run.testFailed or run.testOutput):
       run.showTest = True
-    else:
-      run.showTest = None
 
   templateData["runs"] = runs
 else:

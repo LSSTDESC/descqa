@@ -114,24 +114,25 @@ class BinnedStellarMassFunctionTest(ValidationTest):
             #write to log file
             with open(output_dict['log'], 'a') as f:
                 f.write(msg)
-        else: #continue with the test
+            return 2
+
             
-            #calculate stellar mass function in galaxy catalog
-            binctr, binwid, mhist, mhmin, mhmax = self.binned_stellar_mass_function(galaxy_catalog)
-            catalog_result = {'x':binctr,'dx': binwid, 'y':mhist, 'y-':mhmin, 'y+': mhmax}
-            
-            #calculate summary statistic
-            summary_result, test_passed = self.calulcate_summary_statistic(catalog_result)
-            
-            #plot results
-            self.plot_result(catalog_result, galaxy_catalog_name, output_dict['figure'])
-            
-            #save results to files
-            self.write_file(catalog_result, output_dict['catalog'])
-            self.write_file(self.validation_data, output_dict['validation'])
-            self.write_summary_file(summary_result, test_passed, output_dict['summary'])
-            
-            return test_passed
+        #calculate stellar mass function in galaxy catalog
+        binctr, binwid, mhist, mhmin, mhmax = self.binned_stellar_mass_function(galaxy_catalog)
+        catalog_result = {'x':binctr,'dx': binwid, 'y':mhist, 'y-':mhmin, 'y+': mhmax}
+        
+        #calculate summary statistic
+        summary_result, test_passed = self.calulcate_summary_statistic(catalog_result)
+        
+        #plot results
+        self.plot_result(catalog_result, galaxy_catalog_name, output_dict['figure'])
+        
+        #save results to files
+        self.write_file(catalog_result, output_dict['catalog'])
+        self.write_file(self.validation_data, output_dict['validation'])
+        self.write_summary_file(summary_result, test_passed, output_dict['summary'])
+        
+        return (0 if test_passed else 1)
             
     def binned_stellar_mass_function(self, galaxy_catalog):
         """
@@ -306,8 +307,8 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         """
         f = open(savepath, 'w')
         if(test_passed):
-            f.write("SUCCESS: L2 = %G\n" %result)
+            f.write("SUCCESS: %s = %G\n" %(self.summary_method,result))
         else:
-            f.write("FAILED: L2 = %G is > threshold value %G\n" %(result,self.threshold))
+            f.write("FAILED: %s = %G is > threshold value %G\n" %(self.summary_method,result,self.threshold))
         f.close()
 

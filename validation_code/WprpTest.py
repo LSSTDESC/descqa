@@ -75,7 +75,7 @@ class WprpTest(ValidationTest):
             with open(output_dict['log'], 'a') as f:
                 f.write(msg)
             
-            return False
+            return 2
 
         #continue with the test
         gc = galaxy_catalog
@@ -143,7 +143,7 @@ class WprpTest(ValidationTest):
             else:
                 f.write('Test failed, you need L2 < {}!\n'.format(self._summary_thres))
 
-        return success
+        return (0 if success else 1)
 
 
     def add_line_on_plot(self, ax, rp, wp, wp_err, label, save_output=None):

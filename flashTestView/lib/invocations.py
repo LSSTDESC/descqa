@@ -498,11 +498,9 @@ class InvocationList:
           html += "</div><div>"
 
           for item in items:
-              if item.startswith('Comparison') or item.startswith('L2Diff'):
-                itemname = item
-                itemname = itemname.replace('L2DiffComparison_','')
-                itemname = itemname.replace('Comparison_','')
-                html += "&nbsp;<a href=viewer/viewBuild.cgi?target_dir=%s>%s</a>" % (os.path.join(pathToInvocationDir,item),itemname)
+              itempath = os.path.join(pathToInvocationDir,item)
+              if os.path.isdir(itempath) and not item.startswith('_'):
+                html += "&nbsp;<a href=viewer/viewBuild.cgi?target_dir=%s>%s</a>" % (itempath, item)
           html += "</div>"
           newInvocations.append(Invocation(invocationDir, html, os.stat(os.path.join(self.pathToSiteDir, invocationDir))[8]))
 
@@ -538,3 +536,5 @@ class Invocation:
     other_date, __, other_postfix = other.name.partition('_')
     # self and other are swapped to show reserved order
     return cmp(other_date, self_date) or cmp(int(other_postfix or 0), int(self_postfix or 0))
+
+
