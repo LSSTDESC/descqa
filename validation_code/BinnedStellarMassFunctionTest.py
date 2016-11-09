@@ -1,109 +1,146 @@
-from __future__ import (division, print_function, absolute_import)
+"""
+"""
 
-import os
+from __future__ import (division, print_function, absolute_import)
 import numpy as np
-import importlib
-from warnings import warn
+
+from astropy import units as u
+
 import matplotlib
 matplotlib.use('Agg') # Must be before importing matplotlib.pyplot
-import matplotlib.pyplot as mp
-from astropy import units as u
+import matplotlib.pyplot as plt
+
+import os
+import importlib
+from warnings import warn
 
 from ValidationTest import ValidationTest
 
+__all__ = ['BinnedStellarMassFunctionTest','plot_summary']
+__author__ = []
+
+catalog_output_file = 'catalog_smf.txt'
+validation_output_file = 'validation_smf.txt'
+summary_output_file = 'summary_smf.txt'
+log_file = 'log_smf.txt'
+plot_file = 'plot_smf.png'
+
 class BinnedStellarMassFunctionTest(ValidationTest):
     """
-    validaton test class object to compute stellar mass function in log stellar mass bins
+    validaton test class object to compute stellar mass function bins
     """
     
-    def __init__(self, test_args, data_directory, data_args):
+    def __init__(self, **kwargs):
         """
-        Initialize a stellar mass function validation test.
+        initialize a stellar mass function validation test
         
         Parameters
         ----------
-        test_args : dictionary
-            dictionary of arguments specifying the parameters of the test
-            
-            bins : tuple, optional
-                minimum log mass, maximum log mass, N log bins
-                default: (9.5,12.0,25)
-            
-            zlo : float, optional
-                minimum redshift
-                default: 0.0
-            
-            zhi : float, optional
-                maximum redshift
-                default: 1000.0
+        base_data_dir : string
+            base directory that contains validation data
         
-        data_directory : string
-            path to comparison data directory
+        base_output_dir : string
+            base directory to store test data, e.g. plots
         
-        data_args : dictionary
-            dictionary of arguments specifying the comparison data
-            
-            file : string
-            
-            name : string
-            
-            usecols : tuple
-            columns to use in data comparison file
-            (bin centers, number_density, err)
+        test_name : string
+            string indicating test name
+        
+        observation : string, optional
+            name of stellar mass validation observation:
+            LiWhite2009, MassiveBlackII
+        
+        bins : tuple, optional
+        
+        zlo : float, optional
+        
+        zhi : float, optional
         """
         
-        super(ValidationTest, self).__init__()
+        super(self.__class__, self).__init__(**kwargs)
         
-        #set validation data information
-        self._data_directory = data_directory
-        self._data_file = data_args['file']
-        self._data_name = data_args['name']
-        self._data_args= data_args
+        #load validation data
+        if 'observation' in kwargs:
+            available_observations = ['LiWhite2009', 'MassiveBlackII']
+            if kwargs['observation'] in available_observations:
+                self.observation = kwargs['observation']
+            else:
+                msg = ('`observation` not available')
+                raise ValueError(msg)
+        else:
+            self.observation = 'LiWhite2009'
         
-        #load validation comparison data
         obinctr, ohist, ohmin, ohmax = self.load_validation_data()
+        #bin center, number density, lower bound, upper bound
         self.validation_data = {'x':obinctr, 'y':ohist, 'y-':ohmin, 'y+':ohmax}
         
-        #set parameters of test
         #stellar mass bins
-        if 'bins' in test_args:
-            self.mstar_log_bins = np.linspace(*test_args['bins'])
+        if 'bins' in kwargs:
+            self.mstar_log_bins = np.linspace(*kwargs['bins'])
         else:
             self.mstar_log_bins = np.linspace(7.0, 12.0, 26)
         #minimum redshift
-        if 'zlo' in test_args:
-            zlo = test_args['zlo']
+        if 'zlo' in kwargs:
+            zlo = kwargs['zlo']
             self.zlo = float(zlo)
         else:
             self.zlo = 0.0
         #maximum redshift
-        if 'zhi' in test_args:
-            zhi = test_args['zhi']
+        if 'zhi' in kwargs:
+            zhi = kwargs['zhi']
             self.zhi = float(zhi)
         else:
             self.zhi = 1000.0
-
-        self.summary_method = test_args.get('summary','L2Diff')
-        self.threshold = test_args.get('threshold',1.0)
-    
-    def run_validation_test(self, galaxy_catalog, galaxy_catalog_name, output_dict):
+        
+        self.summary_method = kwargs.get('summary','L2Diff')
+        self.threshold = kwargs.get('threshold',1.0)
+        
+        
+    def load_validation_data(self):
         """
-        Load galaxy catalog and (re)calculate the stellar mass function.
+        load tabulated stellar mass function data
+        """
+        
+        #associate files with observations
+        stellar_mass_fuction_files = {'LiWhite2009':'LIWHITE/StellarMassFunction/massfunc_data.txt',
+                                      'MassiveBlackII':'LIWHITE/StellarMassFunction/massfunc_data.txt'}
+        
+        #set the columns to use in each file
+        columns = {'LiWhite2009':(0,5,6),
+                   'MassiveBlackII':(0,1,2),}
+        
+        #get path to file
+        fn = os.path.join(self.base_data_dir, stellar_mass_fuction_files[self.observation])
+        
+        #column 1: stellar mass bin center
+        #column 2: number density
+        #column 3: 1-sigma error
+        binctr, mhist, merr = np.loadtxt(fn, unpack=True, usecols=columns[self.observation])
+        
+        #take log of values
+        binctr = np.log10(binctr)
+        mhmax = np.log10(mhist + merr)
+        mhmin = np.log10(mhist - merr)
+        mhist = np.log10(mhist)
+        
+        return binctr, mhist, mhmin, mhmax
+    
+    
+    def run_validation_test(self, galaxy_catalog, catalog_name, base_output_dir):
+        """
+        run the validation test
         
         Parameters
         ----------
         galaxy_catalog : galaxy catalog reader object
             instance of a galaxy catalog reader
         
-        galaxy_catalog_name : string
-            name of mock galaxy catalog
-        
-        output_dict : dictionary
-            dictionary of output information
+        catalog_name : string
+            name of galaxy catalog
         
         Returns
         -------
         test_passed : boolean
+            True if the test is 'passed', False otherwise
         """
         
         #make sure galaxy catalog has appropiate quantities
@@ -112,11 +149,11 @@ class BinnedStellarMassFunctionTest(ValidationTest):
             msg = ('galaxy catalog does not have `stellar_mass` quantity, skipping the rest of the validation test.')
             warn(msg)
             #write to log file
-            with open(output_dict['log'], 'a') as f:
+            fn = os.path.join(base_output_dir ,log_file)
+            with open(fn, 'a') as f:
                 f.write(msg)
             return 2
-
-            
+        
         #calculate stellar mass function in galaxy catalog
         binctr, binwid, mhist, mhmin, mhmax = self.binned_stellar_mass_function(galaxy_catalog)
         catalog_result = {'x':binctr,'dx': binwid, 'y':mhist, 'y-':mhmin, 'y+': mhmax}
@@ -125,18 +162,25 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         summary_result, test_passed = self.calulcate_summary_statistic(catalog_result)
         
         #plot results
-        self.plot_result(catalog_result, galaxy_catalog_name, output_dict['figure'])
+        fn = os.path.join(base_output_dir ,plot_file)
+        self.plot_result(catalog_result, catalog_name, fn)
         
         #save results to files
-        self.write_file(catalog_result, output_dict['catalog'])
-        self.write_file(self.validation_data, output_dict['validation'])
-        self.write_summary_file(summary_result, test_passed, output_dict['summary'])
+        fn = os.path.join(base_output_dir, catalog_output_file)
+        self.write_file(catalog_result, fn)
+        
+        fn = os.path.join(base_output_dir, validation_output_file)
+        self.write_file(self.validation_data, fn)
+        
+        fn = os.path.join(base_output_dir, summary_output_file)
+        self.write_summary_file(summary_result, test_passed, fn)
         
         return (0 if test_passed else 1)
-            
+    
+    
     def binned_stellar_mass_function(self, galaxy_catalog):
         """
-        Calculate the stellar mass function.
+        calculate the stellar mass function in bins
         
         Parameters
         ----------
@@ -176,6 +220,7 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         
         return binctr, binwid, mhist, mhmin, mhmax
     
+    
     def calulcate_summary_statistic(self, catalog_result):
         """
         Run summary statistic.
@@ -194,121 +239,133 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         
         module_name=self.summary_method
         summary_method=getattr(importlib.import_module(module_name), module_name)
-
+        
         result, test_passed = summary_method(catalog_result,self.validation_data,self.threshold)
-
+        
         return result, test_passed
     
-    def load_validation_data(self):
-        """
-        Open comparsion validation data, i.e. observational comparison data.
-        """
-        
-        fn = os.path.join(self._data_directory, self._data_file)
-        
-        binctr, mhist, merr = np.loadtxt(fn, unpack=True, usecols=self._data_args['usecols'])
-        binctr = np.log10(binctr)
-        mhmax = np.log10(mhist + merr)
-        mhmin = np.log10(mhist - merr)
-        mhist = np.log10(mhist)
-        
-        return binctr, mhist, mhmin, mhmax
     
-    def plot_result(self, result, galaxy_catalog_name, savepath):
+    def plot_result(self, result, catalog_name, savepath):
         """
-        Create plot of stellar mass function
+        plot the stellar mass function of the catalog and validation data
         
         Parameters
         ----------
-        result :
+        result : dictionary
             stellar mass function of galaxy catalog
         
-        galaxy_catalog_name : string
+        catalog_name : string
             name of galaxy catalog
         
         savepath : string
             file to save plot
         """
         
-        fig = mp.figure()
+        fig = plt.figure()
         
         #plot measurement from galaxy catalog
         sbinctr, sbinwid, shist, shmin, shmax = (result['x'], result['dx'], result['y'], result['y-'], result['y+'])
-        mp.step(sbinctr, shist, where="mid", label=galaxy_catalog_name, color='blue')
-        mp.fill_between(sbinctr, shmin, shmax, facecolor='blue', alpha=0.3, edgecolor='none')
+        plt.step(sbinctr, shist, where="mid", label=catalog_name, color='blue')
+        plt.fill_between(sbinctr, shmin, shmax, facecolor='blue', alpha=0.3, edgecolor='none')
         
         #plot comparison data
         obinctr, ohist, ohmin, ohmax = (self.validation_data['x'], self.validation_data['y'], self.validation_data['y-'], self.validation_data['y+'])
-        mp.errorbar(obinctr, ohist, yerr=[ohist-ohmin, ohmax-ohist], label=self._data_name, fmt='o',color='green')
+        plt.errorbar(obinctr, ohist, yerr=[ohist-ohmin, ohmax-ohist], label=self.observation, fmt='o',color='green')
         
         #add formatting
-        mp.legend(loc='best', frameon=False)
-        mp.title(r'stellar mass function')
-        mp.xlabel(r'$\log M_*\ (M_\odot)$')
-        mp.ylabel(r'$dN/dV\, d\log M\ ({\rm Mpc}^{-3}\,{\rm dex}^{-1})$')
+        plt.legend(loc='best', frameon=False)
+        plt.title(r'stellar mass function')
+        plt.xlabel(r'$\log M_*\ (M_\odot)$')
+        plt.ylabel(r'$dN/dV\, d\log M\ ({\rm Mpc}^{-3}\,{\rm dex}^{-1})$')
         
         #save plot
         fig.savefig(savepath)
     
-    def write_result_file(self, result, savepath, comment=None):
+    
+    def write_file(self, result, filename, comment=None):
         """
-        write results to ascii files
+        write validation steller mass function data file
         
         Parameters
         ----------
-        result : 
+        result : dictionary
         
-        savepath : string
-            file to save result
+        filename : string
         
         comment : string
         """
         
-        #unpack result
-        binctr, binwid, hist, hmin, hmax = (result['x'], result['dx'], result['y'], result['y-'], result['y+'])
-        
         #save result to file
-        f = open(savepath, 'w')
+        f = open(filename, 'w')
         if comment:
             f.write('# {0}\n'.format(comment))
         for b, h, hn, hx in zip(*(result[k] for k in ['x','y','y-','y+'])):
             f.write("%13.6e %13.6e %13.6e %13.6e\n" % (b, h, hn, hx))
         f.close()
     
-    def write_file(self, result, savepath, comment=None):
+    
+    def write_summary_file(self, result, test_passed, filename, comment=None):
         """
-        write validation data to ascii files
+        write summary data file
         
         Parameters
         ----------
-        result : 
-
-        savepath : string
-            file to save result
+        result : float
         
-        comment : string
+        test_passed : boolean
+        
+        filename : string
+        
+        comment : string, optional
         """
         
         #save result to file
-        f = open(savepath, 'w')
-        if comment:
-            f.write('# {0}\n'.format(comment))
-        for b, h, hn, hx in zip(*(result[k] for k in ['x','y','y-','y+'])):
-            f.write("%13.6e %13.6e %13.6e %13.6e\n" % (b, h, hn, hx))
-        f.close()
-    
-    def write_summary_file(self, result, test_passed, savepath, comment=None):
-        """
-        Parameters
-        ----------
-        result :
-        savepath : string
-            savepath : string 
-        """
-        f = open(savepath, 'w')
+        f = open(filename, 'w')
         if(test_passed):
-            f.write("SUCCESS: %s = %G\n" %(self.summary_method,result))
+            f.write("SUCCESS: %s = %G\n" %(self.summary_method, result))
         else:
-            f.write("FAILED: %s = %G is > threshold value %G\n" %(self.summary_method,result,self.threshold))
+            f.write("FAILED: %s = %G is > threshold value %G\n" %(self.summary_method, result, self.threshold))
         f.close()
 
+
+def plot_summary(output_file, test_dicts):
+    """
+    make summary plot for validation test
+    
+    Parameters
+    ----------
+    output_file: string
+        filename for summary plot
+    
+    test_dict: list
+        list of dictionaries use to run each catalog comparison
+    """
+    
+    #initialize plot
+    fig = plt.figure()
+    plt.title(r'stellar mass function')
+    plt.xlabel(r'$\log M_*\ (M_\odot)$')
+    plt.ylabel(r'$dN/dV\, d\log M\ ({\rm Mpc}^{-3}\,{\rm dex}^{-1})$')
+    
+    #setup colors from colormap
+    ncatalogs= len(test_dicts)
+    cmap = matplotlib.cm.get_cmap('nipy_spectral')
+    colors= cmap(np.linspace(0.,1.,ncatalogs))
+    
+    #loop over catalogs and plot
+    for td,tdict in enumerate(test_dicts):
+        fn = os.path.join(tdict['base_output_dir'],catalog_output_file)
+        galaxy_catalog_name=tdict['catalog_name']
+        sbinctr, shist, shmin, shmax = np.loadtxt(fn, unpack=True, usecols=[0,1,2,3])
+        plt.step(sbinctr, shist, where="mid", label=galaxy_catalog_name, color=colors[td])
+        plt.fill_between(sbinctr, shmin, shmax, facecolor=colors[td], alpha=0.3, edgecolor='none')
+    
+    #plot 1 instance of validation data (same for each catalog)
+    fn = os.path.join(test_dicts[0]['base_output_dir'],validation_output_file)
+    obinctr, ohist,ohmin, ohmax = np.loadtxt(fn, unpack=True, usecols=[0,1,2,3])
+    plt.errorbar(obinctr, ohist, yerr=[ohist-ohmin, ohmax-ohist], label=test_dicts[0]['observation'], fmt='o',color='black')
+    plt.legend(loc='best', frameon=False)
+    
+    plt.savefig(output_file)
+    
+    return

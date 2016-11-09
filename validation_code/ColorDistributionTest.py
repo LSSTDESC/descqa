@@ -15,7 +15,7 @@ class ColorDistributionTest(ValidationTest):
     validaton test class object to compute galaxy color distribution
     """
     
-    def __init__(self, test_args, data_directory, data_args):
+    def __init__(self, **kwargs):
         """
         Initialize a color distribution validation test.
         
@@ -51,12 +51,12 @@ class ColorDistributionTest(ValidationTest):
             
         """
         
-        super(ValidationTest, self).__init__()
+        super(self.__class__, self).__init__(**kwargs)
         
         #set validation data information
-        self._data_directory = data_directory
-        self._data_file = data_args['file']
-        self._data_name = data_args['name']
+        self._data_directory = kwargs['base_data_dir']
+        self._data_file = kwargs['datafile']
+        self._data_name = kwargs['dataname']
         self._data_args= data_args
         
         #load validation comparison data
@@ -65,7 +65,7 @@ class ColorDistributionTest(ValidationTest):
         
         #set parameters of test
         #color bins
-        if 'bins' in test_args:
+        if 'bins' in kwargs:
             self.color_bins = np.linspace(*test_args['bins'])
         else:
             raise ValueError('bins not found!')
@@ -95,7 +95,7 @@ class ColorDistributionTest(ValidationTest):
         else:
             raise ValueError('band2 not found!')
 
-    def run_validation_test(self, galaxy_catalog, galaxy_catalog_name, output_dict):
+    def run_validation_test(self, galaxy_catalog, galaxy_catalog_name, base_output_dir):
         """
         Load galaxy catalog and (re)calculate the color distribution.
         
@@ -121,7 +121,7 @@ class ColorDistributionTest(ValidationTest):
             msg = ('galaxy catalog does not have `band1` quantity, skipping the rest of the validation test.')
             warn(msg)
             #write to log file
-            with open(output_dict['log'], 'w') as f:
+            with open(os.path.join(base_output_dir, 'runtime.log'), 'w') as f: 
                 f.write(msg)
             
             return 2

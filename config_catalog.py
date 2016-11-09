@@ -1,13 +1,33 @@
-__all__ = ['CATALOG_CONFIG', 'CATALOG_DIR', 'READER_DIR']
+# This python script sets the catalog configurations
 
-CATALOG_DIR = '/project/projectdirs/lsst/descqacmu/catalog'
-READER_DIR = '/project/projectdirs/lsst/descqacmu/src/reader'
+import os as _os
 
-CATALOG_CONFIG = [ \
-    {'name':'SHAM-LiWhite', 'file':'SHAM_0.94118.npy', 'reader':'SHAMGalaxyCatalog'},
-    {'name':'SHAM-MB2', 'file':'SHAM_0.94118_MBII.npy', 'reader':'SHAMGalaxyCatalog'},
-    {'name':'CAM-LiWhite', 'file':'yale_cam_age_matching_LiWhite_2009_z0.0.hdf5', 'reader':'YaleCAMGalaxyCatalog'},
-    {'name':'CAM-MB2', 'file':'yale_cam_age_matching_MBII_z0.0.hdf5', 'reader':'YaleCAMGalaxyCatalog'},
-    {'name':'Galacticus', 'file':'galacticus_mb2_anl.hdf5.galacticus', 'reader':'GalacticusGalaxyCatalog'},
-]
+_CATALOG_DIR = '/project/projectdirs/lsst/descqacmu/catalog'
+_READER_DIR = '/project/projectdirs/lsst/descqacmu/src/reader'
+
+class _CatalogConfig():
+    def __init__(self, reader, file):
+        if not _os.path.isfile(_os.path.join(_READER_DIR, reader+'.py')):
+            raise ValueError('reader module {} does not exist in {}.'.format(reader, _READER_DIR))
+        self.reader = reader
+        
+        self.file = _os.path.join(_CATALOG_DIR, file)
+        if not _os.path.isfile(self.file):
+            raise ValueError('catalog file {} does not exist'.format(self.file))
+    
+
+# configurations below
+
+SHAM_LiWhite = _CatalogConfig('SHAMGalaxyCatalog', 'SHAM_0.94118.npy')
+
+SHAM_MB2 = _CatalogConfig('SHAMGalaxyCatalog', 'SHAM_0.94118_MBII.npy')
+
+CAM_LiWhite = _CatalogConfig('YaleCAMGalaxyCatalog', 
+        'yale_cam_age_matching_LiWhite_2009_z0.0.hdf5')
+
+CAM_MB2 = _CatalogConfig('YaleCAMGalaxyCatalog', 
+        'yale_cam_age_matching_MBII_z0.0.hdf5')
+
+Galacticus = _CatalogConfig('GalacticusGalaxyCatalog',
+        'galacticus_mb2_anl.hdf5.galacticus')
 
