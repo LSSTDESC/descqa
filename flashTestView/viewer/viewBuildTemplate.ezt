@@ -14,20 +14,18 @@
 
 <table class="indenttable">
 
+[if-any pathToFlashTestLog]
 <tr valign="top">
 <td>Log file</td>
 <td>
-[if-any pathToFlashTestLog]
   <a href="viewTextFile.cgi?target_file=[pathToFlashTestLog]&sought_build=[buildDir]">contents</a>
-[else]
-  <i>no log file</i>
-[end]
 </td>
 </tr>
+[end]
 
 [if-any showSetup]
 
-  <tr valign="top">
+  <!--<tr valign="top">
   <td>Test setup[if-any setupFailed] <i>(failed)</i>[end]</td>
   [if-any setupCall]
     <td>
@@ -45,10 +43,11 @@
     </td>
   [end]
   </tr>
+  -->
 
   [if-any showCompilation]
 
-    <tr valign="top">
+    <!--<tr valign="top">
     <td>Test compilation[if-any gmakeFailed] <i>(failed)</i>[end]</td>
     <td>
     [if-any pathToGmakeCall]
@@ -69,6 +68,7 @@
     <br><br>
     </td>
     </tr>
+    -->
 
     <tr valign="top">
     <td>Runs completed&nbsp;&nbsp;</td>
@@ -97,6 +97,7 @@
 <tr><td>
         <table class="indenttable">
 
+        [if-any runs.showResource]
         <tr valign="top">
         <td>Resources used:&nbsp;</td>
         <td>
@@ -116,6 +117,7 @@
         [end]
         </td>
         </tr>
+        [end]
 
         [if-any runs.logfiles]
           <tr valign="top">
@@ -128,32 +130,24 @@
           </tr>
         [end]
 
-        [if-any runs.pathToFlashOutput]
+        [if-any runs.summaryfiles]
           <tr valign="top">
-          <td>Stdout/stderr:&nbsp;</td>
+          <td>Summary:&nbsp;</td>
           <td>
-          <a href="viewTextFile.cgi?target_file=[runs.pathToFlashOutput]">contents</a>
-          </td>
-          </tr>
-        [end]
-
-        [if-any runs.theoryFiles]
-          <tr valign="top">
-          <td>Expectations:&nbsp;</td>
-          <td>
-	  [for runs.theoryFiles]	
-            <a href="viewTextFile.cgi?target_file=[runs.theoryFiles.path]">[runs.theoryFiles.filename]</a><br>
+	  [for runs.summaryfiles]	
+            <a href="viewTextFile.cgi?target_file=[runs.summaryfiles.path]">[runs.summaryfiles.filename]</a><br>
 	  [end]	
           </td>
           </tr>
         [end]
 
-        [if-any runs.plotFiles]
+
+        [if-any runs.datfiles]
           <tr valign="top">
           <td>Outputs:&nbsp;</td>
           <td>
-	  [for runs.plotFiles]	
-            <a href="viewTextFile.cgi?target_file=[runs.plotFiles.path]">[runs.plotFiles.filename]</a><br>
+	  [for runs.datfiles]	
+            <a href="viewTextFile.cgi?target_file=[runs.datfiles.path]">[runs.datfiles.filename]</a><br>
 	  [end]	
           </td>
           </tr>
@@ -170,10 +164,10 @@
           </tr>
         [end]
 
+        [if-any runs.showTest]
         <tr valign="top">
         <td>Test output:&nbsp;</td>
         <td>
-        [if-any runs.showTest]
           [if-any runs.testOutputFile]
             [for runs.testOutputFile]
               <a href="viewHtmlFile.cgi?target_file=[runs.testOutputFile.path]">contents</a> [if-any runs.testResult]&nbsp;([runs.testResult])[end]
@@ -186,11 +180,9 @@
               [end]
             [end]
           [end]
-        [else]
-          <td><i>file not found or empty</i></td>
-        [end]
         </td>
         </tr>
+        [end]
 
         </table>
 </td>

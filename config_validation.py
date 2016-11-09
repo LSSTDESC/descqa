@@ -1,16 +1,9 @@
 __all__ = ['VALIDATION_CONFIG', 'VALIDATION_CODE_DIR', 'VALIDATION_DATA_DIR']
 
-import numpy as np
-
 VALIDATION_CODE_DIR = '/project/projectdirs/lsst/descqacmu/src/validation_code'
 VALIDATION_DATA_DIR = '/project/projectdirs/lsst/descqacmu/src/validation_data'
 
 VALIDATION_CONFIG = [ \
-        {'name':'wprp', 
-         'module':'WprpTest', 
-         'test_args':{'sm_cut': 10.0**9.8, 'zmax':40.0, 'rbins':np.logspace(-1.0,1.3,13)}, # for wp(rp), the numbers are all in h=1 units.
-        }, # end of wprp
-
         {'name':'smf-LiWhite',
          'module':'BinnedStellarMassFunctionTest',
          'data_dir':'LIWHITE/StellarMassFunction',
@@ -31,5 +24,11 @@ VALIDATION_CONFIG = [ \
          'data_args':{'file':'deep2_g-r_z_0.6_0.725_bins_-0.2_2_40.txt', 'name':'DEEP2'},
          'test_args':{'bins':(-0.2,2.,40),'zlo':0.0,'zhi':0.75,'band1':'SDSS_g:observed:','band2':'SDSS_r:observed:','summary':'L2Diff'},#bins is (logmin, logax, number of bins)
         }, # end of color-DEEP2
-]
 
+        {'name':'wprp-9.8', 
+         'module':'WprpTest',
+         'data_dir':'.',
+         'data_args':{'mb2':'MASSIVEBLACKII/wprp_sm-9.8.dat', 'sdss':'SDSS/wprp_Reddick-Tinker_sm-9.8.dat'},
+         'test_args':{'sm_cut': 10.0**9.8, 'zmax':40.0, 'rbins':(-1.0,1.3,13), 'njack':10}, # for wp(rp), the numbers are all in h=1 units.
+        }, # end of wprp
+]

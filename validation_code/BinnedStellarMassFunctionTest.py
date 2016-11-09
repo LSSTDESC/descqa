@@ -107,13 +107,13 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         """
         
         #make sure galaxy catalog has appropiate quantities
-        if not 'stellar_mass' in galaxy_catalog.quantities.keys():
+        if not 'stellar_mass' in galaxy_catalog.quantities:
             #raise an informative warning
             msg = ('galaxy catalog does not have `stellar_mass` quantity, skipping the rest of the validation test.')
             warn(msg)
             #write to log file
-            f = open(output_dict['log'], 'w')
-            f.write(msg)
+            with open(output_dict['log'], 'a') as f:
+                f.write(msg)
         else: #continue with the test
             
             #calculate stellar mass function in galaxy catalog

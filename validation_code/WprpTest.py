@@ -5,10 +5,13 @@ import numpy as np
 from warnings import warn
 import matplotlib
 matplotlib.use('Agg') # Must be before importing matplotlib.pyplot
-import matplotlib.pyplot as mp
-from astropy import units as u
+import matplotlib.pyplot as plt
 
 from ValidationTest import ValidationTest
+
+from L2Diff import L2Diff
+from helpers.CorrelationFunction import projected_correlation
+
 
 class WprpTest(ValidationTest):
     """
@@ -24,65 +27,24 @@ class WprpTest(ValidationTest):
         test_args : dictionary
             dictionary of arguments specifying the parameters of the test
             
-            bins : tuple, optional
-                minimum log mass, maximum log mass, N log bins
-                default: (9.5,12.0,25)
-            
-            zlo : float, optional
-                minimum redshift
-                default: 0.0
-            
-            zhi : float, optional
-                maximum redshift
-                default: 1000.0
-        
         data_directory : string
             path to comparison data directory
         
         data_args : dictionary
             dictionary of arguments specifying the comparison data
-            
-            file : string
-            
-            name : string
-            
-            usecols : tuple
-            columns to use in data comparison file
-            (bin centers, number_density, err)
         """
         
         super(ValidationTest, self).__init__()
         
         #set validation data information
-        self._data_directory = data_directory
-        self._data_file = data_args['file']
-        self._data_name = data_args['name']
-        self._data_args= data_args
-        
-        #load validation comparison data
-        obinctr, ohist, ohmin, ohmax = self.load_validation_data()
-        self.validation_data = (obinctr, ohist, ohmin, ohmax)
-        
-        #set parameters of test
-        #stellar mass bins
-        if 'bins' in list(test_args.keys()):
-            min_m, max_m, N_bins = test_args['bins']
-            self.mstar_bins = np.logspace(min_m, max_m, N_bins)
-        else:
-            self.mstar_bins = np.logspace(9.5, 12.0, 25)
-        #minimum redshift
-        if 'zlo' in list(test_args.keys()):
-            zlo = test_args['zlo']
-            self.zlo = float(zlo)
-        else:
-            self.zlo = 0.0
-        #maximum redshift
-        if 'zhi' in list(test_args.keys()):
-            zhi = test_args['zhi']
-            self.zhi = float(zhi)
-        else:
-            self.zhi = 1000.0
-    
+        self._sdss_wprp = os.path.join(data_directory, data_args['sdss'])
+        self._mb2_wprp = os.path.join(data_directory, data_args['mb2'])
+        self._sm_cut = test_args['sm_cut']
+        self._rbins = np.logspace(*test_args['rbins'])
+        self._zmax = test_args['zmax']
+        self._njack = test_args['njack']
+        self._summary_thres = test_args.get('summary_thres', 10.0)
+
     def run_validation_test(self, galaxy_catalog, galaxy_catalog_name, output_dict):
         """
         Load galaxy catalog and (re)calculate the stellar mass function.
@@ -104,192 +66,89 @@ class WprpTest(ValidationTest):
         """
         
         #make sure galaxy catalog has appropiate quantities
-        if not 'stellar_mass' in galaxy_catalog.quantities.keys():
-            #raise an informative warning
-            msg = ('galaxy catalog does not have `stellar_mass` quantity, skipping the rest of the validation test.')
-            warn(msg)
-            #write to log file
-            f = open(output_dict['log'], 'w')
-            f.write(msg)
-        else: #continue with the test
-            
-            #calculate stellar mass function in galaxy catalog
-            binctr, binwid, mhist, mhmin, mhmax = self.binned_stellar_mass_function(galaxy_catalog)
-            catalog_result = (binctr, binwid, mhist, mhmin, mhmax)
-            
-            #calculate summary statistic
-            summary_result, test_passed = self.calulcate_summary_statistic(catalog_result)
-            
-            #plot results
-            self.plot_result(catalog_result, galaxy_catalog_name, output_dict['figure'])
-            
-            #save results to files
-            self.write_result_file(catalog_result, output_dict['catalog'])
-            self.write_validation_file(self.validation_data, output_dict['validation'])
-            self.write_summary_file(summary_result, output_dict['summary'])
-            
-            return test_passed
-            
-    def binned_stellar_mass_function(self, galaxy_catalog):
-        """
-        Calculate the stellar mass function.
-        
-        Parameters
-        ----------
-        galaxy_catalog : galaxy catalog reader object
-        """
-        
-        #get stellar masses from galaxy catalog
-        masses = galaxy_catalog.get_quantities("stellar_mass", {'zlo': self.zlo, 'zhi': self.zhi})
-        
-        #remove non-finite r negative numbers
-        mask = np.isfinite(masses) & (masses > 0.0)
-        masses = masses[mask]
-        
-        #take log of masses
-        logm = np.log10(masses)
-        
-        #count galaxies in log bins
-        mhist, mbins = np.histogram(logm, bins=self.mstar_bins)
-        Nbins = len(mbins)-1.0
-        binctr = (mbins[1:] + mbins[:Nbins])/2.0
-        binwid = mbins[1:] - mbins[:Nbins]
-        
-        #calculate volume
-        if galaxy_catalog.lightcone:
-            Vhi = galaxy_catalog.get_cosmology().comoving_volume(zhi)
-            Vlo = galaxy_catalog.get_cosmology().comoving_volume(zlo)
-            dV = float((Vhi - Vlo)/u.Mpc**3)
-            # TODO: need to consider completeness in volume
-            af = float(galaxy_catalog.get_sky_area() / (4.*np.pi*u.sr))
-            vol = af * dV
-        else:
-            vol = galaxy_catalog.box_size**3.0
-        
-        #calculate number differential density
-        mhmin = (mhist - np.sqrt(mhist)) / binwid / vol
-        mhmax = (mhist + np.sqrt(mhist)) / binwid / vol
-        mhist = mhist / binwid / vol
-        
-        return binctr, binwid, mhist, mhmin, mhmax
-    
-    def calulcate_summary_statistic(self, catalog_result):
-        """
-        Run summary statistic.
-        
-        Parameters
-        ----------
-        catalog_result :
-        
-        Returns
-        -------
-        result :  numerical result
-        
-        pass : boolean
-            True if the test is passed, False otherwise.
-        """
-        
-        return 1.0, True
-    
-    def load_validation_data(self):
-        """
-        Open comparsion validation data, i.e. observational comparison data.
-        """
-        
-        fn = os.path.join(self._data_directory, self._data_file)
-        
-        binctr, mhist, merr = np.loadtxt(fn, unpack=True, usecols=self._data_args['usecols'])
-        binctr = np.log10(binctr)
-        mhmax = np.log10(mhist + merr)
-        mhmin = np.log10(mhist - merr)
-        mhist = np.log10(mhist)
-        
-        return binctr, mhist, mhmin, mhmax
-    
-    def plot_result(self, result, galaxy_catalog_name, savepath):
-        """
-        Create plot of stellar mass function
-        
-        Parameters
-        ----------
-        result :
-            stellar mass function of galaxy catalog
-        
-        galaxy_catalog_name : string
-            name of galaxy catalog
-        
-        savepath : string
-            file to save plot
-        """
-        
-        fig = mp.figure()
-        
-        #plot measurement from galaxy catalog
-        sbinctr, sbinwid, shist, shmin, shmax = result
-        mp.step(sbinctr, shist, where="mid", label=galaxy_catalog_name)
-        
-        #plot comparison data
-        obinctr, ohist, ohmin, ohmax = self.validation_data
-        mp.errorbar(obinctr, ohist, yerr=[ohist-ohmin, ohmax-ohist],
-                    label=self._data_name, fmt='o')
-        
-        #add formatting
-        mp.legend(loc='best', frameon=False)
-        mp.title(r'stellar mass function')
-        mp.xlabel(r'$\log M_*\ (M_\odot)$')
-        mp.ylabel(r'$dN/dV\, d\log M\ ({\rm Mpc}^{-3}\,{\rm dex}^{-1})$')
-        
-        #save plot
-        fig.savefig(savepath)
-    
-    def write_result_file(self, result, savepath, comment=None):
-        """
-        write results to ascii files
-        
-        Parameters
-        ----------
-        result : 
-        
-        savepath : string
-            file to save result
-        
-        comment : string
-        """
-        
-        #unpack result
-        binctr, binwid, hist, hmin, hmax = result
-        
-        #save result to file
-        f = open(savepath, 'w')
-        if comment:
-            f.write('# {0}\n'.format(comment))
-        for b, h, hn, hx in zip(binctr, hist, hmin, hmax):
-            f.write("%13.6e %13.6e %13.6e %13.6e\n" % (b, h, hn, hx))
-        f.close()
-    
-    def write_validation_file(self, result, savepath, comment=None):
-        """
-        write validation data to ascii files
-        
-        Parameters
-        ----------
-        result : 
-        
-        savepath : string
-            file to save result
-        
-        comment : string
-        """
-        
-        #unpack result
-        binctr, hist, hmin, hmax = result
-        
-        #save result to file
-        f = open(savepath, 'w')
-        if comment:
-            f.write('# {0}\n'.format(comment))
-        for b, h, hn, hx in zip(binctr, hist, hmin, hmax):
-            f.write("%13.6e %13.6e %13.6e %13.6e\n" % (b, h, hn, hx))
-        f.close()
+        required_quantities = ('stellar_mass', 'positionX', 'positionY', 'positionZ', 'velocityZ')
 
+        if not all(q in galaxy_catalog.quantities for q in required_quantities):
+            #raise an informative warning
+            msg = 'galaxy catalog does not have all the required quantities {}, skipping the rest of the validation test.'.format(', '.join(required_quantities))
+            warn(msg)
+            with open(output_dict['log'], 'a') as f:
+                f.write(msg)
+            
+            return False
+
+        #continue with the test
+        gc = galaxy_catalog
+
+        try:
+            h = gc.cosmology.H0.value/100.0
+        except AttributeError:
+            h = 0.702
+            msg = 'Make sure `cosmology` and `redshift` properties are set. Using default value h=0.702...'
+            warn(msg)
+            with open(output_dict['log'], 'a') as f:
+                f.write(msg)
+
+        # convert arguments
+        sm_cut = self._sm_cut/(h*h)
+        rbins = self._rbins/h
+        zmax = self._zmax/h
+        njack = self._njack
+
+        # load catalog
+        flag = (gc.get_quantities("stellar_mass", {}) >= sm_cut)
+        x = gc.get_quantities("positionX", {})
+        flag &= np.isfinite(x)
+
+        x = x[flag]
+        y = gc.get_quantities("positionY", {})[flag]
+        z = gc.get_quantities("positionZ", {})[flag]
+        vz = gc.get_quantities("velocityZ", {})[flag]
+    
+        vz /= (100.0*h)
+        z += vz
+
+        # calc wp(rp)
+        points = np.remainder(np.vstack((x,y,z)).T, gc.box_size)
+        wp, wp_cov = projected_correlation(points, rbins, zmax, gc.box_size, njack)
+        rp = np.sqrt(rbins[1:]*rbins[:-1])
+        wp_err = np.sqrt(np.diag(wp_cov))
+
+        fig, ax = plt.subplots()
+        self.add_line_on_plot(ax, rp, wp, wp_err, galaxy_catalog_name, output_dict['catalog'])
+        d1 = {'x':rp, 'y':wp, 'dy':wp_err}
+
+        # load mb2 wp(rp), use this to validate
+        rp, wp, wp_err = np.loadtxt(self._mb2_wprp).T
+        self.add_line_on_plot(ax, rp, wp, wp_err, 'MB-II', output_dict['validation'])
+        d2 = {'x':rp, 'y':wp, 'dy':wp_err}
+
+        # load sdss wp(rp), just for comparison
+        rp, wp, wp_err = np.loadtxt(self._sdss_wprp).T
+        self.add_line_on_plot(ax, rp, wp, wp_err, 'SDSS')
+
+        ax.set_xlim(0.1, 50.0)
+        ax.set_ylim(1.0, 3.0e3)
+        ax.set_xlabel(r'$r_p \; {\rm [Mpc]}$')
+        ax.set_ylabel(r'$w_p(r_p) \; {\rm [Mpc]}$')
+        ax.set_title(r'Projected correlation function ($M_* > {0:.2E} \, {{\rm M}}_\odot$)'.format(sm_cut))
+        ax.legend(loc='best', frameon=False)
+        plt.savefig(output_dict['figure'])
+
+        L2, success = L2Diff(d1, d2, self._summary_thres)
+        with open(output_dict['summary'], 'a') as f:
+            f.write('L2 = {}\n'.format(L2))
+            if success:
+                f.write('Test passed! L2 < {}\n'.format(self._summary_thres))
+            else:
+                f.write('Test failed, you need L2 < {}!\n'.format(self._summary_thres))
+
+        return success
+
+
+    def add_line_on_plot(self, ax, rp, wp, wp_err, label, save_output=None):
+        if save_output is not None:
+            np.savetxt(save_output, np.vstack((rp, wp, wp_err)).T, header='rp wp wp_err')
+        l = ax.loglog(rp, wp, label=label, lw=1.5)[0]
+        ax.fill_between(rp, wp+wp_err, np.where(wp > wp_err, wp - wp_err, 0.01), alpha=0.2, color=l.get_color(), lw=0)
 

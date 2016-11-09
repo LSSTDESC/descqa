@@ -4,32 +4,53 @@ import shutil
 import time
 import logging
 import traceback
+import StringIO
 import importlib
 import argparse
+import collections
 
 
 output_filenames = {
-        'catalog-level':{
-                'figure': 'figure.png',
-                'catalog': 'plot_output.txt',
-                'validation': 'validation_output.txt',
-                'log': 'bcc_output',
-                'summary': 'test_output',
-                'status': 'errors',
-                'exec_detail': 'run_summary',
-                },
-        'validation-level':{
-                'status': 'errors',
-                'log': 'traceback.log',
-                },
-        'run-level':{
-                'status': 'errors',
-                'log': 'flash_test.log',
-                },
+     'figure': 'figure.png',
+     'catalog': 'catalog_output.txt',
+     'validation': 'validation_output.txt',
+     'log': 'runtime.log',
+     'summary': 'summary.txt',
 }
 
 
 pjoin = os.path.join
+
+
+class RedirectBuffer():
+    def __init__(self):
+        self.output = ''
+        self.has_exception = False
+
+
+class TryAndRedirectStdStreams():
+    def __init__(self, redirect_buffer):
+        self._buffer = redirect_buffer
+        self._stream = StringIO.StringIO()
+
+    def __enter__(self):
+        self._stdout = sys.stdout
+        self._stdout.flush()
+        sys.stdout = self._stream
+        self._stderr = sys.stderr
+        self._stderr.flush()
+        sys.stderr = self._stream
+
+    def __exit__(self, exc_type, exc_value, exc_tb):
+        self._stream.flush()
+        if exc_type:
+            traceback.print_exception(exc_type, exc_value, exc_tb, file=self._stream)
+            self._buffer.has_exception = True
+        self._buffer.output = self._stream.getvalue()
+        self._stream.close()
+        sys.stdout = self._stdout
+        sys.stderr = self._stderr
+        return True
 
 
 def quick_import(module_name):
@@ -52,14 +73,15 @@ def process_config(config, additional_required_keys=[], subset_to_keep=None, ind
 
     subset_to_keep = set(subset_to_keep)
     if not all(i in indices for i in subset_to_keep):
-        raise ValueError("required ")#TODO
+        raise ValueError("Not all required entries ({}) are presented in ({})...".format(\
+                ', '.join(subset_to_keep), ', '.join(indices)))
 
     return [d for d in config if d[index_key] in subset_to_keep]
 
 
-def create_logger():
+def create_logger(verbose=False):
     log = logging.getLogger()
-    log.setLevel(logging.DEBUG)
+    log.setLevel(logging.DEBUG if verbose else logging.INFO)
     logFormatter = logging.Formatter('[%(levelname)-5.5s][%(asctime)s] %(message)s')
     consoleHandler = logging.StreamHandler(sys.stdout)
     consoleHandler.setFormatter(logFormatter)
@@ -96,62 +118,136 @@ def make_output_dir(root_output_dir, create_subdir=True):
     return output_dir
 
 
-def run(validations_to_run, catalogs_to_run, output_dir, validation_data_dir, catalog_data_dir, log):
+def make_all_subdirs(validations_to_run, catalogs_to_run, output_dir):
     for validation in validations_to_run:
-        log.info('preparing "{}" validation...'.format(validation['name']))
-        try:
-            validation_dir = pjoin(output_dir, validation['name'])
-            os.mkdir(validation_dir)
-            ValidationTest = quick_import(validation['module'])
-            data_dir = pjoin(validation_data_dir, validation['data_dir'])
-            vt = ValidationTest(validation.get('test_args', {}), data_dir, validation.get('data_args', {}))
+        validation_dir = pjoin(output_dir, validation['name'])
+        os.mkdir(validation_dir)
+        for catalog in catalogs_to_run:
+            catalog_output_dir = pjoin(validation_dir, catalog['name'])
+            os.mkdir(catalog_output_dir)
 
-            status_count = {'test_fail': 0, 'exec_fail': 0}
-            for catalog in catalogs_to_run:
-                try:
-                    log.info('running on "{}" catalog...'.format(catalog['name']))
-                    start_time = time.time()
-                    
-                    catalog_output_dir = pjoin(validation_dir, catalog['name'])
-                    os.mkdir(catalog_output_dir)
-                    output_paths = {k: pjoin(catalog_output_dir, v) for k, v in output_filenames['catalog-level'].iteritems()}
-                    
-                    Reader = quick_import(catalog['reader'])
-                    galaxy_catalog = Reader(pjoin(catalog_data_dir, catalog['file']))
-                    success = vt.run_validation_test(galaxy_catalog, catalog['name'], output_paths)
-                    
-                    if not success:
-                        status_count['test_fail'] += 1
 
-                    # writing out files that the webserver needs
+def run(validations_to_run, catalogs_to_run, output_dir, validation_data_dir, catalog_data_dir, log):
+    validation_instance_cache = {}
+    status = collections.defaultdict(dict)
+    
+    # loading catalog usually takes longer, so we put catalogs_to_run in outer loop
+    for catalog in catalogs_to_run:
+        # try loading the catalog
+        log.info('loading "{}" catalog...'.format(catalog['name']))
+        buf = RedirectBuffer()
+        with TryAndRedirectStdStreams(buf):
+            Reader = quick_import(catalog['reader'])
+            gc = Reader(pjoin(catalog_data_dir, catalog['file']))
+        if buf.has_exception:
+            log.error('error occured when loading "{}" catalog...'.format(catalog['name']))
+            log.debug('stdout/stderr and traceback:\n' + buf.output)
+            gc = buf.output
+        elif buf.output:
+            log.debug('stdout/stderr while loading "{}" catalog:\n'.format(catalog['name']) + buf.output)
 
-                    with open(output_paths['exec_detail'], 'w') as f:
-                        f.write('numProcs: 1\nwallClockTime: {0} second\nnumOutputFiles: {1}\nnumTheoryFiles: {1}\n'.format(\
-                                time.time()-start_time, int(success)))
+        # loop over validations_to_run
+        for validation in validations_to_run:
+            # get the final output path, set traceback file path
+            final_output_dir = pjoin(output_dir, validation['name'], catalog['name'])
+            traceback_file = pjoin(final_output_dir, 'traceback.log')
 
-                    with open(output_paths['status'], 'w') as f:
-                        f.write('0\n0\n')
+            # if gc is an error message, log it and abort
+            if isinstance(gc, basestring):
+                with open(traceback_file, 'a') as f:
+                    f.write(gc)
+                status[validation['name']][catalog['name']] = 'LOAD_CATALOG_ERROR'
+                continue
 
-                except:
-                    # catalog-level error
-                    log.error('something wrong happened when running "{}" on "{}"'.format(validation['name'], catalog['name']))
-                    with open(pjoin(catalog_output_dir, 'traceback.log'), 'w') as f:
-                        traceback.print_exc(file=f)
-                    status_count['exec_fail'] += 1
+            # try loading ValidationTest class/instance
+            if validation['name'] not in validation_instance_cache:
+                buf = RedirectBuffer()
+                with TryAndRedirectStdStreams(buf):
+                    ValidationTest = quick_import(validation['module'])
+                    vt = ValidationTest(validation.get('test_args', {}), 
+                                        pjoin(validation_data_dir, validation['data_dir']),
+                                        validation.get('data_args', {}))
+                if buf.has_exception:
+                    log.error('error occured when preparing "{}" test'.format(validation['name']))
+                    log.debug('stdout/stderr and traceback:\n' + buf.output)
+                    vt = buf.output
+                elif buf.output:
+                    log.debug('stdout/stderr while preparing "{}" test:\n'.format(validation['name']) + buf.output)
 
-            with open(pjoin(validation_dir, output_filenames['validation-level']['status']), 'w') as f:
-                f.write('0\n0\n0\n{}\n{}\n'.format(len(catalogs_to_run)-sum(status_count.values()), len(catalogs_to_run)))
+                # cache the ValidationTest instance for future use
+                validation_instance_cache[validation['name']] = vt
+            
+            else:
+                vt = validation_instance_cache[validation['name']]
+            
+            #if vt is an error message, log it and abort
+            if isinstance(vt, basestring): 
+                with open(traceback_file, 'a') as f:
+                    f.write(vt)
+                status[validation['name']][catalog['name']] = 'VALIDATION_TEST_MODULE_ERROR'
+                continue
+
+            # set output paths for run_validation_test
+            output_paths = {k: pjoin(final_output_dir, v) for k, v in output_filenames.iteritems()}
+            
+            # run validation test
+            buf = RedirectBuffer()
+            with TryAndRedirectStdStreams(buf):
+                success = vt.run_validation_test(gc, catalog['name'], output_paths)
+
+            if buf.output:
+                with open(traceback_file, 'a') as f:
+                    f.write(buf.output)
+                if buf.has_exception:
+                    log.error('error occured when running "{}" test on "{}" catalog...'.format(validation['name'], catalog['name']))
+                    log.debug('stdout/stderr and traceback:\n' + buf.output)
+                    status[validation['name']][catalog['name']] = 'RUN_VALIDATION_TEST_ERROR'
+                else:
+                    log.debug('stdout/stderr while running "{}" test on "{}" catalog:\n'.format(validation['name'], catalog['name']) + buf.output)
+                
+            if not buf.has_exception:
+                status[validation['name']][catalog['name']] = 'PASSED' if success else 'VALIDATION_TEST_FAILED'
+                log.info('finishing "{}" test on "{}" catalog'.format(validation['name'], catalog['name']))
+
+    # now back outside the two loops, return status
+    return status
+
+def get_status_report(status, validations_to_run, catalogs_to_run):
+
+    l = max(len(catalog['name']) for catalog in catalogs_to_run)
+    l += 3
+
+    report = StringIO.StringIO()
+    
+    for validation in validations_to_run:
+        report.write('-'*50 + '\n')
+        report.write(validation['name'] + '\n')
+        report.write('-'*50 + '\n')
         
-            with open(pjoin(output_dir, output_filenames['run-level']['status']), 'a') as f:
-                f.write('{0} - {1[exec_fail]}/{2} failed in execution; {1[test_fail]}/{2} failed in testing\n'.format(\
-                        validation['name'], status_count, len(catalogs_to_run)))
+        for catalog in catalogs_to_run:
+            s = status[validation['name']][catalog['name']]
+            report.write('{{:{}}}{{}}\n'.format(l).format(catalog['name'], s))
 
-        except:
-            # test-level error
-            log.error('something wrong happened when preparing "{}" validation'.format(validation['name']))
-            with open(pjoin(validation_dir, 'traceback.log'), 'w') as f:
-                traceback.print_exc(file=f)
-        
+    report.write('-'*50 + '\n')
+    
+    report_content = report.getvalue()
+    report.close()
+
+    return report_content
+
+
+def interfacing_webview(status, validations_to_run, output_dir):
+    with open(pjoin(output_dir, 'errors'), 'w') as f_top:
+        for validation in validations_to_run:
+            total = len(status[validation['name']])
+            counter = collections.Counter(status[validation['name']].values())
+            s = '; '.join(('{}/{} {}'.format(v, total, k) for k, v in counter.iteritems()))
+            f_top.write('{} - {}\n'.format(validation['name'], s))
+            with open(pjoin(output_dir, validation['name'], 'errors'), 'w') as f_this:
+                f_this.write('0\n0\n{}\n{}\n{}\n'.format(\
+                        total-counter['VALIDATION_TEST_FAILED']-counter['PASSED'], 
+                        counter['VALIDATION_TEST_FAILED'], total))
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -161,41 +257,49 @@ def main():
     parser.add_argument('--catalog-config', default='config_catalog.py')
     parser.add_argument('--validations-to-run', metavar='VALIDATION', nargs='+')
     parser.add_argument('--catalogs-to-run', metavar='CATALOG', nargs='+')
+    parser.add_argument('-v', '--verbose', action='store_true')
     args = parser.parse_args()
 
-    log = create_logger()
+    log = create_logger(verbose=args.verbose)
 
-    log.info('creating output directory...')
+    log.debug('creating output directory...')
     output_dir = make_output_dir(args.root_output_dir, args.subdir)
     snapshot_dir = pjoin(output_dir, 'snapshot')
     os.mkdir(snapshot_dir)
-    log.info('output of this run stored in {}'.format(output_dir))
+    log.info('output of this run is stored in {}'.format(output_dir))
 
-    log.info('copying config files...')
+    log.debug('copying config files...')
     check_copy(args.validation_config, pjoin(snapshot_dir, 'validation_config.py'))
     check_copy(args.catalog_config, pjoin(snapshot_dir, 'catalog_config.py'))
 
-    log.info('importing config files...')
+    log.debug('importing config files...')
     sys.path.insert(0, snapshot_dir)
     from validation_config import VALIDATION_CONFIG, VALIDATION_CODE_DIR, VALIDATION_DATA_DIR
     from catalog_config import CATALOG_CONFIG, READER_DIR, CATALOG_DIR
     del sys.path[0]
 
-    log.info('processing config files...')
+    log.debug('processing config files...')
     validations_to_run = process_config(VALIDATION_CONFIG, ['module'], args.validations_to_run)
     catalogs_to_run = process_config(CATALOG_CONFIG, ['file', 'reader'], args.catalogs_to_run)
 
-    log.info('creating code snapshot...')
+    log.debug('creating code snapshot...')
     VALIDATION_CODE_DIR = check_copy(VALIDATION_CODE_DIR, pjoin(snapshot_dir, 'validation_code'))
     READER_DIR = check_copy(READER_DIR, pjoin(snapshot_dir, 'reader'))
     
-    log.info('adding module paths to sys.path...')
+    log.debug('adding module paths to sys.path...')
     sys.path.insert(0, VALIDATION_CODE_DIR)
     sys.path.insert(0, READER_DIR)
 
-    log.info('starting to run validations...')
-    run(validations_to_run, catalogs_to_run, output_dir, VALIDATION_DATA_DIR, CATALOG_DIR, log)
-
+    log.debug('making all sub directories...')
+    make_all_subdirs(validations_to_run, catalogs_to_run, output_dir)
+    
+    log.debug('starting to run all validations...')
+    status = run(validations_to_run, catalogs_to_run, output_dir, VALIDATION_DATA_DIR, CATALOG_DIR, log)
+    
+    log.debug('creating status report...')
+    interfacing_webview(status, validations_to_run, output_dir)
+    report = get_status_report(status, validations_to_run, catalogs_to_run)
+    log.info('All done! Status report:\n' + report)
 
 if __name__ == '__main__':
     main()

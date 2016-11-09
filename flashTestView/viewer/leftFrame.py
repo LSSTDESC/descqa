@@ -215,42 +215,41 @@ if len(runs) > 0:
     run.checkfiles    = []
     run.datfiles=[]      
     run.logfiles=[]       
+    run.summaryfiles = []
     run.imgfiles=[]
     run.pathToParfiles = []
     run.pathToAmrRuntimeParameters     = None
     run.pathToAmrRuntimeParametersDump = None
-    run.theoryFiles = []
-    run.plotFiles   = []
     items = sorted(os.listdir(run.fullPath))
     for item in items:
       if re.match(".*?_chk_\d+$", item):
         checkfileQueryStr = "target_file=%s" % os.path.join(run.fullPath, item)
         run.checkfiles.append(Checkfile(checkfileQueryStr, item))
-      elif re.match(".*?theory_output\d*\.txt", item):  # deprecated: name changed to validation_output
-        pathToTheoryFile = os.path.join(run.fullPath, item)
-        run.theoryFiles.append(Datfile(pathToTheoryFile, item))
-      elif re.match(".*?validation_output\d*\.txt", item): # new name for theory output
-        pathToTheoryFile = os.path.join(run.fullPath, item)
-        run.theoryFiles.append(Datfile(pathToTheoryFile, item))
-      elif re.match(".*?plot_output\d*\.txt", item):    # deprecated: name changed to catalog_output
-        pathToPlotFile = os.path.join(run.fullPath, item)
-        run.plotFiles.append(Datfile(pathToPlotFile, item))
-      elif re.match(".*?catalog_output\d*\.txt", item): # new name for plot output
-        pathToPlotFile = os.path.join(run.fullPath, item)
-        run.plotFiles.append(Datfile(pathToPlotFile, item))
+      #elif re.match(".*?theory_output\d*\.txt", item):  # deprecated: name changed to validation_output
+      #  pathToTheoryFile = os.path.join(run.fullPath, item)
+      #  run.theoryFiles.append(Datfile(pathToTheoryFile, item))
+      #elif re.match(".*?validation_output\d*\.txt", item): # new name for theory output
+      #  pathToTheoryFile = os.path.join(run.fullPath, item)
+      #  run.theoryFiles.append(Datfile(pathToTheoryFile, item))
+      #elif re.match(".*?plot_output\d*\.txt", item):    # deprecated: name changed to catalog_output
+      #  pathToPlotFile = os.path.join(run.fullPath, item)
+      #  run.plotFiles.append(Datfile(pathToPlotFile, item))
+      elif item.startswith("summary"):
+        pathToSummaryFile = os.path.join(run.fullPath, item)
+        run.summaryfiles.append(Datfile(pathToSummaryFile, item))
       elif item.endswith(".dat"):
         pathToDatfile = os.path.join(run.fullPath, item)
-	run.datfiles.append(Datfile(pathToDatfile,item))
+        run.datfiles.append(Datfile(pathToDatfile,item))
       elif item.endswith(".txt"):
         pathToDatfile = os.path.join(run.fullPath, item)
-	run.datfiles.append(Datfile(pathToDatfile,item))
+        run.datfiles.append(Datfile(pathToDatfile,item))
       elif item.endswith(".png"):
         pathToImgfile = os.path.join(run.fullPath, item)
         imgdata = open(pathToImgfile, 'rb').read().encode("base64").replace("\n", "")
         run.imgfiles.append(Imgfile(pathToImgfile,item,imgdata))
       elif item.endswith(".log") and not item == "amr.log":
         pathToLogfile = os.path.join(run.fullPath, item)
-	run.logfiles.append(Logfile(pathToLogfile,item))
+        run.logfiles.append(Logfile(pathToLogfile,item))
       elif item.endswith(".par"):
         parfileQueryStr = os.path.join(run.fullPath, item)
         run.pathToParfiles.append(Parfile(parfileQueryStr, item))
@@ -262,6 +261,7 @@ if len(runs) > 0:
     run.checkfiles.sort()
 
     # parse data for number of processors and wall-clock time into a dictionary.
+    run.showResource  = None
     run.numProcs      = None
     run.wallClockTime = None
     run.numCheckfiles = "0 checkfiles"
@@ -345,8 +345,6 @@ if len(runs) > 0:
     else:
       run.showRun = None
 
-    run.showRun = True # this line added by Yao-Yuan Mao 
-
     pathToTestOutput = os.path.join(run.fullPath, "test_output")
     run.testResult=''
     if os.path.isfile(pathToTestOutput) and os.stat(pathToTestOutput)[6] > 0:
@@ -363,8 +361,6 @@ if len(runs) > 0:
       run.showTest = True
     else:
       run.showTest = None
-
-    run.showTest = True # this line added by Yao-Yuan Mao 
 
   templateData["runs"] = runs
 else:
