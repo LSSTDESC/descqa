@@ -36,6 +36,14 @@ smf_MB2 = _ValidationConfig('BinnedStellarMassFunctionTest',
          zhi=0.1,
          summary='L2Diff',
 )
+
+smhm_MB2 = _ValidationConfig('StellarMassHaloMassTest',
+         observation='MassiveBlackII',
+         bins=(7.0,15.0,36),
+         zlo=0.0,
+         zhi=0.1,
+         summary='L2Diff',
+)
          
 color_DEEP2 = _ValidationConfig('ColorDistributionTest',
          datafile='DEEP2/deep2_g-r_z_0.600_0.725_bins_-0.20_2.00_50.txt', 
@@ -67,9 +75,19 @@ color_SDSS = _ValidationConfig('ColorDistributionTest',
          summary='L2Diff',
 )
 
-wprp_98 = _ValidationConfig('WprpTest',
-         mb2='MASSIVEBLACKII/wprp_sm-9.8.dat',
-         sdss='SDSS/wprp_Reddick-Tinker_sm-9.8.dat',
+wprp_SDSS_m98 = _ValidationConfig('WprpTest',
+         datafile='SDSS/wprp_Reddick-Tinker_sm-9.8.dat',
+         dataname='SDSS',
+         sm_cut=10.0**9.8,
+         zmax=40.0,
+         rbins=(-1.0,1.3,13),
+         njack=10,
+         summary='L2Diff'
+)
+
+wprp_MB2_m98 = _ValidationConfig('WprpTest',
+         datafile='MASSIVEBLACKII/wprp_sm-9.8.dat',
+         dataname='MB2',
          sm_cut=10.0**9.8,
          zmax=40.0,
          rbins=(-1.0,1.3,13),

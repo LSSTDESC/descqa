@@ -24,13 +24,15 @@ class WprpTest(ValidationTest):
         super(self.__class__, self).__init__(**kwargs)
         
         #set validation data information
-        self._sdss_wprp = os.path.join(kwargs['base_data_dir'], kwargs['sdss'])
-        self._mb2_wprp = os.path.join(kwargs['base_data_dir'], kwargs['mb2'])
+        self._datafile = os.path.join(kwargs['base_data_dir'], kwargs['datafile'])
+        self._dataname = kwargs['dataname']
         self._sm_cut = kwargs['sm_cut']
         self._rbins = np.logspace(*kwargs['rbins'])
         self._zmax = kwargs['zmax']
         self._njack = kwargs['njack']
-        self._summary_thres = kwargs.get('summary_thres', 3.0)
+        self._zlo = kwargs.get('zlo', -0.1)
+        self._zhi = kwargs.get('zhi', 0.1)
+        self._summary_thres = kwargs.get('summary_thres', 1.0)
 
     def run_validation_test(self, galaxy_catalog, galaxy_catalog_name, output_dir):
         """
@@ -78,7 +80,7 @@ class WprpTest(ValidationTest):
         njack = self._njack
 
         # load catalog
-        flag = (gc.get_quantities("stellar_mass", {}) >= sm_cut)
+        flag = (gc.get_quantities("stellar_mass", {'zlo':self._zlo, 'zhi':self._zhi}) >= sm_cut)
         x = gc.get_quantities("positionX", {})
         flag &= np.isfinite(x)
 
@@ -95,21 +97,16 @@ class WprpTest(ValidationTest):
         wp, wp_cov = projected_correlation(points, rbins, zmax, gc.box_size, njack)
         rp = np.sqrt(rbins[1:]*rbins[:-1])
         wp_err = np.sqrt(np.diag(wp_cov))
+
+        save_wprp(os.path.join(output_dir, catalog_output), rp, wp, wp_err)
         d1 = {'x':rp, 'y':wp, 'dy':wp_err}
         
         with WprpPlot(os.path.join(output_dir, 'wprp.png'), sm_cut=sm_cut) as plot:
             plot.add_line(rp, wp, wp_err, galaxy_catalog_name)
-
-            rp, wp, wp_err = np.loadtxt(self._mb2_wprp).T
-            plot.add_points(rp, wp, wp_err, 'MB-II', color='r', marker='s')
-
+            rp, wp, wp_err = np.loadtxt(self._datafile).T
+            save_wprp(os.path.join(output_dir, validation_output), rp, wp, wp_err)
             d2 = {'x':rp, 'y':wp, 'dy':wp_err}
-
-            rp, wp, wp_err = np.loadtxt(self._sdss_wprp).T
-            plot.add_points(rp, wp, wp_err, 'SDSS', color='k', marker='o')
-
-        save_wprp(os.path.join(output_dir, catalog_output), d1['x'], d1['y'], d1['dy'])
-        save_wprp(os.path.join(output_dir, validation_output), d2['x'], d2['y'], d2['dy'])
+            plot.add_points(rp, wp, wp_err, self._dataname, color='r', marker='s')
         
         L2, success = L2Diff(d1, d2, self._summary_thres)
         summary = 'L2Diff = {} {} {}'.format(L2, '<' if success else '>', self._summary_thres)
@@ -177,10 +174,7 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
             rp, wp, wp_err = load_wprp(os.path.join(catalog_output_dir, catalog_output))
             plot.add_line(rp, wp, wp_err, catalog, color=color)
         
-        rp, wp, wp_err = np.loadtxt(os.path.join(validation_kwargs['base_data_dir'], validation_kwargs['mb2'])).T
-        plot.add_points(rp, wp, wp_err, 'MB-II', color='r', marker='s')
-
-        rp, wp, wp_err = np.loadtxt(os.path.join(validation_kwargs['base_data_dir'], validation_kwargs['sdss'])).T
-        plot.add_points(rp, wp, wp_err, 'SDSS', color='k', marker='o')
+        rp, wp, wp_err = np.loadtxt(os.path.join(validation_kwargs['base_data_dir'], validation_kwargs['datafile'])).T
+        plot.add_points(rp, wp, wp_err, validation_kwargs['dataname'], color='r', marker='s')
 
 

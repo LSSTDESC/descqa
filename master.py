@@ -8,7 +8,7 @@ import StringIO
 import importlib
 import argparse
 import collections
-
+import fnmatch
 
 pjoin = os.path.join
 
@@ -48,17 +48,22 @@ def quick_import(module_name):
     return getattr(importlib.import_module(module_name), module_name)
 
 
-def process_config(config_dict, keys_to_keep=None):
+def process_config(config_dict, keys_wanted=None):
     d = {k: config_dict[k] for k in config_dict if not k.startswith('_')}
-    if keys_to_keep is None:
+    if keys_wanted is None:
         return d
 
-    keys_to_keep = set(keys_to_keep)
-    if not all(k in d for k in keys_to_keep):
-        raise ValueError("Not all required entries ({}) are presented in ({})...".format(\
-                ', '.join(keys_to_keep), ', '.join(d.keys())))
+    keys_wanted = set(keys_wanted)
+    keys_available = d.keys()
+    keys_to_return = set()
 
-    return {k: d[k] for k in d if k in keys_to_keep}
+    for k in keys_wanted:
+        keys = fnmatch.filter(keys_available, k)
+        if not keys:
+            raise ValueError("{} does not present in config ({})...".format(k, ', '.join(keys_available)))
+        map(keys_to_return.add, keys)
+
+    return {k: d[k] for k in d if k in keys_to_return}
 
 
 def create_logger(verbose=False):

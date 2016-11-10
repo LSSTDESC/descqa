@@ -56,9 +56,10 @@ class YaleCAMGalaxyCatalog(GalaxyCatalog):
                              'velocityX':    self._stored_property_wrapper('vx'),
                              'velocityY':    self._stored_property_wrapper('vy'),
                              'velocityZ':    self._stored_property_wrapper('vz'),
-                             'absmag_r':    self._stored_property_wrapper('absmag_r'),
-                             'absmag_g':    self._stored_property_wrapper('absmag_g'),
-                             'g-r':    self._stored_property_wrapper('g-r')
+                             'SDSS_r:rest':  self._stored_property_wrapper('absmag_r'),
+                             'SDSS_g:rest':  self._stored_property_wrapper('absmag_g'),
+                             'g-r':          self._stored_property_wrapper('g-r'),
+                             'parent_halo_id':    self._stored_property_wrapper('halo_upid'),
                            }
         
         return GalaxyCatalog.__init__(self, fn)

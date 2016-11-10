@@ -25,6 +25,10 @@ summary_output_file = 'summary_smhm.txt'
 log_file = 'log_smhm.txt'
 plot_file = 'plot_smhm.png'
 MassiveBlackII = 'MassiveBlackII'
+plot_title = 'Average Stellar-mass - Halo-mass Relation'
+xaxis_label = '$\log M_{halo}\ (M_\odot)$'
+yaxis_label = 'Average $M^{*}\ (M_\odot)$'
+summary_colormap = 'rainbow'
 
 class StellarMassHaloMassTest(ValidationTest):
     """
@@ -102,7 +106,7 @@ class StellarMassHaloMassTest(ValidationTest):
         """
         
         #associate files with observations
-        stellar_mass_halo_mass_files = {MassiveBlackII:'MassiveBlackII/StellarMass_HaloMass/tab_new.txt',
+        stellar_mass_halo_mass_files = {MassiveBlackII:'MASSIVEBLACKII/StellarMass_HaloMass/tab_new.txt',
                                        }
                                       
         #set the columns to use in each file
@@ -118,7 +122,7 @@ class StellarMassHaloMassTest(ValidationTest):
         #column 6: bin minimum
         #column 7: bin maximum
         #column 8: 1-sigma error
-        obinctr, mstar_ave, mave_min, mave_max, mstar_min, mstar_max = np.loadtxt(fn, unpack=True, usecols=columns[self.observation])
+        binctr, mstar_ave, mave_min, mave_max, mstar_min, mstar_max = np.loadtxt(fn, unpack=True, usecols=columns[self.observation])
         
         #take log of values
         binctr = np.log10(binctr)
@@ -128,7 +132,7 @@ class StellarMassHaloMassTest(ValidationTest):
         mstar_max = np.log10(mstar_max)
         mstar_min = np.log10(mstar_min)
         
-        return obinctr, mstar_ave, mave_min, mave_max, mstar_min, mstar_max
+        return binctr, mstar_ave, mave_min, mave_max, mstar_min, mstar_max
     
     
     def run_validation_test(self, galaxy_catalog, catalog_name, base_output_dir):
@@ -200,16 +204,18 @@ class StellarMassHaloMassTest(ValidationTest):
         #remove non-finite r negative numbers
         mask = np.isfinite(stellarmasses) & (stellarmasses > 0.0)
         stellarmasses = stellarmasses[mask]
-        mask = np.isfinite(masses) & (masses > 0.0)
-        masses = masses[mask]
+        mask = np.isfinite(halomasses) & (halomasses > 0.0)
+        halomasses = halomasses[mask]
         
         #bin halo masses in log bins
-        mhist, mbins = np.histogram(np.log10(masses), bins=self.mhalo_log_bins)
+        logm = np.log10(halomasses)
+        mhist, mbins = np.histogram(logm, bins=self.mhalo_log_bins)
         binctr = (mbins[1:] + mbins[:-1])*0.5
         binwid = mbins[1:] - mbins[:-1]
 
         #compute average stellar mass in each bin
-        Nbins=self.mhalo_log_bins[2]
+        Nbins=len(mbins)-1
+        print(Nbins)
         avg_stellarmass = np.zeros(Nbins)
         avg_stellarmasserr = np.zeros(Nbins)
         for i in range(Nbins):
@@ -219,6 +225,7 @@ class StellarMassHaloMassTest(ValidationTest):
         avg_stellarmassmin = avg_stellarmass - avg_stellarmasserr
         avg_stellarmassmax = avg_stellarmass + avg_stellarmasserr
         
+        print(avg_stellarmass)
         return binctr, binwid, avg_stellarmass, avg_stellarmassmin, avg_stellarmassmin
     
     
@@ -240,7 +247,7 @@ class StellarMassHaloMassTest(ValidationTest):
         
         module_name=self.summary_method
         summary_method=getattr(importlib.import_module(module_name), module_name)
-        
+        #valdata_topass = {k:self.validation_data[k] for k in self.validation_data if k in ['x','y','y-','y+']}
         result, test_passed = summary_method(catalog_result,self.validation_data,self.threshold)
         
         return result, test_passed
@@ -278,9 +285,9 @@ class StellarMassHaloMassTest(ValidationTest):
 
         #add formatting
         plt.legend(loc='best', frameon=False)
-        plt.title(r'Average Stellar-mass - Halo-mass Relation')
-        plt.xlabel(r'$\log M_{halo}\ (M_\odot)$')
-        plt.ylabel(r'Average $M^{*}\ (M_\odot)$')
+        plt.title(plot_title)
+        plt.xlabel(xaxis_label)
+        plt.ylabel(yaxis_label)
         
         #save plot
         fig.savefig(savepath)
@@ -352,12 +359,12 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
     """
     #initialize plot
     fig = plt.figure()
-    plt.title(r'Average Stellar-mass - Halo-mass Relation')
-    plt.xlabel(r'$\log M_{halo}\ (M_\odot)$')
-    plt.ylabel(r'Average $M^{*}\ (M_\odot)$')
+    plt.title(plot_title)
+    plt.xlabel(xaxis_label)
+    plt.ylabel(yaxis_label)
     
     #setup colors from colormap
-    colors= matplotlib.cm.get_cmap('nipy_spectral')(np.linspace(0.,1.,len(catalog_list)))
+    colors= matplotlib.cm.get_cmap(summary_colormap)(np.linspace(0.,1.,len(catalog_list)))
     
     #loop over catalogs and plot
     for color, (catalog_name, catalog_dir) in zip(colors, catalog_list):

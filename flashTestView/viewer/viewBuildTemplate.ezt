@@ -57,6 +57,7 @@ Summary plot:
     </td>
     <td>
         <font color="[runs.statusColor]">[runs.status]</font>
+        <br>[runs.summary]
     </td>
     </tr>
     </table>

@@ -49,9 +49,6 @@ class SAGGalaxyCatalog(GalaxyCatalog):
                             'Vz'          : self._get_stored_property,
                             'Galaxy_Type' : self._get_stored_property,
                             'SFR'         : self._get_stored_property,
-                            'positionX'   : self._get_derived_property,
-                            'positionY'   : self._get_derived_property,
-                            'positionZ'   : self._get_derived_property,
                             'velocityZ'   : self._get_derived_property,
                             'stellar_mass': self._get_derived_property
                           }
@@ -80,7 +77,7 @@ class SAGGalaxyCatalog(GalaxyCatalog):
         """
         self.catalog = self.SAGcollection(fn)
         self.box_size = float(self.catalog.boxSizeMpc)
-        self.cosmology = astropy.cosmology.LambdaCDM(H0 = self.catalog.readAttr('Hubble_h')[0],
+        self.cosmology = astropy.cosmology.LambdaCDM(H0 = self.catalog.readAttr('Hubble_h')[0]*100.0,
                                                      Om0 = self.catalog.readAttr('Omega')[0],
                                                      Ode0 = self.catalog.readAttr('OmegaLambda')[0])
         # turam added: use first redshift

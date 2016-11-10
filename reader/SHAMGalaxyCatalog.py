@@ -28,15 +28,16 @@ class SHAMGalaxyCatalog(GalaxyCatalog):
         self.overdensity = 97.7
         self.lightcone = False
         self._data = {}
-        self.quantities  = { 'stellar_mass': _FunctionWrapper(self._data, 'sm'),
-                             'halo_id':      _FunctionWrapper(self._data, 'id'),
-                             'positionX':    _FunctionWrapper(self._data, 'x'),
-                             'positionY':    _FunctionWrapper(self._data, 'y'),
-                             'positionZ':    _FunctionWrapper(self._data, 'z'),
-                             'velocityX':    _FunctionWrapper(self._data, 'vx'),
-                             'velocityY':    _FunctionWrapper(self._data, 'vy'),
-                             'velocityZ':    _FunctionWrapper(self._data, 'vz'),
-                             'mass':         _FunctionWrapper(self._data, 'mvir'),
+        self.quantities  = { 'stellar_mass':   _FunctionWrapper(self._data, 'sm'),
+                             'halo_id':        _FunctionWrapper(self._data, 'id'),
+                             'parent_halo_id': _FunctionWrapper(self._data, 'upid'),
+                             'positionX':      _FunctionWrapper(self._data, 'x'),
+                             'positionY':      _FunctionWrapper(self._data, 'y'),
+                             'positionZ':      _FunctionWrapper(self._data, 'z'),
+                             'velocityX':      _FunctionWrapper(self._data, 'vx'),
+                             'velocityY':      _FunctionWrapper(self._data, 'vy'),
+                             'velocityZ':      _FunctionWrapper(self._data, 'vz'),
+                             'mass':           _FunctionWrapper(self._data, 'mvir'),
                            }
 
         return GalaxyCatalog.__init__(self, fn)
