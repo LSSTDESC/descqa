@@ -41,7 +41,7 @@ color_DEEP2 = _ValidationConfig('ColorDistributionTest',
          datafile='DEEP2/deep2_g-r_z_0.600_0.725_bins_-0.20_2.00_50.txt', 
          dataname='DEEP2',
          bins=(-0.2,2.,50),
-         limiting_band='SDSS_r:observed',
+         limiting_band='SDSS_r:observed:',
          limiting_mag=24.1,
          zlo=0.,
          zhi=1.,
@@ -57,6 +57,6 @@ wprp_98 = _ValidationConfig('WprpTest',
          zmax=40.0,
          rbins=(-1.0,1.3,13),
          njack=10,
-         summary='L2Diff',
+         summary='L2Diff'
 )
 

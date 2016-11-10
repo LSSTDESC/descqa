@@ -30,7 +30,7 @@ class WprpTest(ValidationTest):
         self._rbins = np.logspace(*kwargs['rbins'])
         self._zmax = kwargs['zmax']
         self._njack = kwargs['njack']
-        self._summary_thres = kwargs.get('summary_thres', 10.0)
+        self._summary_thres = kwargs.get('summary_thres', 3.0)
 
     def run_validation_test(self, galaxy_catalog, galaxy_catalog_name, output_dir):
         """
