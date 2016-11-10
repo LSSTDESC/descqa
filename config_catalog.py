@@ -12,7 +12,7 @@ class _CatalogConfig():
         self.reader = reader
         
         self.file = _os.path.join(_CATALOG_DIR, file)
-        if not _os.path.isfile(self.file):
+        if not _os.path.exists(self.file):
             raise ValueError('catalog file {} does not exist'.format(self.file))
     
 
