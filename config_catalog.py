@@ -6,30 +6,38 @@ _CATALOG_DIR = '/project/projectdirs/lsst/descqacmu/catalog'
 _READER_DIR = '/project/projectdirs/lsst/descqacmu/src/reader'
 
 class _CatalogConfig():
-    def __init__(self, reader, file):
+    def __init__(self, reader, **kwargs):
         if not isinstance(reader, basestring):
             raise ValueError('`reader` must be a string ')
         self.reader = reader
-        self.file = _os.path.join(_CATALOG_DIR, file)
+        _prohibited_leys = ('base_catalog_dir',)
+        if any (k in kwargs for k in _prohibited_leys):
+            raise ValueError('Do not manually set the following keys: {}'.format(', '.join(_prohibited_leys)))
+        if 'fn' in kwargs and len(kwargs) == 1: # old style
+            kwargs['fn'] = _os.path.join(_CATALOG_DIR, kwargs['fn'])
+        else:
+            kwargs['base_catalog_dir'] = _CATALOG_DIR
+        self.kwargs = kwargs
     
 
 # configurations below
 
-SHAM_LiWhite = _CatalogConfig('SHAMGalaxyCatalog', 'SHAM_0.94118.npy')
+SHAM_LiWhite = _CatalogConfig('SHAMGalaxyCatalog', match_to='LiWhite')
 
-SHAM_MB2 = _CatalogConfig('SHAMGalaxyCatalog', 'SHAM_0.94118_MBII.npy')
+SHAM_MB2 = _CatalogConfig('SHAMGalaxyCatalog', match_to='MB2')
 
 CAM_LiWhite = _CatalogConfig('YaleCAMGalaxyCatalog', 
-        'yale_cam_age_matching_LiWhite_2009_z0.0.hdf5')
+        fn='yale_cam_age_matching_LiWhite_2009_z0.0.hdf5')
 
 CAM_MB2 = _CatalogConfig('YaleCAMGalaxyCatalog', 
-        'yale_cam_age_matching_MBII_z0.0.hdf5')
+        fn='yale_cam_age_matching_MBII_z0.0.hdf5')
 
 Galacticus = _CatalogConfig('GalacticusGalaxyCatalog',
-        'galacticus_mb2_anl.hdf5.galacticus')
+        filename='galacticus_mb2_anl.hdf5.galacticus')
 
-MB2 = _CatalogConfig('MB2GalaxyCatalog', 'catalog.hdf5.MB2')
+MB2 = _CatalogConfig('MB2GalaxyCatalog', fn='catalog.hdf5.MB2')
 
-SAG = _CatalogConfig('SAGGalaxyCatalog', 'SAGcatalog.sag')
+SAG = _CatalogConfig('SAGGalaxyCatalog', fn='SAGcatalog.sag')
 
-iHOD = _CatalogConfig('iHODGalaxyCatalog', 'iHODcatalog_v0.h5.iHOD')
+iHOD = _CatalogConfig('iHODGalaxyCatalog', fn='iHODcatalog_v0.h5.iHOD')
+

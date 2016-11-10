@@ -80,14 +80,15 @@ class WprpTest(ValidationTest):
         njack = self._njack
 
         # load catalog
-        flag = (gc.get_quantities("stellar_mass", {'zlo':self._zlo, 'zhi':self._zhi}) >= sm_cut)
-        x = gc.get_quantities("positionX", {})
+        gc_filter = {'zlo':self._zlo, 'zhi':self._zhi}
+        flag = (gc.get_quantities("stellar_mass", gc_filter) >= sm_cut)
+        x = gc.get_quantities("positionX", gc_filter)
         flag &= np.isfinite(x)
 
         x = x[flag]
-        y = gc.get_quantities("positionY", {})[flag]
-        z = gc.get_quantities("positionZ", {})[flag]
-        vz = gc.get_quantities("velocityZ", {})[flag]
+        y = gc.get_quantities("positionY", gc_filter)[flag]
+        z = gc.get_quantities("positionZ", gc_filter)[flag]
+        vz = gc.get_quantities("velocityZ", gc_filter)[flag]
     
         vz /= (100.0*h)
         z += vz

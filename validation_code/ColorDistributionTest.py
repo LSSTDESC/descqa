@@ -7,21 +7,22 @@ import matplotlib
 matplotlib.use('Agg') # Must be before importing matplotlib.pyplot
 import matplotlib.pyplot as plt
 from astropy import units as u
-
 from ValidationTest import ValidationTest, TestResult
+from L2Diff import L2Diff
 
 catalog_output_file = 'catalog.txt'
 validation_output_file = 'validation.txt'
 summary_output_file = 'summary.txt'
 log_file = 'log.txt'
-plot_file = 'plot.png'
+plot_pdf_file = 'plot_pdf.png'
+plot_cdf_file = 'plot_cdf.png'
 
 class ColorDistributionTest(ValidationTest):
     """
     validaton test class object to compute galaxy color distribution
     """
     
-    def __init__(self, **kwargs):
+    def __init__(self, test_q=False, plot_pdf_q=False, **kwargs):
         """
         Initialize a color distribution validation test.
         
@@ -38,7 +39,7 @@ class ColorDistributionTest(ValidationTest):
             list of colors to be tested
             e.g ['u-g','g-r','r-i','i-z']
 
-        color_bin_args : list of tuple, required
+        color_bin_args : list of tuple, required is plot_pdf_q is True
             list of tuple(minimum color, maximum color, N bins) for each color
 
         translate : dictionary, optional
@@ -56,14 +57,20 @@ class ColorDistributionTest(ValidationTest):
         zhi : float, requred
             maximum redshift of the validation catalog
                             
-        data_dir : string
+        data_dir : string, required
             path to the validation data directory
             
-        data_name : string
+        data_name : string, required
             name of the validation data
         
-        test_q: boolean
+        test_q: boolean, optional
             if True, zlo and zhi are overwritten with 0 and 1
+            Default: False
+
+        plot_pdf_q: boolean, optional
+            if True, zlo and zhi are overwritten with 0 and 1
+            Default: False
+
         """
         
         super(self.__class__, self).__init__(**kwargs)
@@ -84,13 +91,13 @@ class ColorDistributionTest(ValidationTest):
         #color bins
         if 'color_bin_args' in kwargs:
             self.color_bin_args = kwargs['color_bin_args']
-        else:
+            if len(self.color_bin_args)!=len(self.colors):
+                raise ValueError('`colors` and `color_bin_args` should be the same length')
+            for color_bin in self.color_bin_args:
+                if len(color_bin)!=3:
+                    raise ValueError('`color_bin_args` is not in the correct format!')
+        elif plot_pdf_q:
             raise ValueError('`color_bin_args` not found!')
-        if len(self.color_bin_args)!=len(self.colors):
-            raise ValueError('`colors` and `color_bin_args` should be the same length')
-        for color_bin in self.color_bin_args:
-            if len(color_bin)!=3:
-                raise ValueError('`color_bin_args` is not in the correct format!')
         #band of limiting magnitude
         if 'limiting_band' in list(kwargs.keys()):
             self.limiting_band = kwargs['limiting_band']
@@ -103,7 +110,7 @@ class ColorDistributionTest(ValidationTest):
             self.limiting_mag = None
 
         # Redshift range
-        if 'test_q' in list(kwargs.keys()) and kwargs['test_q']:
+        if test_q:
             self.zlo_mock = 0.
             self.zhi_mock = 1.
             self.zlo_obs = kwargs['zlo']
@@ -127,7 +134,7 @@ class ColorDistributionTest(ValidationTest):
         else:
             raise ValueError('translate not found!')
 
-
+        self.plot_pdf_q = plot_pdf_q
 
     def run_validation_test(self, galaxy_catalog, catalog_name, base_output_dir):
         """
@@ -148,21 +155,27 @@ class ColorDistributionTest(ValidationTest):
         """
         
         nsubplots = int(np.ceil(len(self.colors)/2.))
-        fig, ax = plt.subplots(nsubplots, 2, figsize=(14, 5*nsubplots))
-        no_data_q = True
+        fig_cdf, ax_cdf = plt.subplots(nsubplots, 2, figsize=(11, 4*nsubplots))
+        fig_pdf, ax_pdf = plt.subplots(nsubplots, 2, figsize=(11, 4*nsubplots))
+        no_cdf_q = True
+        no_pdf_q = True
+
         # loop through colors
-        for ax1, index in zip(ax.flat, range(len(self.colors))):
+        for ax_cdf1, ax_pdf1, index in zip(ax_cdf.flat, ax_pdf.flat, range(len(self.colors))):
 
             color = self.colors[index]
             band1 = self.translate[color[0]]
             band2 = self.translate[color[2]]
             self.band1 = band1
             self.band2 = band2
-            bin_args = self.color_bin_args[index]
 
             #load validation comparison data
-            filename = self._data_name+'_'+color+'_z_%1.3f_%1.3f_bins_%1.2f_%1.2f_%d.txt'%(self.zlo_obs, self.zhi_obs, bin_args[0], bin_args[1], bin_args[2])
+            filename = self._data_name+'_'+color+'_z_%1.3f_%1.3f_pdf.txt'%(self.zlo_obs, self.zhi_obs)
             obinctr, ohist = self.load_validation_data(filename)
+            ocdf = np.zeros(len(ohist))
+            ocdf[0] = ohist[0]
+            for cdf_index in range(1, len(ohist)):
+                ocdf[cdf_index] = ocdf[cdf_index-1]+ohist[cdf_index]
 
             # #----------------------------------------------------------------------------------------
             # if index==0:
@@ -175,7 +188,7 @@ class ColorDistributionTest(ValidationTest):
             #make sure galaxy catalog has appropiate quantities
             if not all(k in galaxy_catalog.quantities for k in (self.band1, self.band2)):
                 #raise an informative warning
-                msg = ('galaxy catalog does not have {} and/or {} quantity, skipping the rest of the validation test.'.format(band1, band2))
+                msg = ('galaxy catalog does not have `{}` and/or `{}` quantity, skipping the rest of the validation test.\n'.format(band1, band2))
                 warn(msg)
                 #write to log file
                 fn = os.path.join(base_output_dir, log_file)
@@ -183,46 +196,83 @@ class ColorDistributionTest(ValidationTest):
                     f.write(msg)
                 continue
 
-            no_data_q = False
+            #---------------------------------- Plot color CDF -----------------------------------------
+
             #calculate color distribution in galaxy catalog
-            mbinctr, mhist = self.color_distribution(galaxy_catalog, bin_args, base_output_dir)
+            mbinctr, mhist = self.color_distribution(galaxy_catalog, (-1, 4, 2000), base_output_dir)
             if mbinctr is None:
-                return TestResult('SKIPPED', msg='')
+                return TestResult('SKIPPED', '')
+            mcdf = np.zeros(len(mhist))
+            mcdf[0] = mhist[0]
+            for cdf_index in range(1, len(mhist)):
+                mcdf[cdf_index] = mcdf[cdf_index-1]+mhist[cdf_index]
             catalog_result = (mbinctr, mhist)
-
             
-            #plot histograms            
+            no_cdf_q = False
+
             #measurement from galaxy catalog
-            ax1.step(mbinctr, mhist, where="mid", label=catalog_name, color='blue')
+            ax_cdf1.step(mbinctr, mcdf, where="mid", label=catalog_name, color='blue')
             #plot validation data
-            ax1.step(obinctr, ohist, label=self._data_name,color='green')
-            
-            #add formatting
-            ax1.set_xlabel(color, fontsize=12)
-            # ax1.set_title('color distribution')
-            ax1.set_title('')
-            ax1.set_xlim(bin_args[0], bin_args[1])
-            ax1.legend(loc='best', frameon=False)
-            #calculate summary statistic
-            summary_result, test_passed = self.calulcate_summary_statistic(catalog_result)
-            
+            ax_cdf1.step(obinctr, ocdf, label=self._data_name,color='green')
+            ax_cdf1.set_xlabel(color, fontsize=12)
+            ax_cdf1.set_title('')
+            xlim = np.min([mbinctr[np.argmax(mcdf>0.005)], obinctr[np.argmax(ocdf>0.005)]])
+            xmax = np.max([mbinctr[np.argmax(mcdf>0.995)], obinctr[np.argmax(ocdf>0.995)]])
+            ax_cdf1.set_xlim(xlim, xmax)
+            ax_cdf1.set_ylim(0, 1)
+            ax_cdf1.legend(loc='best', frameon=False)
+
+            #calculate L2diff
+            d1 = {'x':obinctr, 'y':ocdf}
+            d2 = {'x':mbinctr, 'y':mcdf}
+            L2, success = L2Diff(d1, d2)
+            L2 = L2*np.sqrt(len(d1))
+
+            #save result to file
+            filename = os.path.join(base_output_dir, summary_output_file)
+            f = open(filename, 'a')
+            if(success):
+                f.write(color+" SUCCESS: %s = %G\n" %('L2Diff', L2))
+            else:
+                f.write(color+" FAILED: %s = %G\n" %('L2Diff', L2))
+            f.close()
+
+            #---------------------------------- Plot color PDF -----------------------------------------
+            if self.plot_pdf_q:
+
+                #load validation comparison data
+                bin_args = self.color_bin_args[index]
+                filename = self._data_name+'_'+color+'_z_%1.3f_%1.3f_bins_%1.2f_%1.2f_%d.txt'%(self.zlo_obs, self.zhi_obs, bin_args[0], bin_args[1], bin_args[2])
+                obinctr, ohist = self.load_validation_data(filename)
+
+                #calculate color distribution in galaxy catalog
+                mbinctr, mhist = self.color_distribution(galaxy_catalog, bin_args, base_output_dir)
+                if mbinctr is None:
+                    return TestResult('SKIPPED', '')
+                # catalog_result = (mbinctr, mhist)
+
+                no_pdf_q = False
+
+                #measurement from galaxy catalog
+                ax_pdf1.step(mbinctr, mhist, where="mid", label=catalog_name, color='blue')
+                #validation data
+                ax_pdf1.step(obinctr, ohist, label=self._data_name,color='green')
+                ax_pdf1.set_xlabel(color, fontsize=12)
+                ax_pdf1.set_xlim(bin_args[0], bin_args[1])
+                ax_pdf1.set_title('')
+                ax_pdf1.legend(loc='best', frameon=False)
+
         #save plot
-        if not no_data_q:
-            fn = os.path.join(base_output_dir, plot_file)
-            fig.savefig(fn)
-        
-        # #save results to files
-        # fn = os.path.join(base_output_dir, catalog_output_file)
-        # self.write_file(catalog_result, fn)
+        if no_cdf_q==False:
+            fn = os.path.join(base_output_dir, plot_cdf_file)
+            fig_cdf.savefig(fn)
+        if self.plot_pdf_q and no_pdf_q==False:
+            fn = os.path.join(base_output_dir, plot_pdf_file)
+            fig_pdf.savefig(fn)
 
-        # fn = os.path.join(base_output_dir, validation_output_file)
-        # self.write_file(self.validation_data, fn)
-
-        # fn = os.path.join(base_output_dir, summary_output_file)
-        # self.write_summary_file(summary_result, fn)
-        
-        msg = ''
-        return TestResult('PASSED' if not no_data_q else 'FAILED', msg)
+        #--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--
+        msg = 'No test is done'
+        return TestResult('PASSED' if not no_cdf_q else 'SKIPPED', msg)
         # return TestResult('PASSED' if test_passed else 'FAILED', msg)
             
     def color_distribution(self, galaxy_catalog, bin_args, base_output_dir):
@@ -239,7 +289,7 @@ class ColorDistributionTest(ValidationTest):
         mag2 = galaxy_catalog.get_quantities(self.band2, {'zlo': self.zlo_mock, 'zhi': self.zhi_mock})
 
         if len(mag1)==0:
-            warn('No object in the redshift range!')
+            msg = 'No object in the redshift range!\n'
             warn(msg)
             #write to log file
             fn = os.path.join(base_output_dir, log_file)
@@ -251,7 +301,7 @@ class ColorDistributionTest(ValidationTest):
             #apply magnitude limit and remove nonsensical magnitude values
             limiting_band_name = self.translate[self.limiting_band]
             mag_lim = galaxy_catalog.get_quantities(limiting_band_name, {'zlo': self.zlo_mock, 'zhi': self.zhi_mock})
-            print('Applying magnitude limit: '+limiting_band_name+'<%2.2f'%self.limiting_mag)
+            # print('Applying magnitude limit: '+limiting_band_name+'<%2.2f'%self.limiting_mag)
             mask = (mag_lim<self.limiting_mag) & (mag1>0) & (mag1<50) & (mag2>0) & (mag2<50)
             mag1 = mag1[mask]
             mag2 = mag2[mask]
@@ -262,7 +312,7 @@ class ColorDistributionTest(ValidationTest):
             mag2 = mag2[mask]
 
         if np.sum(mask)==0:
-            msg = 'No object in the magnitude range!'
+            msg = 'No object in the magnitude range!\n'
             warn(msg)
             #write to log file
             fn = os.path.join(base_output_dir, log_file)
@@ -279,25 +329,7 @@ class ColorDistributionTest(ValidationTest):
         binctr = (bins[1:] + bins[:Nbins])/2.0
         
         return binctr, hist
-    
-    def calulcate_summary_statistic(self, catalog_result):
-        """
-        Run summary statistic.
-        
-        Parameters
-        ----------
-        catalog_result :
-        
-        Returns
-        -------
-        result :  numerical result
-        
-        pass : boolean
-            True if the test is passed, False otherwise.
-        """
-        
-        return 1.0, True
-    
+
     def load_validation_data(self, filename):
         """
         Open comparsion validation data, i.e. observational comparison data.
@@ -310,37 +342,11 @@ class ColorDistributionTest(ValidationTest):
         
         return binctr, hist
     
-    def write_file(self, result, savepath, comment=None):
+    def write_summary_file(self, result, test_passed, filename, comment=None):
         """
-        write results to ascii files
-        
-        Parameters
-        ----------
-        result : 
-        
-        savepath : string
-            file to save result
-        
-        comment : string
-        """
-        
-        #unpack result
-        binctr, hist = result
-        
-        #save result to file
-        f = open(savepath, 'w')
-        if comment:
-            f.write('# {0}\n'.format(comment))
-        for b, h in zip(binctr, hist):
-            f.write("%13.6e %13.6e\n" % (b, h))
-        f.close()
-    
-    def write_summary_file(self, result, savepath, comment=None):
-        """
-        
         """
         pass
-        
+
     def plot_summary(output_file, test_dicts):
         """
         """

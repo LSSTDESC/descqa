@@ -58,6 +58,7 @@ color_DEEP2 = _ValidationConfig('ColorDistributionTest',
          # zlo=0.,
          # zhi=1.,
          test_q = True,
+         plot_pdf_q = True,
          summary='L2Diff',
 )
 
@@ -76,6 +77,7 @@ color_SDSS = _ValidationConfig('ColorDistributionTest',
          zlo=0.045,
          zhi=0.055,
          test_q = False,
+         plot_pdf_q = True,
          summary='L2Diff',
 )
 

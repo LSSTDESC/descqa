@@ -112,7 +112,7 @@ class GalaxyCatalog(object):
         """
         if type(ids) is list:
             idList = ids
-        elif type(ids) is str:
+        elif isinstance(ids, basestring):
             idList = [ids]
         else:
             raise TypeError("get_quantities: ids must be list or str")
@@ -164,27 +164,27 @@ class GalaxyCatalog(object):
 
 # Convenience function for loading generic galaxy catalogs from a file.
 
-def loadCatalog(fn):
-    """
-    Convenience function to enable loading of generic galaxy catalogs. Each of
-    the registered types is tried in turn, and the load method of the first
-    match is invoked, returning the catalog object. If the given path is not
-    accessible or no match is found, None is returned.
-    """
-    if os.path.exists(fn):
-        for catalogType in catalog_class_registry.keys():
-            catalogObject = catalog_class_registry[catalogType]()
-            if catalogObject.is_valid(fn):
-                print('file %s is of type %s.' % (fn, catalogType))
-                return catalogObject.load(fn)
-            else:
-                del catalogObject
-        # only get here if no catalog types matched
-        print('unknown catalog type')
-        return None
-    else:
-        print('catalog not accessible')
-        return None
+#def loadCatalog(fn):
+#    """
+#    Convenience function to enable loading of generic galaxy catalogs. Each of
+#    the registered types is tried in turn, and the load method of the first
+#    match is invoked, returning the catalog object. If the given path is not
+#    accessible or no match is found, None is returned.
+#    """
+#    if os.path.exists(fn):
+#        for catalogType in catalog_class_registry.keys():
+#            catalogObject = catalog_class_registry[catalogType]()
+#            if catalogObject.is_valid(fn):
+#                print('file %s is of type %s.' % (fn, catalogType))
+#                return catalogObject.load(fn)
+#            else:
+#                del catalogObject
+#        # only get here if no catalog types matched
+#        print('unknown catalog type')
+#        return None
+#    else:
+#        print('catalog not accessible')
+#        return None
 
 # Search the Python path for any galaxy catalog modules and import them.
 

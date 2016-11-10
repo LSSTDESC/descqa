@@ -5,6 +5,8 @@ import numpy as np
 import h5py
 import astropy.cosmology
 import astropy.units as u
+import os 
+import re
 
 class GalacticusGalaxyCatalog(GalaxyCatalog):
     """
@@ -27,7 +29,12 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
                   names.
     """
 
-    def __init__(self, fn=None):
+    Output='Output'
+    Outputs='Outputs'
+    z='z'
+
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
         self.type_ext    = 'galacticus'
         self.filters     = { 'zlo':                   True,
                              'zhi':                   True
@@ -137,31 +144,32 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
                             'mass':              ('log_halomass',  self._unlog10),
                             'disk_stellarmass':  ('log_disk_stellarmass',  self._unlog10),
                             'bulge_stellarmass': ('log_bulge_stellarmass', self._unlog10)}
-                            #'positionX'        : (('positionX',1.05),self._multiply),  #convert to comoving *1/scale-factor
-                            #'positionY'        : (('positionY',1.05),self._multiply),
-                            #'positionZ'        : (('positionZ',1.05),self._multiply)}
         
         self.catalog     = {}
         self.sky_area    = 4.*np.pi*u.sr   # all sky by default
         self.cosmology   = None
         self.lightcone   = False
         self.box_size    = None
-        return GalaxyCatalog.__init__(self, fn)
+
+        self.load()
 
 
-    def load(self, fn):
+    def load(self):
         """
         Given a catalog path, attempt to read the catalog and set up its
         internal data structures.
         """
-
+        fn = os.path.join(self.kwargs['base_catalog_dir'],self.kwargs['filename'])
         hdfFile = h5py.File(fn, 'r')
-        hdfKeys, hdfAttrs = self._gethdf5group(hdfFile)
+
+        hdfKeys, self.hdf5groups = self._gethdf5group(hdfFile)
+        self.outkeys=sorted([key for key in hdfKeys if key.find(self.Output)!=-1],key=self.stringSplitByIntegers)
+        self.zvalues=self.getzvalues(self.outkeys)
+
         #print "load using keys: ", hdfKeys
         self.catalog = {}
         for key in hdfKeys:
-            #if 'Output' in key:
-            if 'Output19' in key:
+            if 'Output' in key:
                 outgroup = hdfFile[key]
                 dataKeys, dataAttrs = self._gethdf5group(outgroup)
                 self.catalog[key] = self._gethdf5arrays(outgroup)
@@ -174,16 +182,15 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
                 self.sigma_8=mydict['sigma_8']
                 self.n_s=mydict['N_s']
 
-        # turam added - use first redshift
-        #print self.catalog.items()[0], type(self.catalog.items()[0])
-        #print self.catalog.values()[0]['redshift']
-        self.redshift = self.catalog.values()[0]['redshift'][0]
-
+        if(len(self.zvalues)==1):
+            self.redshift = self.zvalues[0]
+        else:
+            self.redshift = None
         #print "box_size after loading = ", self.box_size
 
         # TODO: how to get sky area?
         hdfFile.close()
-        return self
+        return
 
     # Functions for applying filters
 
@@ -219,11 +226,11 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
         catalog.
         """
         props = []
-        for haloID in self.catalog.keys():
-            halo = self.catalog[haloID]
-            if self._check_halo(halo, filters):
-                if quantity in halo.keys():
-                    props.extend(halo[quantity])
+        for outkey in self.catalog.keys():
+            zdict = self.catalog[outkey]
+            if self._check_halo(zdict, filters):
+                if quantity in zdict.keys():
+                    props.extend(zdict[quantity])
         return np.asarray(props)
 
     def _get_derived_property(self, quantity, filters):
@@ -331,3 +338,35 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
         x = sum(propList)
         return x
 
+    def stringSplitByIntegers(self,x):
+        r = re.compile('(\d+)')
+        l = r.split(x)
+        return [int(y) if y.isdigit() else y for y in l]
+
+    def getzvalues(self,outkeys,hdf5groups=None):
+        myname=self.getzvalues.__name__
+        zvalues=[]
+        if(type(outkeys)==str):  #create list if necessary                                                       
+            outkeys=[outkeys]
+        #endif                                                                                                   
+        if(hdf5groups is None):
+            hdf5groups=self.hdf5groups
+        #endif                                                                                                   
+        for outkey in outkeys:
+            if(hdf5groups.has_key(outkey)):
+                if(outkey.find(self.Output)!=-1):
+                    if (hdf5groups[outkey].has_key(self.z)):
+                        outputz=hdf5groups[outkey][self.z]
+                    elif(hdf5groups[outkey].has_key("z")):
+                        outputz=hdf5groups[outkey]["z"]
+                    else:
+                        print("Missing attribute",self.z)
+            #elif (hdf5groups.has_key(self.Outputs)):
+            #    outputz=hdf5groups[self.Outputs][outkey][self.outputRedshift]
+            else:
+                print("Unknown catalog key",outkey)
+            #endif                                                                                               
+            zvalues.append(outputz)
+
+        #endfor                                                                                                  
+        return zvalues

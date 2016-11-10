@@ -158,7 +158,7 @@ def run(tasks, validations_to_run, catalogs_to_run, log):
         catcher = ExceptionAndStdStreamCatcher()
         with CatchExceptionAndStdStream(catcher):
             Reader = quick_import(catalog.reader)
-            gc = Reader(catalog.file)
+            gc = Reader(**catalog.kwargs)
         if catcher.has_exception:
             log.error('error occured when loading "{}" catalog...'.format(catalog_name))
             log.debug('stdout/stderr and traceback:\n' + catcher.output)
