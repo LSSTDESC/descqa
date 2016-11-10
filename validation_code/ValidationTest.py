@@ -2,7 +2,30 @@ from __future__ import (division, print_function, absolute_import, unicode_liter
 from warnings import warn
 import os
 
-__all__ = ['ValidationTest']
+__all__ = ['ValidationTest', 'TestResult']
+
+class TestResult(object):
+    """
+    class for passing back test result
+    """
+    def __init__(self, status, summary):
+        """
+        Parameters
+        ----------
+        status : str
+            run status, must be "PASSED", "FAILED", or "SKIPPED"
+
+        summary : str
+            short summary, length must be less than 80
+        """
+        status = status.upper()
+        if status not in ('PASSED', 'FAILED', 'SKIPPED'):
+            raise ValueError('`status` must be "PASSED", "FAILED", or "SKIPPED"')
+        if not isinstance(summary, basestring) or len(summary) > 80:
+            raise ValueError('`summary` must be a string of length < 80')
+        self.status = status
+        self.summary = summary
+
 
 class ValidationTest(object):
     """

@@ -114,13 +114,15 @@ def run(validations_to_run, catalogs_to_run, output_dir, log):
     test_kwargs_dict = collections.defaultdict(dict) # to store all used kwargs
     status_dict = collections.defaultdict(dict) # to store run status
 
-    def set_status(status):
+    def set_status(status, summary=None):
         validation_name, catalog_name = final_output_dir.rstrip(os.path.sep).rsplit(os.path.sep)[-2:]
         status = status.strip().upper()
         if not any(status.endswith(t) for t in ('PASSED', 'FAILED', 'ERROR', 'SKIPPED')):
             raise ValueError('status message not set correctly!')
         with open(pjoin(final_output_dir, 'STATUS'), 'w') as f:
             f.write(status + '\n')
+            if summary:
+                f.write(summary.strip() + '\n')
         status_dict[validation_name][catalog_name] = status
 
     def write_to_traceback(msg):
@@ -188,7 +190,8 @@ def run(validations_to_run, catalogs_to_run, output_dir, log):
             # run validation test
             catcher = ExceptionAndStdStreamCatcher()
             with CatchExceptionAndStdStream(catcher):
-                error_code = vt.run_validation_test(gc, catalog_name, final_output_dir)
+                result = vt.run_validation_test(gc, catalog_name, final_output_dir)
+                assert result.status in ('PASSED', 'FAILED', 'SKIPPED') and isinstance(result.summary, basestring)
 
             if catcher.output:
                 write_to_traceback(catcher.output)
@@ -196,24 +199,19 @@ def run(validations_to_run, catalogs_to_run, output_dir, log):
                     log.error('error occured when running "{}" test on "{}" catalog...'.format(validation_name, catalog_name))
                     log.debug('stdout/stderr and traceback:\n' + catcher.output)
                     set_status('RUN_VALIDATION_TEST_ERROR')
+                    continue
                 else:
                     log.debug('stdout/stderr while running "{}" test on "{}" catalog:\n'.format(validation_name, catalog_name) + catcher.output)
                 
-            if not catcher.has_exception:
-                if error_code == 1:
-                    set_status('VALIDATION_TEST_FAILED')
-                elif error_code:
-                    set_status('VALIDATION_TEST_SKIPPED')
-                else:
-                    set_status('VALIDATION_TEST_PASSED')
+            set_status('VALIDATION_TEST_{}'.format(result.status), result.summary)
 
-                if error_code == 0 or error_code == 1:
-                    test_kwargs['catalog_name'] = catalog_name
-                    test_kwargs['base_output_dir'] = final_output_dir
-                    test_kwargs_dict[validation_name][catalog_name] = test_kwargs.copy()
-                    log.info('finishing "{}" test on "{}" catalog'.format(validation_name, catalog_name))
-                else:
-                    log.info('skipping "{}" test on "{}" catalog'.format(validation_name, catalog_name))
+            if result.status == 'SKIPPED':
+                log.info('skipping "{}" test on "{}" catalog'.format(validation_name, catalog_name))
+            else: # passed or failed
+                test_kwargs['catalog_name'] = catalog_name
+                test_kwargs['base_output_dir'] = final_output_dir
+                test_kwargs_dict[validation_name][catalog_name] = test_kwargs.copy()
+                log.info('finishing "{}" test on "{}" catalog'.format(validation_name, catalog_name))
 
     # now back outside the two loops, return status
     return status_dict, test_kwargs_dict

@@ -14,7 +14,7 @@ import os
 import importlib
 from warnings import warn
 
-from ValidationTest import ValidationTest
+from ValidationTest import ValidationTest, TestResult
 
 __all__ = ['BinnedStellarMassFunctionTest','plot_summary']
 __author__ = []
@@ -101,8 +101,8 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         """
         
         #associate files with observations
-        stellar_mass_fuction_files = {'LiWhite2009':'LIWHITE/StellarMassFunction/massfunc_data.txt',
-                                      'MassiveBlackII':'LIWHITE/StellarMassFunction/massfunc_data.txt'}
+        stellar_mass_fuction_files = {'LiWhite2009':'LIWHITE/StellarMassFunction/massfunc_dataerr.txt',
+                                      'MassiveBlackII':'LIWHITE/StellarMassFunction/massfunc_dataerr.txt'}
         
         #set the columns to use in each file
         columns = {'LiWhite2009':(0,5,6),
@@ -139,8 +139,8 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         
         Returns
         -------
-        test_passed : boolean
-            True if the test is 'passed', False otherwise
+        test_result : TestResult object
+            use the TestResult object to reture test result
         """
         
         #make sure galaxy catalog has appropiate quantities
@@ -152,7 +152,7 @@ class BinnedStellarMassFunctionTest(ValidationTest):
             fn = os.path.join(base_output_dir ,log_file)
             with open(fn, 'a') as f:
                 f.write(msg)
-            return 2
+            return TestResult('SKIPPED', msg)
         
         #calculate stellar mass function in galaxy catalog
         binctr, binwid, mhist, mhmin, mhmax = self.binned_stellar_mass_function(galaxy_catalog)
@@ -174,9 +174,9 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         
         fn = os.path.join(base_output_dir, summary_output_file)
         self.write_summary_file(summary_result, test_passed, fn)
-        
-        return (0 if test_passed else 1)
-    
+
+        msg = "{} = {:G} {} {:G}".format(self.summary_method, summary_result, '<' if test_passed else '>', self.threshold)
+        return TestResult('PASSED' if test_passed else 'FAILED', msg)
     
     def binned_stellar_mass_function(self, galaxy_catalog):
         """
