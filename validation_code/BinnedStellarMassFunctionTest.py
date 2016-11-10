@@ -328,19 +328,22 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         f.close()
 
 
-def plot_summary(output_file, test_dicts):
+def plot_summary(output_file, catalog_list, validation_kwargs):
     """
     make summary plot for validation test
-    
+
     Parameters
     ----------
     output_file: string
         filename for summary plot
     
-    test_dict: list
-        list of dictionaries use to run each catalog comparison
-    """
+    catalog_list: list of tuple
+        list of (catalog, catalog_output_dir) used for each catalog comparison
     
+    validation_kwargs : dict
+        keyword arguments used in the validation
+    """
+
     #initialize plot
     fig = plt.figure()
     plt.title(r'stellar mass function')
@@ -348,24 +351,20 @@ def plot_summary(output_file, test_dicts):
     plt.ylabel(r'$dN/dV\, d\log M\ ({\rm Mpc}^{-3}\,{\rm dex}^{-1})$')
     
     #setup colors from colormap
-    ncatalogs= len(test_dicts)
-    cmap = matplotlib.cm.get_cmap('nipy_spectral')
-    colors= cmap(np.linspace(0.,1.,ncatalogs))
+    colors= matplotlib.cm.get_cmap('nipy_spectral')(np.linspace(0.,1.,len(catalog_list)))
     
     #loop over catalogs and plot
-    for td,tdict in enumerate(test_dicts):
-        fn = os.path.join(tdict['base_output_dir'],catalog_output_file)
-        galaxy_catalog_name=tdict['catalog_name']
+    for color, (catalog_name, catalog_dir) in zip(colors, catalog_list):
+        fn = os.path.join(catalog_dir, catalog_output_file)
         sbinctr, shist, shmin, shmax = np.loadtxt(fn, unpack=True, usecols=[0,1,2,3])
-        plt.step(sbinctr, shist, where="mid", label=galaxy_catalog_name, color=colors[td])
-        plt.fill_between(sbinctr, shmin, shmax, facecolor=colors[td], alpha=0.3, edgecolor='none')
+        plt.step(sbinctr, shist, where="mid", label=catalog_name, color=color)
+        plt.fill_between(sbinctr, shmin, shmax, facecolor=color, alpha=0.3, edgecolor='none')
     
     #plot 1 instance of validation data (same for each catalog)
-    fn = os.path.join(test_dicts[0]['base_output_dir'],validation_output_file)
+    fn = os.path.join(catalog_dir, validation_output_file)
     obinctr, ohist,ohmin, ohmax = np.loadtxt(fn, unpack=True, usecols=[0,1,2,3])
-    plt.errorbar(obinctr, ohist, yerr=[ohist-ohmin, ohmax-ohist], label=test_dicts[0]['observation'], fmt='o',color='black')
+    plt.errorbar(obinctr, ohist, yerr=[ohist-ohmin, ohmax-ohist], label=validation_kwargs['observation'], fmt='o',color='black')
     plt.legend(loc='best', frameon=False)
     
     plt.savefig(output_file)
     
-    return

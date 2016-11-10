@@ -497,10 +497,12 @@ class InvocationList:
 
           html += "</div><div>"
 
+          links_to_run = []
           for item in items:
               itempath = os.path.join(pathToInvocationDir,item)
               if os.path.isdir(itempath) and not item.startswith('_'):
-                html += "&nbsp;<a href=viewer/viewBuild.cgi?target_dir=%s>%s</a>" % (itempath, item)
+                links_to_run.append("<a href=viewer/viewBuild.cgi?target_dir=%s>%s</a>" % (itempath, item))
+          html += "&nbsp;|&nbsp;".join(links_to_run)
           html += "</div>"
           newInvocations.append(Invocation(invocationDir, html, os.stat(os.path.join(self.pathToSiteDir, invocationDir))[8]))
 

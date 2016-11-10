@@ -7,45 +7,32 @@ import matplotlib
 matplotlib.use('Agg') # Must be before importing matplotlib.pyplot
 import matplotlib.pyplot as plt
 
-from ValidationTest import ValidationTest
+from ValidationTest import ValidationTest, TestResult
 
 from L2Diff import L2Diff
 from helpers.CorrelationFunction import projected_correlation
 
+catalog_output = 'catalog_wprp.txt'
+validation_output = 'validation_wprp.txt'
 
 class WprpTest(ValidationTest):
     """
     validaton test class object to compute project 2-point correlation function wp(rp)
     """
     
-    def __init__(self, test_args, data_directory, data_args):
-        """
-        Initialize a stellar mass function validation test.
-        
-        Parameters
-        ----------
-        test_args : dictionary
-            dictionary of arguments specifying the parameters of the test
-            
-        data_directory : string
-            path to comparison data directory
-        
-        data_args : dictionary
-            dictionary of arguments specifying the comparison data
-        """
-        
-        super(ValidationTest, self).__init__()
+    def __init__(self, **kwargs):
+        super(self.__class__, self).__init__(**kwargs)
         
         #set validation data information
-        self._sdss_wprp = os.path.join(data_directory, data_args['sdss'])
-        self._mb2_wprp = os.path.join(data_directory, data_args['mb2'])
-        self._sm_cut = test_args['sm_cut']
-        self._rbins = np.logspace(*test_args['rbins'])
-        self._zmax = test_args['zmax']
-        self._njack = test_args['njack']
-        self._summary_thres = test_args.get('summary_thres', 10.0)
+        self._sdss_wprp = os.path.join(kwargs['base_data_dir'], kwargs['sdss'])
+        self._mb2_wprp = os.path.join(kwargs['base_data_dir'], kwargs['mb2'])
+        self._sm_cut = kwargs['sm_cut']
+        self._rbins = np.logspace(*kwargs['rbins'])
+        self._zmax = kwargs['zmax']
+        self._njack = kwargs['njack']
+        self._summary_thres = kwargs.get('summary_thres', 10.0)
 
-    def run_validation_test(self, galaxy_catalog, galaxy_catalog_name, output_dict):
+    def run_validation_test(self, galaxy_catalog, galaxy_catalog_name, output_dir):
         """
         Load galaxy catalog and (re)calculate the stellar mass function.
         
@@ -57,12 +44,12 @@ class WprpTest(ValidationTest):
         galaxy_catalog_name : string
             name of mock galaxy catalog
         
-        output_dict : dictionary
+        output_dir : string
             dictionary of output informaton
         
         Returns
         -------
-        test_passed : boolean
+        test_result : TestResult object
         """
         
         #make sure galaxy catalog has appropiate quantities
@@ -72,10 +59,7 @@ class WprpTest(ValidationTest):
             #raise an informative warning
             msg = 'galaxy catalog does not have all the required quantities {}, skipping the rest of the validation test.'.format(', '.join(required_quantities))
             warn(msg)
-            with open(output_dict['log'], 'a') as f:
-                f.write(msg)
-            
-            return 2
+            return TestResult('SKIPPED', msg)
 
         #continue with the test
         gc = galaxy_catalog
@@ -86,8 +70,6 @@ class WprpTest(ValidationTest):
             h = 0.702
             msg = 'Make sure `cosmology` and `redshift` properties are set. Using default value h=0.702...'
             warn(msg)
-            with open(output_dict['log'], 'a') as f:
-                f.write(msg)
 
         # convert arguments
         sm_cut = self._sm_cut/(h*h)
@@ -113,42 +95,92 @@ class WprpTest(ValidationTest):
         wp, wp_cov = projected_correlation(points, rbins, zmax, gc.box_size, njack)
         rp = np.sqrt(rbins[1:]*rbins[:-1])
         wp_err = np.sqrt(np.diag(wp_cov))
-
-        fig, ax = plt.subplots()
-        self.add_line_on_plot(ax, rp, wp, wp_err, galaxy_catalog_name, output_dict['catalog'])
         d1 = {'x':rp, 'y':wp, 'dy':wp_err}
+        
+        with WprpPlot(os.path.join(output_dir, 'wprp.png'), sm_cut=sm_cut) as plot:
+            plot.add_line(rp, wp, wp_err, galaxy_catalog_name)
 
-        # load mb2 wp(rp), use this to validate
-        rp, wp, wp_err = np.loadtxt(self._mb2_wprp).T
-        self.add_line_on_plot(ax, rp, wp, wp_err, 'MB-II', output_dict['validation'])
-        d2 = {'x':rp, 'y':wp, 'dy':wp_err}
+            rp, wp, wp_err = np.loadtxt(self._mb2_wprp).T
+            plot.add_points(rp, wp, wp_err, 'MB-II', color='r', marker='s')
 
-        # load sdss wp(rp), just for comparison
-        rp, wp, wp_err = np.loadtxt(self._sdss_wprp).T
-        self.add_line_on_plot(ax, rp, wp, wp_err, 'SDSS')
+            d2 = {'x':rp, 'y':wp, 'dy':wp_err}
 
-        ax.set_xlim(0.1, 50.0)
-        ax.set_ylim(1.0, 3.0e3)
-        ax.set_xlabel(r'$r_p \; {\rm [Mpc]}$')
-        ax.set_ylabel(r'$w_p(r_p) \; {\rm [Mpc]}$')
-        ax.set_title(r'Projected correlation function ($M_* > {0:.2E} \, {{\rm M}}_\odot$)'.format(sm_cut))
-        ax.legend(loc='best', frameon=False)
-        plt.savefig(output_dict['figure'])
+            rp, wp, wp_err = np.loadtxt(self._sdss_wprp).T
+            plot.add_points(rp, wp, wp_err, 'SDSS', color='k', marker='o')
 
+        save_wprp(os.path.join(output_dir, catalog_output), d1['x'], d1['y'], d1['dy'])
+        save_wprp(os.path.join(output_dir, validation_output), d2['x'], d2['y'], d2['dy'])
+        
         L2, success = L2Diff(d1, d2, self._summary_thres)
-        with open(output_dict['summary'], 'a') as f:
-            f.write('L2 = {}\n'.format(L2))
-            if success:
-                f.write('Test passed! L2 < {}\n'.format(self._summary_thres))
-            else:
-                f.write('Test failed, you need L2 < {}!\n'.format(self._summary_thres))
+        summary = 'L2Diff = {} {} {}'.format(L2, '<' if success else '>', self._summary_thres)
 
-        return (0 if success else 1)
+        return TestResult('PASSED' if success else 'FAILED', summary)
 
 
-    def add_line_on_plot(self, ax, rp, wp, wp_err, label, save_output=None):
-        if save_output is not None:
-            np.savetxt(save_output, np.vstack((rp, wp, wp_err)).T, header='rp wp wp_err')
-        l = ax.loglog(rp, wp, label=label, lw=1.5)[0]
-        ax.fill_between(rp, wp+wp_err, np.where(wp > wp_err, wp - wp_err, 0.01), alpha=0.2, color=l.get_color(), lw=0)
+class WprpPlot():
+    def __init__(self, savefig, **kwargs):
+        self.savefig = savefig
+        self.kwargs = kwargs
+
+    def __enter__(self):
+        self.fig, self.ax = plt.subplots()
+        return self
+
+    def __exit__(self, *exc_args):
+        self.ax.set_xscale('log')
+        self.ax.set_yscale('log')
+        self.ax.set_xlim(0.1, 50.0)
+        self.ax.set_ylim(1.0, 3.0e3)
+        self.ax.set_xlabel(r'$r_p \; {\rm [Mpc]}$')
+        self.ax.set_ylabel(r'$w_p(r_p) \; {\rm [Mpc]}$')
+        self.ax.set_title(r'Projected correlation function ($M_* > {0:.2E} \, {{\rm M}}_\odot$)'.format(self.kwargs['sm_cut']))
+        self.ax.legend(loc='best', frameon=False)
+        self.fig.tight_layout()
+        self.fig.savefig(self.savefig)
+
+    def add_line(self, rp, wp, wp_err, label, **kwargs):
+        l = self.ax.loglog(rp, wp, label=label, lw=1.5, **kwargs)[0]
+        self.ax.fill_between(rp, wp+wp_err, np.where(wp > wp_err, wp - wp_err, 0.01), alpha=0.15, color=l.get_color(), lw=0)
+
+    def add_points(self, rp, wp, wp_err, label, **kwargs):
+        self.ax.errorbar(rp, wp, wp_err, label=label, ls='', **kwargs)[0]
+
+
+def save_wprp(output_file, rp, wp, wp_err):
+    np.savetxt(output_file, np.vstack((rp, wp, wp_err)).T, header='rp wp wp_err')
+
+
+def load_wprp(filename):
+    return np.loadtxt(filename, unpack=True)
+
+
+def plot_summary(output_file, catalog_list, validation_kwargs):
+    """
+    make summary plot for validation test
+    
+    Parameters
+    ----------
+    output_file: string
+        filename for summary plot
+    
+    catalog_list: list of tuple
+        list of (catalog, catalog_output_dir) used for each catalog comparison
+    
+    validation_kwargs : dict
+        keyword arguments used in the validation
+    """
+    colors= matplotlib.cm.get_cmap('nipy_spectral')(np.linspace(0.,1.,len(catalog_list)))
+
+    sm_cut = validation_kwargs['sm_cut']/(0.702**2.0)
+    with WprpPlot(output_file, sm_cut=sm_cut) as plot:
+        for color, (catalog, catalog_output_dir) in zip(colors, catalog_list):
+            rp, wp, wp_err = load_wprp(os.path.join(catalog_output_dir, catalog_output))
+            plot.add_line(rp, wp, wp_err, catalog, color=color)
+        
+        rp, wp, wp_err = np.loadtxt(os.path.join(validation_kwargs['base_output_dir'], validation_kwargs['mb2'])).T
+        plot.add_points(rp, wp, wp_err, 'MB-II', color='r', marker='s')
+
+        rp, wp, wp_err = np.loadtxt(os.path.join(validation_kwargs['base_output_dir'], validation_kwargs['sdss'])).T
+        plot.add_points(rp, wp, wp_err, 'SDSS', color='k', marker='o')
+
 

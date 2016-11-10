@@ -111,7 +111,6 @@ def make_all_subdirs(validations_to_run, catalogs_to_run, output_dir):
 
 def run(validations_to_run, catalogs_to_run, output_dir, log):
     validation_instance_cache = {} # to cache valiation instance
-    test_kwargs_dict = collections.defaultdict(dict) # to store all used kwargs
     status_dict = collections.defaultdict(dict) # to store run status
 
     def set_status(status, summary=None):
@@ -153,8 +152,7 @@ def run(validations_to_run, catalogs_to_run, output_dir, log):
         for validation_name, validation in validations_to_run.iteritems():
             # get the final output path, set test kwargs
             final_output_dir = pjoin(output_dir, validation_name, catalog_name)
-            test_kwargs = validation.kwargs.copy()
-            test_kwargs['test_name'] = validation_name
+            validation.kwargs['test_name'] = validation_name
 
             # if gc is an error message, log it and abort
             if isinstance(gc, basestring):
@@ -167,7 +165,7 @@ def run(validations_to_run, catalogs_to_run, output_dir, log):
                 catcher = ExceptionAndStdStreamCatcher()
                 with CatchExceptionAndStdStream(catcher):
                     ValidationTest = quick_import(validation.module)
-                    vt = ValidationTest(**test_kwargs)
+                    vt = ValidationTest(**validation.kwargs)
                 if catcher.has_exception:
                     log.error('error occured when preparing "{}" test'.format(validation_name))
                     log.debug('stdout/stderr and traceback:\n' + catcher.output)
@@ -204,27 +202,29 @@ def run(validations_to_run, catalogs_to_run, output_dir, log):
                     log.debug('stdout/stderr while running "{}" test on "{}" catalog:\n'.format(validation_name, catalog_name) + catcher.output)
                 
             set_status('VALIDATION_TEST_{}'.format(result.status), result.summary)
-
-            if result.status == 'SKIPPED':
-                log.info('skipping "{}" test on "{}" catalog'.format(validation_name, catalog_name))
-            else: # passed or failed
-                test_kwargs['catalog_name'] = catalog_name
-                test_kwargs['base_output_dir'] = final_output_dir
-                test_kwargs_dict[validation_name][catalog_name] = test_kwargs.copy()
-                log.info('finishing "{}" test on "{}" catalog'.format(validation_name, catalog_name))
+            log.info('{} "{}" test on "{}" catalog'.format('skipping' if result.status == 'SKIPPED' else 'finishing', 
+                    validation_name, catalog_name))
 
     # now back outside the two loops, return status
-    return status_dict, test_kwargs_dict
+    return status_dict
 
 
-def call_summary_plot(test_kwargs_dict, validations_to_run, output_dir, log):
-    for validation in test_kwargs_dict:
-        module_name = validations_to_run[validation].module
+def call_summary_plot(status_dict, validations_to_run, output_dir, log):
+    for validation in validations_to_run:
+        catalog_list = []
+        for catalog, status in status_dict[validation].iteritems():
+            if status.endswith('PASSED') or status.endswith('FAILED'):
+                catalog_list.append((catalog, pjoin(output_dir, validation, catalog)))
         
+        if not catalog_list:
+            continue
+
+        module_name = validations_to_run[validation].module
+
         catcher = ExceptionAndStdStreamCatcher()
         with CatchExceptionAndStdStream(catcher):
             plot_summary_func = getattr(importlib.import_module(module_name), 'plot_summary')
-            plot_summary_func(pjoin(output_dir, validation, 'summary_plot.png'), test_kwargs_dict[validation].values())
+            plot_summary_func(pjoin(output_dir, validation, 'summary_plot.png'), catalog_list, validations_to_run[validation].kwargs)
 
         if catcher.has_exception:
             log.error('error occured when generating summary plot for "{}" test...'.format(validation))
@@ -317,10 +317,10 @@ def main():
     make_all_subdirs(validations_to_run, catalogs_to_run, output_dir)
     
     log.debug('starting to run all validations...')
-    status, test_kwargs = run(validations_to_run, catalogs_to_run, output_dir, log)
+    status = run(validations_to_run, catalogs_to_run, output_dir, log)
     
     log.debug('creating summary plots...')
-    call_summary_plot(test_kwargs, validations_to_run, output_dir, log)
+    call_summary_plot(status, validations_to_run, output_dir, log)
 
     log.debug('creating status report...')
     interfacing_webview(status, output_dir)

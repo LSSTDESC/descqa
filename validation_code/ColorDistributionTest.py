@@ -8,7 +8,13 @@ matplotlib.use('Agg') # Must be before importing matplotlib.pyplot
 import matplotlib.pyplot as plt
 from astropy import units as u
 
-from ValidationTest import ValidationTest
+from ValidationTest import ValidationTest, TestResult
+
+catalog_output_file = 'catalog.txt'
+validation_output_file = 'validation.txt'
+summary_output_file = 'summary.txt'
+log_file = 'log.txt'
+plot_file = 'plot.png'
 
 class ColorDistributionTest(ValidationTest):
     """
@@ -21,43 +27,47 @@ class ColorDistributionTest(ValidationTest):
         
         Parameters
         ----------
-        test_args : dictionary
-            dictionary of arguments specifying the parameters of the test
-                        
-            bins : tuple, required
-                minimum color, maximum color, N bins
 
-            zlo : float, requred
-                minimum redshift
-            
-            zhi : float, requred
-                maximum redshift
-
-            band1: string, required
-                the first photometric band
-
-            band2: string, required
-                the second photometric band
+        base_data_dir : string
+            base directory that contains validation data
         
-        data_directory : string
-            path to comparison data directory
+        base_output_dir : string
+            base directory to store test data, e.g. plots
+
+        bins : tuple, required
+            minimum color, maximum color, N bins
+
+        limiting_band: string, optional
+            band of the magnitude limit in the validation catalog
+
+        limiting_mag: float, optional
+            the magnitude limit
+
+        zlo : float, requred
+            minimum redshift of the validation catalog
         
-        data_args : dictionary
-            dictionary of arguments specifying the comparison data
+        zhi : float, requred
+            maximum redshift of the validation catalog
+
+        band1 : string, required
+            the first photometric band
+
+        band2 : string, required
+            the second photometric band
+                            
+        datafile : string
+            path to the validation data file
             
-            file : string
-            
-            name : string
+        dataname : string
+            name of the validation data
             
         """
         
-        super(self.__class__, self).__init__(**kwargs)
+        super(ValidationTest, self).__init__()
         
         #set validation data information
-        self._data_directory = kwargs['base_data_dir']
-        self._data_file = kwargs['datafile']
+        self._data_file = os.path.join(kwargs['base_data_dir'], kwargs['datafile'])
         self._data_name = kwargs['dataname']
-        self._data_args= data_args
         
         #load validation comparison data
         binctr, hist = self.load_validation_data()
@@ -66,53 +76,60 @@ class ColorDistributionTest(ValidationTest):
         #set parameters of test
         #color bins
         if 'bins' in kwargs:
-            self.color_bins = np.linspace(*test_args['bins'])
+            self.color_bins = np.linspace(*kwargs['bins'])
         else:
             raise ValueError('bins not found!')
+        #band of limiting magnitude
+        if 'limiting_band' in list(kwargs.keys()):
+            self.limiting_band = kwargs['limiting_band']
+        else:
+            self.limiting_band = None
+        #limiting magnitude
+        if 'limiting_mag' in list(kwargs.keys()):
+            self.limiting_mag = kwargs['limiting_mag']
+        else:
+            self.limiting_mag = None
         #minimum redshift
-        if 'zlo' in list(test_args.keys()):
-            zlo = test_args['zlo']
+        if 'zlo' in list(kwargs.keys()):
+            zlo = kwargs['zlo']
             self.zlo = float(zlo)
         else:
             raise ValueError('zlo not found!')
         #maximum redshift
-        if 'zhi' in list(test_args.keys()):
-            zhi = test_args['zhi']
+        if 'zhi' in list(kwargs.keys()):
+            zhi = kwargs['zhi']
             self.zhi = float(zhi)
         else:
             raise ValueError('zhi not found!')
 
         #the first photometric band
-        if 'band1' in list(test_args.keys()):
-            band1 = test_args['band1']
+        if 'band1' in list(kwargs.keys()):
+            band1 = kwargs['band1']
             self.band1 = band1
         else:
             raise ValueError('band1 not found!')
         #the second photometric band
-        if 'band2' in list(test_args.keys()):
-            band2 = test_args['band2']
+        if 'band2' in list(kwargs.keys()):
+            band2 = kwargs['band2']
             self.band2 = band2
         else:
             raise ValueError('band2 not found!')
 
-    def run_validation_test(self, galaxy_catalog, galaxy_catalog_name, base_output_dir):
+    def run_validation_test(self, galaxy_catalog, catalog_name, base_output_dir):
         """
-        Load galaxy catalog and (re)calculate the color distribution.
+        run the validation test
         
         Parameters
         ----------
         galaxy_catalog : galaxy catalog reader object
             instance of a galaxy catalog reader
         
-        galaxy_catalog_name : string
+        catalog_name : string
             name of mock galaxy catalog
-        
-        output_dict : dictionary
-            dictionary of output informaton
         
         Returns
         -------
-        test_passed : boolean
+        test_result : TestResult obj
         """
         
         #make sure galaxy catalog has appropiate quantities
@@ -120,28 +137,32 @@ class ColorDistributionTest(ValidationTest):
             #raise an informative warning
             msg = ('galaxy catalog does not have `band1` quantity, skipping the rest of the validation test.')
             warn(msg)
-            #write to log file
-            with open(os.path.join(base_output_dir, 'runtime.log'), 'w') as f: 
-                f.write(msg)
-            
-            return 2
+            return TestResult('SKIPPED', msg)
 
         #calculate color distribution in galaxy catalog
         binctr, hist = self.color_distribution(galaxy_catalog)
+        if binctr is None:
+            return TestResult('SKIPPED', 'nothing in the catalog')
         catalog_result = (binctr, hist)
         
         #calculate summary statistic
         summary_result, test_passed = self.calulcate_summary_statistic(catalog_result)
         
         #plot results
-        self.plot_result(catalog_result, galaxy_catalog_name, output_dict['figure'])
+        fn = os.path.join(base_output_dir, plot_file)
+        self.plot_result(catalog_result, catalog_name, fn)
         
         #save results to files
-        self.write_result_file(catalog_result, output_dict['catalog'])
-        self.write_validation_file(self.validation_data, output_dict['validation'])
-        self.write_summary_file(summary_result, output_dict['summary'])
+        fn = os.path.join(base_output_dir, catalog_output_file)
+        self.write_file(catalog_result, fn)
+
+        fn = os.path.join(base_output_dir, validation_output_file)
+        self.write_file(self.validation_data, fn)
+
+        fn = os.path.join(base_output_dir, summary_output_file)
+        self.write_summary_file(summary_result, fn)
             
-        return (0 if test_passed else 1)
+        return TestResult('PASSED', 'summary statistics not yet implemented')
             
     def color_distribution(self, galaxy_catalog):
         """
@@ -156,11 +177,38 @@ class ColorDistributionTest(ValidationTest):
         mag1 = galaxy_catalog.get_quantities(self.band1, {'zlo': self.zlo, 'zhi': self.zhi})
         mag2 = galaxy_catalog.get_quantities(self.band2, {'zlo': self.zlo, 'zhi': self.zhi})
         
+
+        #apply magnitude limit
+        if self.limiting_band is not None:
+            mag_lim = galaxy_catalog.get_quantities(self.limiting_band, {'zlo': self.zlo, 'zhi': self.zhi})
+            mask = mag_lim<self.limiting_mag
+            mag1 = mag1[mask]
+            mag2 = mag2[mask]
+
+
+        if np.sum(mask)==0:
+            msg = 'No object in the magnitude range!'
+            warn(msg)
+            #write to log file
+            fn = os.path.join(base_output_dir, log_file)
+            with open(fn, 'a') as f:
+                f.write(msg)
+            return None, None
+
         #remove nonsensical magnitude values
-        # mask = (mag1>0) & (mag1<50) & (mag2>0) & (mag2<50)
-        # mag1 = mag1[mask]
-        # mag2 = mag2[mask]
-        
+        mask = (mag1>0) & (mag1<50) & (mag2>0) & (mag2<50)
+        mag1 = mag1[mask]
+        mag2 = mag2[mask]
+
+        if np.sum(mask)==0:
+            warn('No object in the redshift range!')
+            warn(msg)
+            #write to log file
+            fn = os.path.join(base_output_dir, log_file)
+            with open(fn, 'a') as f:
+                f.write(msg)
+            return None, None
+                    
         #count galaxies
         hist, bins = np.histogram(mag1-mag2, bins=self.color_bins)
         #normalize the histogram so that the sum of hist is 1
@@ -192,14 +240,11 @@ class ColorDistributionTest(ValidationTest):
         """
         Open comparsion validation data, i.e. observational comparison data.
         """
-        
-        fn = os.path.join(self._data_directory, self._data_file)
-        
-        binctr, hist = np.loadtxt(fn, unpack=True)
+        binctr, hist = np.loadtxt(self._data_file, unpack=True)
         
         return binctr, hist
     
-    def plot_result(self, result, galaxy_catalog_name, savepath):
+    def plot_result(self, result, catalog_name, savepath):
         """
         Create plot of color distribution
         
@@ -208,7 +253,7 @@ class ColorDistributionTest(ValidationTest):
         result :
             plot of color distribution of mock catalog and observed catalog
         
-        galaxy_catalog_name : string
+        catalog_name : string
             name of galaxy catalog
         
         savepath : string
@@ -219,7 +264,7 @@ class ColorDistributionTest(ValidationTest):
         
         #plot measurement from galaxy catalog
         mbinctr, mhist = result
-        plt.step(mbinctr, mhist, where="mid", label=galaxy_catalog_name, color='blue')
+        plt.step(mbinctr, mhist, where="mid", label=catalog_name, color='blue')
         
         #plot comparison data
         obinctr, ohist = self.validation_data
@@ -234,34 +279,9 @@ class ColorDistributionTest(ValidationTest):
         #save plot
         fig.savefig(savepath)
     
-    def write_result_file(self, result, savepath, comment=None):
+    def write_file(self, result, savepath, comment=None):
         """
         write results to ascii files
-        
-        Parameters
-        ----------
-        result : 
-        
-        savepath : string
-            file to save result
-        
-        comment : string
-        """
-        
-        #unpack result
-        binctr, hist = result
-        
-        #save result to file
-        f = open(savepath, 'w')
-        if comment:
-            f.write('# {0}\n'.format(comment))
-        for b, h in zip(binctr, hist):
-            f.write("%13.6e %13.6e\n" % (b, h))
-        f.close()
-    
-    def write_validation_file(self, result, savepath, comment=None):
-        """
-        write validation data to ascii files
         
         Parameters
         ----------
