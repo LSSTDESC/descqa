@@ -6,10 +6,9 @@
 # Note: right now we are working with galaxy properties as floats, with
 # expected return units listed in GalaxyCatalog.__init__ below. In the future
 # we might move to expecting values as Astropy Quantity objects.
+__all__ = ['GalaxyCatalog']
 
-import glob
-import importlib
-import os.path
+import os
 import numpy as np
 import astropy.units as u
 
@@ -162,37 +161,3 @@ class GalaxyCatalog(object):
                 quantityListOK.append(quantity)
         return quantityListOK
 
-# Convenience function for loading generic galaxy catalogs from a file.
-
-#def loadCatalog(fn):
-#    """
-#    Convenience function to enable loading of generic galaxy catalogs. Each of
-#    the registered types is tried in turn, and the load method of the first
-#    match is invoked, returning the catalog object. If the given path is not
-#    accessible or no match is found, None is returned.
-#    """
-#    if os.path.exists(fn):
-#        for catalogType in catalog_class_registry.keys():
-#            catalogObject = catalog_class_registry[catalogType]()
-#            if catalogObject.is_valid(fn):
-#                print('file %s is of type %s.' % (fn, catalogType))
-#                return catalogObject.load(fn)
-#            else:
-#                del catalogObject
-#        # only get here if no catalog types matched
-#        print('unknown catalog type')
-#        return None
-#    else:
-#        print('catalog not accessible')
-#        return None
-
-# Search the Python path for any galaxy catalog modules and import them.
-
-#catalog_class_registry = {}
-
-#files = glob.glob(os.path.join(DESCQACatalogFunctionDir, '*GalaxyCatalog.py'))
-
-#for this_file in files:
-#    class_name = os.path.basename(this_file).split('.')[0]
-#    module = importlib.import_module(class_name)
-#    catalog_class_registry[class_name] = getattr(module, class_name)
