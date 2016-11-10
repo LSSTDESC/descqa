@@ -92,9 +92,10 @@ for run in runs:
             run.status = f.readline().strip()
             run.summary = f.read().strip()
     except OSError:
-        run.status = 'No STATUS file found!'
+        run.status = 'NO_STATUS_FILE_ERROR'
         run.summary = ''
     run.passed = run.status.endswith('PASSED') or None
+    run.hasError = run.status.endswith('ERROR') or None
 
 templateData["runs"] = runs or None
 

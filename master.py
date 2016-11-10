@@ -100,29 +100,42 @@ def make_output_dir(root_output_dir, create_subdir=True):
     return output_dir
 
 
-def make_all_subdirs(validations_to_run, catalogs_to_run, output_dir):
-    for validation in validations_to_run:
-        validation_dir = pjoin(output_dir, validation)
-        os.mkdir(validation_dir)
-        for catalog in catalogs_to_run:
-            catalog_output_dir = pjoin(validation_dir, catalog)
-            os.mkdir(catalog_output_dir)
+class TaskDirectory():
+    def __init__(self, output_dir):
+        self.output_dir = output_dir
+        self._path = {}
+        self._status = collections.defaultdict(dict)
 
+    def get_path(self, validation_name, catalog_name=None):
+        key = (validation_name, catalog_name)
+        if key not in self._path:
+            self._path[key] = pjoin(self.output_dir, validation_name, catalog_name) if catalog_name else pjoin(self.output_dir, validation_name)
+            if not os.path.exists(self._path[key]):
+                os.makedirs(self._path[key])
+        return self._path[key]
 
-def run(validations_to_run, catalogs_to_run, output_dir, log):
-    validation_instance_cache = {} # to cache valiation instance
-    status_dict = collections.defaultdict(dict) # to store run status
-
-    def set_status(status, summary=None):
-        validation_name, catalog_name = final_output_dir.rstrip(os.path.sep).rsplit(os.path.sep)[-2:]
+    def set_status(self, validation_name, catalog_name, status, summary=None):
         status = status.strip().upper()
         if not any(status.endswith(t) for t in ('PASSED', 'FAILED', 'ERROR', 'SKIPPED')):
             raise ValueError('status message not set correctly!')
-        with open(pjoin(final_output_dir, 'STATUS'), 'w') as f:
+        
+        self._status[validation_name][catalog_name] = status
+        with open(pjoin(self.get_path(validation_name, catalog_name), 'STATUS'), 'w') as f:
             f.write(status + '\n')
             if summary:
                 f.write(summary.strip() + '\n')
-        status_dict[validation_name][catalog_name] = status
+
+    def get_status(self, validation_name=None, catalog_name=None):
+        if catalog_name:
+            return self._status[validation_name][catalog_name]
+        elif validation_name:
+            return self._status[validation_name]
+        else:
+            return self._status
+
+
+def run(tasks, validations_to_run, catalogs_to_run, log):
+    validation_instance_cache = {} # to cache valiation instance
 
     def write_to_traceback(msg):
         with open(pjoin(final_output_dir, 'traceback.log'), 'a') as f:
@@ -151,13 +164,13 @@ def run(validations_to_run, catalogs_to_run, output_dir, log):
         # loop over validations_to_run
         for validation_name, validation in validations_to_run.iteritems():
             # get the final output path, set test kwargs
-            final_output_dir = pjoin(output_dir, validation_name, catalog_name)
+            final_output_dir = tasks.get_path(validation_name, catalog_name)
             validation.kwargs['test_name'] = validation_name
 
             # if gc is an error message, log it and abort
             if isinstance(gc, basestring):
                 write_to_traceback(gc)
-                set_status('LOAD_CATALOG_ERROR')
+                tasks.set_status(validation_name, catalog_name, 'LOAD_CATALOG_ERROR')
                 continue
 
             # try loading ValidationTest class/instance
@@ -182,7 +195,7 @@ def run(validations_to_run, catalogs_to_run, output_dir, log):
             #if vt is an error message, log it and abort
             if isinstance(vt, basestring): 
                 write_to_traceback(vt)
-                set_status('VALIDATION_TEST_MODULE_ERROR')
+                tasks.set_status(validation_name, catalog_name, 'VALIDATION_TEST_MODULE_ERROR')
                 continue
 
             # run validation test
@@ -196,25 +209,23 @@ def run(validations_to_run, catalogs_to_run, output_dir, log):
                 if catcher.has_exception:
                     log.error('error occured when running "{}" test on "{}" catalog...'.format(validation_name, catalog_name))
                     log.debug('stdout/stderr and traceback:\n' + catcher.output)
-                    set_status('RUN_VALIDATION_TEST_ERROR')
+                    tasks.set_status(validation_name, catalog_name, 'RUN_VALIDATION_TEST_ERROR')
                     continue
                 else:
                     log.debug('stdout/stderr while running "{}" test on "{}" catalog:\n'.format(validation_name, catalog_name) + catcher.output)
                 
-            set_status('VALIDATION_TEST_{}'.format(result.status), result.summary)
+            tasks.set_status(validation_name, catalog_name, 'VALIDATION_TEST_{}'.format(result.status), result.summary)
             log.info('{} "{}" test on "{}" catalog'.format('skipping' if result.status == 'SKIPPED' else 'finishing', 
                     validation_name, catalog_name))
 
-    # now back outside the two loops, return status
-    return status_dict
 
 
-def call_summary_plot(status_dict, validations_to_run, output_dir, log):
+def call_summary_plot(tasks, validations_to_run, log):
     for validation in validations_to_run:
         catalog_list = []
-        for catalog, status in status_dict[validation].iteritems():
+        for catalog, status in tasks.get_status(validation).iteritems():
             if status.endswith('PASSED') or status.endswith('FAILED'):
-                catalog_list.append((catalog, pjoin(output_dir, validation, catalog)))
+                catalog_list.append((catalog, tasks.get_path(validation, catalog)))
         
         if not catalog_list:
             continue
@@ -224,7 +235,7 @@ def call_summary_plot(status_dict, validations_to_run, output_dir, log):
         catcher = ExceptionAndStdStreamCatcher()
         with CatchExceptionAndStdStream(catcher):
             plot_summary_func = getattr(importlib.import_module(module_name), 'plot_summary')
-            plot_summary_func(pjoin(output_dir, validation, 'summary_plot.png'), catalog_list, validations_to_run[validation].kwargs)
+            plot_summary_func(pjoin(tasks.get_path(validation), 'summary_plot.png'), catalog_list, validations_to_run[validation].kwargs)
 
         if catcher.has_exception:
             log.error('error occured when generating summary plot for "{}" test...'.format(validation))
@@ -233,14 +244,15 @@ def call_summary_plot(status_dict, validations_to_run, output_dir, log):
             log.debug('stdout/stderr while generating summary plot for "{}" test:\n'.format(validation) + catcher.output)
 
         if catcher.output:
-            with open(pjoin(output_dir, validation, 'summary_plot.log'), 'w') as f:
+            with open(pjoin(tasks.get_path(validation), 'summary_plot.log'), 'w') as f:
                 f.write(catcher.output)
 
             
-def get_status_report(status):
+def get_status_report(tasks):
 
     report = StringIO.StringIO()
-    
+    status = tasks.get_status()
+
     for validation in status:
         report.write('-'*50 + '\n')
         report.write(validation + '\n')
@@ -260,14 +272,15 @@ def get_status_report(status):
     return report_content
 
 
-def interfacing_webview(status, output_dir):
+def interfacing_webview(tasks, output_dir):
+    status = tasks.get_status()
     with open(pjoin(output_dir, 'errors'), 'w') as f_top:
         for validation in status:
             total = len(status[validation])
             counter = collections.Counter(status[validation].values())
             s = '; '.join(('{}/{} {}'.format(v, total, k) for k, v in counter.iteritems()))
             f_top.write('{} - {}\n'.format(validation, s))
-            with open(pjoin(output_dir, validation, 'errors'), 'w') as f_this:
+            with open(pjoin(tasks.get_path(validation,), 'errors'), 'w') as f_this:
                 f_this.write('0\n0\n{}\n{}\n{}\n'.format(\
                         sum(counter[k] for k in counter if k.endswith('ERROR')), 
                         sum(counter[k] for k in counter if k.endswith('FAILED')), 
@@ -290,45 +303,47 @@ def main():
     log.debug('creating output directory...')
     output_dir = make_output_dir(args.root_output_dir, args.subdir)
     open(pjoin(output_dir, '.lock'), 'w').close()
-    snapshot_dir = pjoin(output_dir, '_snapshot')
-    os.mkdir(snapshot_dir)
-    log.info('output of this run is stored in {}'.format(output_dir))
+    try:
+        snapshot_dir = pjoin(output_dir, '_snapshot')
+        os.mkdir(snapshot_dir)
+        log.info('output of this run is stored in {}'.format(output_dir))
 
-    log.debug('copying config files...')
-    check_copy(args.validation_config, pjoin(snapshot_dir, 'validation_config.py'))
-    check_copy(args.catalog_config, pjoin(snapshot_dir, 'catalog_config.py'))
+        log.debug('copying config files...')
+        check_copy(args.validation_config, pjoin(snapshot_dir, 'validation_config.py'))
+        check_copy(args.catalog_config, pjoin(snapshot_dir, 'catalog_config.py'))
 
-    log.debug('importing config files...')
-    sys.path.insert(0, snapshot_dir)
-    import validation_config as vc
-    import catalog_config as cc
-    del sys.path[0]
+        log.debug('importing config files...')
+        sys.path.insert(0, snapshot_dir)
+        import validation_config as vc
+        import catalog_config as cc
+        del sys.path[0]
 
-    log.debug('processing config files...')
-    validations_to_run = process_config(vc.__dict__, args.validations_to_run)
-    catalogs_to_run = process_config(cc.__dict__, args.catalogs_to_run)
-    if not validations_to_run or not catalogs_to_run:
-        raise ValueError('not thing to run...')
+        log.debug('processing config files...')
+        validations_to_run = process_config(vc.__dict__, args.validations_to_run)
+        catalogs_to_run = process_config(cc.__dict__, args.catalogs_to_run)
+        if not validations_to_run or not catalogs_to_run:
+            raise ValueError('not thing to run...')
 
-    log.debug('creating code snapshot and adding to sys.path...')
-    sys.path.insert(0, check_copy(vc._VALIDATION_CODE_DIR, pjoin(snapshot_dir, 'validation_code')))
-    sys.path.insert(0, check_copy(cc._READER_DIR, pjoin(snapshot_dir, 'reader')))
+        log.debug('creating code snapshot and adding to sys.path...')
+        sys.path.insert(0, check_copy(vc._VALIDATION_CODE_DIR, pjoin(snapshot_dir, 'validation_code')))
+        sys.path.insert(0, check_copy(cc._READER_DIR, pjoin(snapshot_dir, 'reader')))
+        
+        log.debug('starting to run all validations...')
+        tasks = TaskDirectory(output_dir)
+        run(tasks, validations_to_run, catalogs_to_run, log)
+        
+        log.debug('creating summary plots...')
+        call_summary_plot(tasks, validations_to_run, log)
 
-    log.debug('making all sub directories...')
-    make_all_subdirs(validations_to_run, catalogs_to_run, output_dir)
+        log.debug('creating status report...')
+        interfacing_webview(tasks, output_dir)
+        report = get_status_report(tasks)
+        log.info('All done! Status report:\n' + report)
+        log.info('output of this run has been stored in {}'.format(output_dir))
     
-    log.debug('starting to run all validations...')
-    status = run(validations_to_run, catalogs_to_run, output_dir, log)
-    
-    log.debug('creating summary plots...')
-    call_summary_plot(status, validations_to_run, output_dir, log)
+    finally:
+        os.unlink(pjoin(output_dir, '.lock'))
 
-    log.debug('creating status report...')
-    interfacing_webview(status, output_dir)
-    report = get_status_report(status)
-    log.info('All done! Status report:\n' + report)
-    log.info('output of this run has been stored in {}'.format(output_dir))
-    os.unlink(pjoin(output_dir, '.lock'))
 
 if __name__ == '__main__':
     main()

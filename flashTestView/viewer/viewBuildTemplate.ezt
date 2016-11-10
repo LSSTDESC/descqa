@@ -15,7 +15,7 @@
   </td>
   <td>
   [for runs]
-     [if-any runs.passed]<font color="green">[else]<font color="red">[end][runs.status]</font>
+     [if-any runs.passed]<font color="green">[else][if-any runs.hasError]<font color="red">[else]<font color="orange">[end][end][runs.status]</font>
      <br>
   [end]
   </td>
@@ -56,7 +56,7 @@ Summary plot:
         <h2>[runs.name]&nbsp;&nbsp;&nbsp;</h2>
     </td>
     <td>
-        [if-any runs.passed]<font color="green">[else]<font color="red">[end][runs.status]</font><br>[runs.summary] 
+        [if-any runs.passed]<font color="green">[else][if-any runs.hasError]<font color="red">[else]<font color="orange">[end][end][runs.status]</font>
     </td>
     </tr>
     </table>
