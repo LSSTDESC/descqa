@@ -36,8 +36,7 @@ class SAGGalaxyCatalog(GalaxyCatalog):
                             'zhi':          True
                           }
         self.quantities = {
-
-                            'mass'        : self._get_derived_property,
+                            #'mass'        : self._get_derived_property,
                             'M_star_disk' : self._get_derived_property,
                             'M_star_bulge': self._get_derived_property,
                             'redshift'    : self._get_stored_property,

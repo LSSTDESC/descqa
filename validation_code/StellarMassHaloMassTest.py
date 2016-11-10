@@ -22,7 +22,7 @@ __author__ = []
 catalog_output_file = 'catalog_smhm.txt'
 validation_output_file = 'validation_smhm.txt'
 summary_output_file = 'summary_smhm.txt'
-log_file = 'log_smhm.txt'
+log_file = 'log_smhm.log'
 plot_file = 'plot_smhm.png'
 MassiveBlackII = 'MassiveBlackII'
 plot_title = 'Average Stellar-mass - Halo-mass Relation'
@@ -74,9 +74,9 @@ class StellarMassHaloMassTest(ValidationTest):
         else:
             self.observation = MassiveBlackII
         
-        obinctr, mstar_ave, mave_min, mave_max, mstar_min, mstar_max = self.load_validation_data()
+        obinctr, mstar_ave, mave_min, mave_max, mstar_min, mstar_max, mstar_up, mstar_dn = self.load_validation_data()
         #bin center, mean, error on mean, lower bound, upper bound, min of bin, max of bin, sigma
-        self.validation_data = {'x':obinctr, 'y':mstar_ave, 'y-':mave_min, 'y+':mave_max, 'ymin':mstar_min, 'ymax':mstar_max}
+        self.validation_data = {'x':obinctr, 'y':mstar_ave, 'y-':mstar_dn, 'y+':mstar_up, 'ymin':mstar_min, 'ymax':mstar_max, 'yup':mstar_up, 'ydn': mstar_dn}
         
         #stellar mass bins
         if 'bins' in kwargs:
@@ -110,7 +110,7 @@ class StellarMassHaloMassTest(ValidationTest):
                                        }
                                       
         #set the columns to use in each file
-        columns = {MassiveBlackII:(0,1,3,4,5,6),
+        columns = {MassiveBlackII:(0,1,3,4,5,6,8,10),
                   }
         #get path to file
         fn = os.path.join(self.base_data_dir, stellar_mass_halo_mass_files[self.observation])
@@ -122,7 +122,9 @@ class StellarMassHaloMassTest(ValidationTest):
         #column 6: bin minimum
         #column 7: bin maximum
         #column 8: 1-sigma error
-        binctr, mstar_ave, mave_min, mave_max, mstar_min, mstar_max = np.loadtxt(fn, unpack=True, usecols=columns[self.observation])
+        #column 9: 16th percentile
+        #column 11: 84th percentile
+        binctr, mstar_ave, mave_min, mave_max, mstar_min, mstar_max, mstar_dn, mstar_up = np.loadtxt(fn, unpack=True, usecols=columns[self.observation])
         
         #take log of values
         binctr = np.log10(binctr)
@@ -131,9 +133,10 @@ class StellarMassHaloMassTest(ValidationTest):
         mstar_ave = np.log10(mstar_ave)
         mstar_max = np.log10(mstar_max)
         mstar_min = np.log10(mstar_min)
-        
-        return binctr, mstar_ave, mave_min, mave_max, mstar_min, mstar_max
-    
+        mstar_up = np.log10(mstar_up)
+        mstar_dn = np.log10(mstar_dn)
+
+        return binctr, mstar_ave, mave_min, mave_max, mstar_min, mstar_max, mstar_dn, mstar_up
     
     def run_validation_test(self, galaxy_catalog, catalog_name, base_output_dir):
         """
@@ -162,7 +165,7 @@ class StellarMassHaloMassTest(ValidationTest):
             fn = os.path.join(base_output_dir ,log_file)
             with open(fn, 'a') as f:
                 f.write(msg)
-            return TestResult('SKIPPED', msg)
+            return TestResult('SKIPPED', 'missing required quantities: stellar mass and/or halomass')
 
         #calculate stellar mass function in galaxy catalog
         binctr, binwid, mhist, mhmin, mhmax = self.profile_stellar_mass_vs_halo_mass(galaxy_catalog)
@@ -215,7 +218,6 @@ class StellarMassHaloMassTest(ValidationTest):
 
         #compute average stellar mass in each bin
         Nbins=len(mbins)-1
-        print(Nbins)
         avg_stellarmass = np.zeros(Nbins)
         avg_stellarmasserr = np.zeros(Nbins)
         for i in range(Nbins):
@@ -224,11 +226,14 @@ class StellarMassHaloMassTest(ValidationTest):
             avg_stellarmasserr[i] = np.std(binsmass)/np.sqrt(len(binsmass))
         avg_stellarmassmin = avg_stellarmass - avg_stellarmasserr
         avg_stellarmassmax = avg_stellarmass + avg_stellarmasserr
+
+        #take log of values
+        log_ave_sm=np.log10(avg_stellarmass)
+        log_min_sm=np.log10(avg_stellarmassmin)
+        log_max_sm=np.log10(avg_stellarmassmax)
         
-        print(avg_stellarmass)
-        return binctr, binwid, avg_stellarmass, avg_stellarmassmin, avg_stellarmassmin
-    
-    
+        return binctr, binwid, log_ave_sm, log_min_sm, log_max_sm
+
     def calulcate_summary_statistic(self, catalog_result):
         """
         Run summary statistic.
@@ -280,8 +285,9 @@ class StellarMassHaloMassTest(ValidationTest):
         obinctr, ohist, ohmin, ohmax = (self.validation_data['x'], self.validation_data['y'], self.validation_data['y-'], self.validation_data['y+'])
         plt.errorbar(obinctr, ohist, yerr=[ohist-ohmin, ohmax-ohist], label=self.observation, fmt='o',color='green')
         #plot bin extrema for validation data
-        plt.plot(obinctr,self.validation_data['ymin'],label='min',ls='dashed',color='green')
-        plt.plot(obinctr,self.validation_data['ymax'],label='max',ls='dashed',color='green')
+        #plt.plot(obinctr,self.validation_data['ymin'],label='min',ls='dashed',color='green')
+        #plt.plot(obinctr,self.validation_data['ymax'],label='max',ls='dashed',color='green')
+        #plt.fill_between(obinctr, self.validation_data['ydn'], self.validation_data['yup'], facecolor='green', alpha=0.3, edgecolor='none')
 
         #add formatting
         plt.legend(loc='best', frameon=False)
@@ -310,9 +316,9 @@ class StellarMassHaloMassTest(ValidationTest):
         f = open(filename, 'w')
         if comment:
             f.write('# {0}\n'.format(comment))
-        if('ymin' in result and 'ymax' in result):
-            for b, h, hn, hx, hl, hu in zip(*(result[k] for k in ['x','y','y-','y+','ymin','ymax'])):
-                f.write("%13.6e %13.6e %13.6e %13.6e %13.6e %13.6e\n" % (b, h, hn, hx, hl, hu))
+        if('ymin' in result and 'ymax' in result and 'yup' in result and 'ydn' in result):
+            for b, h, hn, hx, hmn, hmx, hdn, hup in zip(*(result[k] for k in ['x','y','y-','y+','ymin','ymax','ydn','yup'])):
+                f.write("%13.6e %13.6e %13.6e %13.6e %13.6e %13.6e %13.6e %13.6e\n" % (b, h, hn, hx, hmn, hmx, hdn, hup))
         else:
             for b, h, hn, hx in zip(*(result[k] for k in ['x','y','y-','y+'])):
                 f.write("%13.6e %13.6e %13.6e %13.6e\n" % (b, h, hn, hx))
@@ -375,10 +381,12 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
     
     #plot 1 instance of validation data (same for each catalog)
     fn = os.path.join(catalog_dir, validation_output_file)
-    obinctr, ohist, ohmin, ohmax, omin, omax = np.loadtxt(fn, unpack=True, usecols=[0,1,2,3,4,5])
+    obinctr, ohist, ohmin, ohmax, omin, omax, odn, oup = np.loadtxt(fn, unpack=True, usecols=[0,1,2,3,4,5,6,7])
     plt.errorbar(obinctr, ohist, yerr=[ohist-ohmin, ohmax-ohist], label=validation_kwargs['observation'], fmt='o',color='black')
-    plt.plot(obinctr,omin,label='min',ls='dashed',color='black')
-    plt.plot(obinctr,omax,label='max',ls='dashed',color='black')
+    #plt.plot(obinctr,omin,label='min',ls='dashed',color='black')
+    #plt.plot(obinctr,omax,label='max',ls='dashed',color='black')
+    #plt.fill_between(obinctr, odn, oup, facecolor='black', alpha=0.3, edgecolor='none')
+
     plt.legend(loc='best', frameon=False)
     
     plt.savefig(output_file)

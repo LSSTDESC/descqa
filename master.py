@@ -292,6 +292,16 @@ def interfacing_webview(tasks, output_dir):
                         total))
 
 
+def group_by_catalog(tasks, catalogs_to_run, validations_to_run, output_dir):
+    catalog_group_dir = os.path.join(output_dir, '_group_by_catalog')
+    os.mkdir(catalog_group_dir)
+    for catalog in catalogs_to_run:
+        this_catalog_dir = os.path.join(catalog_group_dir, catalog)
+        os.mkdir(this_catalog_dir)
+        for validation in validations_to_run:
+            os.symlink(tasks.get_path(validation, catalog), os.path.join(this_catalog_dir, validation))
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('root_output_dir')
@@ -342,6 +352,7 @@ def main():
 
         log.debug('creating status report...')
         interfacing_webview(tasks, output_dir)
+        group_by_catalog(tasks, catalogs_to_run, validations_to_run, output_dir)
         report = get_status_report(tasks)
         log.info('All done! Status report:\n' + report)
         log.info('output of this run has been stored in {}'.format(output_dir))

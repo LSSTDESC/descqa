@@ -457,7 +457,7 @@ class InvocationList:
           html = ("<div style=\"float:left;width:150px\"><a href=viewer/viewBuilds.cgi?target_dir=%s " % pathToInvocationDir +
                   "onMouseOver=\"appear('%s','%s')\" " % (statsHeader, statsBody) +
                   "onMouseOut=\"disappear()\">%s</a>" % invocationDir)
-
+        
 
           """
           pathToMasterDict = os.path.join(self.pathToOutdir, self.siteDir,
@@ -487,6 +487,7 @@ class InvocationList:
             html += "&nbsp;<b>!</b>"
 
           html += "</div><div>"
+          html += '[<a href="viewer/viewBuilds.cgi?target_dir={}/_group_by_catalog">catalogs</a>] &nbsp;&nbsp;'.format(pathToInvocationDir)
 
           links_to_run = []
           for item in sorted(totalBuildsList):

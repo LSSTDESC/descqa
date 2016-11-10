@@ -56,9 +56,17 @@ templateData = {}
 # fill in data that has to do with this build
 # (i.e. setup and compilation data)
 templateData["fullBuildPath"]       = targetDir
+templateData["pathToInvocationDir"] = os.path.dirname(targetDir)
 templateData["buildDir"]            = os.path.basename(targetDir)
 templateData["invocationDir"]       = os.path.basename(os.path.dirname(targetDir))
-templateData["pathToInvocationDir"] = os.path.dirname(targetDir)
+
+# YYM: hack to get _group_by_catalog work 
+templateData["isGroupByCatalog"] = None
+GROUP_BY_CATALOG_DIRNAME = '_group_by_catalog'
+if templateData["invocationDir"] == GROUP_BY_CATALOG_DIRNAME:
+    templateData["isGroupByCatalog"] = True
+    templateData["invocationDir"] = os.path.basename(os.path.dirname(templateData["pathToInvocationDir"]))
+
 
 # search for summary plot:
 filepath = os.path.join(targetDir, "summary_plot.png")
@@ -93,7 +101,7 @@ for run in runs:
         with open(os.path.join(run.fullPath, "STATUS")) as f:
             run.status = f.readline().strip()
             run.summary = f.read().strip()
-    except OSError:
+    except (OSError, IOError):
         run.status = 'NO_STATUS_FILE_ERROR'
         run.summary = ''
 

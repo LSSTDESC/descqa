@@ -19,8 +19,10 @@ class MB2GalaxyCatalog(GalaxyCatalog):
                         }
         self.h          = 0.702
         self.quantities = {
+                             'halo_id':               self._get_stored_property,
+                             'parent_halo_id':        self._get_stored_property,
                              'redshift':              self._get_stored_property,
-                             'positionX':             self._get_derived_property,  # Position returned in Mpc, stored in kpc/h 
+                             'positionX':             self._get_derived_property,  # Position returned in Mpc, stored in kpc/h
                              'positionY':             self._get_derived_property,
                              'positionZ':             self._get_derived_property,
                              'velocityZ':             self._get_stored_property,   # Velocity returned in km/sec
@@ -40,7 +42,7 @@ class MB2GalaxyCatalog(GalaxyCatalog):
                              'stellar_mass':    (('stellar_mass', 1.e10 / self.h), self._multiply),
                              'positionX':       (('x', 1.e-3 / self.h), self._multiply), # Position stored in kpc/h
                              'positionY':       (('y', 1.e-3 / self.h), self._multiply),
-                             'positionZ':       (('z', 1.e-3 / self.h), self._multiply), 
+                             'positionZ':       (('z', 1.e-3 / self.h), self._multiply),
                             }
         self.Ngals        = 0
         self.sky_area     = 4.*np.pi*u.sr   # all sky by default

@@ -1,8 +1,8 @@
 <body>
 <base target="rightframe">
-<a href="../home.cgi" target="_top">Home</a> - <a href="viewBuilds.cgi?target_dir=[pathToInvocationDir]" target="_top">[invocationDir]</a>
-<h1>[buildDir]&nbsp;(<a href="viewBuilds.cgi?target_dir=[pathToInvocationDir]" target="_top">[invocationDir]</a>)</h1>
-
+<a href="../home.cgi" target="_top">Back to home</a>
+<h1><a href="viewBuilds.cgi?target_dir=[pathToInvocationDir]" target="_top">[invocationDir]</a> :: [buildDir][if-any isGroupByCatalog] :: (Group by catalog)[end]</h1>
+<br>
 [if-any runs]
 <table class="indenttable">
 <tr valign="top">
@@ -22,7 +22,7 @@
 </tr>
 </table>
 <br>
-
+[if-any isGroupByCatalog][else]
 <table class="indenttable">
 <tr valign="top">
 <td>
@@ -45,6 +45,7 @@ Summary plot:
 [end]
 </table>
 <br>
+[end]
 
   [for runs]
 
