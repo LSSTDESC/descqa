@@ -177,10 +177,10 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
             rp, wp, wp_err = load_wprp(os.path.join(catalog_output_dir, catalog_output))
             plot.add_line(rp, wp, wp_err, catalog, color=color)
         
-        rp, wp, wp_err = np.loadtxt(os.path.join(validation_kwargs['base_output_dir'], validation_kwargs['mb2'])).T
+        rp, wp, wp_err = np.loadtxt(os.path.join(validation_kwargs['base_data_dir'], validation_kwargs['mb2'])).T
         plot.add_points(rp, wp, wp_err, 'MB-II', color='r', marker='s')
 
-        rp, wp, wp_err = np.loadtxt(os.path.join(validation_kwargs['base_output_dir'], validation_kwargs['sdss'])).T
+        rp, wp, wp_err = np.loadtxt(os.path.join(validation_kwargs['base_data_dir'], validation_kwargs['sdss'])).T
         plot.add_points(rp, wp, wp_err, 'SDSS', color='k', marker='o')
 
 

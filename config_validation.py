@@ -37,33 +37,18 @@ smf_MB2 = _ValidationConfig('BinnedStellarMassFunctionTest',
          summary='L2Diff',
 )
          
-# color_DEEP2 = _ValidationConfig('ColorDistributionTest',
-#          datafile='DEEP2/deep2_g-r_z_0.600_0.725_bins_-0.20_2.00_50.txt', 
-#          dataname='DEEP2',
-#          bins=(-0.2,2.,50),
-#          limiting_band='SDSS_r:observed',
-#          limiting_mag=24.1,
-#          # zlo=0.6,
-#          # zhi=0.725,
-#          zlo=0.,
-#          zhi=1.,
-#          band1='SDSS_g:observed:',
-#          band2='SDSS_r:observed:',
-#          summary='L2Diff',
-# )
-
-# color_SDSS = _ValidationConfig('ColorDistributionTest',
-#          datafile='SDSS/sdss_g-r_z_0.073_0.080_bins_0.10_1.20_70.txt', 
-#          dataname='SDSS',
-#          bins=(0.1,2.,70),
-#          limiting_band='SDSS_r:observed',
-#          limiting_mag=17.77,
-#          zlo=0.073,
-#          zhi=0.080,
-#          band1='SDSS_g:observed:',
-#          band2='SDSS_r:observed:',
-#          summary='L2Diff',
-# )
+color_DEEP2 = _ValidationConfig('ColorDistributionTest',
+         datafile='DEEP2/deep2_g-r_z_0.600_0.725_bins_-0.20_2.00_50.txt', 
+         dataname='DEEP2',
+         bins=(-0.2,2.,50),
+         limiting_band='SDSS_r:observed',
+         limiting_mag=24.1,
+         zlo=0.,
+         zhi=1.,
+         band1='SDSS_g:observed:',
+         band2='SDSS_r:observed:',
+         summary='L2Diff',
+)
 
 wprp_98 = _ValidationConfig('WprpTest',
          mb2='MASSIVEBLACKII/wprp_sm-9.8.dat',
@@ -72,6 +57,6 @@ wprp_98 = _ValidationConfig('WprpTest',
          zmax=40.0,
          rbins=(-1.0,1.3,13),
          njack=10,
-         summary='L2Diff'
+         summary='L2Diff',
 )
 

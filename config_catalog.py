@@ -31,3 +31,8 @@ CAM_MB2 = _CatalogConfig('YaleCAMGalaxyCatalog',
 Galacticus = _CatalogConfig('GalacticusGalaxyCatalog',
         'galacticus_mb2_anl.hdf5.galacticus')
 
+MB2 = _CatalogConfig('MB2GalaxyCatalog', 'catalog.hdf5.MB2')
+
+SAG = _CatalogConfig('SAGGalaxyCatalog', 'SAGcatalog.sag')
+
+iHOD = _CatalogConfig('iHODGalaxyCatalog', 'iHODcatalog_v0.h5.iHOD')

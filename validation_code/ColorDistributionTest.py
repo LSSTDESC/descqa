@@ -8,7 +8,7 @@ matplotlib.use('Agg') # Must be before importing matplotlib.pyplot
 import matplotlib.pyplot as plt
 from astropy import units as u
 
-from ValidationTest import ValidationTest, TestResult
+from ValidationTest import ValidationTest
 
 catalog_output_file = 'catalog.txt'
 validation_output_file = 'validation.txt'
@@ -63,10 +63,10 @@ class ColorDistributionTest(ValidationTest):
             
         """
         
-        super(ValidationTest, self).__init__()
+        super(self.__class__, self).__init__(**kwargs)
         
         #set validation data information
-        self._data_file = os.path.join(kwargs['base_data_dir'], kwargs['datafile'])
+        self._data_file = kwargs['datafile']
         self._data_name = kwargs['dataname']
         
         #load validation comparison data
@@ -129,7 +129,8 @@ class ColorDistributionTest(ValidationTest):
         
         Returns
         -------
-        test_result : TestResult obj
+        test_passed : boolean
+            True if the test is 'passed', False otherwise
         """
         
         #make sure galaxy catalog has appropiate quantities
@@ -137,12 +138,16 @@ class ColorDistributionTest(ValidationTest):
             #raise an informative warning
             msg = ('galaxy catalog does not have `band1` quantity, skipping the rest of the validation test.')
             warn(msg)
-            return TestResult('SKIPPED', msg)
+            #write to log file
+            fn = os.path.join(base_output_dir, log_file)
+            with open(fn, 'a') as f:
+                f.write(msg)
+            return 2
 
         #calculate color distribution in galaxy catalog
         binctr, hist = self.color_distribution(galaxy_catalog)
         if binctr is None:
-            return TestResult('SKIPPED', 'nothing in the catalog')
+            return 3
         catalog_result = (binctr, hist)
         
         #calculate summary statistic
@@ -162,7 +167,7 @@ class ColorDistributionTest(ValidationTest):
         fn = os.path.join(base_output_dir, summary_output_file)
         self.write_summary_file(summary_result, fn)
             
-        return TestResult('PASSED', 'summary statistics not yet implemented')
+        return (0 if test_passed else 1)
             
     def color_distribution(self, galaxy_catalog):
         """
@@ -240,7 +245,10 @@ class ColorDistributionTest(ValidationTest):
         """
         Open comparsion validation data, i.e. observational comparison data.
         """
-        binctr, hist = np.loadtxt(self._data_file, unpack=True)
+        
+        fn = os.path.join(self.base_data_dir, self._data_file)
+        
+        binctr, hist = np.loadtxt(fn, unpack=True)
         
         return binctr, hist
     
@@ -310,4 +318,7 @@ class ColorDistributionTest(ValidationTest):
         """
         pass
         
-
+    def plot_summary(output_file, test_dicts):
+        """
+        """
+        pass
