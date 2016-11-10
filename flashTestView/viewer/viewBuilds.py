@@ -55,7 +55,6 @@ try:
     # -------------- form data ---------------- #
     form = cgi.FieldStorage()
     pathToTargetDir = form.getvalue("target_dir")
-    #pathToTargetDir = '/project/projectdirs/lsst/descqa/run/edison/2016-03-25_5'
     displayExitStat = form.getvalue("displayExitStat")
     displayTestName = form.getvalue("displayTestName")
     orderBy         = form.getvalue("orderBy")
@@ -127,7 +126,9 @@ try:
         # DEV This is also bad because it assigns special meaning to the
         # first element in the original test-path, which I don't want to
         # do anymore
-        testName = item.split("_",1)[0]
+        if item.startswith('_'):
+            continue
+        testName = item
         if allTests.has_key(testName):
           # append this path to an already extant entry for 'testName' in 'allTests'
           allTests[testName].append(pathToItem)

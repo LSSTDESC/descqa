@@ -1,13 +1,21 @@
 #!/usr/bin/env python
+
+open('home.log', 'w').close()
+def log(msg):
+    return #comment out this line to enable log
+    with open('home.log', 'a') as f:
+        f.write(msg)
+        f.write('\n')
+
 try:
-  open('x','w').write('0')
+  log('0')
   import sys, os
   import cgi, pickle, tempfile
-  open('x','w').write('0.1')
+  log('0.1')
   import purgeTmp
   sys.path.insert(0, "lib")
   import invocations, littleParser
-  open('x','w').write('0.5')
+  log('0.5')
 
   fileMap = "fileMap"
 except:
@@ -20,7 +28,7 @@ def abort(msg):
   print msg
   print "</body>"
   print "</html>"
-  open('x','w').write(msg)
+  log(msg)
   sys.exit(0)
 
 def rewriteFileMap(fileMapDict):
@@ -30,7 +38,7 @@ def rewriteFileMap(fileMapDict):
   open(fileMap,"w").write(text)
 
 
-open('x','w').write('1')
+log('1')
 
 # FlashTest's main results board showing red or green lights
 # for FlashTest invocations with failures or no failures.
@@ -60,14 +68,14 @@ try:
     print "<script src=\"lib/redirect.js\"></script>"
     print "</head>"
 
-    open('x','w').write('3')
+    log('3')
 
     # make sure website has write permissions in this folder
     cwd = os.getcwd()
     if not os.access(cwd, os.W_OK):
       msg = ("The web-server does not have write permissions in directory \"%s\"<br>" % cwd +
              "This permission must be granted for DESCQA to function correctly.")
-      open('x','w').write(msg)
+      log(msg)
       abort(msg)
 
     # Generate fileMapDict from "fileMap", a text file that maps
@@ -77,14 +85,14 @@ try:
       if not os.access(fileMap, os.R_OK + os.W_OK):
         msg = ("The web-server does not have read and/or write permissions on file \"%s\"<br>" % os.path.join(cwd, fileMap) +
                "This permission must be granted for DESCQA to function correctly.")
-        open('x','w').write(msg)
+        log(msg)
         abort(msg)
       else:
         fileMapDict = littleParser.parseFile(fileMap)
     else:
       fileMapDict = {}
 
-    open('x','w').write('4')
+    log('4')
     if os.path.isfile("config"):
       configDict = littleParser.parseFile("config")
       pathsToOutdirs = configDict.get("pathToOutdir", [])  # returns a string if only one value

@@ -1,223 +1,110 @@
 <body>
 <base target="rightframe">
 <a href="../home.cgi" target="_top">Home</a> - <a href="viewBuilds.cgi?target_dir=[pathToInvocationDir]" target="_top">[invocationDir]</a>
+<h1>[buildDir]&nbsp;(<a href="viewBuilds.cgi?target_dir=[pathToInvocationDir]" target="_top">[invocationDir]</a>)</h1>
 
-[if-any setupDescription]
-  <h1>[setupDescription]&nbsp;
-  (<a href="viewBuilds.cgi?target_dir=[pathToInvocationDir]" target="_top">[invocationDir]</a>)
-  </h1>
-[else]
-  <h1>[buildDir]&nbsp;
-  (<a href="viewBuilds.cgi?target_dir=[pathToInvocationDir]" target="_top">[invocationDir]</a>)
-  </h1>
-[end]
-
+[if-any runs]
 <table class="indenttable">
-
-[if-any pathToFlashTestLog]
 <tr valign="top">
-<td>Log file</td>
-<td>
-  <a href="viewTextFile.cgi?target_file=[pathToFlashTestLog]&sought_build=[buildDir]">contents</a>
-</td>
-</tr>
-[end]
-
-[if-any showSetup]
-
-  <!--<tr valign="top">
-  <td>Test setup[if-any setupFailed] <i>(failed)</i>[end]</td>
-  [if-any setupCall]
-    <td>
-    [if-any pathToSetupOutput]
-      <a href="viewTextFile.cgi?target_file=[pathToSetupOutput]">stdout</a>
-    [else]
-      <i>no stdout</i>
-    [end]
-    &nbsp;
-    [if-any pathToSetupError]
-      <a href="viewTextFile.cgi?target_file=[pathToSetupError]">stderr</a>
-    [else]
-      <i>no stderr</i>
-    [end]
-    </td>
+  <td>Tests completed:&nbsp;&nbsp;</td>
+  <td>
+  [for runs]
+    <a href="viewBuild.cgi?target_dir=[fullBuildPath]&target_tag=run_[runs.name]" target="_top">[runs.name]</a>
+    &nbsp;&nbsp;<br>
   [end]
-  </tr>
-  -->
-
-  [if-any showCompilation]
-
-    <!--<tr valign="top">
-    <td>Test compilation[if-any gmakeFailed] <i>(failed)</i>[end]</td>
-    <td>
-    [if-any pathToGmakeCall]
-      <a href="viewTextFile.cgi?target_file=[pathToGmakeCall]">script</a>
-      &nbsp;
-    [end]
-    [if-any pathToGmakeOutput]
-      <a href="viewTextFile.cgi?target_file=[pathToGmakeOutput]">stdout/stderr</a>
-      &nbsp;
-    [end]
-    [if-any pathToGmakeError]
-      <a href="viewTextFile.cgi?target_file=[pathToGmakeError]">stderr</a>
-      &nbsp;
-    [end]
-    [if-any compilationTime]
-      compilation time: [compilationTime]
-    [end]
-    <br><br>
-    </td>
-    </tr>
-    -->
-
-    <tr valign="top">
-    <td>Runs completed&nbsp;&nbsp;</td>
-
-    [if-any runs]
-
-      <td>
-      [for runs]
-        <a href="viewBuild.cgi?target_dir=[fullBuildPath]&target_tag=run_[runs.name]" target="_top">[runs.htmlDescription]</a>
-        [if-any runs.runFailed]
-          &nbsp; <font color="red"><i>failed</i></font>
-        [end]
-        <br>
-      [end]
-      </td>
-      </tr>
-      </table>
-      <br>
-
-      [for runs]
-
-        <hr>
-        <a name="run_[runs.name]"></a><h2>[runs.htmlDescription] [if-any runs.runFailed]<i>(failed)</i>[end]</h2>
-
-<table>
-<tr><td>
-        <table class="indenttable">
-
-        [if-any runs.showResource]
-        <tr valign="top">
-        <td>Resources used:&nbsp;</td>
-        <td>
-        [if-any runs.numProcs]
-          [if-any runs.wallClockTime]
-            [runs.numProcs]; time:
-          [else]
-            [runs.numProcs]
-          [end]
-        [end]
-        [if-any runs.wallClockTime]
-          [if-any runs.numProcs]
-            [runs.wallClockTime]<br>
-          [else]
-            time: [runs.wallClockTime]<br>
-          [end]
-        [end]
-        </td>
-        </tr>
-        [end]
-
-        [if-any runs.logfiles]
-          <tr valign="top">
-          <td>Log files:&nbsp;</td>
-          <td>
-	  [for runs.logfiles]	
-            <a href="viewTextFile.cgi?target_file=[runs.logfiles.path]">[runs.logfiles.filename]</a><br>
-	  [end]	
-          </td>
-          </tr>
-        [end]
-
-        [if-any runs.summaryfiles]
-          <tr valign="top">
-          <td>Summary:&nbsp;</td>
-          <td>
-	  [for runs.summaryfiles]	
-            <a href="viewTextFile.cgi?target_file=[runs.summaryfiles.path]">[runs.summaryfiles.filename]</a><br>
-	  [end]	
-          </td>
-          </tr>
-        [end]
-
-
-        [if-any runs.datfiles]
-          <tr valign="top">
-          <td>Outputs:&nbsp;</td>
-          <td>
-	  [for runs.datfiles]	
-            <a href="viewTextFile.cgi?target_file=[runs.datfiles.path]">[runs.datfiles.filename]</a><br>
-	  [end]	
-          </td>
-          </tr>
-        [end]
-
-        [if-any runs.imgfiles]
-          <tr valign="top">
-          <td>Plots:&nbsp;</td>
-          <td>
-	        [for runs.imgfiles]	
-            <a href="viewImageFile.cgi?target_file=[runs.imgfiles.path]">[runs.imgfiles.filename]</a><br>
-            [end]	
-          </td>
-          </tr>
-        [end]
-
-        [if-any runs.showTest]
-        <tr valign="top">
-        <td>Test output:&nbsp;</td>
-        <td>
-          [if-any runs.testOutputFile]
-            [for runs.testOutputFile]
-              <a href="viewHtmlFile.cgi?target_file=[runs.testOutputFile.path]">contents</a> [if-any runs.testResult]&nbsp;([runs.testResult])[end]
-            [end]
-            [if-any runs.testFailed]
-              [if-any runs.changedFromPrevious]
-                <i>(failed &amp; changed from previous invocation)</i>
-              [else]
-                <i>(failed)</i>
-              [end]
-            [end]
-          [end]
-        </td>
-        </tr>
-        [end]
-
-        </table>
-</td>
-<td>
-[for runs.imgfiles]	
-<a href="viewImageFile.cgi?target_file=[runs.imgfiles.path]">
-<img src="data:image/png;base64,[runs.imgfiles.data]" width="100%">
-</a>
-[end]	
-</td>
+  </td>
+  <td>
+  [for runs]
+     [if-any runs.passed]<font color="green">[else]<font color="red">[end][runs.status]</font>
+     <br>
+  [end]
+  </td>
 </tr>
 </table>
+<br>
 
-        <br>
-        <a href="viewBuild.cgi?target_dir=[fullBuildPath]" target="_top">Return to top</a>
+<table class="indenttable">
+<tr valign="top">
+<td>
+Summary plot:
+[if-any summaryPlot]
+[else]
+    &nbsp;<font color="red">cannot find summary plot</font>
+[end]
+[if-any summaryPlotLog]
+    &nbsp;&nbsp;&nbsp;<a href="viewTextFile.cgi?target_file=[summaryPlotLog.path]">[summaryPlotLog.filename]</a><br>
+[end]
+</td>
+</tr>
+[if-any summaryPlot]
+<tr valign="top">
+<td>
+    <a href="viewImageFile.cgi?target_file=[summaryPlot.path]"><img src="data:image/png;base64,[summaryPlot.data]" width="100%"></a>
+</td>
+</tr>
+[end]
+</table>
+<br>
 
-      [end]
+  [for runs]
 
-    [else]
+    <hr>
+    <a name="run_[runs.name]"> </a>
+    <table class="indenttable">
+    <tr valign="top">
+    <td>
+        <h2>[runs.name]&nbsp;&nbsp;&nbsp;</h2>
+    </td>
+    <td>
+        [if-any runs.passed]<font color="green">[else]<font color="red">[end][runs.status]</font><br>[runs.summary] 
+    </td>
+    </tr>
+    </table>
 
-      <td><font color="red"><i>No runs were made</i></font></td>
-      </tr>
-      </table>
+    <table class="indenttable">
+    <tr>
+    <td>
 
+    [if-any runs.logfiles]
+      <i>Log files:</i><br>
+        [for runs.logfiles]	
+        &nbsp;&nbsp;<a href="viewTextFile.cgi?target_file=[runs.logfiles.path]">[runs.logfiles.filename]</a><br>
+        [end]
+      <br>
     [end]
 
-  [else]
+    [if-any runs.datfiles]
+      <i>Outputs:</i><br>
+        [for runs.datfiles]	
+        &nbsp;&nbsp;<a href="viewTextFile.cgi?target_file=[runs.datfiles.path]">[runs.datfiles.filename]</a><br>
+        [end]
+      <br>
+    [end]
 
+    [if-any runs.imgfiles]
+      <i>Figures:</i><br>
+        [for runs.imgfiles]	
+        &nbsp;&nbsp;<a href="viewImageFile.cgi?target_file=[runs.imgfiles.path]">[runs.imgfiles.filename]</a><br>
+        [end]	
+      <br>
+    [end]
+
+    </td>
+    <td>
+    [for runs.imgfiles]	
+        <a href="viewImageFile.cgi?target_file=[runs.imgfiles.path]"><img src="data:image/png;base64,[runs.imgfiles.data]" width="100%"></a><br>
+    [end]	
+    </td>
+    </tr>
     </table>
+
+    <br>
+    <a href="viewBuild.cgi?target_dir=[fullBuildPath]" target="_top">Return to top</a>
 
   [end]
 
 [else]
-
-  </table>
+  <font color="red"><i><b>No tests were made</b></i></font>
 
 [end]
 </body>
