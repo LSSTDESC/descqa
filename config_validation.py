@@ -7,8 +7,8 @@ _VALIDATION_DATA_DIR = '/project/projectdirs/lsst/descqacmu/src/validation_data'
 
 class _ValidationConfig():
     def __init__(self, module, **kwargs):
-        if not _os.path.isfile(_os.path.join(_VALIDATION_CODE_DIR, module+'.py')):
-            raise ValueError('module {} does not exist in {}.'.format(module, _VALIDATION_CODE_DIR))
+        if not isinstance(module, basestring):
+            raise ValueError('`module` must be a string')
         self.module = module
 
         _prohibited_leys = ('test_name', 'catalog_name', 'base_output_dir', 'base_data_dir')
@@ -43,6 +43,23 @@ color_DEEP2 = _ValidationConfig('ColorDistributionTest',
          bins=(-0.2,2.,50),
          limiting_band='SDSS_r:observed:',
          limiting_mag=24.1,
+         # zlo=0.6,
+         # zhi=0.725,
+         zlo=0.,
+         zhi=1.,
+         band1='SDSS_g:observed:',
+         band2='SDSS_r:observed:',
+         summary='L2Diff',
+)
+
+color_SDSS = _ValidationConfig('ColorDistributionTest',
+         datafile='SDSS/sdss_g-r_z_0.073_0.080_bins_0.10_1.20_70.txt', 
+         dataname='SDSS',
+         bins=(0.1,2.,70),
+         limiting_band='SDSS_r:observed:',
+         limiting_mag=17.77,
+         # zlo=0.073,
+         # zhi=0.080,
          zlo=0.,
          zhi=1.,
          band1='SDSS_g:observed:',

@@ -7,13 +7,10 @@ _READER_DIR = '/project/projectdirs/lsst/descqacmu/src/reader'
 
 class _CatalogConfig():
     def __init__(self, reader, file):
-        if not _os.path.isfile(_os.path.join(_READER_DIR, reader+'.py')):
-            raise ValueError('reader module {} does not exist in {}.'.format(reader, _READER_DIR))
+        if not isinstance(reader, basestring):
+            raise ValueError('`reader` must be a string ')
         self.reader = reader
-        
         self.file = _os.path.join(_CATALOG_DIR, file)
-        if not _os.path.exists(self.file):
-            raise ValueError('catalog file {} does not exist'.format(self.file))
     
 
 # configurations below

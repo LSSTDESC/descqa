@@ -289,6 +289,7 @@ def main():
 
     log.debug('creating output directory...')
     output_dir = make_output_dir(args.root_output_dir, args.subdir)
+    open(pjoin(output_dir, '.lock'), 'w').close()
     snapshot_dir = pjoin(output_dir, '_snapshot')
     os.mkdir(snapshot_dir)
     log.info('output of this run is stored in {}'.format(output_dir))
@@ -326,6 +327,8 @@ def main():
     interfacing_webview(status, output_dir)
     report = get_status_report(status)
     log.info('All done! Status report:\n' + report)
+    log.info('output of this run has been stored in {}'.format(output_dir))
+    os.unlink(pjoin(output_dir, '.lock'))
 
 if __name__ == '__main__':
     main()

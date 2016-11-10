@@ -20,7 +20,7 @@ try:
   fileMap = "fileMap"
 except:
   import traceback
-  traceback.print_exc(file=open('x','w'))
+  traceback.print_exc(file=open('home.log', 'a'))
   sys.exit(1)
 
 def abort(msg):

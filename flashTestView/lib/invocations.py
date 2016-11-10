@@ -310,7 +310,7 @@ class InvocationList:
     if 1:#self.isOutOfDate():
       self.lastModified = str(os.stat(self.pathToSiteDir)[8])
 
-      datePat = re.compile("^\d\d\d\d-\d\d-\d\d.*")
+      datePat = re.compile("^\d{4}-\d{2}-\d{2}(?:_\d+)")
       GREEN   = 0
       YELLOW  = 1
       RED     = 2
@@ -378,7 +378,7 @@ class InvocationList:
           logErrors   = 0   # number of times the invocation logfile recorded an error
           logWarnings = 0   # number of times the invocation logfile recorded a warning
 
-          lightColor  = GREEN          # Assume a green light and no changes from
+          lightColor  = RED            # Assume a red light and no changes from
           changedFromPrevious = False  # previous invocation unless proven otherwise
 
           statsHeader = ""  # The darker, upper portion of the floating stats window,
@@ -392,31 +392,29 @@ class InvocationList:
 
           # we assume a directory inside 'pathToInvocationDir' represents a build
           items = os.listdir(pathToInvocationDir)
-          totalBuilds = len([item for item in items
-                             if os.path.isdir(os.path.join(pathToInvocationDir, item))])
+          totalBuildsList = []
+          for item in items:
+            if os.path.isdir(os.path.join(pathToInvocationDir, item)) and not item.startswith('_'):
+              totalBuildsList.append(item)
+
+          totalBuilds = len(totalBuildsList)
+          if totalBuilds and all(os.path.isfile(os.path.join(pathToInvocationDir, item, 'errors')) for item in totalBuildsList):
+            lightColor = YELLOW
 
           errorsFile = os.path.join(pathToInvocationDir, "errors")
 
           if os.path.isfile(errorsFile):
-            errorLines = open(errorsFile).read().strip().split("\n")
-            errorLines = [errorLine.strip() for errorLine in errorLines if len(errorLine.strip()) > 0]
+            errorLines = []  
+            with open(errorsFile) as f:
+              for l in f:
+                l = l.strip()
+                if l:
+                  errorLines.append(l)
 
-            # An exclamation mark at the end of any build information means that
-            # that build showed some kind of change from the previous invocation.
-            for errorLine in errorLines:
-              if errorLine.endswith("!"):
-                changedFromPrevious = True
-              if not ((errorLine.find(" failed in testing as before") > 0) and
-                      (errorLine.find(" failed in execution") < 0)):
-                totalRedErrors = totalRedErrors + 1
-              if changedFromPrevious and (totalRedErrors > 0):
-                break  # we only need one "!" to generate a "!" on the big board, and
-                       # one without " as before" to be sure the light should be
-                       # red not yellow.
-
-            totalErrors = len(errorLines)
-            if totalErrors == 0:
+            totalErrors = sum(1 for errorLine in errorLines if '_ERROR' in errorLine)
+            if totalErrors == 0 and totalBuilds:
               statsHeader = "All %s tests completed successfully" % totalBuilds
+              lightColor = GREEN
             else:
               statsHeader = "%s/%s tests had some error" % (totalErrors, totalBuilds)
           else:
@@ -454,13 +452,6 @@ class InvocationList:
           else:
             logMsg = "No logfile found for this invocation"
 
-          if logErrors + len(errorLines) > 0:
-            if logErrors + totalRedErrors == 0:
-              lightColor = YELLOW
-            else:
-              lightColor = RED
-
-          errorLines.append(logMsg)
           statsBody = "<br>".join(errorLines)
 
           html = ("<div style=\"float:left;width:150px\"><a href=viewer/viewBuilds.cgi?target_dir=%s " % pathToInvocationDir +
@@ -498,10 +489,9 @@ class InvocationList:
           html += "</div><div>"
 
           links_to_run = []
-          for item in items:
-              itempath = os.path.join(pathToInvocationDir,item)
-              if os.path.isdir(itempath) and not item.startswith('_'):
-                links_to_run.append("<a href=viewer/viewBuild.cgi?target_dir=%s>%s</a>" % (itempath, item))
+          for item in sorted(totalBuildsList):
+              itempath = os.path.join(pathToInvocationDir, item)
+              links_to_run.append("<a href=viewer/viewBuild.cgi?target_dir=%s>%s</a>" % (itempath, item))
           html += "&nbsp;|&nbsp;".join(links_to_run)
           html += "</div>"
           newInvocations.append(Invocation(invocationDir, html, os.stat(os.path.join(self.pathToSiteDir, invocationDir))[8]))

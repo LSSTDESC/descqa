@@ -8,7 +8,7 @@ matplotlib.use('Agg') # Must be before importing matplotlib.pyplot
 import matplotlib.pyplot as plt
 from astropy import units as u
 
-from ValidationTest import ValidationTest
+from ValidationTest import ValidationTest, TestResult
 
 catalog_output_file = 'catalog.txt'
 validation_output_file = 'validation.txt'
@@ -136,18 +136,18 @@ class ColorDistributionTest(ValidationTest):
         #make sure galaxy catalog has appropiate quantities
         if not all(k in galaxy_catalog.quantities for k in (self.band1, self.band2)):
             #raise an informative warning
-            msg = ('galaxy catalog does not have `band1` quantity, skipping the rest of the validation test.')
+            msg = ('galaxy catalog does not have `band1` and/or `band2` quantity, skipping the rest of the validation test.')
             warn(msg)
             #write to log file
             fn = os.path.join(base_output_dir, log_file)
             with open(fn, 'a') as f:
                 f.write(msg)
-            return 2
+            return TestResult('SKIPPED', '')
 
         #calculate color distribution in galaxy catalog
-        binctr, hist = self.color_distribution(galaxy_catalog)
+        binctr, hist = self.color_distribution(galaxy_catalog, base_output_dir)
         if binctr is None:
-            return 3
+            return TestResult('SKIPPED', msg='')
         catalog_result = (binctr, hist)
         
         #calculate summary statistic
@@ -166,10 +166,11 @@ class ColorDistributionTest(ValidationTest):
 
         fn = os.path.join(base_output_dir, summary_output_file)
         self.write_summary_file(summary_result, fn)
+        
+        msg = ''
+        return TestResult('PASSED' if test_passed else 'FAILED', msg)
             
-        return (0 if test_passed else 1)
-            
-    def color_distribution(self, galaxy_catalog):
+    def color_distribution(self, galaxy_catalog, base_output_dir):
         """
         Calculate the color distribution.
         
@@ -181,15 +182,28 @@ class ColorDistributionTest(ValidationTest):
         #get magnitudes from galaxy catalog
         mag1 = galaxy_catalog.get_quantities(self.band1, {'zlo': self.zlo, 'zhi': self.zhi})
         mag2 = galaxy_catalog.get_quantities(self.band2, {'zlo': self.zlo, 'zhi': self.zhi})
-        
 
-        #apply magnitude limit
+        if len(mag1)==0:
+            warn('No object in the redshift range!')
+            warn(msg)
+            #write to log file
+            fn = os.path.join(base_output_dir, log_file)
+            with open(fn, 'a') as f:
+                f.write(msg)
+            return None, None
+
         if self.limiting_band is not None:
+            #apply magnitude limit and remove nonsensical magnitude values
             mag_lim = galaxy_catalog.get_quantities(self.limiting_band, {'zlo': self.zlo, 'zhi': self.zhi})
-            mask = mag_lim<self.limiting_mag
+            print('Applying magnitude limit: '+self.limiting_band+'<%2.2f'%self.limiting_mag)
+            mask = (mag_lim<self.limiting_mag) & (mag1>0) & (mag1<50) & (mag2>0) & (mag2<50)
             mag1 = mag1[mask]
             mag2 = mag2[mask]
-
+        else:
+            #remove nonsensical magnitude values
+            mask = (mag1>0) & (mag1<50) & (mag2>0) & (mag2<50)
+            mag1 = mag1[mask]
+            mag2 = mag2[mask]
 
         if np.sum(mask)==0:
             msg = 'No object in the magnitude range!'
@@ -200,19 +214,6 @@ class ColorDistributionTest(ValidationTest):
                 f.write(msg)
             return None, None
 
-        #remove nonsensical magnitude values
-        mask = (mag1>0) & (mag1<50) & (mag2>0) & (mag2<50)
-        mag1 = mag1[mask]
-        mag2 = mag2[mask]
-
-        if np.sum(mask)==0:
-            warn('No object in the redshift range!')
-            warn(msg)
-            #write to log file
-            fn = os.path.join(base_output_dir, log_file)
-            with open(fn, 'a') as f:
-                f.write(msg)
-            return None, None
                     
         #count galaxies
         hist, bins = np.histogram(mag1-mag2, bins=self.color_bins)
