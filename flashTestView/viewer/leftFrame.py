@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 import sys
 import os
-import cgi
 import re
+import cgi, cgitb
+cgitb.enable()
+print "Content-type: text/html\n"
+
 sys.path.insert(0, "../lib")
 import littleParser, ezt
 
@@ -41,7 +44,6 @@ try:
 except:
     siteTitle = ''
 
-print "Content-type: text/html\n"
 print "<html>"
 print "<head>"
 print "<title>%s</title>" % siteTitle
@@ -94,8 +96,11 @@ for run in runs:
     except OSError:
         run.status = 'NO_STATUS_FILE_ERROR'
         run.summary = ''
-    run.passed = run.status.endswith('PASSED') or None
-    run.hasError = run.status.endswith('ERROR') or None
+
+    for status, color in (('PASSED', 'green'), ('SKIPPED', 'gold'), ('FAILED', 'orangered'), ('ERROR', 'darkred')):
+        if run.status.endswith(status):
+            run.statusColor = color
+            break
 
 templateData["runs"] = runs or None
 
