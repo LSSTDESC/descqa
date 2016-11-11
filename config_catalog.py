@@ -39,5 +39,6 @@ MB2 = _CatalogConfig('MB2GalaxyCatalog', fn='catalog.hdf5.MB2')
 
 SAG = _CatalogConfig('SAGGalaxyCatalog', fn='SAGcatalog.sag')
 
-iHOD = _CatalogConfig('iHODGalaxyCatalog', fn='iHODcatalog_v0.h5.iHOD')
+iHOD_LiWhite = _CatalogConfig('iHODGalaxyCatalog', fn='iHODcatalog_lw09.h5.iHOD')
 
+iHOD_MB2 = _CatalogConfig('iHODGalaxyCatalog', fn='iHODcatalog_mb2.h5.iHOD')

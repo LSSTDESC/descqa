@@ -18,13 +18,14 @@ class iHODGalaxyCatalog(GalaxyCatalog):
                           'zhi':                   True
                         }
         self.quantities = {
-                             'redshift':          self._get_stored_property,
+                             # 'redshift':          self._get_stored_property,
                              'positionX':                 self._get_stored_property,
                              'positionY':                 self._get_stored_property,
                              'positionZ':                 self._get_stored_property,
                              'velocityZ':                 self._get_stored_property,
                              'stellar_mass':      self._get_stored_property,
                              'mass':      self._get_stored_property,
+                             'SDSS_r:observed:':      self._get_stored_property,
                            }
 
         self.Ngals        = 0
@@ -40,9 +41,9 @@ class iHODGalaxyCatalog(GalaxyCatalog):
         internal data structures.
         """
         self.catalog = self._read_rec_from_hdf5(fn, group='galaxy')   
-        # turam: Add placeholder redshift; confirm correctness
+        # turam: Add placeholder redshift; confirm correctness (YZ: good)
         self.redshift = (1.0 / 0.941176) - 1.0
-        # turam: Confirm cosmology is correct
+        # turam: Confirm cosmology is correct (YZ: good)
         self.cosmology = astropy.cosmology.FlatLambdaCDM(H0=70.1, Om0=0.275, Ob0=0.046)
 
         self.Ngals = len(self.catalog)
