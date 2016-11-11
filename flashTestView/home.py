@@ -14,6 +14,7 @@ import littleParser
 pathToOutputDir = '/project/projectdirs/lsst/descqacmu/run/edison'
 bigboard_cache = 'bigboard_cache.pkl'
 invocationsPerPage = 25
+days_to_show = 7
 
 try:
     configDict = littleParser.parseFile("config")
@@ -59,7 +60,7 @@ try:
 except:
     pass
 
-bigboard.generate()
+bigboard.generate(days_to_show)
 try:
     bigboard.dump(bigboard_cache)
 except:

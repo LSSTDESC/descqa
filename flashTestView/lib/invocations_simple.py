@@ -12,7 +12,7 @@ class Invocation:
     encapsulates data visible for a single FlashTest invocation, (a
     date, possibly with a suffix) at the top level of FlashTestView
     """
-    def __init__(self, name, dir_path):
+    def __init__(self, name, dir_path, days_to_show=None):
         self.name = name
         m = re.match(r'(20\d{2}-[01]\d-[0123]\d)(?:_(\d+))?', self.name)
         assert m is not None
@@ -22,6 +22,8 @@ class Invocation:
         m = m.groups()
         self.date = m[0]
         self.sameday_index = int(m[1] or 0)
+        if days_to_show is not None:
+            assert self.date >= time.strftime('%Y-%m-%d', time.localtime(time.time()-86400.0*days_to_show))
         self.keep = True
         self.html = None
 
@@ -87,18 +89,18 @@ class BigBoard:
         self.invocationList = []
 
 
-    def generate(self, reset=False):
+    def generate(self, days_to_show=None):
         newInvocationList = []
 
         for item in os.listdir(self.dir_path):
             try:
-                invocation = Invocation(item, self.dir_path)
+                invocation = Invocation(item, self.dir_path, days_to_show)
             except AssertionError:
                 continue
-            
-            if not reset:
+
+            if self.invocationList:
                 i = bisect.bisect_left(self.invocationList, invocation)
-                if i < len(self.invocationList) and self.invocationList[i] == invocation and time.time() - os.path.getmtime(invocation.path) > 600.0:
+                if self.invocationList[i] == invocation:
                     invocation.html = self.invocationList[i].html
             if not invocation.html:
                 invocation.gen_invocation_html()
@@ -136,3 +138,5 @@ class BigBoard:
 
     def get_count(self):
         return len(self.invocationList)
+
+

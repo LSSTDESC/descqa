@@ -26,8 +26,10 @@ log_file = 'log_hmf.log'
 plot_file = 'plot_hmf.png'
 Analytic = 'Analytic'
 plot_title = 'Halo-mass Function'
-xaxis_label = '$\log M_{halo}\ (M_\odot)$'
-yaxis_label = '$dn/dV\, d\log M\ ({\rm Mpc}^{-3}\,{\rm dex}^{-1})$'
+xaxis_label = '$M_{halo}\ (M_\odot)$'
+yaxis_label = '$dn/dV\, dM\ ({\rm Mpc}^{-3})$'
+plot_rect = (0.17, 0.15, 0.79, 0.80)
+figsize=(4,4)
 summary_colormap = 'rainbow'
 
 class HaloMassFunctionTest(ValidationTest):
@@ -63,7 +65,7 @@ class HaloMassFunctionTest(ValidationTest):
         
         super(self.__class__, self).__init__(**kwargs)
         
-        #load validation data
+        #check supplied args
         if 'observation' in kwargs:
             available_observations = [Analytic]
             if kwargs['observation'] in available_observations:
@@ -99,9 +101,8 @@ class HaloMassFunctionTest(ValidationTest):
         self.catalog_data = self.get_galaxy_data(galaxy_catalog)
 
         #now generate validation data on the fly since redshift is now known
-        obinctr, ohist, ohmin, ohmax = self.gen_validation_data(galaxy_catalog)
-        #bin center, number density, lower bound, upper bound
-        self.validation_data = {'x':obinctr, 'y':ohist, 'y-':ohmin, 'y+':ohmax}        
+        xvals, yvals = self.gen_validation_data(galaxy_catalog)
+        self.validation_data = {'x':xvals, 'y':yvals}        
 
     def get_galaxy_data(self,galaxy_catalog):
         """                                                                                          
@@ -124,6 +125,47 @@ class HaloMassFunctionTest(ValidationTest):
 
         return catalog_result
         
+    def binned_halo_mass_function(self, galaxy_catalog):
+        """
+        calculate the stellar mass function in bins
+        
+        Parameters
+        ----------
+        galaxy_catalog : galaxy catalog reader object
+        """
+        
+        #get halo masses from galaxy catalog
+        halomasses = galaxy_catalog.get_quantities("mass", {'zlo': self.zlo, 'zhi': self.zhi})
+
+        #remove non-finite r negative numbers
+        mask = np.isfinite(halomasses) & (halomasses > 0.0)
+        halomasses = halomasses[mask]
+        
+        #bin halo masses in log bins
+        mhist, mbins = np.histogram(np.log10(halomasses), bins=self.mhalo_log_bins)
+        binctr = (mbins[1:] + mbins[:-1])*0.5
+        binwid = mbins[1:] - mbins[:-1]
+
+        #calculate volume
+        if galaxy_catalog.lightcone:
+            Vhi = galaxy_catalog.get_cosmology().comoving_volume(zhi)
+            Vlo = galaxy_catalog.get_cosmology().comoving_volume(zlo)
+            dV = float((Vhi - Vlo)/u.Mpc**3)
+            # TODO: need to consider completeness in volume
+            af = float(galaxy_catalog.get_sky_area() / (4.*np.pi*u.sr))
+            vol = af * dV
+        else:
+            vol = galaxy_catalog.box_size**3.0
+        
+        #calculate number differential density
+        mhmin = (mhist - np.sqrt(mhist)) / binwid / vol
+        mhmax = (mhist + np.sqrt(mhist)) / binwid / vol
+        mhist = mhist / binwid / vol
+        binctr=10**binctr
+        
+        return binctr, binwid, mhist, mhmin, mhmax
+
+
     def gen_validation_data(self,galaxy_catalog):
         """
         generate halo mass function data
@@ -165,8 +207,10 @@ class HaloMassFunctionTest(ValidationTest):
         os.chdir(DESCQAPATH)
 
         MassFunc = np.loadtxt(fn).T
+        xvals = MassFunc[2]/h
+        yvals = MassFunc[3]*h*h*h
 
-        return MassFunc
+        return xvals,yvals
 
     def run_validation_test(self, galaxy_catalog, catalog_name, base_output_dir):
         """
@@ -183,7 +227,7 @@ class HaloMassFunctionTest(ValidationTest):
         Returns
         -------
         test_result : TestResult object
-            use the TestResult object to reture test result
+            use the TestResult object to return test result
         """
         
         
@@ -207,48 +251,6 @@ class HaloMassFunctionTest(ValidationTest):
         msg = "{} = {:G} {} {:G}".format(self.summary_method, summary_result, '<' if test_passed else '>', self.threshold)
         return TestResult('PASSED' if test_passed else 'FAILED', msg)
     
-    def binned_halo_mass_function(self, galaxy_catalog):
-        """
-        calculate the stellar mass function in bins
-        
-        Parameters
-        ----------
-        galaxy_catalog : galaxy catalog reader object
-        """
-        
-        #get halo masses from galaxy catalog
-        halomasses = galaxy_catalog.get_quantities("mass", {'zlo': self.zlo, 'zhi': self.zhi})
-
-        #remove non-finite r negative numbers
-        mask = np.isfinite(halomasses) & (halomasses > 0.0)
-        halomasses = halomasses[mask]
-        
-        #bin halo masses in log bins
-        mhist, mbins = np.histogram(np.log10(halomasses), bins=self.mhalo_log_bins)
-        binctr = (mbins[1:] + mbins[:-1])*0.5
-        binwid = mbins[1:] - mbins[:-1]
-
-        #calculate volume
-        if galaxy_catalog.lightcone:
-            Vhi = galaxy_catalog.get_cosmology().comoving_volume(zhi)
-            Vlo = galaxy_catalog.get_cosmology().comoving_volume(zlo)
-            dV = float((Vhi - Vlo)/u.Mpc**3)
-            # TODO: need to consider completeness in volume
-            af = float(galaxy_catalog.get_sky_area() / (4.*np.pi*u.sr))
-            vol = af * dV
-        else:
-            vol = galaxy_catalog.box_size**3.0
-        
-        #calculate number differential density
-        mhmin = (mhist - np.sqrt(mhist)) / binwid / vol
-        mhmax = (mhist + np.sqrt(mhist)) / binwid / vol
-        mhist = mhist / binwid / vol
-        mhist = np.log10(mhist)
-        mhmin = np.log10(mhmin)
-        mhmax = np.log10(mhmax)
-        
-        return binctr, binwid, mhist, mhmin, mhmax
-
     def calculcate_summary_statistic(self, catalog_result):
         """
         Run summary statistic.
@@ -267,7 +269,7 @@ class HaloMassFunctionTest(ValidationTest):
         
         module_name=self.summary_method
         summary_method=getattr(CalcStats, module_name)
-        #valdata_topass = {k:self.validation_data[k] for k in self.validation_data if k in ['x','y','y-','y+']}
+
         result, test_passed = summary_method(catalog_result,self.validation_data,self.threshold)
         
         return result, test_passed
@@ -289,23 +291,20 @@ class HaloMassFunctionTest(ValidationTest):
             file to save plot
         """
         
-        fig = plt.figure()
-        
-        #plot measurement from galaxy catalog
-        sbinctr, sbinwid, shist, shmin, shmax = (result['x'], result['dx'], result['y'], result['y-'], result['y+'])
-        plt.step(sbinctr, shist, where="mid", label=catalog_name, color='blue')
-        plt.fill_between(sbinctr, shmin, shmax, facecolor='blue', alpha=0.3, edgecolor='none')
+        fig = plt.figure(figsize=figsize)
+        ax1 = fig.add_axes(plot_rect)
         
         #plot comparison data
-        obinctr, ohist, ohmin, ohmax = (self.validation_data['x'], self.validation_data['y'], self.validation_data['y-'], self.validation_data['y+'])
-        plt.errorbar(obinctr, ohist, yerr=[ohist-ohmin, ohmax-ohist], label=self.observation, fmt='o',color='green')
-        #plot bin extrema for validation data
-        #plt.plot(obinctr,self.validation_data['ymin'],label='min',ls='dashed',color='green')
-        #plt.plot(obinctr,self.validation_data['ymax'],label='max',ls='dashed',color='green')
-        #plt.fill_between(obinctr, self.validation_data['ydn'], self.validation_data['yup'], facecolor='green', alpha=0.3, edgecolor='none')
+        obinctr, ohist = (self.validation_data['x'], self.validation_data['y'])
+        ax1.loglog(obinctr, ohist, label=self.observation, ls="-", color='green')
 
+        #plot measurement from galaxy catalog
+        sbinctr, sbinwid, shist, shmin, shmax = (result['x'], result['dx'], result['y'], result['y-'], result['y+'])
+        ax1.errorbar(sbinctr, shist, yerr=[shist-shmin, shmax-shist], ls="none", color=blue, label=catalog_name, marker="o", ms=5)
+        
         #add formatting
         plt.legend(loc='best', frameon=False)
+        plt.grid()
         plt.title(plot_title)
         plt.xlabel(xaxis_label)
         plt.ylabel(yaxis_label)
@@ -331,9 +330,9 @@ class HaloMassFunctionTest(ValidationTest):
         f = open(filename, 'w')
         if comment:
             f.write('# {0}\n'.format(comment))
-        if('ymin' in result and 'ymax' in result and 'yup' in result and 'ydn' in result):
-            for b, h, hn, hx, hmn, hmx, hdn, hup in zip(*(result[k] for k in ['x','y','y-','y+','ymin','ymax','ydn','yup'])):
-                f.write("%13.6e %13.6e %13.6e %13.6e %13.6e %13.6e %13.6e %13.6e\n" % (b, h, hn, hx, hmn, hmx, hdn, hup))
+        if(not 'y-' in result and not 'y+' in result):
+            for b, h, in zip(*(result[k] for k in ['x','y'])):
+                f.write("%13.6e %13.6e\n" % (b, h))
         else:
             for b, h, hn, hx in zip(*(result[k] for k in ['x','y','y-','y+'])):
                 f.write("%13.6e %13.6e %13.6e %13.6e\n" % (b, h, hn, hx))
@@ -379,27 +378,28 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
         keyword arguments used in the validation
     """
     #initialize plot
-    fig = plt.figure()
+    fig = plt.figure(figsize=figsize)
+    ax1 = fig.add_axes(plot_rect)
     plt.title(plot_title)
     plt.xlabel(xaxis_label)
     plt.ylabel(yaxis_label)
     
     #setup colors from colormap
     colors= matplotlib.cm.get_cmap(summary_colormap)(np.linspace(0.,1.,len(catalog_list)))
-    
+
+    #plot 1 instance of validation data (same for each catalog)
+    fn = os.path.join(catalog_dir, validation_output_file)
+    obinctr, ohist = np.loadtxt(fn, unpack=True, usecols=[0,1])
+    ax1.loglog(obinctr, ohist, label=validation_kwargs['observation'], ls="-", color='black')
+
     #loop over catalogs and plot
     for color, (catalog_name, catalog_dir) in zip(colors, catalog_list):
         fn = os.path.join(catalog_dir, catalog_output_file)
         sbinctr, shist, shmin, shmax = np.loadtxt(fn, unpack=True, usecols=[0,1,2,3])
-        plt.step(sbinctr, shist, where="mid", label=catalog_name, color=color)
-        plt.fill_between(sbinctr, shmin, shmax, facecolor=color, alpha=0.3, edgecolor='none')
-    
-    #plot 1 instance of validation data (same for each catalog)
-    fn = os.path.join(catalog_dir, validation_output_file)
-    obinctr, ohist = np.loadtxt(fn, unpack=True, usecols=[0,1])
-    plt.plot(obinctr, ohist, label=validation_kwargs['observation'], fmt='o',color='black')
+        ax1.errorbar(sbinctr, shist, yerr=[shist-shmin, shmax-shist], ls="none", color=blue, label=catalog_name, marker="o", ms=5)
 
     plt.legend(loc='best', frameon=False)
-    
+    plt.grid()
+
     plt.savefig(output_file)
     

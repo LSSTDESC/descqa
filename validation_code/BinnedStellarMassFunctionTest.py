@@ -24,7 +24,9 @@ validation_output_file = 'validation_smf.txt'
 summary_output_file = 'summary_smf.txt'
 log_file = 'log_smf.txt'
 plot_file = 'plot_smf.png'
-
+plot_title = 'Stellar Mass Function'
+xaxis_label = '$\log (M^*/(M_\odot)$'
+yaxis_label = '$\log(dn/dV\, d\log M\) ({\rm Mpc}^{-3}\,{\rm dex}^{-1})$'
 
 class BinnedStellarMassFunctionTest(ValidationTest):
     """
@@ -275,9 +277,9 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         
         #add formatting
         plt.legend(loc='best', frameon=False)
-        plt.title(r'stellar mass function')
-        plt.xlabel(r'$\log M_*\ (M_\odot)$')
-        plt.ylabel(r'$dN/dV\, d\log M\ ({\rm Mpc}^{-3}\,{\rm dex}^{-1})$')
+        plt.title(plot_title)
+        plt.xlabel(xaxis_label)
+        plt.ylabel(yaxis_label)
         
         #save plot
         fig.savefig(savepath)
@@ -347,10 +349,10 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
 
     #initialize plot
     fig = plt.figure()
-    plt.title(r'stellar mass function')
-    plt.xlabel(r'$\log M_*\ (M_\odot)$')
-    plt.ylabel(r'$dN/dV\, d\log M\ ({\rm Mpc}^{-3}\,{\rm dex}^{-1})$')
-    
+    plt.title(plot_title)
+    plt.xlabel(xaxis_label)
+    plt.ylabel(yaxis_label)    
+
     #setup colors from colormap
     colors= matplotlib.cm.get_cmap('nipy_spectral')(np.linspace(0.,1.,len(catalog_list)))
     
