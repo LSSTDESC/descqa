@@ -54,13 +54,9 @@ def load_DEEP2(colors, zlo, zhi):
         bins = np.linspace(-1, 4, 2000)
         hist, bin_edges = np.histogram((cat[band1]-cat[band2])[mask], bins=bins)
         hist = hist/np.sum(hist)
-        cdf = np.zeros(len(hist))
-        cdf[0] = hist[0]
-        for cdf_index in range(1, len(hist)):
-            cdf[cdf_index] = cdf[cdf_index-1]+hist[cdf_index]
         binctr = (bin_edges[1:] + bin_edges[:-1])/2.
 
-        vsummary.append((binctr, cdf))
+        vsummary.append((binctr, hist))
 
     return vsummary
 
@@ -98,12 +94,8 @@ def load_SDSS(colors, zlo, zhi):
         bins = np.linspace(-1, 4, 2000)
         hist, bin_edges = np.histogram((cat[band1]-cat[band2])[mask], bins=bins)
         hist = hist/np.sum(hist)
-        cdf = np.zeros(len(hist))
-        cdf[0] = hist[0]
-        for cdf_index in range(1, len(hist)):
-            cdf[cdf_index] = cdf[cdf_index-1]+hist[cdf_index]
         binctr = (bin_edges[1:] + bin_edges[:-1])/2.
 
-        vsummary.append((binctr, cdf))
+        vsummary.append((binctr, hist))
 
     return vsummary

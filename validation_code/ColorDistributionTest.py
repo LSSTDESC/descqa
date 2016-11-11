@@ -9,7 +9,8 @@ import matplotlib.pyplot as plt
 from astropy import units as u
 from ValidationTest import ValidationTest, TestResult
 from CalcStats import L2Diff, L1Diff, KS_test
-from ComputeCDF import load_DEEP2, load_SDSS
+from ComputeColorDistribution import load_DEEP2, load_SDSS
+from scipy.ndimage.filters import uniform_filter1d
 
 catalog_output_file = 'catalog.txt'
 validation_output_file = 'validation.txt'
@@ -172,6 +173,11 @@ class ColorDistributionTest(ValidationTest):
             elif self._data_name=='SDSS':
                 vsummary = load_SDSS(self.colors, self.zlo_obs, self.zhi_obs)            
 
+        filename = os.path.join(base_output_dir, summary_output_file)
+        f = open(filename, 'a')
+        f.write('%2.3f < z < %2.3f\n'%(self.zlo_obs, self.zhi_obs))
+        f.close()     
+
         # loop through colors
         for ax_cdf1, ax_pdf1, index in zip(ax_cdf.flat, ax_pdf.flat, range(len(self.colors))):
 
@@ -182,7 +188,11 @@ class ColorDistributionTest(ValidationTest):
             self.band2 = band2
 
             if self.load_validation_catalog_q:
-                obinctr, ocdf = vsummary[index]
+                obinctr, ohist = vsummary[index]
+                ocdf = np.zeros(len(ohist))
+                ocdf[0] = ohist[0]
+                for cdf_index in range(1, len(ohist)):
+                    ocdf[cdf_index] = ocdf[cdf_index-1]+ohist[cdf_index]
             else:
                 #load validation summary data
                 filename = self._data_name+'_'+color+'_z_%1.3f_%1.3f_pdf.txt'%(self.zlo_obs, self.zhi_obs)
@@ -250,15 +260,12 @@ class ColorDistributionTest(ValidationTest):
             #calculate K-S statistic
             d1 = {'x':mbinctr, 'y':mcdf}
             d2 = {'x':obinctr, 'y':ocdf}
-            # print('K-S')
-            # print(np.max(np.abs(mcdf-ocdf)))
             KS, KS_success = KS_test(d1, d2)
             KS = KS
 
             #save result to file
             filename = os.path.join(base_output_dir, summary_output_file)
             f = open(filename, 'a')
-            f.write('%2.3f < z < %2.3f\n'%(self.zlo_obs, self.zhi_obs))
             if(L2_success):
                 f.write(color+" SUCCESS: %s = %G\n" %('L2Diff', L2))
             else:
@@ -274,27 +281,16 @@ class ColorDistributionTest(ValidationTest):
             f.close()     
 
             #---------------------------------- Plot color PDF -----------------------------------------
-            if self.plot_pdf_q and (not self.load_validation_catalog_q):
+            if self.plot_pdf_q:
 
-                #load validation comparison data
-                bin_args = self.color_bin_args[index]
-                filename = self._data_name+'_'+color+'_z_%1.3f_%1.3f_bins_%1.2f_%1.2f_%d.txt'%(self.zlo_obs, self.zhi_obs, bin_args[0], bin_args[1], bin_args[2])
-                obinctr, ohist = self.load_validation_data(filename)
-
-                #calculate color distribution in galaxy catalog
-                mbinctr, mhist = self.color_distribution(galaxy_catalog, bin_args, base_output_dir)
-                if mbinctr is None:
-                    return TestResult('SKIPPED', '')
-                # catalog_result = (mbinctr, mhist)
-
-                no_pdf_q = False
-
+                mhist_smooth = uniform_filter1d(mhist, 20)
+                ohist_smooth = uniform_filter1d(ohist, 20)
                 #measurement from galaxy catalog
-                ax_pdf1.step(mbinctr, mhist, where="mid", label=catalog_name, color='blue')
+                ax_pdf1.step(mbinctr, mhist_smooth, where="mid", label=catalog_name, color='blue')
                 #validation data
-                ax_pdf1.step(obinctr, ohist, label=self._data_name,color='green')
+                ax_pdf1.step(obinctr, ohist_smooth, label=self._data_name,color='green')
                 ax_pdf1.set_xlabel(color, fontsize=12)
-                ax_pdf1.set_xlim(bin_args[0], bin_args[1])
+                ax_pdf1.set_xlim(xlim, xmax)
                 ax_pdf1.set_title('')
                 ax_pdf1.legend(loc='best', frameon=False)
 
@@ -302,7 +298,7 @@ class ColorDistributionTest(ValidationTest):
         if no_cdf_q==False:
             fn = os.path.join(base_output_dir, plot_cdf_file)
             fig_cdf.savefig(fn)
-        if self.plot_pdf_q and no_pdf_q==False:
+        if self.plot_pdf_q and no_cdf_q==False:
             fn = os.path.join(base_output_dir, plot_pdf_file)
             fig_pdf.savefig(fn)
 
@@ -347,7 +343,6 @@ class ColorDistributionTest(ValidationTest):
             #apply magnitude limit and remove nonsensical magnitude values
             limiting_band_name = self.translate[self.limiting_band]
             mag_lim = galaxy_catalog.get_quantities(limiting_band_name, {'zlo': self.zlo_mock, 'zhi': self.zhi_mock})
-            # print('Applying magnitude limit: '+limiting_band_name+'<%2.2f'%self.limiting_mag)
             mask = (mag_lim<self.limiting_mag) & (mag1>0) & (mag1<50) & (mag2>0) & (mag2<50)
             mag1 = mag1[mask]
             mag2 = mag2[mask]

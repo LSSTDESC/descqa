@@ -321,7 +321,7 @@ class HaloMassFunctionTest(ValidationTest):
         ax1.errorbar(sbinctr, shist, yerr=[shist-shmin, shmax-shist], ls="none", color='blue', label=catalog_name, marker="o", ms=5)
         
         #add formatting
-        plt.legend(loc='best', frameon=False)
+        plt.legend(loc='best', frameon=False, numpoints=1, fontsize='small')
         plt.grid()
         plt.title(plot_title)
         plt.xlabel(xaxis_label)
@@ -398,14 +398,12 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
     #initialize plot
     fig = plt.figure(figsize=figsize)
     ax1 = fig.add_axes(plot_rect)
-    plt.title(plot_title)
-    plt.xlabel(xaxis_label)
-    plt.ylabel(yaxis_label)
     
     #setup colors from colormap
     colors= matplotlib.cm.get_cmap(summary_colormap)(np.linspace(0.,1.,len(catalog_list)))
 
     #plot 1 instance of validation data (same for each catalog)
+    catalog_dir=catalog_list[0][1]   #use first dir
     fn = os.path.join(catalog_dir, validation_output_file)
     obinctr, ohist = np.loadtxt(fn, unpack=True, usecols=[0,1])
     ax1.loglog(obinctr, ohist, label=validation_kwargs['observation'], ls="-", color='black')
@@ -414,9 +412,12 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
     for color, (catalog_name, catalog_dir) in zip(colors, catalog_list):
         fn = os.path.join(catalog_dir, catalog_output_file)
         sbinctr, shist, shmin, shmax = np.loadtxt(fn, unpack=True, usecols=[0,1,2,3])
-        ax1.errorbar(sbinctr, shist, yerr=[shist-shmin, shmax-shist], ls="none", color=blue, label=catalog_name, marker="o", ms=5)
+        ax1.errorbar(sbinctr, shist, yerr=[shist-shmin, shmax-shist], ls="none", color=color, label=catalog_name, marker="o", ms=5)
 
-    plt.legend(loc='best', frameon=False)
+    plt.legend(loc='best', frameon=False, numpoints=1, fontsize='xsmall')
+    plt.title(plot_title)
+    plt.xlabel(xaxis_label)
+    plt.ylabel(yaxis_label)
     plt.grid()
 
     plt.savefig(output_file)

@@ -318,13 +318,13 @@ def get_username():
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('root_output_dir')
-    parser.add_argument('--no-subdir', dest='subdir', action='store_false')
-    parser.add_argument('--validation-config', default='config_validation.py')
-    parser.add_argument('--catalog-config', default='config_catalog.py')
-    parser.add_argument('--validations-to-run', metavar='VALIDATION', nargs='+')
-    parser.add_argument('--catalogs-to-run', metavar='CATALOG', nargs='+')
-    parser.add_argument('-v', '--verbose', action='store_true')
-    parser.add_argument('-m', '--comment')
+    parser.add_argument('--no-subdir', dest='subdir', action='store_false', help='if set, no sub-directory will be created, and in this case, `root_output_dir` must not yet exist')
+    parser.add_argument('--validation-config', default='config_validation.py', help='validation config file')
+    parser.add_argument('--catalog-config', default='config_catalog.py', help='catalog config file')
+    parser.add_argument('--validations-to-run', metavar='VALIDATION', nargs='+', help='to run only a subset of validations')
+    parser.add_argument('--catalogs-to-run', metavar='CATALOG', nargs='+', help='to run only a subset of catalogs')
+    parser.add_argument('-v', '--verbose', action='store_true', help='to display all debug messages')
+    parser.add_argument('-m', '--comment', help='to attact a comment to this run')
     args = parser.parse_args()
 
     master_status = {}
