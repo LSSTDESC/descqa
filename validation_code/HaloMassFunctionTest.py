@@ -119,17 +119,15 @@ class HaloMassFunctionTest(ValidationTest):
         generate halo mass function data
         """
         #associate files with observations
-        halo_mass_tmpfile ='analytic.dat'
-        halo_mass_par = {ShethTormen:'ST',Jenkins:'JEN',Tinker:'TINK',
-                         }
+        halo_mass_par = {ShethTormen:'ST',Jenkins:'JEN',Tinker:'TINK',}
         #get path to exe
         exe = os.path.join(self.base_data_dir, 'ANALYTIC/amf/amf.exe')
-        fn = os.path.join(base_output_dir, halo_mass_tmpfile)
+        fn = os.path.join(base_output_dir, 'analytic.dat')
         inputpars=os.path.join(self.base_data_dir, 'ANALYTIC/amf/input.par')
         subprocess.check_call(["cp", inputpars,base_output_dir])
 
         #get cosmology from galaxy_catalog
-        om=galaxy_catalog.cosmology.Om0
+        om = galaxy_catalog.cosmology.Om0
         ob = 0.046 # assume ob is included in om
         h  = galaxy_catalog.cosmology.H(ztest).value/100.
         s8 = 0.816# from paper
@@ -139,20 +137,20 @@ class HaloMassFunctionTest(ValidationTest):
         fitting_f = halo_mass_par[self.observation]
 
         # Example call to amf
-        CWD = os.getcwd()
-        os.chdir(base_output_dir)
         if os.path.exists(fn):
             os.remove(fn)
-        FNULL = open(os.devnull, 'w')
-        args=[exe, "-omega_0", str(om), "-omega_bar", str(ob), "-h", str(h), "-sigma_8", str(s8), \
-                    "-n_s", str(ns), "-tf", "EH", "-delta_c", str(delta_c), "-M_min", str(1.0e7), "-M_max", str(1.0e15), \
-                    "-z", str(0.0), "-f", fitting_f]
+        args = map(str, [exe, "-omega_0", om, "-omega_bar", ob, "-h", h, "-sigma_8", s8, \
+                    "-n_s", ns, "-tf", "EH", "-delta_c", delta_c, "-M_min", 1.0e7, "-M_max", 1.0e15, \
+                    "-z", 0.0, "-f", fitting_f])
         print ("Running amf: "+ " ".join(args))
-        p = subprocess.check_call(args, stdout=FNULL, stderr=FNULL)
-        #p = subprocess.call([exe, "-omega_0", str(om), "-omega_bar", str(ob), "-h", str(h), "-sigma_8", str(s8),
-        #            "-n_s", str(ns), "-tf", "EH", "-delta_c", str(delta_c), "-M_min", str(1.0e7), "-M_max", str(1.0e15),
-        #           "-z", str(0.0), "-f", fitting_f], stdout=FNULL, stderr=FNULL)
-        os.chdir(CWD)
+        
+        CWD = os.getcwd()
+        os.chdir(base_output_dir)
+        try:
+            with open(os.devnull, 'w') as FNULL:
+                p = subprocess.check_call(args, stdout=FNULL, stderr=FNULL)
+        finally:
+            os.chdir(CWD)
 
         MassFunc = np.loadtxt(fn).T
         xvals = MassFunc[2]/h

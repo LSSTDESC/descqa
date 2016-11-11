@@ -1,24 +1,21 @@
 # This python script sets the validation configurations
 
+# ---- DO NOT change this section ----
 import os as _os
-
-_VALIDATION_CODE_DIR = '/project/projectdirs/lsst/descqacmu/src/validation_code'
-_VALIDATION_DATA_DIR = '/project/projectdirs/lsst/descqacmu/src/validation_data'
 
 class _ValidationConfig():
     def __init__(self, module, **kwargs):
         if not isinstance(module, basestring):
             raise ValueError('`module` must be a string')
         self.module = module
-
         _prohibited_leys = ('test_name', 'catalog_name', 'base_output_dir', 'base_data_dir')
         if any (k in kwargs for k in _prohibited_leys):
             raise ValueError('Do not manually set the following keys: {}'.format(', '.join(_prohibited_leys)))
-        kwargs['base_data_dir'] = _VALIDATION_DATA_DIR
         self.kwargs = kwargs
 
-
-# configurations below
+    def set_data_dir(self, dirpath):
+        self.kwargs['base_data_dir'] = dirpath
+# ---- End of DO NOT CHANGE ----
 
 smf_LiWhite = _ValidationConfig('BinnedStellarMassFunctionTest',
          observation='LiWhite2009',

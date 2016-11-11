@@ -1,9 +1,7 @@
 # This python script sets the catalog configurations
 
+# ---- DO NOT change this section ----
 import os as _os
-
-_CATALOG_DIR = '/project/projectdirs/lsst/descqacmu/catalog'
-_READER_DIR = '/project/projectdirs/lsst/descqacmu/src/reader'
 
 class _CatalogConfig():
     def __init__(self, reader, **kwargs):
@@ -13,14 +11,14 @@ class _CatalogConfig():
         _prohibited_leys = ('base_catalog_dir',)
         if any (k in kwargs for k in _prohibited_leys):
             raise ValueError('Do not manually set the following keys: {}'.format(', '.join(_prohibited_leys)))
-        if 'fn' in kwargs and len(kwargs) == 1: # old style
-            kwargs['fn'] = _os.path.join(_CATALOG_DIR, kwargs['fn'])
-        else:
-            kwargs['base_catalog_dir'] = _CATALOG_DIR
         self.kwargs = kwargs
-    
 
-# configurations below
+    def set_data_dir(self, dirpath):
+        if 'fn' in self.kwargs and len(self.kwargs) == 1: # old style
+            self.kwargs['fn'] = _os.path.join(dirpath, self.kwargs['fn'])
+        else:
+            self.kwargs['base_catalog_dir'] = dirpath
+# ---- End of DO NOT CHANGE ----
 
 SHAM_LiWhite = _CatalogConfig('SHAMGalaxyCatalog', match_to='LiWhite')
 

@@ -49,8 +49,13 @@ def quick_import(module_name):
     return getattr(importlib.import_module(module_name), module_name)
 
 
-def process_config(config_dict, keys_wanted=None):
+def process_config(config_dict, keys_wanted=None, set_data_dir=None):
     d = {k: config_dict[k] for k in config_dict if not k.startswith('_')}
+
+    if set_data_dir:
+        for c in d.itervalues():
+            c.set_data_dir(set_data_dir)
+
     if keys_wanted is None:
         return d
 
@@ -315,18 +320,18 @@ def get_username():
     return 'UNKNOWN'
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('root_output_dir')
-    parser.add_argument('--no-subdir', dest='subdir', action='store_false', help='if set, no sub-directory will be created, and in this case, `root_output_dir` must not yet exist')
-    parser.add_argument('--validation-config', default='config_validation.py', help='validation config file')
-    parser.add_argument('--catalog-config', default='config_catalog.py', help='catalog config file')
-    parser.add_argument('--validations-to-run', metavar='VALIDATION', nargs='+', help='to run only a subset of validations')
-    parser.add_argument('--catalogs-to-run', metavar='CATALOG', nargs='+', help='to run only a subset of catalogs')
-    parser.add_argument('-v', '--verbose', action='store_true', help='to display all debug messages')
-    parser.add_argument('-m', '--comment', help='to attact a comment to this run')
-    args = parser.parse_args()
+def make_argpath_absolute(args):
+    args.root_output_dir = os.path.abspath(os.path.expanduser(args.root_output_dir))    
+    args.source_dir = os.path.abspath(os.path.expanduser(args.source_dir))
+    args.validation_config = pjoin(args.source_dir, os.path.expanduser(args.validation_config))
+    args.catalog_config = pjoin(args.source_dir, os.path.expanduser(args.catalog_config))
+    args.validation_code_dir = pjoin(args.source_dir, os.path.expanduser(args.validation_code_dir))
+    args.validation_data_dir = pjoin(args.source_dir, os.path.expanduser(args.validation_data_dir))
+    args.reader_dir = pjoin(args.source_dir, os.path.expanduser(args.reader_dir))
+    args.catalog_dir = pjoin(args.source_dir, os.path.expanduser(args.catalog_dir))
+    
 
+def main(args):
     master_status = {}
     master_status['user'] = get_username()
     master_status['start_time'] = time.time()
@@ -336,6 +341,7 @@ def main():
     log = create_logger(verbose=args.verbose)
 
     log.debug('creating output directory...')
+    make_argpath_absolute(args)
     output_dir = make_output_dir(args.root_output_dir, args.subdir)
     open(pjoin(output_dir, '.lock'), 'w').close()
     try: # we want to remove ".lock" file even if anything went wrong
@@ -354,14 +360,14 @@ def main():
         del sys.path[0]
 
         log.debug('processing config files...')
-        validations_to_run = process_config(vc.__dict__, args.validations_to_run)
-        catalogs_to_run = process_config(cc.__dict__, args.catalogs_to_run)
+        validations_to_run = process_config(vc.__dict__, args.validations_to_run, args.validation_data_dir)
+        catalogs_to_run = process_config(cc.__dict__, args.catalogs_to_run, args.catalog_dir)
         if not validations_to_run or not catalogs_to_run:
             raise ValueError('not thing to run...')
 
         log.debug('creating code snapshot and adding to sys.path...')
-        sys.path.insert(0, check_copy(vc._VALIDATION_CODE_DIR, pjoin(snapshot_dir, 'validation_code')))
-        sys.path.insert(0, check_copy(cc._READER_DIR, pjoin(snapshot_dir, 'reader')))
+        sys.path.insert(0, check_copy(args.validation_code_dir, pjoin(snapshot_dir, 'validation_code')))
+        sys.path.insert(0, check_copy(args.reader_dir, pjoin(snapshot_dir, 'reader')))
         
         log.debug('starting to run all validations...')
         tasks = TaskDirectory(output_dir)
@@ -382,5 +388,33 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('root_output_dir', \
+            help='Output directory (where the web interface runs on). A sub directory will be created within.')
+    parser.add_argument('-v', '--verbose', action='store_true', \
+            help='display all debug messages')
+    parser.add_argument('-m', '--comment', \
+            help='attact a comment to this run')
+    parser.add_argument('--rv', '--validations-to-run', dest='validations_to_run', metavar='VALIDATION', nargs='+', \
+            help='If set, no sub directory will be created, and in this case, `root_output_dir` must not yet exist.')
+    parser.add_argument('--rc', '--catalogs-to-run', dest='catalogs_to_run', metavar='CATALOG', nargs='+', \
+            help='run only a subset of catalogs')
+    parser.add_argument('--validation-config-file', dest='validation_config', default='config_validation.py', \
+            help='run only a subset of validations')
+    parser.add_argument('--catalog-config-file', dest='catalog_config', default='config_catalog.py', \
+            help='catalog config file (default: config_catalog.py)')
+    parser.add_argument('--validation-code-dir', default='validation_code', \
+            help='validation code directory (default: validation_code)')
+    parser.add_argument('--validation-data-dir', default='validation_data', \
+            help='validation data directory (default: validation_data)')
+    parser.add_argument('--reader-dir', default='reader', \
+            help='catalog reader directory (default: reader)')
+    parser.add_argument('--catalog-dir', '--cdir', default='../catalog', dest='catalog_dir',\
+            help='catalog data directory (default: ../catalog)')
+    parser.add_argument('--source-dir', default='.', \
+            help='source directory (default: current working directory)')
+    parser.add_argument('--no-subdir', dest='subdir', action='store_false', \
+            help='validation config file (default: config_validation.py)')
+    args = parser.parse_args()
+    main(args)
 
