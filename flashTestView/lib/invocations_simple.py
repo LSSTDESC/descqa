@@ -59,10 +59,12 @@ class Invocation:
             user = ''
         else:
             user = user.strip()
-            user = '({})'.format(user) if user else ''
+            user = '&nbsp;({})'.format(user) if user else ''
             
         output = []
-        output.append('<td>&nbsp;<a href="viewer/viewBuilds.cgi?target_dir={}" onMouseOver="appear(\'\', \'{}\');" onMouseOut="disappear();">{}</a>&nbsp;[<a href="viewer/viewBuilds.cgi?target_dir={}/_group_by_catalog">c</a>]&nbsp;{}</td>'.format(self.path, status, self.name, self.path, user))
+        main_link = '&nbsp;<a href="viewer/viewBuilds.cgi?target_dir={}" onMouseOver="appear(\'\', \'{}\');" onMouseOut="disappear();">{}</a>'.format(self.path, status, self.name)
+        catalog_link = '&nbsp;[<a href="viewer/viewBuilds.cgi?target_dir={}/_group_by_catalog">c</a>]'.format(self.path) if catalogs else ''
+        output.append('<td>{}</td>'.format(''.join((main_link, catalog_link, user))))
         output.append('<td><img src="images/{}.gif"></td>'.format(light))
         test_links = '&nbsp;|&nbsp;'.join(('<a href="viewer/viewBuild.cgi?target_dir={0}/{1}">{1}</a>'.format(self.path, t) for t in tests))
         catalog_links = '&nbsp;|&nbsp;'.join(('<a href="viewer/viewBuild.cgi?target_dir={0}/_group_by_catalog/{1}">{1}</a>'.format(self.path, c) for c in catalogs))
