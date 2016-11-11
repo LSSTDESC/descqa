@@ -11,16 +11,14 @@ from invocations_simple import Invocation, BigBoard
 import littleParser
 
 # config
-pathToOutputDir = '/project/projectdirs/lsst/descqacmu/run/edison'
-bigboard_cache = 'bigboard_cache.pkl'
-invocationsPerPage = 25
-days_to_show = 7
+configDict = littleParser.parseFile('config')
 
-try:
-    configDict = littleParser.parseFile("config")
-    siteTitle = configDict.get("siteTitle", '')
-except:
-    siteTitle = ''
+pathToOutputDir = configDict['pathToOutputDir'] # must have
+bigboard_cache = configDict.get('bigboard_cache')
+siteTitle = configDict.get('siteTitle', '')
+invocationsPerPage = int(configDict.get('invocationsPerPage', 25))
+days_to_show = int(configDict.get('days_to_show', 15))
+
 
 # make sure website has write permissions in this folder
 assert os.access(os.getcwd(), os.W_OK)
@@ -55,18 +53,22 @@ except:
     this_page = 1
 
 bigboard = BigBoard(pathToOutputDir)
-try:
-    bigboard.load(bigboard_cache)
-except:
-    pass
+
+if bigboard_cache:
+    try:
+        bigboard.load(bigboard_cache)
+    except:
+        pass
 
 bigboard.generate(days_to_show)
-try:
-    bigboard.dump(bigboard_cache)
-except:
-    pass
-else:
-    os.chmod(bigboard_cache, stat.S_IWOTH+stat.S_IROTH+stat.S_IWGRP+stat.S_IRGRP+stat.S_IRUSR+stat.S_IWUSR)
+
+if bigboard_cache:
+    try:
+        bigboard.dump(bigboard_cache)
+    except:
+        pass
+    else:
+        os.chmod(bigboard_cache, stat.S_IWOTH+stat.S_IROTH+stat.S_IWGRP+stat.S_IRGRP+stat.S_IRUSR+stat.S_IWUSR)
 
 # floating div which will be populated with the stats
 # from one invocation when user hovers over a datestamp

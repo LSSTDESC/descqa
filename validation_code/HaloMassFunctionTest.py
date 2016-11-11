@@ -414,7 +414,7 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
         sbinctr, shist, shmin, shmax = np.loadtxt(fn, unpack=True, usecols=[0,1,2,3])
         ax1.errorbar(sbinctr, shist, yerr=[shist-shmin, shmax-shist], ls="none", color=color, label=catalog_name, marker="o", ms=5)
 
-    plt.legend(loc='best', frameon=False, numpoints=1, fontsize='xsmall')
+    plt.legend(loc='best', frameon=False, numpoints=1, fontsize='x-small')
     plt.title(plot_title)
     plt.xlabel(xaxis_label)
     plt.ylabel(yaxis_label)

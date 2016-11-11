@@ -5,7 +5,7 @@ this directory hosts the cgi scripts for displaying the results.
 
 ## Code structure
 
-- "Big table page": `home.py`, which also calls `lib/invocations_simple.py` to generate the content.
+- "Big table page": `home.py`, which also calls `lib/invocations_simple.py` to generate the content. Use `config` to set options
 
 - "Build page": `viewer/viewBuilds.py` which uses `viewer/viewBuildsTemplate.ezt` as a template to generate the page.
 

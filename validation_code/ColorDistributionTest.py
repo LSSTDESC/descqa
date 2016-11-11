@@ -24,7 +24,7 @@ class ColorDistributionTest(ValidationTest):
     validaton test class object to compute galaxy color distribution
     """
     
-    def __init__(self, test_q=False, plot_pdf_q=False, load_validation_catalog_q=True, **kwargs):
+    def __init__(self, load_validation_catalog_q=True, **kwargs):
         """
         Initialize a color distribution validation test.
         
@@ -40,9 +40,6 @@ class ColorDistributionTest(ValidationTest):
         colors : list of string, required
             list of colors to be tested
             e.g ['u-g','g-r','r-i','i-z']
-
-        color_bin_args : list of tuple, required is plot_pdf_q is True
-            list of tuple(minimum color, maximum color, N bins) for each color
 
         translate : dictionary, optional
             translate the bands to catalog specific names
@@ -69,14 +66,6 @@ class ColorDistributionTest(ValidationTest):
             if True, load the full validation catalog and calculate the color distribution
             default: True
 
-        test_q: boolean, optional
-            if True, zlo and zhi are overwritten with 0 and 1
-            default: False
-
-        plot_pdf_q: boolean, optional
-            if True, zlo and zhi are overwritten with 0 and 1
-            default: False
-
         """
         
         super(self.__class__, self).__init__(**kwargs)
@@ -94,16 +83,6 @@ class ColorDistributionTest(ValidationTest):
         for color in self.colors:
             if len(color)!=3 or color[1]!='-':
                 raise ValueError('`colors` is not in the correct format!')
-        #color bins
-        if 'color_bin_args' in kwargs:
-            self.color_bin_args = kwargs['color_bin_args']
-            if len(self.color_bin_args)!=len(self.colors):
-                raise ValueError('`colors` and `color_bin_args` should be the same length')
-            for color_bin in self.color_bin_args:
-                if len(color_bin)!=3:
-                    raise ValueError('`color_bin_args` is not in the correct format!')
-        elif plot_pdf_q:
-            raise ValueError('`color_bin_args` not found!')
         #band of limiting magnitude
         if 'limiting_band' in list(kwargs.keys()):
             self.limiting_band = kwargs['limiting_band']
@@ -116,22 +95,16 @@ class ColorDistributionTest(ValidationTest):
             self.limiting_mag = None
 
         # Redshift range
-        if test_q:
-            self.zlo_mock = 0.
-            self.zhi_mock = 1.
-            self.zlo_obs = kwargs['zlo']
-            self.zhi_obs = kwargs['zhi']
+        #minimum redshift
+        if 'zlo' in list(kwargs.keys()):
+            self.zlo_obs = self.zlo_mock = kwargs['zlo']
         else:
-            #minimum redshift
-            if 'zlo' in list(kwargs.keys()):
-                self.zlo_obs = self.zlo_mock = kwargs['zlo']
-            else:
-                raise ValueError('`zlo` not found!')
-            #maximum redshift
-            if 'zhi' in list(kwargs.keys()):
-                self.zhi_obs = self.zhi_mock = kwargs['zhi']
-            else:
-                raise ValueError('`zhi` not found!')
+            raise ValueError('`zlo` not found!')
+        #maximum redshift
+        if 'zhi' in list(kwargs.keys()):
+            self.zhi_obs = self.zhi_mock = kwargs['zhi']
+        else:
+            raise ValueError('`zhi` not found!')
 
         #translation rules from bands to catalog specific names
         if 'translate' in list(kwargs.keys()):
@@ -140,7 +113,6 @@ class ColorDistributionTest(ValidationTest):
         else:
             raise ValueError('translate not found!')
 
-        self.plot_pdf_q = plot_pdf_q
         self.load_validation_catalog_q = load_validation_catalog_q
 
     def run_validation_test(self, galaxy_catalog, catalog_name, base_output_dir):
@@ -281,24 +253,23 @@ class ColorDistributionTest(ValidationTest):
             f.close()     
 
             #---------------------------------- Plot color PDF -----------------------------------------
-            if self.plot_pdf_q:
 
-                mhist_smooth = uniform_filter1d(mhist, 20)
-                ohist_smooth = uniform_filter1d(ohist, 20)
-                #measurement from galaxy catalog
-                ax_pdf1.step(mbinctr, mhist_smooth, where="mid", label=catalog_name, color='blue')
-                #validation data
-                ax_pdf1.step(obinctr, ohist_smooth, label=self._data_name,color='green')
-                ax_pdf1.set_xlabel(color, fontsize=12)
-                ax_pdf1.set_xlim(xlim, xmax)
-                ax_pdf1.set_title('')
-                ax_pdf1.legend(loc='best', frameon=False)
+            mhist_smooth = uniform_filter1d(mhist, 20)
+            ohist_smooth = uniform_filter1d(ohist, 20)
+            #measurement from galaxy catalog
+            ax_pdf1.step(mbinctr, mhist_smooth, where="mid", label=catalog_name, color='blue')
+            #validation data
+            ax_pdf1.step(obinctr, ohist_smooth, label=self._data_name,color='green')
+            ax_pdf1.set_xlabel(color, fontsize=12)
+            ax_pdf1.set_xlim(xlim, xmax)
+            ax_pdf1.set_ylim(ymin=0.)
+            ax_pdf1.set_title('')
+            ax_pdf1.legend(loc='best', frameon=False)
 
         #save plot
         if no_cdf_q==False:
             fn = os.path.join(base_output_dir, plot_cdf_file)
             fig_cdf.savefig(fn)
-        if self.plot_pdf_q and no_cdf_q==False:
             fn = os.path.join(base_output_dir, plot_pdf_file)
             fig_pdf.savefig(fn)
 
