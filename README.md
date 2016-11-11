@@ -27,7 +27,7 @@ Hack on! Make changes!
 
 ### Step 3: Test
 
-_Note: Stay in `your/own/directory/descqa-local` for this step. You do *not* need to go to the main descqa directory to run the test._
+_Note: Stay in `your/own/directory/descqa-local` for this step. You do **not** need to go to the main descqa directory to run the test._
 
 First, find out where the actual catalogs sit (they are big files so they are not in the repo). Most likely they will be at
 
