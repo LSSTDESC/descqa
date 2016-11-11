@@ -5,8 +5,10 @@ import numpy as np
 import h5py
 import astropy.cosmology
 import astropy.units as u
+import os 
+import re
 
-class ANLGalaxyCatalog(GalaxyCatalog):
+class GalacticusGalaxyCatalog(GalaxyCatalog):
     """
     Argonne galaxy catalog class. Uses generic quantity and filter mechanisms
     defined by GalaxyCatalog base class. In addition, implements the use of
@@ -27,8 +29,13 @@ class ANLGalaxyCatalog(GalaxyCatalog):
                   names.
     """
 
-    def __init__(self, fn=None):
-        self.type_ext    = 'ANL'
+    Output='Output'
+    Outputs='Outputs'
+    z='z'
+
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+        self.type_ext    = 'galacticus'
         self.filters     = { 'zlo':                   True,
                              'zhi':                   True
                            }
@@ -36,15 +43,19 @@ class ANLGalaxyCatalog(GalaxyCatalog):
                              'ra':                    self._get_stored_property,
                              'dec':                   self._get_stored_property,
                              'v_pec':                 self._get_stored_property,
-                             'mass':                  self._get_stored_property,
+                             'mass':                  self._get_derived_property,
                              'age':                   self._get_stored_property,
                              'stellar_mass':          self._get_derived_property,
                              'log_stellarmass':       self._get_stored_property,
+                             'log_halomass':          self._get_stored_property,
                              'gas_mass':              self._get_stored_property,
                              'metallicity':           self._get_stored_property,
                              'sfr':                   self._get_stored_property,
                              'ellipticity':           self._get_stored_property,
-                             'positionX':             self._get_stored_property,
+                             #'positionX':             self._get_derived_property, #units are in physical Mpc
+                             #'positionY':             self._get_derived_property,
+                             #'positionZ':             self._get_derived_property,
+                             'positionX':             self._get_stored_property, #units are now in comoving Mpc
                              'positionY':             self._get_stored_property,
                              'positionZ':             self._get_stored_property,
                              'velocityX':             self._get_stored_property,
@@ -84,16 +95,16 @@ class ANLGalaxyCatalog(GalaxyCatalog):
                              'agn_dec':               self._get_stored_property,
                              'agn_mass':              self._get_stored_property,
                              'agn_accretnrate':       self._get_stored_property,
-                             'SDSS_u:rest:':          None,    # don't have a way to return these yet
-                             'SDSS_g:rest:':          None,
-                             'SDSS_r:rest:':          None,
-                             'SDSS_i:rest:':          None,
-                             'SDSS_z:rest:':          None,
-                             'SDSS_u:observed:':      None,
-                             'SDSS_g:observed:':      None,
-                             'SDSS_r:observed:':      None,
-                             'SDSS_i:observed:':      None,
-                             'SDSS_z:observed:':      None,
+                             'SDSS_u:rest:':          self._get_stored_property,
+                             'SDSS_g:rest:':          self._get_stored_property,
+                             'SDSS_r:rest:':          self._get_stored_property,
+                             'SDSS_i:rest:':          self._get_stored_property,
+                             'SDSS_z:rest:':          self._get_stored_property,
+                             'SDSS_u:observed:':      self._get_stored_property,
+                             'SDSS_g:observed:':      self._get_stored_property,
+                             'SDSS_r:observed:':      self._get_stored_property,
+                             'SDSS_i:observed:':      self._get_stored_property,
+                             'SDSS_z:observed:':      self._get_stored_property,
                              'DES_g:rest:':           None,
                              'DES_r:rest:':           None,
                              'DES_i:rest:':           None,
@@ -129,36 +140,83 @@ class ANLGalaxyCatalog(GalaxyCatalog):
                              'CFHTL_z:observed:':     None,
                            }
         self.derived     = {'stellar_mass':      ('log_stellarmass',       self._unlog10),
+                            'mass':              ('log_halomass',  self._unlog10),
                             'disk_stellarmass':  ('log_disk_stellarmass',  self._unlog10),
                             'bulge_stellarmass': ('log_bulge_stellarmass', self._unlog10)}
+        
         self.catalog     = {}
         self.sky_area    = 4.*np.pi*u.sr   # all sky by default
         self.cosmology   = None
-        return GalaxyCatalog.__init__(self, fn)
+        self.lightcone   = False
+        self.box_size    = None
+
+        self.outkeys = []
+        self.zvalues = []
+        self.load_init()   #get catalog output keys only
+
+    def load_init(self):
+        """
+        Given a catalog path, attempt to read the catalog output groups and cosmological parameters
+        """
+        fn = os.path.join(self.kwargs['base_catalog_dir'],self.kwargs['filename'])
+        hdfFile = h5py.File(fn, 'r')
+
+        hdfKeys, self.hdf5groups = self._gethdf5group(hdfFile)
+        self.outkeys=sorted([key for key in hdfKeys if key.find(self.Output)!=-1],key=self.stringSplitByIntegers)
+        self.zvalues=self.getzvalues(self.outkeys)
+
+        allowed_parkeys = ['parameters','Parameters']
+        for key in allowed_parkeys:
+            if (key in hdfKeys):
+                mydict = self._gethdf5attributes(hdfFile, key)
+                self.cosmology = astropy.cosmology.LambdaCDM(H0   = mydict['H_0'],
+                Om0  = mydict['Omega_Matter'],
+                Ode0 = mydict['Omega_DE'])
+                self.box_size=mydict['boxSize']   #already in Mpc
+                self.sigma_8=mydict['sigma_8']
+                self.n_s=mydict['N_s']
 
 
-    def load(self, fn):
+        self.redshift = []  #empty until values requested by test
+        self.catalog = {}   #init empty catalog
+
+        print('init_done')
+        # TODO: how to get sky area?
+        hdfFile.close()
+        
+
+    def load(self,hdfKeys=[]):
         """
         Given a catalog path, attempt to read the catalog and set up its
         internal data structures.
         """
+        if len(self.outkeys)==0:
+            self.load_init()
 
+        #check for requested keys and use all keys as default
+        if(len(hdfKeys)==0):
+            hdfKeys=self.outkeys
+
+        fn = os.path.join(self.kwargs['base_catalog_dir'],self.kwargs['filename'])
         hdfFile = h5py.File(fn, 'r')
-        hdfKeys, hdfAttrs = self._gethdf5group(hdfFile)
-        self.catalog = {}
+        
+        print(hdfFile)
+        print(hdfKeys)
+        print(str(self.catalog.keys()))
+        #print "load using keys: ", hdfKeys
+        #loop over requested keys and fetch those not already loaded
         for key in hdfKeys:
-            if 'Output' in key:
+            print (key) 
+            if 'Output' in key and not(key in self.catalog.keys()):   #check key and check if already loaded
                 outgroup = hdfFile[key]
                 dataKeys, dataAttrs = self._gethdf5group(outgroup)
                 self.catalog[key] = self._gethdf5arrays(outgroup)
-            elif key == 'cosmology':
-                mydict = self._gethdf5attributes(hdfFile, key)
-                self.cosmology = astropy.cosmology.LambdaCDM(H0   = mydict['H_0'],
-                                                             Om0  = mydict['Omega_Matter'],
-                                                             Ode0 = mydict['Omega_DE'])
-        # TODO: how to get sky area?
+
+
+        print(str(self.catalog.keys()))
+        print(str(len(self.catalog['Output18']['log_stellarmass'])))
         hdfFile.close()
-        return self
+        return
 
     # Functions for applying filters
 
@@ -187,6 +245,16 @@ class ANLGalaxyCatalog(GalaxyCatalog):
 
     # Functions for returning quantities from the catalog
 
+    def _getfiltered_outkeys(self,filters):
+        outkeys=[]
+        zvalues=[]
+        for z,outkey in zip(self.zvalues, self.catalog.keys()):
+            if z > filters.get('zlo',-0.01) and z < filters.get('zhi',9999.):
+                outkeys.append(outkey)
+                zvalues.append(z)
+
+        return outkeys, zvalues
+
     def _get_stored_property(self, quantity, filters):
         """
         Return the requested property of galaxies in the catalog as a NumPy
@@ -194,11 +262,23 @@ class ANLGalaxyCatalog(GalaxyCatalog):
         catalog.
         """
         props = []
-        for haloID in self.catalog.keys():
-            halo = self.catalog[haloID]
-            if self._check_halo(halo, filters):
-                if quantity in halo.keys():
-                    props.extend(halo[quantity])
+        outkeys, zvalues = self._getfiltered_outkeys(filters)
+        print(str(outkeys)+str(zvalues))
+
+        #get any data that hasn't been loaded
+        self.load(hdfKeys=outkeys)
+
+        if (len(outkeys)>0):
+            self.redshift=zvalues
+            for outkey in outkeys:
+                outdict = self.catalog[outkey]
+                if self._check_halo(outdict, filters):
+                    if quantity in outdict.keys():
+                        props.extend(outdict[quantity])
+
+        else:
+            raise ValueError('No catalog outputs available for redshifts requested')
+
         return np.asarray(props)
 
     def _get_derived_property(self, quantity, filters):
@@ -207,15 +287,38 @@ class ANLGalaxyCatalog(GalaxyCatalog):
         in the catalog but can be computed from properties that are via
         a simple function call.
         """
+        #print "in get_derived_property: ", quantity, filters
         props = []
+
+        #if 'position' in quantity:
+        #  return np.asarray()
+
         stored_qty_rec = self.derived[quantity]
         stored_qty_name = stored_qty_rec[0]
         stored_qty_fctn = stored_qty_rec[1]
-        for haloID in self.catalog.keys():
-            halo = self.catalog[haloID]
-            if self._check_halo(halo, filters):
-                if stored_qty_name in halo.keys():
-                    props.extend(stored_qty_fctn( halo[stored_qty_name] ))
+        #print 'stored_qty:', stored_qty_name, stored_qty_fctn
+
+        outkeys, zvalues = self._getfiltered_outkeys(filters)
+        print("load-request"+str(outkeys))
+
+        #get any data that hasn't been loaded
+        self.load(hdfKeys=outkeys)
+
+        if (len(outkeys)>0):
+            self.redshift=zvalues
+            for outkey in outkeys:
+                outdict = self.catalog[outkey]
+                if self._check_halo(outdict, filters):
+                    #if type(stored_qty_name) is tuple and stored_qty_name[0] in outdict.keys():
+                    #    values = outdict[stored_qty_name[0]]
+                    #    props.extend(stored_qty_fctn(values, stored_qty_name[1:]))
+                    #else:
+                    if stored_qty_name in outdict.keys():
+                        props.extend(stored_qty_fctn( outdict[stored_qty_name] ))
+
+        else:
+            print ('No catalog outputs available for redshifts requested')
+
         return np.asarray(props)
 
     # Functions for computing derived values
@@ -273,3 +376,53 @@ class ANLGalaxyCatalog(GalaxyCatalog):
             arraydict[str(key)]=array
         #endfor
         return arraydict
+
+    def _multiply(self, propList, factor_tuple):
+        """
+        Multiplication routine -- derived quantity is equal to a stored
+        quantity times some factor. Additional args for the derived quantity
+        routines are passed in as a tuple, so extract the factor first.
+        """
+        #print "in _multiply: ", propList, " ; factor_tuple: ", factor_tuple
+        factor = factor_tuple[0]
+        return propList * factor
+
+    def _add(self, propList):
+        """
+        Routine that returns element-wise addition of two arrays.
+        """
+        x = sum(propList)
+        return x
+
+    def stringSplitByIntegers(self,x):
+        r = re.compile('(\d+)')
+        l = r.split(x)
+        return [int(y) if y.isdigit() else y for y in l]
+
+    def getzvalues(self,outkeys,hdf5groups=None):
+        myname=self.getzvalues.__name__
+        zvalues=[]
+        if(type(outkeys)==str):  #create list if necessary                                                       
+            outkeys=[outkeys]
+        #endif                                                                                                   
+        if(hdf5groups is None):
+            hdf5groups=self.hdf5groups
+        #endif                                                                                                   
+        for outkey in outkeys:
+            if(hdf5groups.has_key(outkey)):
+                if(outkey.find(self.Output)!=-1):
+                    if (hdf5groups[outkey].has_key(self.z)):
+                        outputz=hdf5groups[outkey][self.z]
+                    elif(hdf5groups[outkey].has_key("z")):
+                        outputz=hdf5groups[outkey]["z"]
+                    else:
+                        print("Missing attribute",self.z)
+            #elif (hdf5groups.has_key(self.Outputs)):
+            #    outputz=hdf5groups[self.Outputs][outkey][self.outputRedshift]
+            else:
+                print("Unknown catalog key",outkey)
+            #endif                                                                                               
+            zvalues.append(outputz)
+
+        #endfor                                                                                                  
+        return np.asarray(zvalues)
