@@ -1,5 +1,6 @@
 __all__ = ['Invocation', 'BigBoard']
 import os
+import time
 import re
 import cgi
 import bisect
@@ -17,6 +18,7 @@ class Invocation:
         assert m is not None
         self.path = os.path.join(dir_path, name)
         assert os.path.isdir(self.path)
+        assert not os.path.exists(os.path.join(self.path, '.lock'))
         m = m.groups()
         self.date = m[0]
         self.sameday_index = int(m[1] or 0)
@@ -95,7 +97,7 @@ class BigBoard:
             
             if not reset:
                 i = bisect.bisect_left(self.invocationList, invocation)
-                if i < len(self.invocationList) and self.invocationList[i] == invocation:
+                if i < len(self.invocationList) and self.invocationList[i] == invocation and time.time() - os.path.getmtime(invocation.path) > 600.0:
                     invocation.html = self.invocationList[i].html
             if not invocation.html:
                 invocation.gen_invocation_html()

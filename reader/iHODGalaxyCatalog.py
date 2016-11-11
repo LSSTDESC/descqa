@@ -25,7 +25,7 @@ class iHODGalaxyCatalog(GalaxyCatalog):
                              'velocityZ':                 self._get_stored_property,
                              'stellar_mass':      self._get_stored_property,
                              'mass':      self._get_stored_property,
-                             'SDSS_r:observed:':      self._get_stored_property,
+                             #'color':      self._get_stored_property,
                            }
 
         self.Ngals        = 0
