@@ -45,19 +45,19 @@ If you want to run only a subset of catalogs or tests, you can specify `--catalo
     ./run_master.sh -v --cdir /project/projectdirs/lsst/descqacmu/catalog --catalogs-to-run CATALOG1 CATALOG2 --validations-to-run TEST1 TEST2
 
 
-## Step 4: Check results
+### Step 4: Check results
 
 As the master script is running, all the error messages will be printed out in real time if you have set `-v`. You can also go to the web interface to check you result:
 
 https://portal-auth.nersc.gov/project/lsst/descqacmu/flashTestView/home.cgi
 
 
-## Step 5: Iterate
+### Step 5: Iterate
 
 Repeat steps 2, 3, 4 as necessary.
 
 
-## Step 6: Commit and push changes. 
+### Step 6: Commit and push changes. 
 
 Now that you are happy about your changes, you can commit them. First, check current status of change:
 
