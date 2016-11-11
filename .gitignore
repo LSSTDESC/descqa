@@ -3,5 +3,4 @@
 *~
 [#]*
 .[#]*
-.git_old
-*.exe
+/.git_old
