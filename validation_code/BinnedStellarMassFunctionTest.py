@@ -25,8 +25,8 @@ summary_output_file = 'summary_smf.txt'
 log_file = 'log_smf.txt'
 plot_file = 'plot_smf.png'
 plot_title = 'Stellar Mass Function'
-xaxis_label = '$\log (M^*/(M_\odot)$'
-yaxis_label = '$\log(dn/dV\, d\log M\) ({\rm Mpc}^{-3}\,{\rm dex}^{-1})$'
+xaxis_label = r'$\log (M^*/(M_\odot)$'
+yaxis_label = r'$\log(dn/dV\,d\log M) ({\rm Mpc}^{-3}\,{\rm dex}^{-1})$'
 
 class BinnedStellarMassFunctionTest(ValidationTest):
     """

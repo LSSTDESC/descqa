@@ -2,6 +2,7 @@ import os
 import sys
 import shutil
 import time
+import json
 import logging
 import traceback
 import StringIO
@@ -277,31 +278,23 @@ def get_status_report(tasks):
     return report_content
 
 
-def interfacing_webview(tasks, output_dir):
-    status = tasks.get_status()
-    
-    # save users
-    for k in ('LOGNAME', 'USER', 'LNAME', 'USERNAME'):
-        user = os.getenv(k)
-        if user:
-            break
-    if user:
-        with open(pjoin(output_dir, 'user'), 'w') as f:
-            f.write(user)
-            f.write('\n')
+def write_master_status(master_status, tasks, output_dir):
+    master_status['end_time'] = time.time()
+    master_status['status_count'] = {}
+    master_status['status_count_group_by_catalog'] = {}
 
-    # save status
-    with open(pjoin(output_dir, 'errors'), 'w') as f_top:
-        for validation in status:
-            total = len(status[validation])
-            counter = collections.Counter(status[validation].values())
-            s = '; '.join(('{}/{} {}'.format(v, total, k) for k, v in counter.iteritems()))
-            f_top.write('{} - {}\n'.format(validation, s))
-            with open(pjoin(tasks.get_path(validation,), 'errors'), 'w') as f_this:
-                f_this.write('0\n0\n{}\n{}\n{}\n'.format(\
-                        sum(counter[k] for k in counter if k.endswith('ERROR')), 
-                        sum(counter[k] for k in counter if k.endswith('FAILED')), 
-                        total))
+    status = tasks.get_status()
+    status_by_catalog = collections.defaultdict(list)
+    for validation in status:
+        master_status['status_count'][validation] = collections.Counter(status[validation].values())
+        for catalog in status[validation]:
+            status_by_catalog[catalog].append(status[validation][catalog])
+
+    for catalog in status_by_catalog:
+        master_status['status_count_group_by_catalog'][catalog] = collections.Counter(status_by_catalog[catalog])
+
+    with open(pjoin(output_dir, 'STATUS.json'), 'w') as f:
+        json.dump(master_status, f, indent=True)
 
 
 def group_by_catalog(tasks, catalogs_to_run, validations_to_run, output_dir):
@@ -314,6 +307,14 @@ def group_by_catalog(tasks, catalogs_to_run, validations_to_run, output_dir):
             os.symlink(tasks.get_path(validation, catalog), os.path.join(this_catalog_dir, validation))
 
 
+def get_username():
+    for k in ('LOGNAME', 'USER', 'LNAME', 'USERNAME'):
+        user = os.getenv(k)
+        if user:
+            return user
+    return 'UNKNOWN'
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('root_output_dir')
@@ -323,14 +324,21 @@ def main():
     parser.add_argument('--validations-to-run', metavar='VALIDATION', nargs='+')
     parser.add_argument('--catalogs-to-run', metavar='CATALOG', nargs='+')
     parser.add_argument('-v', '--verbose', action='store_true')
+    parser.add_argument('-m', '--comment')
     args = parser.parse_args()
+
+    master_status = {}
+    master_status['user'] = get_username()
+    master_status['start_time'] = time.time()
+    if args.comment:
+        master_status['comment'] = args.comment
 
     log = create_logger(verbose=args.verbose)
 
     log.debug('creating output directory...')
     output_dir = make_output_dir(args.root_output_dir, args.subdir)
     open(pjoin(output_dir, '.lock'), 'w').close()
-    try:
+    try: # we want to remove ".lock" file even if anything went wrong
         snapshot_dir = pjoin(output_dir, '_snapshot')
         os.mkdir(snapshot_dir)
         log.info('output of this run is stored in {}'.format(output_dir))
@@ -363,8 +371,8 @@ def main():
         call_summary_plot(tasks, validations_to_run, log)
 
         log.debug('creating status report...')
-        interfacing_webview(tasks, output_dir)
         group_by_catalog(tasks, catalogs_to_run, validations_to_run, output_dir)
+        write_master_status(master_status, tasks, output_dir)
         report = get_status_report(tasks)
         log.info('All done! Status report:\n' + report)
         log.info('output of this run has been stored in {}'.format(output_dir))

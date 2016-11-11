@@ -18,6 +18,7 @@ class MB2GalaxyCatalog(GalaxyCatalog):
                           'zhi':                   True
                         }
         self.h          = 0.702
+        self.cosmology = astropy.cosmology.FlatLambdaCDM(H0=self.h*100.0, Om0 = 0.275)
         self.quantities = {
                              'halo_id':               self._get_stored_property,
                              'parent_halo_id':        self._get_stored_property,
@@ -25,24 +26,31 @@ class MB2GalaxyCatalog(GalaxyCatalog):
                              'positionX':             self._get_derived_property,  # Position returned in Mpc, stored in kpc/h
                              'positionY':             self._get_derived_property,
                              'positionZ':             self._get_derived_property,
+                             'velocityX':             self._get_stored_property,   # Velocity returned in km/sec
+                             'velocityY':             self._get_stored_property,   # Velocity returned in km/sec
                              'velocityZ':             self._get_stored_property,   # Velocity returned in km/sec
                              'mass':                  self._get_derived_property,  # Masses returned in Msun but stored in 1e10 Msun/h
                              'stellar_mass':          self._get_derived_property,
                              'gas_mass':              self._get_stored_property,
                              'sfr':                   self._get_stored_property,
-                             'SDSS_u:rest:':          self._get_stored_property,    # don't have a way to return these yet
-                             'SDSS_g:rest:':          self._get_stored_property,
-                             'SDSS_r:rest:':          self._get_stored_property,
-                             'SDSS_i:rest:':          self._get_stored_property,
-                             'SDSS_z:rest:':          self._get_stored_property,
+                             'SDSS_u:observed:':      self._get_derived_property,
+                             'SDSS_g:observed:':      self._get_derived_property,
+                             'SDSS_r:observed:':      self._get_derived_property,
+                             'SDSS_i:observed:':      self._get_derived_property,
+                             'SDSS_z:observed:':      self._get_derived_property,
                            }
 
         self.derived      = {
-                             'mass':            (('mass', 1.e10 / self.h), self._multiply),
-                             'stellar_mass':    (('stellar_mass', 1.e10 / self.h), self._multiply),
-                             'positionX':       (('x', 1.e-3 / self.h), self._multiply), # Position stored in kpc/h
-                             'positionY':       (('y', 1.e-3 / self.h), self._multiply),
-                             'positionZ':       (('z', 1.e-3 / self.h), self._multiply),
+                             'mass':            (('mass',), (1.e10 / self.h,), self._multiply),
+                             'stellar_mass':    (('stellar_mass',), (1.e10 / self.h,), self._multiply),
+                             'positionX':       (('x',), (1.e-3 / self.h,), self._multiply), # Position stored in kpc/h
+                             'positionY':       (('y',), (1.e-3 / self.h,), self._multiply),
+                             'positionZ':       (('z',), (1.e-3 / self.h,), self._multiply),
+                             'SDSS_u:observed:': (('SDSS_u:rest:', 'redshift'), (), self._add_distance_modulus),
+                             'SDSS_g:observed:': (('SDSS_g:rest:', 'redshift'), (), self._add_distance_modulus),
+                             'SDSS_r:observed:': (('SDSS_r:rest:', 'redshift'), (), self._add_distance_modulus),
+                             'SDSS_i:observed:': (('SDSS_i:rest:', 'redshift'), (), self._add_distance_modulus),
+                             'SDSS_z:observed:': (('SDSS_z:rest:', 'redshift'), (), self._add_distance_modulus),
                             }
         self.Ngals        = 0
         self.sky_area     = 4.*np.pi*u.sr   # all sky by default
@@ -57,10 +65,7 @@ class MB2GalaxyCatalog(GalaxyCatalog):
         """
         self.catalog = Table.read(fn, path='data')
         self.Ngals = len(self.catalog)
-
-        # turam added - use first redshift
         self.redshift = self.catalog['redshift'][0]
-        self.cosmology = astropy.cosmology.FlatLambdaCDM(H0=70.1, Om0 = 0.275) # confirm this!
 
         return self
 
@@ -98,15 +103,8 @@ class MB2GalaxyCatalog(GalaxyCatalog):
         a simple function call.
         """
         filter_mask = self._construct_mask(filters)
-        stored_qty_rec = self.derived[quantity]
-        stored_qty_name = stored_qty_rec[0]
-        stored_qty_fctn = stored_qty_rec[1]
-        if type(stored_qty_name) is tuple:
-            values = self.catalog[stored_qty_name[0]][np.where(filter_mask)].data
-            return stored_qty_fctn(values, stored_qty_name[1:])
-        else:
-            values = self.catalog[stored_qty_name][np.where(filter_mask)].data
-            return stored_qty_fctn(values)
+        arrays_required, scalars, func = self.derived[quantity]
+        return func([self.catalog[name][np.where(filter_mask)].data for name in arrays_required], scalars)
 
     # Functions for computing derived values
     def _translate(self, propList):
@@ -117,11 +115,15 @@ class MB2GalaxyCatalog(GalaxyCatalog):
         """
         return propList
 
-    def _multiply(self, propList, factor_tuple):
+    def _multiply(self, array_tuple, scalar_tuple):
         """
         Multiplication routine -- derived quantity is equal to a stored
         quantity times some factor. Additional args for the derived quantity
         routines are passed in as a tuple, so extract the factor first.
         """
-        factor = factor_tuple[0]
-        return propList * factor
+        return array_tuple[0] * scalar_tuple[0]
+
+
+    def _add_distance_modulus(self, array_tuple, scalar_tuple):
+        return array_tuple[0] + self.cosmology.distmod(array_tuple[1]).value
+

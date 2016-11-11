@@ -181,10 +181,7 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
                 self.sigma_8=mydict['sigma_8']
                 self.n_s=mydict['N_s']
 
-        #if(len(self.zvalues)==1):
-        #    self.redshift = self.zvalues[0]
-        #else:
-        #    self.redshift = None
+        self.redshift = []  #empty until values requested by test
         #print "box_size after loading = ", self.box_size
 
         # TODO: how to get sky area?
@@ -220,11 +217,13 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
 
     def _getfiltered_outkeys(self,filters):
         outkeys=[]
+        zvalues=[]
         for z,outkey in zip(self.zvalues, self.catalog.keys()):
             if z > filters.get('zlo',-0.01) and z < filters.get('zhi',9999.):
                 outkeys.append(outkey)
+                zvalues.append(z)
 
-        return outkeys
+        return outkeys, zvalues
 
     def _get_stored_property(self, quantity, filters):
         """
@@ -233,12 +232,18 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
         catalog.
         """
         props = []
-        outkeys = self._getfiltered_outkeys(filters)
-        for outkey in outkeys:
-            zdict = self.catalog[outkey]
-            if self._check_halo(zdict, filters):
-                if quantity in zdict.keys():
-                    props.extend(zdict[quantity])
+        outkeys, zvalues = self._getfiltered_outkeys(filters)
+        if (len(outkeys)>0):
+            self.redshift=zvalues
+            for outkey in outkeys:
+                outdict = self.catalog[outkey]
+                if self._check_halo(outdict, filters):
+                    if quantity in outdict.keys():
+                        props.extend(outdict[quantity])
+
+        else:
+            raise ValueError('No catalog outputs available for redshifts requested')
+
         return np.asarray(props)
 
     def _get_derived_property(self, quantity, filters):
@@ -257,20 +262,23 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
         stored_qty_name = stored_qty_rec[0]
         stored_qty_fctn = stored_qty_rec[1]
         #print 'stored_qty:', stored_qty_name, stored_qty_fctn
-        outkeys = self._getfiltered_outkeys(filters)
-        for outkey in outkeys:
-            halo = self.catalog[outkey]
-            if self._check_halo(halo, filters):
-                #if stored_qty_name in halo.keys():
-                #    props.extend(stored_qty_fctn( halo[stored_qty_name] ))
-                if type(stored_qty_name) is tuple and stored_qty_name[0] in halo.keys():
-                    #print 'branch1: ', quantity
-                    values = halo[stored_qty_name[0]]
-                    props.extend(stored_qty_fctn(values, stored_qty_name[1:]))
-                else:
-                    #print 'branch2: ', quantity
-                    if stored_qty_name in halo.keys():
-                        props.extend(stored_qty_fctn( halo[stored_qty_name] ))
+
+        outkeys, zvalues = self._getfiltered_outkeys(filters)
+        if (len(outkeys)>0):
+            self.redshift=zvalues
+            for outkey in outkeys:
+                outdict = self.catalog[outkey]
+                if self._check_halo(outdict, filters):
+                    #if type(stored_qty_name) is tuple and stored_qty_name[0] in outdict.keys():
+                    #    values = outdict[stored_qty_name[0]]
+                    #    props.extend(stored_qty_fctn(values, stored_qty_name[1:]))
+                    #else:
+                    if stored_qty_name in outdict.keys():
+                        props.extend(stored_qty_fctn( outdict[stored_qty_name] ))
+
+        else:
+            print ('No catalog outputs available for redshifts requested')
+
         return np.asarray(props)
 
     # Functions for computing derived values

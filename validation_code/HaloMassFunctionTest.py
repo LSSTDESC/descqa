@@ -9,6 +9,7 @@ from astropy import units as u
 import matplotlib
 matplotlib.use('Agg') # Must be before importing matplotlib.pyplot
 import matplotlib.pyplot as plt
+import subprocess
 
 import os
 from warnings import warn
@@ -24,10 +25,13 @@ validation_output_file = 'validation_hmf.txt'
 summary_output_file = 'summary_hmf.txt'
 log_file = 'log_hmf.log'
 plot_file = 'plot_hmf.png'
-Analytic = 'Analytic'
+ShethTormen = 'Sheth-Tormen'
+Jenkins = 'Jenkins'
+Tinker = 'Tinker'
+ANALYTIC = 'ANALYTIC'
 plot_title = 'Halo-mass Function'
-xaxis_label = '$M_{halo}\ (M_\odot)$'
-yaxis_label = '$dn/dV\, dM\ ({\rm Mpc}^{-3})$'
+xaxis_label = r'$M_{halo}\ (M_\odot)$'
+yaxis_label = r'$dn/dV\, d\logM\ ({\rm Mpc}^{-3})$'
 plot_rect = (0.17, 0.15, 0.79, 0.80)
 figsize=(4,4)
 summary_colormap = 'rainbow'
@@ -54,7 +58,7 @@ class HaloMassFunctionTest(ValidationTest):
         
         observation : string, optional
             name of halo-mass validation observation:
-            Analytic
+            Sheth-Tormen, Jenkins, Tinker
         
         bins : tuple, optional
         
@@ -67,14 +71,25 @@ class HaloMassFunctionTest(ValidationTest):
         
         #check supplied args
         if 'observation' in kwargs:
-            available_observations = [Analytic]
+            available_observations = [ShethTormen,Jenkins,Tinker]
             if kwargs['observation'] in available_observations:
                 self.observation = kwargs['observation']
             else:
                 msg = ('`observation` not available')
                 raise ValueError(msg)
         else:
-            self.observation = Analytic
+            self.observation = ShethTormen
+
+        if 'ztest' in kwargs:
+            self.ztest=kwargs['ztest']
+        else:
+            msg = ('test argument `ztest` not set')
+            raise ValueError(msg)
+            warn(msg)
+            #write to log file
+            fn = os.path.join(base_output_dir ,log_file)
+            with open(fn, 'a') as f:
+                f.write(msg)
         
         #halo mass bins
         if 'bins' in kwargs:
@@ -93,19 +108,108 @@ class HaloMassFunctionTest(ValidationTest):
             self.zhi = float(zhi)
         else:
             self.zhi = 1000.0
-        
+
         self.summary_method = kwargs.get('summary','L2Diff')
         self.threshold = kwargs.get('threshold',1.0)
 
-        #fetch catalog data first to make sure redshift is set
-        self.catalog_data = self.get_galaxy_data(galaxy_catalog)
+        #validation data generated in test according to redshift request AND cosmology
 
-        #now generate validation data on the fly since redshift is now known
-        xvals, yvals = self.gen_validation_data(galaxy_catalog)
+    def gen_validation_data(self,ztest,galaxy_catalog,base_output_dir):
+        """
+        generate halo mass function data
+        """
+        #associate files with observations
+        halo_mass_tmpfile ='analytic.dat'
+        halo_mass_par = {ShethTormen:'ST',Jenkins:'JEN',Tinker:'TINK',
+                         }
+        #get path to exe
+        exe = os.path.join(self.base_data_dir, 'ANALYTIC/amf/amf.exe')
+        fn = os.path.join(base_output_dir, halo_mass_tmpfile)
+        inputpars=os.path.join(self.base_data_dir, 'ANALYTIC/amf/input.par')
+        subprocess.check_call(["cp", inputpars,base_output_dir])
+
+        #get cosmology from galaxy_catalog
+        om=galaxy_catalog.cosmology.Om0
+        ob = 0.046 # assume ob is included in om
+        h  = galaxy_catalog.cosmology.H(ztest).value/100.
+        s8 = 0.816# from paper
+        ns = 0.96 # from paper
+        #Delta = 700.0 # default from original halo_mf.py
+        delta_c = 1.686
+        fitting_f = halo_mass_par[self.observation]
+
+        # Example call to amf
+        CWD = os.getcwd()
+        os.chdir(base_output_dir)
+        if os.path.exists(fn):
+            os.remove(fn)
+        FNULL = open(os.devnull, 'w')
+        args=[exe, "-omega_0", str(om), "-omega_bar", str(ob), "-h", str(h), "-sigma_8", str(s8), \
+                    "-n_s", str(ns), "-tf", "EH", "-delta_c", str(delta_c), "-M_min", str(1.0e7), "-M_max", str(1.0e15), \
+                    "-z", str(0.0), "-f", fitting_f]
+        print ("Running amf: "+ " ".join(args))
+        p = subprocess.check_call(args, stdout=FNULL, stderr=FNULL)
+        #p = subprocess.call([exe, "-omega_0", str(om), "-omega_bar", str(ob), "-h", str(h), "-sigma_8", str(s8),
+        #            "-n_s", str(ns), "-tf", "EH", "-delta_c", str(delta_c), "-M_min", str(1.0e7), "-M_max", str(1.0e15),
+        #           "-z", str(0.0), "-f", fitting_f], stdout=FNULL, stderr=FNULL)
+        os.chdir(CWD)
+
+        MassFunc = np.loadtxt(fn).T
+        xvals = MassFunc[2]/h
+        yvals = MassFunc[3]*h*h*h
+
+        return xvals,yvals
+
+    def run_validation_test(self, galaxy_catalog, catalog_name, base_output_dir):
+        """
+        run the validation test
+        
+        Parameters
+        ----------
+        galaxy_catalog : galaxy catalog reader object
+            instance of a galaxy catalog reader
+        
+        catalog_name : string
+            name of galaxy catalog
+        
+        Returns
+        -------
+        test_result : TestResult object
+            use the TestResult object to return test result
+        """
+        
+        try:
+            catalog_result = self.get_galaxy_data(galaxy_catalog)
+        except ValueError:
+            return TestResult('SKIPPED','No halos in redshift range')
+
+        #generate validation data on the fly according to redshift request AND cosmology
+        xvals, yvals = self.gen_validation_data(self.ztest,galaxy_catalog,base_output_dir)
         self.validation_data = {'x':xvals, 'y':yvals}        
+        
+        
+        #calculate summary statistic
+        summary_result, test_passed = self.calculate_summary_statistic(catalog_result)
+        
+        #plot results
+        fn = os.path.join(base_output_dir ,plot_file)
+        self.plot_result(catalog_result, catalog_name, fn)
+        
+        #save results to files
+        fn = os.path.join(base_output_dir, catalog_output_file)
+        self.write_file(catalog_result, fn)
+        
+        fn = os.path.join(base_output_dir, validation_output_file)
+        self.write_file(self.validation_data, fn)
+        
+        fn = os.path.join(base_output_dir, summary_output_file)
+        self.write_summary_file(summary_result, test_passed, fn)
 
+        msg = "{} = {:G} {} {:G}".format(self.summary_method, summary_result, '<' if test_passed else '>', self.threshold)
+        return TestResult('PASSED' if test_passed else 'FAILED', msg)
+    
     def get_galaxy_data(self,galaxy_catalog):
-        """                                                                                          
+        """ 
         get halo mass function                                  
         """
         #make sure galaxy catalog has appropiate quantities
@@ -124,7 +228,7 @@ class HaloMassFunctionTest(ValidationTest):
         catalog_result = {'x':binctr,'dx': binwid, 'y':mhist, 'y-':mhmin, 'y+': mhmax}
 
         return catalog_result
-        
+
     def binned_halo_mass_function(self, galaxy_catalog):
         """
         calculate the stellar mass function in bins
@@ -165,93 +269,7 @@ class HaloMassFunctionTest(ValidationTest):
         
         return binctr, binwid, mhist, mhmin, mhmax
 
-
-    def gen_validation_data(self,galaxy_catalog):
-        """
-        generate halo mass function data
-        """
-        #associate files with observations
-        halo_mass_exe = {Analytic:'amf.exe',
-                           }
-        halo_mass_tmpfile ={Analytic:'analytic.dat',
-                            }
-        #get path to exe
-        exe = os.path.join(self.base_data_dir, halo_mass_exe[self.observation])
-        fn = os.path.join(self.base_data_dir, halo_mass_tmpfile[self.observation])
-        
-        #get cosmology from galaxy_catalog
-        om=galaxy_catalog.get_cosmology().Om
-        ob = 0.046 # assume ob is included in om
-        z = galaxy_catalog.redshift
-        h  = cosmology.H(z).value/100
-        s8 = 0.816# from paper
-        ns = 0.96 # from paper
-        #Delta = 700.0 # default from original halo_mf.py
-        delta_c = 1.686
-        fitting_f = 'ST'
-
-        # Example call to amf
-        DESCQAPATH = os.getcwd()
-        os.chdir(EXEPATH)
-        if os.path.exists(fn):
-            os.remove(fn)
-        FNULL = open(os.devnull, 'w')
-        args=["./amf.exe", "-omega_0", str(om), "-omega_bar", str(ob), "-h", str(h), "-sigma_8", str(s8), \
-                    "-n_s", str(ns), "-tf", "EH", "-delta_c", str(delta_c), "-M_min", str(1.0e7), "-M_max", str(1.0e15), \
-                    "-z", str(0.0), "-f", fitting_f]
-        print "Running amf: ", " ".join(args)
-        #p = subprocess.call(args, stdout=FNULL, stderr=FNULL)
-        p = subprocess.call(["./amf.exe", "-omega_0", str(om), "-omega_bar", str(ob), "-h", str(h), "-sigma_8", str(s8),
-                    "-n_s", str(ns), "-tf", "EH", "-delta_c", str(delta_c), "-M_min", str(1.0e7), "-M_max", str(1.0e15),
-                    "-z", str(0.0), "-f", fitting_f], stdout=FNULL, stderr=FNULL)
-        os.chdir(DESCQAPATH)
-
-        MassFunc = np.loadtxt(fn).T
-        xvals = MassFunc[2]/h
-        yvals = MassFunc[3]*h*h*h
-
-        return xvals,yvals
-
-    def run_validation_test(self, galaxy_catalog, catalog_name, base_output_dir):
-        """
-        run the validation test
-        
-        Parameters
-        ----------
-        galaxy_catalog : galaxy catalog reader object
-            instance of a galaxy catalog reader
-        
-        catalog_name : string
-            name of galaxy catalog
-        
-        Returns
-        -------
-        test_result : TestResult object
-            use the TestResult object to return test result
-        """
-        
-        
-        #calculate summary statistic
-        summary_result, test_passed = self.calulcate_summary_statistic(catalog_result)
-        
-        #plot results
-        fn = os.path.join(base_output_dir ,plot_file)
-        self.plot_result(catalog_result, catalog_name, fn)
-        
-        #save results to files
-        fn = os.path.join(base_output_dir, catalog_output_file)
-        self.write_file(catalog_result, fn)
-        
-        fn = os.path.join(base_output_dir, validation_output_file)
-        self.write_file(self.validation_data, fn)
-        
-        fn = os.path.join(base_output_dir, summary_output_file)
-        self.write_summary_file(summary_result, test_passed, fn)
-
-        msg = "{} = {:G} {} {:G}".format(self.summary_method, summary_result, '<' if test_passed else '>', self.threshold)
-        return TestResult('PASSED' if test_passed else 'FAILED', msg)
-    
-    def calculcate_summary_statistic(self, catalog_result):
+    def calculate_summary_statistic(self, catalog_result):
         """
         Run summary statistic.
         
@@ -300,7 +318,7 @@ class HaloMassFunctionTest(ValidationTest):
 
         #plot measurement from galaxy catalog
         sbinctr, sbinwid, shist, shmin, shmax = (result['x'], result['dx'], result['y'], result['y-'], result['y+'])
-        ax1.errorbar(sbinctr, shist, yerr=[shist-shmin, shmax-shist], ls="none", color=blue, label=catalog_name, marker="o", ms=5)
+        ax1.errorbar(sbinctr, shist, yerr=[shist-shmin, shmax-shist], ls="none", color='blue', label=catalog_name, marker="o", ms=5)
         
         #add formatting
         plt.legend(loc='best', frameon=False)

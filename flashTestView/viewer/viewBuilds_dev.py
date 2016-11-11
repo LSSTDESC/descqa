@@ -7,6 +7,10 @@ print "Content-type: text/html\n"
 sys.path.insert(0, "../lib")
 import customMenuClasses, littleParser, ezt
 
+class TestStatus():
+    def __init__(self, status):
+        self.status
+
 class LinkAttribute:
     """
     encapsulates a key/value pair for inclusion in the

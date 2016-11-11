@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from astropy import units as u
 from ValidationTest import ValidationTest, TestResult
 from CalcStats import L2Diff, L1Diff, KS_test
+from ComputeCDF import load_DEEP2, load_SDSS
 
 catalog_output_file = 'catalog.txt'
 validation_output_file = 'validation.txt'
@@ -22,7 +23,7 @@ class ColorDistributionTest(ValidationTest):
     validaton test class object to compute galaxy color distribution
     """
     
-    def __init__(self, test_q=False, plot_pdf_q=False, **kwargs):
+    def __init__(self, test_q=False, plot_pdf_q=False, load_validation_catalog_q=True, **kwargs):
         """
         Initialize a color distribution validation test.
         
@@ -63,13 +64,17 @@ class ColorDistributionTest(ValidationTest):
         data_name : string, required
             name of the validation data
         
+        load_validation_catalog_q: boolean, optional
+            if True, load the full validation catalog and calculate the color distribution
+            default: True
+
         test_q: boolean, optional
             if True, zlo and zhi are overwritten with 0 and 1
-            Default: False
+            default: False
 
         plot_pdf_q: boolean, optional
             if True, zlo and zhi are overwritten with 0 and 1
-            Default: False
+            default: False
 
         """
         
@@ -135,6 +140,7 @@ class ColorDistributionTest(ValidationTest):
             raise ValueError('translate not found!')
 
         self.plot_pdf_q = plot_pdf_q
+        self.load_validation_catalog_q = load_validation_catalog_q
 
     def run_validation_test(self, galaxy_catalog, catalog_name, base_output_dir):
         """
@@ -160,6 +166,12 @@ class ColorDistributionTest(ValidationTest):
         no_cdf_q = True
         no_pdf_q = True
 
+        if self.load_validation_catalog_q:
+            if self._data_name=='DEEP2':
+                vsummary = load_DEEP2(self.colors, self.zlo_obs, self.zhi_obs)            
+            elif self._data_name=='SDSS':
+                vsummary = load_SDSS(self.colors, self.zlo_obs, self.zhi_obs)            
+
         # loop through colors
         for ax_cdf1, ax_pdf1, index in zip(ax_cdf.flat, ax_pdf.flat, range(len(self.colors))):
 
@@ -169,13 +181,16 @@ class ColorDistributionTest(ValidationTest):
             self.band1 = band1
             self.band2 = band2
 
-            #load validation comparison data
-            filename = self._data_name+'_'+color+'_z_%1.3f_%1.3f_pdf.txt'%(self.zlo_obs, self.zhi_obs)
-            obinctr, ohist = self.load_validation_data(filename)
-            ocdf = np.zeros(len(ohist))
-            ocdf[0] = ohist[0]
-            for cdf_index in range(1, len(ohist)):
-                ocdf[cdf_index] = ocdf[cdf_index-1]+ohist[cdf_index]
+            if self.load_validation_catalog_q:
+                obinctr, ocdf = vsummary[index]
+            else:
+                #load validation summary data
+                filename = self._data_name+'_'+color+'_z_%1.3f_%1.3f_pdf.txt'%(self.zlo_obs, self.zhi_obs)
+                obinctr, ohist = self.load_validation_data(filename)
+                ocdf = np.zeros(len(ohist))
+                ocdf[0] = ohist[0]
+                for cdf_index in range(1, len(ohist)):
+                    ocdf[cdf_index] = ocdf[cdf_index-1]+ohist[cdf_index]            
 
             # #----------------------------------------------------------------------------------------
             # if index==0:
@@ -183,7 +198,7 @@ class ColorDistributionTest(ValidationTest):
             # else:
             #     self.validation_data = self.validation_data + [(obinctr, ohist)]
             # #----------------------------------------------------------------------------------------
-            self.validation_data = (obinctr, ohist)
+            self.validation_data = (obinctr, ocdf)
 
             #make sure galaxy catalog has appropiate quantities
             if not all(k in galaxy_catalog.quantities for k in (self.band1, self.band2)):
@@ -238,11 +253,12 @@ class ColorDistributionTest(ValidationTest):
             # print('K-S')
             # print(np.max(np.abs(mcdf-ocdf)))
             KS, KS_success = KS_test(d1, d2)
-            KS = KS*np.sqrt(len(d1))
+            KS = KS
 
             #save result to file
             filename = os.path.join(base_output_dir, summary_output_file)
             f = open(filename, 'a')
+            f.write('%2.3f < z < %2.3f\n'%(self.zlo_obs, self.zhi_obs))
             if(L2_success):
                 f.write(color+" SUCCESS: %s = %G\n" %('L2Diff', L2))
             else:
@@ -255,10 +271,10 @@ class ColorDistributionTest(ValidationTest):
                 f.write(color+" SUCCESS: %s = %G\n" %('K-S', KS))
             else:
                 f.write(color+" FAILED: %s = %G\n" %('K-S', KS))
-            f.close()
+            f.close()     
 
             #---------------------------------- Plot color PDF -----------------------------------------
-            if self.plot_pdf_q:
+            if self.plot_pdf_q and (not self.load_validation_catalog_q):
 
                 #load validation comparison data
                 bin_args = self.color_bin_args[index]
@@ -292,8 +308,8 @@ class ColorDistributionTest(ValidationTest):
 
         #--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--
         msg = ''
-        return TestResult('PASSED' if not no_cdf_q else 'FAILED', msg)
-        # return TestResult('PASSED' if test_passed else 'FAILED', msg)
+        return TestResult('PASSED' if not no_cdf_q else 'SKIPPED', msg)
+        # return TestResult('PASSED' if test_passed else 'SKIPPED', msg)
             
     def color_distribution(self, galaxy_catalog, bin_args, base_output_dir):
         """
@@ -316,6 +332,16 @@ class ColorDistributionTest(ValidationTest):
             with open(fn, 'a') as f:
                 f.write(msg)
             return None, None
+
+        ############ DEBUG ############
+        limiting_band_name = self.translate[self.limiting_band]        
+        mag_lim = galaxy_catalog.get_quantities(limiting_band_name, {'zlo': self.zlo_mock, 'zhi': self.zhi_mock})
+        print('mag_lim')
+        print(len(mag_lim))
+        print(np.max(mag_lim))
+        print(np.min(mag_lim))
+        print()
+        ############ DEBUG ############
 
         if self.limiting_band is not None:
             #apply magnitude limit and remove nonsensical magnitude values
@@ -345,8 +371,7 @@ class ColorDistributionTest(ValidationTest):
         hist, bins = np.histogram(mag1-mag2, bins=np.linspace(*bin_args))
         #normalize the histogram so that the sum of hist is 1
         hist = hist/np.sum(hist)
-        Nbins = len(bins)-1.0
-        binctr = (bins[1:] + bins[:Nbins])/2.0
+        binctr = (bins[1:] + bins[:-1])/2.
         
         return binctr, hist
 

@@ -1,3 +1,4 @@
+from __future__ import division, print_function
 import numpy as np
 
 def L2Diff(dataset_1, dataset_2, threshold=1.0):
@@ -242,14 +243,9 @@ def KS_test(dataset_1, dataset_2, threshold=1.0):
     y1=y1[select1]
     y2=y2[select2]
 
-    print('K-S')
-    print(len(x1))
-    print(len(x1))
-
     #interpolate catalog data to data x-points
     if not(np.all(x1==x2)):
         y1int = np.interp(x2, x1, y1)
-        print('K-S interp!')
     else:
         y1int=y1
     

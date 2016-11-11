@@ -39,12 +39,21 @@ smf_MB2 = _ValidationConfig('BinnedStellarMassFunctionTest',
 
 smhm_MB2 = _ValidationConfig('StellarMassHaloMassTest',
          observation='MassiveBlackII',
-         bins=(7.0,15.0,36),
+         bins=(7.0,15.0,25),
          zlo=0.0,
          zhi=0.1,
          summary='L2Diff',
 )
-         
+
+hmf_ST = _ValidationConfig('HaloMassFunctionTest',
+         observation='Sheth-Tormen',
+         ztest=0.05,
+         bins=(7.0,15.0,25),
+         zlo=0.0,
+         zhi=0.1,
+         summary='L2Diff',
+)
+
 color_DEEP2 = _ValidationConfig('ColorDistributionTest',
          data_dir='DEEP2', 
          data_name='DEEP2',
@@ -53,12 +62,13 @@ color_DEEP2 = _ValidationConfig('ColorDistributionTest',
          translate={'u':'SDSS_u:observed:','g':'SDSS_g:observed:','r':'SDSS_r:observed:','i':'SDSS_i:observed:','z':'SDSS_z:observed:'},
          limiting_band='r',
          limiting_mag=17.77,
-         zlo=0.55,
-         zhi=0.725,
-         # zlo=0.,
-         # zhi=1.,
+         # zlo=0.6,
+         # zhi=0.725,
+         zlo=0.,
+         zhi=0.5,
+         load_validation_catalog_q = True,
          test_q = False,
-         plot_pdf_q = True,
+         plot_pdf_q = False,
          summary='L2Diff',
 )
 
@@ -76,8 +86,9 @@ color_SDSS = _ValidationConfig('ColorDistributionTest',
          # zhi=1.,
          zlo=0.045,
          zhi=0.055,
+         load_validation_catalog_q = True,
          test_q = False,
-         plot_pdf_q = True,
+         plot_pdf_q = False,
          summary='L2Diff',
 )
 

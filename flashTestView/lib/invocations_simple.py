@@ -3,9 +3,21 @@ import os
 import time
 import re
 import cgi
+import json
 import bisect
 import itertools
 import cPickle as pickle
+
+def format_status_count(status_count):
+    output = []
+    try:
+        for name, d in status_count.iteritems():
+            total = sum(d.itervalues())
+            output.append(name + ' - ' + '; '.join(('{}/{} {}'.format(d[k], total, cgi.escape(k)) for k in d)))
+    except:
+        if isinstance(status_count, basestring):
+            output = [cgi.escape(l) for l in status_count.splitlines()]
+    return '<br>'.join(output)
 
 class Invocation:
     """
@@ -34,43 +46,39 @@ class Invocation:
         tests = [d for d in os.listdir(self.path) if os.path.isdir(os.path.join(self.path, d)) and not d.startswith('_')]
         tests.sort()
         
+        catalogs = []
         if os.path.isdir(os.path.join(self.path, '_group_by_catalog')):
             catalogs = [d for d in os.listdir(os.path.join(self.path, '_group_by_catalog'))]
             catalogs.sort()
-        else:
-            catalogs = []
 
         try:
-            with open(os.path.join(self.path, 'errors')) as f:
-                status = f.read()
-        except (OSError, IOError):
-            status = ''
-
-        if status:
-            light = 'yellow' if '_ERROR' in status else 'green'
-        else:
+            with open(os.path.join(self.path, 'STATUS.json')) as f:
+                master_status = json.load(f)
+        except:
+            master_status = {}
+        
+        user = master_status.get('user', '')
+        user = '&nbsp;({})'.format(user) if user else ''
+        
+        test_status = format_status_count(master_status.get('status_count', {}))
+        light = 'green'
+        if not test_status:
             light = 'red'
-            status = 'status file "errors" not found or no content!'
+            test_status = 'status file "STATUS.json" not found or cannot be read!'
+        elif '_ERROR' in test_status:
+            light = 'yellow'
 
-        status = '<br>'.join((cgi.escape(l, True) for l in status.splitlines()))
+        catalog_status = format_status_count(master_status.get('status_count_group_by_catalog', {}))
 
-        try:
-            with open(os.path.join(self.path, 'user')) as f:
-                user = f.readline()
-        except (OSError, IOError):
-            user = ''
-        else:
-            user = user.strip()
-            user = '&nbsp;({})'.format(user) if user else ''
-            
         output = []
-        main_link = '&nbsp;<a href="viewer/viewBuilds.cgi?target_dir={}" onMouseOver="appear(\'\', \'{}\');" onMouseOut="disappear();">{}</a>'.format(self.path, status, self.name)
+        main_link = '&nbsp;<a href="viewer/viewBuilds.cgi?target_dir={}" onMouseOver="appear(\'{}\', \'{}\');" onMouseOut="disappear();">{}</a>'.format(\
+                self.path, test_status, catalog_status, self.name)
         catalog_link = '&nbsp;[<a href="viewer/viewBuilds.cgi?target_dir={}/_group_by_catalog">c</a>]'.format(self.path) if catalogs else ''
         output.append('<td>{}</td>'.format(''.join((main_link, catalog_link, user))))
         output.append('<td><img src="images/{}.gif"></td>'.format(light))
         test_links = '&nbsp;|&nbsp;'.join(('<a href="viewer/viewBuild.cgi?target_dir={0}/{1}">{1}</a>'.format(self.path, t) for t in tests))
         catalog_links = '&nbsp;|&nbsp;'.join(('<a href="viewer/viewBuild.cgi?target_dir={0}/_group_by_catalog/{1}">{1}</a>'.format(self.path, c) for c in catalogs))
-        output.append('<td>{}<br>{}&nbsp;</td>'.format(test_links, catalog_links))
+        output.append('<td>TESTS:&nbsp;{}<br>{}{}&nbsp;</td>'.format(test_links, 'CATALOGS:&nbsp;' if catalog_links else '',  catalog_links))
 
         self.html = '\n'.join(output)
 
