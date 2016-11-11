@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 from ValidationTest import ValidationTest, TestResult
 
-from L2Diff import L2Diff
+from CalcStats import L2Diff
 from helpers.CorrelationFunction import projected_correlation
 
 catalog_output = 'catalog_wprp.txt'

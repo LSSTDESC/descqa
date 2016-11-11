@@ -105,7 +105,6 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
                              'SDSS_r:observed:':      self._get_stored_property,
                              'SDSS_i:observed:':      self._get_stored_property,
                              'SDSS_z:observed:':      self._get_stored_property,
-                             'invscalefactor':        self._get_derived_property,
                              'DES_g:rest:':           None,
                              'DES_r:rest:':           None,
                              'DES_i:rest:':           None,
@@ -182,10 +181,10 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
                 self.sigma_8=mydict['sigma_8']
                 self.n_s=mydict['N_s']
 
-        if(len(self.zvalues)==1):
-            self.redshift = self.zvalues[0]
-        else:
-            self.redshift = None
+        #if(len(self.zvalues)==1):
+        #    self.redshift = self.zvalues[0]
+        #else:
+        #    self.redshift = None
         #print "box_size after loading = ", self.box_size
 
         # TODO: how to get sky area?
@@ -219,6 +218,14 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
 
     # Functions for returning quantities from the catalog
 
+    def _getfiltered_outkeys(self,filters):
+        outkeys=[]
+        for z,outkey in zip(self.zvalues, self.catalog.keys()):
+            if z > filters.get('zlo',-0.01) and z < filters.get('zhi',9999.):
+                outkeys.append(outkey)
+
+        return outkeys
+
     def _get_stored_property(self, quantity, filters):
         """
         Return the requested property of galaxies in the catalog as a NumPy
@@ -226,7 +233,8 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
         catalog.
         """
         props = []
-        for outkey in self.catalog.keys():
+        outkeys = self._getfiltered_outkeys(filters)
+        for outkey in outkeys:
             zdict = self.catalog[outkey]
             if self._check_halo(zdict, filters):
                 if quantity in zdict.keys():
@@ -249,9 +257,9 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
         stored_qty_name = stored_qty_rec[0]
         stored_qty_fctn = stored_qty_rec[1]
         #print 'stored_qty:', stored_qty_name, stored_qty_fctn
-        for haloID in self.catalog.keys():
-            halo = self.catalog[haloID]
-            #print 'haloID = ', haloID, halo
+        outkeys = self._getfiltered_outkeys(filters)
+        for outkey in outkeys:
+            halo = self.catalog[outkey]
             if self._check_halo(halo, filters):
                 #if stored_qty_name in halo.keys():
                 #    props.extend(stored_qty_fctn( halo[stored_qty_name] ))
@@ -369,4 +377,4 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
             zvalues.append(outputz)
 
         #endfor                                                                                                  
-        return zvalues
+        return np.asarray(zvalues)

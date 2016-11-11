@@ -8,7 +8,7 @@ matplotlib.use('Agg') # Must be before importing matplotlib.pyplot
 import matplotlib.pyplot as plt
 from astropy import units as u
 from ValidationTest import ValidationTest, TestResult
-from L2Diff import L2Diff
+from CalcStats import L2Diff, L1Diff, KS_test
 
 catalog_output_file = 'catalog.txt'
 validation_output_file = 'validation.txt'
@@ -223,18 +223,38 @@ class ColorDistributionTest(ValidationTest):
             ax_cdf1.legend(loc='best', frameon=False)
 
             #calculate L2diff
-            d1 = {'x':obinctr, 'y':ocdf}
-            d2 = {'x':mbinctr, 'y':mcdf}
-            L2, success = L2Diff(d1, d2)
+            d1 = {'x':mbinctr, 'y':mcdf}
+            d2 = {'x':obinctr, 'y':ocdf}
+            L2, L2_success = L2Diff(d1, d2)
             L2 = L2*np.sqrt(len(d1))
+            #calculate L1Diff
+            d1 = {'x':mbinctr, 'y':mcdf}
+            d2 = {'x':obinctr, 'y':ocdf}
+            L1, L1_success = L1Diff(d1, d2)
+            L1 = L1*np.sqrt(len(d1))
+            #calculate K-S statistic
+            d1 = {'x':mbinctr, 'y':mcdf}
+            d2 = {'x':obinctr, 'y':ocdf}
+            # print('K-S')
+            # print(np.max(np.abs(mcdf-ocdf)))
+            KS, KS_success = KS_test(d1, d2)
+            KS = KS*np.sqrt(len(d1))
 
             #save result to file
             filename = os.path.join(base_output_dir, summary_output_file)
             f = open(filename, 'a')
-            if(success):
+            if(L2_success):
                 f.write(color+" SUCCESS: %s = %G\n" %('L2Diff', L2))
             else:
                 f.write(color+" FAILED: %s = %G\n" %('L2Diff', L2))
+            if(L1_success):
+                f.write(color+" SUCCESS: %s = %G\n" %('L1Diff', L1))
+            else:
+                f.write(color+" FAILED: %s = %G\n" %('L1Diff', L2))
+            if(KS_success):
+                f.write(color+" SUCCESS: %s = %G\n" %('K-S', KS))
+            else:
+                f.write(color+" FAILED: %s = %G\n" %('K-S', KS))
             f.close()
 
             #---------------------------------- Plot color PDF -----------------------------------------
@@ -271,8 +291,8 @@ class ColorDistributionTest(ValidationTest):
             fig_pdf.savefig(fn)
 
         #--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--
-        msg = 'No test is done'
-        return TestResult('PASSED' if not no_cdf_q else 'SKIPPED', msg)
+        msg = ''
+        return TestResult('PASSED' if not no_cdf_q else 'FAILED', msg)
         # return TestResult('PASSED' if test_passed else 'FAILED', msg)
             
     def color_distribution(self, galaxy_catalog, bin_args, base_output_dir):

@@ -30,6 +30,6 @@ if targetTag:
   print "  <frame src=\"leftFrame.cgi?target_dir=%s#%s\" name=\"leftframe\">" % (targetDir, targetTag)
 else:
   print "  <frame src=\"leftFrame.cgi?target_dir=%s\" name=\"leftframe\">" % targetDir
-print "  <frame src=\"viewTextFile.cgi\" name=\"rightframe\">"
+print "  <frame src=\"javascript:parent.blank()\" name=\"rightframe\">"
 print "</frameset>"
 print "</html>"

@@ -279,6 +279,18 @@ def get_status_report(tasks):
 
 def interfacing_webview(tasks, output_dir):
     status = tasks.get_status()
+    
+    # save users
+    for k in ('LOGNAME', 'USER', 'LNAME', 'USERNAME'):
+        user = os.getenv(k)
+        if user:
+            break
+    if user:
+        with open(pjoin(output_dir, 'user'), 'w') as f:
+            f.write(user)
+            f.write('\n')
+
+    # save status
     with open(pjoin(output_dir, 'errors'), 'w') as f_top:
         for validation in status:
             total = len(status[validation])

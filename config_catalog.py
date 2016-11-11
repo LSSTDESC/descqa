@@ -27,13 +27,13 @@ SHAM_LiWhite = _CatalogConfig('SHAMGalaxyCatalog', match_to='LiWhite')
 SHAM_MB2 = _CatalogConfig('SHAMGalaxyCatalog', match_to='MB2')
 
 CAM_LiWhite = _CatalogConfig('YaleCAMGalaxyCatalog', 
-        fn='yale_cam_age_matching_LiWhite_2009_z0.0.hdf5')
+        fn='yale_cam_age_matching_LiWhite_2009_z0.00.hdf5')
 
 CAM_MB2 = _CatalogConfig('YaleCAMGalaxyCatalog', 
-        fn='yale_cam_age_matching_MBII_z0.0.hdf5')
+        fn='yale_cam_age_matching_MBII_z0.00.hdf5')
 
 Galacticus = _CatalogConfig('GalacticusGalaxyCatalog',
-        filename='galacticus_mb2_anl.hdf5.galacticus')
+        filename='galacticus_anl_mstar1e7_zrange.hdf5')
 
 MB2 = _CatalogConfig('MB2GalaxyCatalog', fn='catalog.hdf5.MB2')
 

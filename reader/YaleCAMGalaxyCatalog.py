@@ -56,10 +56,16 @@ class YaleCAMGalaxyCatalog(GalaxyCatalog):
                              'velocityX':    self._stored_property_wrapper('vx'),
                              'velocityY':    self._stored_property_wrapper('vy'),
                              'velocityZ':    self._stored_property_wrapper('vz'),
-                             'SDSS_r:rest:':  self._stored_property_wrapper('absmag_r'),
+                             'SDSS_u:rest:':  self._stored_property_wrapper('absmag_u'),
                              'SDSS_g:rest:':  self._stored_property_wrapper('absmag_g'),
-                             'SDSS_r:observed:':  self._stored_property_wrapper('absmag_r'),
-                             'SDSS_g:observed:':  self._stored_property_wrapper('absmag_g'),
+                             'SDSS_r:rest:':  self._stored_property_wrapper('absmag_r'),
+                             'SDSS_i:rest:':  self._stored_property_wrapper('absmag_i'),
+                             'SDSS_z:rest:':  self._stored_property_wrapper('absmag_z'),
+                             'SDSS_u:observed:':  self._stored_property_wrapper('mag_u'),
+                             'SDSS_g:observed:':  self._stored_property_wrapper('mag_g'),
+                             'SDSS_r:observed:':  self._stored_property_wrapper('mag_r'),
+                             'SDSS_i:observed:':  self._stored_property_wrapper('mag_i'),
+                             'SDSS_z:observed:':  self._stored_property_wrapper('mag_z'),
                              'g-r':          self._stored_property_wrapper('g-r'),
                              'parent_halo_id':    self._stored_property_wrapper('halo_upid'),
                            }
@@ -94,9 +100,18 @@ class YaleCAMGalaxyCatalog(GalaxyCatalog):
         self.Xdata['y'] = self._data['y']/(self.cosmology.h)
         self.Xdata['z'] = self._data['z']/(self.cosmology.h)
         self.Xdata['halo_mvir'] = self._data['halo_mvir']/(self.cosmology.h)
-        self.Xdata['absmag_r'] = self._data['absmag_r'] + 5.0*np.log10(self.cosmology.h)
+        self.Xdata['absmag_u'] = self._data['absmag_u'] + 5.0*np.log10(self.cosmology.h)
         self.Xdata['absmag_g'] = self._data['absmag_g'] + 5.0*np.log10(self.cosmology.h)
-        
+        self.Xdata['absmag_r'] = self._data['absmag_r'] + 5.0*np.log10(self.cosmology.h)
+        self.Xdata['absmag_i'] = self._data['absmag_i'] + 5.0*np.log10(self.cosmology.h)
+        self.Xdata['absmag_z'] = self._data['absmag_z'] + 5.0*np.log10(self.cosmology.h)
+        #I think this is the correct thing to do with apparent magnitudes
+        self.Xdata['mag_u'] = self._data['mag_u'] - 5.0*np.log10(self.cosmology.h)
+        self.Xdata['mag_g'] = self._data['mag_g'] - 5.0*np.log10(self.cosmology.h)
+        self.Xdata['mag_r'] = self._data['mag_r'] - 5.0*np.log10(self.cosmology.h)
+        self.Xdata['mag_i'] = self._data['mag_i'] - 5.0*np.log10(self.cosmology.h)
+        self.Xdata['mag_z'] = self._data['mag_z'] - 5.0*np.log10(self.cosmology.h)
+         
         #how many galaxies are in the catalog?
         self.Ngals = len(self._data)
         

@@ -305,9 +305,11 @@ for infoFileTest in infoFileTestsList:
 
 templateData["customMenuBoxes"] = customMenuBoxes
 
-if os.path.isfile("../config"):
+try:
   configDict = littleParser.parseFile("../config")
-  siteTitle = configDict.get("siteTitle", [])
+  siteTitle = configDict.get("siteTitle", '')
+except:
+  siteTitle = ''
 
 print "<html>"
 print "<head>"

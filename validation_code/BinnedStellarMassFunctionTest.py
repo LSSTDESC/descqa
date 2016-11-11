@@ -11,10 +11,10 @@ matplotlib.use('Agg') # Must be before importing matplotlib.pyplot
 import matplotlib.pyplot as plt
 
 import os
-import importlib
 from warnings import warn
 
 from ValidationTest import ValidationTest, TestResult
+import CalcStats
 
 __all__ = ['BinnedStellarMassFunctionTest','plot_summary']
 __author__ = []
@@ -24,6 +24,7 @@ validation_output_file = 'validation_smf.txt'
 summary_output_file = 'summary_smf.txt'
 log_file = 'log_smf.txt'
 plot_file = 'plot_smf.png'
+
 
 class BinnedStellarMassFunctionTest(ValidationTest):
     """
@@ -238,7 +239,7 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         """
         
         module_name=self.summary_method
-        summary_method=getattr(importlib.import_module(module_name), module_name)
+        summary_method=getattr(CalcStats, module_name)
         
         result, test_passed = summary_method(catalog_result,self.validation_data,self.threshold)
         

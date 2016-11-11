@@ -11,10 +11,10 @@ matplotlib.use('Agg') # Must be before importing matplotlib.pyplot
 import matplotlib.pyplot as plt
 
 import os
-import importlib
 from warnings import warn
 
 from ValidationTest import ValidationTest, TestResult
+import CalcStats
 
 __all__ = ['StellarMassHaloMassTest','plot_summary']
 __author__ = []
@@ -37,7 +37,7 @@ class StellarMassHaloMassTest(ValidationTest):
     
     def __init__(self, **kwargs):
         """
-        initialize a stellar mass function validation test
+        initialize a stellar mass - halo mass function validation test
         
         Parameters
         ----------
@@ -78,11 +78,11 @@ class StellarMassHaloMassTest(ValidationTest):
         #bin center, mean, error on mean, lower bound, upper bound, min of bin, max of bin, sigma
         self.validation_data = {'x':obinctr, 'y':mstar_ave, 'y-':mstar_dn, 'y+':mstar_up, 'ymin':mstar_min, 'ymax':mstar_max, 'yup':mstar_up, 'ydn': mstar_dn}
         
-        #stellar mass bins
+        #halo mass bins
         if 'bins' in kwargs:
             self.mhalo_log_bins = np.linspace(*kwargs['bins'])
         else:
-            self.mhalo_log_bins = np.linspace(7.0, 15.0, 36)
+            self.mhalo_log_bins = np.linspace(7.0, 15.0, 25)
         #minimum redshift
         if 'zlo' in kwargs:
             zlo = kwargs['zlo']
@@ -102,7 +102,7 @@ class StellarMassHaloMassTest(ValidationTest):
         
     def load_validation_data(self):
         """
-        load tabulated stellar mass function data
+        load tabulated stellar mass halo mass function data
         """
         
         #associate files with observations
@@ -167,7 +167,7 @@ class StellarMassHaloMassTest(ValidationTest):
                 f.write(msg)
             return TestResult('SKIPPED', 'missing required quantities: stellar mass and/or halomass')
 
-        #calculate stellar mass function in galaxy catalog
+        #calculate stellar mass - halo mass function in galaxy catalog
         binctr, binwid, mhist, mhmin, mhmax = self.profile_stellar_mass_vs_halo_mass(galaxy_catalog)
         catalog_result = {'x':binctr,'dx': binwid, 'y':mhist, 'y-':mhmin, 'y+': mhmax}
         
@@ -251,7 +251,7 @@ class StellarMassHaloMassTest(ValidationTest):
         """
         
         module_name=self.summary_method
-        summary_method=getattr(importlib.import_module(module_name), module_name)
+        summary_method=getattr(CalcStats, module_name)
         #valdata_topass = {k:self.validation_data[k] for k in self.validation_data if k in ['x','y','y-','y+']}
         result, test_passed = summary_method(catalog_result,self.validation_data,self.threshold)
         
