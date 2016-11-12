@@ -1,9 +1,11 @@
 #!/bin/bash
 
-module load python
-module load numpy
-module load matplotlib
-module load h5py
+module load python/2.7.9
+module load numpy/1.9.2
+module load scipy/0.15.1
+module load matplotlib/1.4.3
+module load h5py/2.5.0
+module load cython/0.22
 
 DESCQAROOTDIR="/project/projectdirs/lsst/descqa"
 
