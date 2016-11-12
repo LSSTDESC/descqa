@@ -12,8 +12,8 @@ from CalcStats import L2Diff, L1Diff, KS_test
 from ComputeColorDistribution import load_DEEP2, load_SDSS
 from scipy.ndimage.filters import uniform_filter1d
 
-catalog_output_file = 'catalog.txt'
-validation_output_file = 'validation.txt'
+catalog_output_file = 'catalog_quantiles.txt'
+validation_output_file = 'validation_quantiles.txt'
 summary_output_file = 'summary.txt'
 log_file = 'log.txt'
 plot_pdf_file = 'plot_pdf.png'
@@ -134,8 +134,8 @@ class ColorDistributionTest(ValidationTest):
         """
         
         nsubplots = int(np.ceil(len(self.colors)/2.))
-        fig_cdf, ax_cdf = plt.subplots(nsubplots, 2, figsize=(11, 4*nsubplots))
-        fig_pdf, ax_pdf = plt.subplots(nsubplots, 2, figsize=(11, 4*nsubplots))
+        fig_cdf, axes_cdf = plt.subplots(nsubplots, 2, figsize=(11, 4*nsubplots))
+        fig_pdf, axes_pdf = plt.subplots(nsubplots, 2, figsize=(11, 4*nsubplots))
         no_cdf_q = True
         no_pdf_q = True
 
@@ -150,8 +150,11 @@ class ColorDistributionTest(ValidationTest):
         f.write('%2.3f < z < %2.3f\n'%(self.zlo_obs, self.zhi_obs))
         f.close()     
 
+        # initialize array for quantiles
+        catalog_quantiles = np.zeros([len(self.colors), 5])
+        validation_quantiles = np.zeros([len(self.colors), 5])
         # loop through colors
-        for ax_cdf1, ax_pdf1, index in zip(ax_cdf.flat, ax_pdf.flat, range(len(self.colors))):
+        for ax_cdf, ax_pdf, index in zip(axes_cdf.flat, axes_pdf.flat, range(len(self.colors))):
 
             color = self.colors[index]
             band1 = self.translate[color[0]]
@@ -208,16 +211,16 @@ class ColorDistributionTest(ValidationTest):
             no_cdf_q = False
 
             #measurement from galaxy catalog
-            ax_cdf1.step(mbinctr, mcdf, where="mid", label=catalog_name, color='blue')
+            ax_cdf.step(mbinctr, mcdf, where="mid", label=catalog_name, color='blue')
             #plot validation data
-            ax_cdf1.step(obinctr, ocdf, label=self._data_name,color='green')
-            ax_cdf1.set_xlabel(color, fontsize=12)
-            ax_cdf1.set_title('')
+            ax_cdf.step(obinctr, ocdf, label=self._data_name,color='green')
+            ax_cdf.set_xlabel(color, fontsize=12)
+            ax_cdf.set_title('')
             xlim = np.min([mbinctr[np.argmax(mcdf>0.005)], obinctr[np.argmax(ocdf>0.005)]])
-            xmax = np.max([mbinctr[np.argmax(mcdf>0.995)], obinctr[np.argmax(ocdf>0.995)]])
-            ax_cdf1.set_xlim(xlim, xmax)
-            ax_cdf1.set_ylim(0, 1)
-            ax_cdf1.legend(loc='best', frameon=False)
+            xmax = np.max([mbinctr[np.argmax(mcdf>0.995)], obinctr[np.argmax(ocdf>0.995)]])            
+            ax_cdf.set_xlim(xlim, xmax)
+            ax_cdf.set_ylim(0, 1)
+            ax_cdf.legend(loc='best', frameon=False)
 
             #calculate L2diff
             d1 = {'x':mbinctr, 'y':mcdf}
@@ -234,6 +237,20 @@ class ColorDistributionTest(ValidationTest):
             d2 = {'x':obinctr, 'y':ocdf}
             KS, KS_success = KS_test(d1, d2)
             KS = KS
+
+            # 95% and 68% quantiles
+            m95min = mbinctr[np.argmax(mcdf>0.025)]
+            m95max = mbinctr[np.argmax(mcdf>0.975)]
+            o95min = obinctr[np.argmax(ocdf>0.025)]
+            o95max = obinctr[np.argmax(ocdf>0.975)]
+            m68min = mbinctr[np.argmax(mcdf>0.16)]
+            m68max = mbinctr[np.argmax(mcdf>0.84)]
+            o68min = obinctr[np.argmax(ocdf>0.16)]
+            o68max = obinctr[np.argmax(ocdf>0.84)]
+            mmedian = mbinctr[np.argmax(mcdf>0.5)]
+            omedian = obinctr[np.argmax(ocdf>0.5)]
+            catalog_quantiles[index] = np.array([m95min, m68min, mmedian, m68max, m95max])
+            validation_quantiles[index] = np.array([o95min, o68min, omedian, o68max, o95max])
 
             #save result to file
             filename = os.path.join(base_output_dir, summary_output_file)
@@ -257,14 +274,14 @@ class ColorDistributionTest(ValidationTest):
             mhist_smooth = uniform_filter1d(mhist, 20)
             ohist_smooth = uniform_filter1d(ohist, 20)
             #measurement from galaxy catalog
-            ax_pdf1.step(mbinctr, mhist_smooth, where="mid", label=catalog_name, color='blue')
+            ax_pdf.step(mbinctr, mhist_smooth, where="mid", label=catalog_name, color='blue')
             #validation data
-            ax_pdf1.step(obinctr, ohist_smooth, label=self._data_name,color='green')
-            ax_pdf1.set_xlabel(color, fontsize=12)
-            ax_pdf1.set_xlim(xlim, xmax)
-            ax_pdf1.set_ylim(ymin=0.)
-            ax_pdf1.set_title('')
-            ax_pdf1.legend(loc='best', frameon=False)
+            ax_pdf.step(obinctr, ohist_smooth, label=self._data_name,color='green')
+            ax_pdf.set_xlabel(color, fontsize=12)
+            ax_pdf.set_xlim(xlim, xmax)
+            ax_pdf.set_ylim(ymin=0.)
+            ax_pdf.set_title('')
+            ax_pdf.legend(loc='best', frameon=False)
 
         #save plot
         if no_cdf_q==False:
@@ -272,6 +289,12 @@ class ColorDistributionTest(ValidationTest):
             fig_cdf.savefig(fn)
             fn = os.path.join(base_output_dir, plot_pdf_file)
             fig_pdf.savefig(fn)
+
+        #save quantiles
+        fn = os.path.join(base_output_dir, catalog_output_file)
+        np.savetxt(fn, catalog_quantiles)
+        fn = os.path.join(base_output_dir, validation_output_file)
+        np.savetxt(fn, validation_quantiles)
 
         #--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--
         msg = ''
@@ -300,15 +323,15 @@ class ColorDistributionTest(ValidationTest):
                 f.write(msg)
             return None, None
 
-        ############ DEBUG ############
-        limiting_band_name = self.translate[self.limiting_band]        
-        mag_lim = galaxy_catalog.get_quantities(limiting_band_name, {'zlo': self.zlo_mock, 'zhi': self.zhi_mock})
-        print('mag_lim')
-        print(len(mag_lim))
-        print(np.max(mag_lim))
-        print(np.min(mag_lim))
-        print()
-        ############ DEBUG ############
+        # ############ DEBUG ############
+        # limiting_band_name = self.translate[self.limiting_band]        
+        # mag_lim = galaxy_catalog.get_quantities(limiting_band_name, {'zlo': self.zlo_mock, 'zhi': self.zhi_mock})
+        # print('mag_lim')
+        # print(len(mag_lim))
+        # print(np.max(mag_lim))
+        # print(np.min(mag_lim))
+        # print()
+        # ############ DEBUG ############
 
         if self.limiting_band is not None:
             #apply magnitude limit and remove nonsensical magnitude values
@@ -358,7 +381,61 @@ class ColorDistributionTest(ValidationTest):
         """
         pass
 
-    def plot_summary(output_file, test_dicts):
-        """
-        """
-        pass
+def plot_summary(output_file, catalog_list, validation_kwargs):
+    """
+    make summary plot for validation test
+
+    Parameters
+    ----------
+    output_file: string
+        filename for summary plot
+    
+    catalog_list: list of tuple
+        list of (catalog, catalog_output_dir) used for each catalog comparison
+    
+    validation_kwargs : dict
+        keyword arguments used in the validation
+    """
+    
+    colors = validation_kwargs['colors']
+    nsubplots = int(np.ceil(len(colors)/2.))
+    fig, axes = plt.subplots(nsubplots, 2, figsize=(11, 6*nsubplots))
+
+    #loop over colors
+    for ax, index in zip(axes.flat, range(len(colors))):
+
+        # Validation results
+        _, catalog_dir = catalog_list[0]
+        fn = os.path.join(catalog_dir, validation_output_file)
+        vquantiles = np.loadtxt(fn)[index]
+
+        xx = np.linspace(0, len(catalog_list)+1)
+        ax.axhline(vquantiles[2], lw=2, color='r', label=validation_kwargs['data_name']+' median')
+        ax.axhline(0,xmin=0, xmax=0, lw=7, color='red', alpha=0.3, label=validation_kwargs['data_name']+r' 68%')
+        ax.axhline(0,xmin=0, xmax=0, lw=7, color='grey', alpha=0.2, label=validation_kwargs['data_name']+r' 95%')
+        ax.fill_between(xx, vquantiles[1], vquantiles[3],facecolor='red', alpha=0.3)
+        ax.fill_between(xx, vquantiles[0], vquantiles[1], facecolor='grey', alpha=0.2)
+        ax.fill_between(xx, vquantiles[3], vquantiles[4], facecolor='grey', alpha=0.2)
+
+        # Mock catalog results
+        color = colors[index]
+        #loop over catalogs and plot
+        catalog_quantiles = []
+        for catalog_name, catalog_dir in catalog_list:
+            fn = os.path.join(catalog_dir, catalog_output_file)
+            catalog_quantiles.append(np.loadtxt(fn)[index])
+        
+        medianprops = dict(color='b')
+        ax.boxplot(catalog_quantiles, medianprops=medianprops)
+        ax.set_xlabel('mock catalog')
+        ax.set_ylabel(color)
+
+        x = np.arange(1, len(catalog_list)+1)
+        labels = [catalog_name for catalog_name, _ in catalog_list]
+        ax.set_xticks(x)
+        ax.set_xticklabels(labels, rotation='vertical')
+
+        ax.yaxis.grid(True)
+        ax.legend(fontsize='small', framealpha=0.4)
+    plt.tight_layout()
+    plt.savefig(output_file)
