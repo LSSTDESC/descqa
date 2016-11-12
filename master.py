@@ -121,8 +121,6 @@ class TaskDirectory():
         key = (validation_name, catalog_name)
         if key not in self._path:
             self._path[key] = pjoin(self.output_dir, validation_name, catalog_name) if catalog_name else pjoin(self.output_dir, validation_name)
-            if not os.path.exists(self._path[key]):
-                os.makedirs(self._path[key])
         return self._path[key]
 
     def set_status(self, validation_name, catalog_name, status, summary=None):
@@ -143,6 +141,13 @@ class TaskDirectory():
             return self._status[validation_name]
         else:
             return self._status
+
+
+def make_all_subdirs(tasks, validations_to_run, catalogs_to_run):
+    for validation in validations_to_run:
+        os.mkdir(tasks.get_path(validation))
+        for catalog in catalogs_to_run:
+            os.mkdir(tasks.get_path(validation, catalog))
 
 
 def run(tasks, validations_to_run, catalogs_to_run, log):
@@ -371,6 +376,7 @@ def main(args):
         
         log.debug('starting to run all validations...')
         tasks = TaskDirectory(output_dir)
+        make_all_subdirs(tasks, validations_to_run, catalogs_to_run)
         run(tasks, validations_to_run, catalogs_to_run, log)
         
         log.debug('creating summary plots...')
