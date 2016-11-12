@@ -121,7 +121,8 @@ for item in items:
 
         if item.startswith('_'):
             continue
-        testName = item
+
+        testName = item.partition('_')[0]
         if allTests.has_key(testName):
             # append this path to an already extant entry for 'testName' in 'allTests'
             allTests[testName].append(pathToItem)
@@ -138,56 +139,7 @@ for item in items:
         errorsFile = os.path.join(pathToItem, "errors")
         changedFromPrevious = False
 
-        if os.path.isfile(errorsFile):
-            errorLines = open(errorsFile).read().strip().split("\n")
-
-            # A "!" at the end of the errors file means at least
-            # one run in this build had testing results different
-            # from the same run from the previous invocation.
-            if len(errorLines) == 7 and errorLines[6].strip() == "!": # new format with 6(+1) lines
-                changedFromPrevious = True
-                del errorLines[6]
-            elif len(errorLines) == 6 and errorLines[5].strip() == "!": # old format with 5(+1) lines
-                changedFromPrevious = True
-                del errorLines[5]
-
-            if len(errorLines) == 5:                    # old format errors file with (now) 5 lines:
-                errorLines.append("0")                    # assume 0 for number of "as before" errors
-
-            # change values to ints
-            errorLines = [int(errorLine.strip()) for errorLine in errorLines]
-            numTestSameErrs = errorLines[5] 
-            if errorLines[0] > 0:
-                failed = True
-                failedSetup=True
-                exitStatus = "failed in setup"
-            elif errorLines[1] > 0:
-                failed = True
-                failedCompilation=True
-                exitStatus = "failed in compilation"
-            else:
-                if errorLines[2] > 0:
-                    failed = True
-                    failedExecution=True
-                    exitStatus = "%s/%s runs failed in execution" % (errorLines[2], errorLines[4])
-                if errorLines[3] > 0:
-                    failed = True
-                    failedTesting=True
-                    if errorLines[2] > 0:
-                        exitStatus += "; %s/%s failed in testing" % (errorLines[3], errorLines[4])
-                    else:
-                        exitStatus = "%s/%s runs failed in testing" % (errorLines[3], errorLines[4])
-                    if numTestSameErrs > 0:
-                        if numTestSameErrs == errorLines[3]:
-                            exitStatus = exitStatus + " as before"
-                        else:
-                            exitStatus = "%s, %s as before" % (exitStatus, numTestSameErrs)
-        else:
-            exitStatus = "\"errors\" file not found"
-            exitStatus = ""
-
-        if changedFromPrevious:
-            exitStatus += ", changed from previous invocation"
+        exitStatus = ""
 
         # Custom key/value pairs can be attached to the link for a build
         # via a "linkAttributes" file in the corresponding build directory.
