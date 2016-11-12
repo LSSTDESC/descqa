@@ -73,8 +73,7 @@ class Invocation:
         output = []
         main_link = '&nbsp;<a href="viewer/viewBuilds.cgi?target_dir={}" onMouseOver="appear(\'{}\', \'{}\');" onMouseOut="disappear();">{}</a>'.format(\
                 self.path, test_status, catalog_status, self.name)
-        catalog_link = '&nbsp;[<a href="viewer/viewBuilds.cgi?target_dir={}/_group_by_catalog">c</a>]'.format(self.path) if catalogs else ''
-        output.append('<td>{}</td>'.format(''.join((main_link, catalog_link, user))))
+        output.append('<td>{}{}</td>'.format(main_link, user)
         output.append('<td><img src="images/{}.gif"></td>'.format(light))
         test_links = '&nbsp;|&nbsp;'.join(('<a href="viewer/viewBuild.cgi?target_dir={0}/{1}">{1}</a>'.format(self.path, t) for t in tests))
         catalog_links = '&nbsp;|&nbsp;'.join(('<a href="viewer/viewBuild.cgi?target_dir={0}/_group_by_catalog/{1}">{1}</a>'.format(self.path, c) for c in catalogs))
