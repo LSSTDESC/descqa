@@ -22,8 +22,8 @@ if (targetFile.find(pathToOutdir) == 0) and \
   
   if targetFile:
     if os.path.isfile(targetFile):
-      tmpDir = tempfile.mkdtemp(dir="../tmp")
-      linkDest = os.path.normpath(os.path.join("../tmp", tmpDir, os.path.basename(targetFile)))
+      tmpDir = tempfile.mkdtemp(dir="../cache")
+      linkDest = os.path.normpath(os.path.join("../cache", tmpDir, os.path.basename(targetFile)))
       os.symlink(targetFile, linkDest)
       print "<meta http-equiv=\"refresh\" content=\"0; url=%s\">" % linkDest
       print "</head>"
