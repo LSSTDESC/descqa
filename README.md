@@ -17,7 +17,7 @@ If you have never cloned the repo before, run:
 Or, if you have already cloned the repo, then run:
 
     cd your/own/directory/descqa-local
-    git pull
+    git pull origin hackweek16
 
 
 ### Step 2: Develop
@@ -65,9 +65,9 @@ Now that you are happy about your changes, you can commit them. First, check cur
     git add <files to stage> 
     git commit -m <short but meaningful message>
     
-For now we do *not* use pull requests for changes, so unless you have made significat changes (in which case, contact the QA team frist), do a pull rebase first:
+For now we do *not* use pull requests for changes, so unless you have made significant changes (in which case, contact the QA team frist), do a pull rebase first:
 
-    git pull --rebase
+    git pull -r origin hackweek16
     
 Resolve any conflicts, and once you're done, push your changes back:
 
@@ -77,13 +77,13 @@ Resolve any conflicts, and once you're done, push your changes back:
 ## Code structure
 
 - `master.py`: the master script to start a test run
-- `run_master.sh`: a convenient shell script to set some enviornment variables before running `master.py`
+- `run_master.sh`: a convenient shell script to set enviornment variables/paths before running `master.py`
 - `config_catalog.py`: config file to set up catalogs
 - `config_validation.py`: config file to set up validation tests
 - `archiver.py`: to clean up (archive) the output directory
- 
-- `reader`: directory to host all the reader classes
-- `validation_code`: directory to host all the validation test classes and relevent utilities
-- `validation_data`: directory to host small data files that validation tests need
+- `reader/`: directory to host all the reader classes
+- `validation_code/`: directory to host all the validation test classes and relevent utilities
+- `validation_data/`: directory to host small data files that validation tests need
 
-note: actual catalogs are not in this repo as they are generally much bigger.
+_Note: actual catalog files are not in this repo as they are generally much bigger._
+
