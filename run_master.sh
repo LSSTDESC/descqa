@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# go to a subshell
+(
+
+# make sure all commands are executed
+set -e
+
 # set DESCQA root directory
 DESCQAROOTDIR="/project/projectdirs/lsst/descqa"
 
@@ -20,6 +26,11 @@ CATALOGDIR="$DESCQAROOTDIR/catalog"
 # ensure permission of output is readable by the web interface
 umask 0002
 
+# to allow wildcards in arguments go to master.py
+set -o noglob
+
 # run master.py
 python master.py $OUTPUTDIR --catalog-dir $CATALOGDIR $@
 
+# end subshell
+)
