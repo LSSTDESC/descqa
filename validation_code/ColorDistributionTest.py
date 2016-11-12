@@ -401,6 +401,7 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
     nsubplots = int(np.ceil(len(colors)/2.))
     fig, axes = plt.subplots(nsubplots, 2, figsize=(11, 6*nsubplots))
 
+    temp = np.zeros([len(catalog_list), 5]).tolist()
     #loop over colors
     for ax, index in zip(axes.flat, range(len(colors))):
 
@@ -417,16 +418,27 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
         ax.fill_between(xx, vquantiles[0], vquantiles[1], facecolor='grey', alpha=0.2)
         ax.fill_between(xx, vquantiles[3], vquantiles[4], facecolor='grey', alpha=0.2)
 
+        ymin = vquantiles[0]
+        ymax = vquantiles[4]
+
         # Mock catalog results
         color = colors[index]
-        #loop over catalogs and plot
-        catalog_quantiles = []
-        for catalog_name, catalog_dir in catalog_list:
-            fn = os.path.join(catalog_dir, catalog_output_file)
-            catalog_quantiles.append(np.loadtxt(fn)[index])
-        
         medianprops = dict(color='b')
-        ax.boxplot(catalog_quantiles, medianprops=medianprops)
+        D = ax.boxplot(temp, medianprops=medianprops)
+        catalog_quantiles = []
+        #loop over catalogs and plot
+        for catalog_index, (catalog_name, catalog_dir) in zip(range(len(catalog_list)),catalog_list):
+            fn = os.path.join(catalog_dir, catalog_output_file)
+            quantiles = np.loadtxt(fn)[index]
+            D['medians'][catalog_index].set_ydata(quantiles[2])
+            D['boxes'][catalog_index]._xy[[0,1,4], 1]=quantiles[1]
+            D['boxes'][catalog_index]._xy[[2,3],1]=quantiles[3]
+            D['whiskers'][2*catalog_index].set_ydata(np.array([quantiles[1], quantiles[0]]))
+            D['whiskers'][2*catalog_index+1].set_ydata(np.array([quantiles[3], quantiles[4]]))
+            D['caps'][2*catalog_index].set_ydata(np.array([quantiles[0], quantiles[0]]))
+            D['caps'][2*catalog_index+1].set_ydata(np.array([quantiles[4], quantiles[4]]))
+            ymin = np.min([ymin, quantiles[0]])
+            ymax = np.max([ymax, quantiles[4]])
         ax.set_xlabel('mock catalog')
         ax.set_ylabel(color)
 
@@ -436,6 +448,9 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
         ax.set_xticklabels(labels, rotation='vertical')
 
         ax.yaxis.grid(True)
+        yrange = ymax - ymin
+        ax.set_ylim(ymin-0.1*yrange, ymax+0.1*yrange)
         ax.legend(fontsize='small', framealpha=0.4)
+
     plt.tight_layout()
     plt.savefig(output_file)

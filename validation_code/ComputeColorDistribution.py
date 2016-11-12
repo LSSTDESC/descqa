@@ -1,6 +1,5 @@
 from __future__ import division, print_function
 import matplotlib.pyplot as plt
-from astropy.table import Table
 import numpy as np
 from astropy.io import fits
 
