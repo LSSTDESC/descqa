@@ -14,10 +14,12 @@ If you have never cloned the repo before, run:
     cd your/own/directory
     git clone -b hackweek16 git@github.com:DarkEnergyScienceCollaboration/descqa.git descqa-local
 
+Note that you need the option `-b hackweek16`!
+
 Or, if you have already cloned the repo, then run:
 
     cd your/own/directory/descqa-local
-    git pull origin hackweek16
+    git pull
 
 
 ### Step 2: Develop
@@ -67,11 +69,11 @@ Now that you are happy about your changes, you can commit them. First, check cur
     
 For now we do *not* use pull requests for changes, so unless you have made significant changes (in which case, contact the QA team frist), do a pull rebase first:
 
-    git pull -r origin hackweek16
+    git pull -r
     
 Resolve any conflicts, and once you're done, push your changes back:
 
-    git push origin hackweek16
+    git push
     
 
 ## Code structure
