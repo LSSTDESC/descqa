@@ -24,7 +24,7 @@ Or, if you have already cloned the repo, then run:
 
 ### Step 2: Develop
 
-Hack on! Make changes!
+Hack on! Make changes in your local descqa clone. 
 
 
 ### Step 3: Test
@@ -36,11 +36,16 @@ Simply run:
     cd your/own/directory/descqa-local
     ./run_master.sh -v
 
-The `-v` argument allows the error messages to be printed out, which is useful for debugging.
+The `-v` argument allows the error messages to be printed out, which is useful for debugging. 
 
 If you want to run only a subset of catalogs or tests, you can specify `--catalogs-to-run` (or `--rc` for short) and `--validations-to-run` (or `--rv` for short) 
     
     ./run_master.sh -v --rc CATALOG1 CATALOG2 --rv TEST1 TEST2
+
+
+_Note: If you see error message about conflicting modules, please unload the module in conflict and then try again. To unload a module, run:_
+
+    module unload <module_name>
 
 
 ### Step 4: Check results
