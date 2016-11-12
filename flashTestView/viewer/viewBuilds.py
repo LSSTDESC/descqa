@@ -174,7 +174,7 @@ print '<br>&nbsp;</p>'
 
 test_prefix_union.insert(0, '')
 links = '&nbsp;|&nbsp;'.join((get_filter_link(target_dir, True, p, catalog_prefix, test_prefix, catalog_prefix) for p in test_prefix_union))
-print '<p class="filter">Text prefix | {}</p>'.format(links)
+print '<p class="filter">Test prefix | {}</p>'.format(links)
 
 catalog_prefix_union.insert(0, '')
 links = '&nbsp;|&nbsp;'.join((get_filter_link(target_dir, False, test_prefix, p, test_prefix, catalog_prefix) for p in catalog_prefix_union))
