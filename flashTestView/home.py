@@ -19,10 +19,6 @@ siteTitle = configDict.get('siteTitle', '')
 invocationsPerPage = int(configDict.get('invocationsPerPage', 25))
 days_to_show = int(configDict.get('days_to_show', 15))
 
-
-# make sure website has write permissions in this folder
-assert os.access(os.getcwd(), os.W_OK)
-
 print '<html>'
 print '<body>'
 print '<head>'
