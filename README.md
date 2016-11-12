@@ -29,20 +29,16 @@ Hack on! Make changes!
 
 _Note: Stay in `your/own/directory/descqa-local` for this step. You do **not** need to go to the main descqa directory to run the test._
 
-First, find out where the actual catalogs sit (they are big files so they are not in the repo). Most likely they will be at
-
-    /project/projectdirs/lsst/descqacmu/catalog
-
-Now you are set to run the tests, simply run
+Simply run:
 
     cd your/own/directory/descqa-local
-    ./run_master.sh -v --cdir /project/projectdirs/lsst/descqacmu/catalog
+    ./run_master.sh -v
 
-The `-v` argument will let the error messages be printed out. The `--cdir` argument sets where the actual catalogs live. 
+The `-v` argument allows the error messages to be printed out, which is useful for debugging.
 
 If you want to run only a subset of catalogs or tests, you can specify `--catalogs-to-run` (or `--rc` for short) and `--validations-to-run` (or `--rv` for short) 
     
-    ./run_master.sh -v --cdir /project/projectdirs/lsst/descqacmu/catalog --catalogs-to-run CATALOG1 CATALOG2 --validations-to-run TEST1 TEST2
+    ./run_master.sh -v --rc CATALOG1 CATALOG2 --rv TEST1 TEST2
 
 
 ### Step 4: Check results

@@ -409,7 +409,7 @@ if __name__ == '__main__':
             help='validation data directory (default: validation_data)')
     parser.add_argument('--reader-dir', default='reader', \
             help='catalog reader directory (default: reader)')
-    parser.add_argument('--catalog-dir', '--cdir', default='../catalog', dest='catalog_dir',\
+    parser.add_argument('--catalog-dir', default='../catalog', dest='catalog_dir',\
             help='catalog data directory (default: ../catalog)')
     parser.add_argument('--source-dir', default='.', \
             help='source directory (default: current working directory)')

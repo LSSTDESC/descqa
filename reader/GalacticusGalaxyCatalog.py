@@ -150,13 +150,13 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
         self.lightcone   = False
         self.box_size    = None
 
-        self.load()
+        self.outkeys = []
+        self.zvalues = []
+        self.load_init()   #get catalog output keys only
 
-
-    def load(self):
+    def load_init(self):
         """
-        Given a catalog path, attempt to read the catalog and set up its
-        internal data structures.
+        Given a catalog path, attempt to read the catalog output groups and cosmological parameters
         """
         fn = os.path.join(self.kwargs['base_catalog_dir'],self.kwargs['filename'])
         hdfFile = h5py.File(fn, 'r')
@@ -165,31 +165,55 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
         self.outkeys=sorted([key for key in hdfKeys if key.find(self.Output)!=-1],key=self.stringSplitByIntegers)
         self.zvalues=self.getzvalues(self.outkeys)
 
-        #print "load using keys: ", hdfKeys
-        self.catalog = {}
-        for key in hdfKeys:
-            if 'Output' in key:
-                outgroup = hdfFile[key]
-                dataKeys, dataAttrs = self._gethdf5group(outgroup)
-                self.catalog[key] = self._gethdf5arrays(outgroup)
-            elif key == 'parameters' or key == 'Parameters':
+        allowed_parkeys = ['parameters','Parameters']
+        for key in allowed_parkeys:
+            if (key in hdfKeys):
                 mydict = self._gethdf5attributes(hdfFile, key)
                 self.cosmology = astropy.cosmology.LambdaCDM(H0   = mydict['H_0'],
-                                                             Om0  = mydict['Omega_Matter'],
-                                                             Ode0 = mydict['Omega_DE'])
+                Om0  = mydict['Omega_Matter'],
+                Ode0 = mydict['Omega_DE'])
                 self.box_size=mydict['boxSize']   #already in Mpc
                 self.sigma_8=mydict['sigma_8']
                 self.n_s=mydict['N_s']
 
+
         self.redshift = []  #empty until values requested by test
-        #print "box_size after loading = ", self.box_size
+        self.catalog = {}   #init empty catalog
 
         # TODO: how to get sky area?
+        hdfFile.close()
+        
+
+    def load(self,hdfKeys=[]):
+        """
+        Given a catalog path, attempt to read the catalog and set up its
+        internal data structures.
+        """
+        if len(self.outkeys)==0:
+            self.load_init()
+
+        #check for requested keys and use all keys as default
+        if(len(hdfKeys)==0):
+            hdfKeys=self.outkeys
+
+        fn = os.path.join(self.kwargs['base_catalog_dir'],self.kwargs['filename'])
+        hdfFile = h5py.File(fn, 'r')
+        
+        #print "load using keys: ", hdfKeys
+        #loop over requested keys and fetch those not already loaded
+        for key in hdfKeys:
+            if 'Output' in key and not(key in self.catalog.keys()): #check key, check if already loaded
+                outgroup = hdfFile[key]
+                dataKeys, dataAttrs = self._gethdf5group(outgroup)
+                self.catalog[key] = self._gethdf5arrays(outgroup)
+
+
         hdfFile.close()
         return
 
     # Functions for applying filters
 
+    #check this function to see if really necessary 
     def _check_halo(self, halo, filters):
         """
         Apply the requested filters to a given halo and return True if it
@@ -218,7 +242,7 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
     def _getfiltered_outkeys(self,filters):
         outkeys=[]
         zvalues=[]
-        for z,outkey in zip(self.zvalues, self.catalog.keys()):
+        for z,outkey in zip(self.zvalues, self.outkeys):
             if z > filters.get('zlo',-0.01) and z < filters.get('zhi',9999.):
                 outkeys.append(outkey)
                 zvalues.append(z)
@@ -233,6 +257,10 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
         """
         props = []
         outkeys, zvalues = self._getfiltered_outkeys(filters)
+
+        #get any data that hasn't been loaded
+        self.load(hdfKeys=outkeys)
+
         if (len(outkeys)>0):
             self.redshift=zvalues
             for outkey in outkeys:
@@ -264,6 +292,10 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
         #print 'stored_qty:', stored_qty_name, stored_qty_fctn
 
         outkeys, zvalues = self._getfiltered_outkeys(filters)
+
+        #get any data that hasn't been loaded
+        self.load(hdfKeys=outkeys)
+
         if (len(outkeys)>0):
             self.redshift=zvalues
             for outkey in outkeys:
