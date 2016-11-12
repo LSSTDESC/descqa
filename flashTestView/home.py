@@ -76,7 +76,7 @@ print '<div id="statsWindow"><div id="statsHeader"></div><div id="statsBody"></d
 
 # start main page
 print '<div class="clearBlock">&nbsp;</div>'
-print '<div id="titleDiv"><h1>{}</h1></div>'.format(siteTitle)
+print '<div id="titleDiv"><h1><a href="../">{}</a></h1></div>'.format(siteTitle)
 
 
 count = bigboard.get_count()

@@ -78,12 +78,13 @@ Resolve any conflicts, and once you're done, push your changes back:
 
 - `master.py`: the master script to start a test run
 - `run_master.sh`: a convenient shell script to set enviornment variables/paths before running `master.py`
-- `config_catalog.py`: config file to set up catalogs
-- `config_validation.py`: config file to set up validation tests
+- `config_catalog.py`: config file to set up catalogs (to specify catalog files and readers)
+- `config_validation.py`: config file to set up validation tests (to specify test classes and arguments)
 - `archiver.py`: to clean up (archive) the output directory
-- `reader/`: directory to host all the reader classes
-- `validation_code/`: directory to host all the validation test classes and relevent utilities
-- `validation_data/`: directory to host small data files that validation tests need
+- `reader/`: directory that hosts all the reader classes
+- `validation_code/`: directory that hosts all the validation test classes and relevent utilities
+- `validation_data/`: directory that hosts small data files that validation tests need
+- `flashTestView/`: directory that hosts the web interface
 
 _Note: actual catalog files are not in this repo as they are generally much bigger._
 
