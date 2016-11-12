@@ -5,7 +5,7 @@ module load numpy
 module load matplotlib
 module load h5py
 
-DESCQAROOTDIR="/project/projectdirs/lsst/descqacmu"
+DESCQAROOTDIR="/project/projectdirs/lsst/descqa"
 
 export PYTHONPATH="$DESCQAROOTDIR/lib/python2.7/site-packages:$PYTHONPATH"
 OUTPUTDIR="$DESCQAROOTDIR/run/edison"
