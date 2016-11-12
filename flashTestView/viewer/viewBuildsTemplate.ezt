@@ -1,5 +1,5 @@
 <body>
-<a href="../home.cgi" target="_top">Home</a>
+<a href="../home.cgi" target="_top">Return to the list of all runs</a>
 <br>
 <div id="top">
   <span id="dateRef"><a class="everblue" href="../home.cgi">&lt;&lt;</a> [date]</span>

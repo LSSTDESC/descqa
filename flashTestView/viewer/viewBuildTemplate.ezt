@@ -1,6 +1,6 @@
 <body>
 <base target="rightframe">
-<a href="../home.cgi" target="_top">Back to home</a>
+<a href="../home.cgi" name="top" target="_top">Return to the list of all runs</a>
 <h1><a href="viewBuilds.cgi?target_dir=[pathToInvocationDir]" target="_top">[invocationDir]</a> :: [buildDir][if-any isGroupByCatalog] :: (Group by catalog)[end]</h1>
 <br>
 [if-any runs]
@@ -9,7 +9,7 @@
   <td>Tests completed:&nbsp;&nbsp;</td>
   <td>
   [for runs]
-    <a href="viewBuild.cgi?target_dir=[fullBuildPath]&target_tag=run_[runs.name]" target="_top">[runs.name]</a>
+    <a href="#run_[runs.name]" target="_self">[runs.name]</a>
     &nbsp;&nbsp;<br>
   [end]
   </td>
@@ -101,7 +101,7 @@ Summary plot:
     </table>
 
     <br>
-    <a href="viewBuild.cgi?target_dir=[fullBuildPath]" target="_top">Return to top</a>
+    <a href="#top" target="_self">Return to top</a>
 
   [end]
 
