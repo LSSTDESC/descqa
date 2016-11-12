@@ -66,6 +66,7 @@ GROUP_BY_CATALOG_DIRNAME = '_group_by_catalog'
 if templateData["invocationDir"] == GROUP_BY_CATALOG_DIRNAME:
     templateData["isGroupByCatalog"] = True
     templateData["invocationDir"] = os.path.basename(os.path.dirname(templateData["pathToInvocationDir"]))
+    templateData["pathToInvocationDir"] = os.path.dirname(templateData["pathToInvocationDir"])
 
 
 # search for summary plot:

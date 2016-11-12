@@ -5,6 +5,7 @@ cgitb.enable()
 print "Content-type: text/html\n"
 
 import json
+import re
 sys.path.insert(0, "../lib")
 import littleParser
 
@@ -76,6 +77,12 @@ def get_filter_link(target_dir, istest, new_test_prefix, new_catalog_prefix, cur
 form = cgi.FieldStorage()
 target_dir = form.getfirst('target_dir')
 assert target_dir
+
+target_dir = os.path.abspath(target_dir)
+if not re.match(r'\d{4}-\d{2}-\d{2}', os.path.basename(target_dir)):
+    print '<script>location.href="../home.cgi";</script>'
+    sys.exit(0)
+
 test_prefix = form.getfirst('test_prefix', '')
 catalog_prefix = form.getfirst('catalog_prefix', '')
 
