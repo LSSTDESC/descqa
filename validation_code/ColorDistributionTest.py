@@ -136,8 +136,9 @@ class ColorDistributionTest(ValidationTest):
         nsubplots = int(np.ceil(len(self.colors)/2.))
         fig_cdf, axes_cdf = plt.subplots(nsubplots, 2, figsize=(11, 4*nsubplots))
         fig_pdf, axes_pdf = plt.subplots(nsubplots, 2, figsize=(11, 4*nsubplots))
-        no_cdf_q = True
         no_pdf_q = True
+        no_cdf_q = True
+        pass_q = True
 
         if self.load_validation_catalog_q:
             if self._data_name=='DEEP2':
@@ -213,7 +214,7 @@ class ColorDistributionTest(ValidationTest):
             #measurement from galaxy catalog
             ax_cdf.step(mbinctr, mcdf, where="mid", label=catalog_name, color='blue')
             #plot validation data
-            ax_cdf.step(obinctr, ocdf, label=self._data_name,color='green')
+            ax_cdf.step(obinctr, ocdf, label=self._data_name,color='red')
             ax_cdf.set_xlabel(color, fontsize=12)
             ax_cdf.set_title('')
             xlim = np.min([mbinctr[np.argmax(mcdf>0.005)], obinctr[np.argmax(ocdf>0.005)]])
@@ -252,6 +253,9 @@ class ColorDistributionTest(ValidationTest):
             catalog_quantiles[index] = np.array([m95min, m68min, mmedian, m68max, m95max])
             validation_quantiles[index] = np.array([o95min, o68min, omedian, o68max, o95max])
 
+            if m68min<o95min or m68max>o95max:
+                pass_q = False
+
             #save result to file
             filename = os.path.join(base_output_dir, summary_output_file)
             f = open(filename, 'a')
@@ -276,7 +280,7 @@ class ColorDistributionTest(ValidationTest):
             #measurement from galaxy catalog
             ax_pdf.step(mbinctr, mhist_smooth, where="mid", label=catalog_name, color='blue')
             #validation data
-            ax_pdf.step(obinctr, ohist_smooth, label=self._data_name,color='green')
+            ax_pdf.step(obinctr, ohist_smooth, label=self._data_name,color='red')
             ax_pdf.set_xlabel(color, fontsize=12)
             ax_pdf.set_xlim(xlim, xmax)
             ax_pdf.set_ylim(ymin=0.)
@@ -298,8 +302,13 @@ class ColorDistributionTest(ValidationTest):
 
         #--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--
         msg = ''
-        return TestResult('PASSED' if not no_cdf_q else 'SKIPPED', msg)
-        # return TestResult('PASSED' if test_passed else 'SKIPPED', msg)
+        if no_cdf_q:
+            result = 'SKIPPED'
+        elif pass_q:
+            result = 'PASSED'
+        else:
+            result = 'FAILED'
+        return TestResult(result, msg)
             
     def color_distribution(self, galaxy_catalog, bin_args, base_output_dir):
         """
@@ -430,15 +439,16 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
         for catalog_index, (catalog_name, catalog_dir) in zip(range(len(catalog_list)),catalog_list):
             fn = os.path.join(catalog_dir, catalog_output_file)
             quantiles = np.loadtxt(fn)[index]
-            D['medians'][catalog_index].set_ydata(quantiles[2])
-            D['boxes'][catalog_index]._xy[[0,1,4], 1]=quantiles[1]
-            D['boxes'][catalog_index]._xy[[2,3],1]=quantiles[3]
-            D['whiskers'][2*catalog_index].set_ydata(np.array([quantiles[1], quantiles[0]]))
-            D['whiskers'][2*catalog_index+1].set_ydata(np.array([quantiles[3], quantiles[4]]))
-            D['caps'][2*catalog_index].set_ydata(np.array([quantiles[0], quantiles[0]]))
-            D['caps'][2*catalog_index+1].set_ydata(np.array([quantiles[4], quantiles[4]]))
-            ymin = np.min([ymin, quantiles[0]])
-            ymax = np.max([ymax, quantiles[4]])
+            if not np.all(quantiles==0):
+                D['medians'][catalog_index].set_ydata(quantiles[2])
+                D['boxes'][catalog_index]._xy[[0,1,4], 1]=quantiles[1]
+                D['boxes'][catalog_index]._xy[[2,3],1]=quantiles[3]
+                D['whiskers'][2*catalog_index].set_ydata(np.array([quantiles[1], quantiles[0]]))
+                D['whiskers'][2*catalog_index+1].set_ydata(np.array([quantiles[3], quantiles[4]]))
+                D['caps'][2*catalog_index].set_ydata(np.array([quantiles[0], quantiles[0]]))
+                D['caps'][2*catalog_index+1].set_ydata(np.array([quantiles[4], quantiles[4]]))
+                ymin = np.min([ymin, quantiles[0]])
+                ymax = np.max([ymax, quantiles[4]])
         ax.set_xlabel('mock catalog')
         ax.set_ylabel(color)
 
