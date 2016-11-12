@@ -45,7 +45,7 @@ If you want to run only a subset of catalogs or tests, you can specify `--catalo
 
 As the master script is running, all the error messages will be printed out in real time if you have set `-v`. You can also go to the web interface to check you result:
 
-https://portal-auth.nersc.gov/project/lsst/descqacmu/flashTestView/home.cgi
+https://portal-auth.nersc.gov/project/lsst/descqa/flashTestView/home.cgi
 
 
 ### Step 5: Iterate
