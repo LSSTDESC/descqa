@@ -178,8 +178,8 @@ class HaloMassFunctionTest(ValidationTest):
         
         try:
             catalog_result = self.get_galaxy_data(galaxy_catalog)
-        except ValueError:
-            return TestResult('SKIPPED','No halos in redshift range')
+        except ValueError as e:
+            return TestResult('SKIPPED', '{}'.format(e)[:80])
 
         #generate validation data on the fly according to redshift request AND cosmology
         xvals, yvals = self.gen_validation_data(self.ztest,galaxy_catalog,base_output_dir)
@@ -212,14 +212,9 @@ class HaloMassFunctionTest(ValidationTest):
         """
         #make sure galaxy catalog has appropiate quantities
         if not 'mass' in galaxy_catalog.quantities:
-            #raise an informative warning
             msg = ('galaxy catalog does not have `mass` quantity, skipping the rest of the validation test.')
             warn(msg)
-            #write to log file
-            fn = os.path.join(base_output_dir ,log_file)
-            with open(fn, 'a') as f:
-                f.write(msg)
-            return TestResult('SKIPPED', 'missing required quantities: halomass')
+            raise ValueError(msg)
 
         #calculate stellar mass function in galaxy catalog
         binctr, binwid, mhist, mhmin, mhmax = self.binned_halo_mass_function(galaxy_catalog)
