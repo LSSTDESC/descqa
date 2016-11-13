@@ -12,7 +12,7 @@ _Note: Do this step under one of your own directory on a NERSC machine. Do **not
 If you have never cloned the repo before, run:
 
     cd your/own/directory
-    git clone -b hackweek16 git@github.com:DarkEnergyScienceCollaboration/descqa.git descqa-local
+    git clone -b hackweek16 https://github.com/DarkEnergyScienceCollaboration/descqa.git descqa-local
 
 Note that you need the option `-b hackweek16`!
 

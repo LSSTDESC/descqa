@@ -1,28 +1,26 @@
 #!/usr/bin/env python
-import sys
-import os
-import re
+import sys, os
 import cgi, cgitb
 cgitb.enable()
-print "Content-type: text/html\n"
+print 'Content-type: text/html\n'
 
-sys.path.insert(0, "../lib")
-import littleParser, ezt
+sys.path.insert(0, '..')
+from utils import littleParser, ezt
 
 class FlashRun:
-    """
+    '''
     encapsulates one run of the Flash code against
     a single parfile. A list of FlashRun objects
     will form part of the data dictionary passed to
     the ezt template
-    """
+    '''
     def __init__(self, name):
         self.name = name
 
 class File:
-    """
+    '''
     encapsulates the data needed to locate any files
-    """
+    '''
     def __init__(self, path_or_dir, basename=None):
         if basename is None:
             self.path = path_or_dir
@@ -31,49 +29,53 @@ class File:
             self.path = os.path.join(path_or_dir, basename)
             self.filename = basename
         if self.filename.endswith('.png'):
-            self.data = open(self.path, 'rb').read().encode("base64").replace("\n", "")
+            self.data = open(self.path, 'rb').read().encode('base64').replace('\n', '')
 
 
 # -------------- web page starts ---------------- #
 form = cgi.FieldStorage()
-targetDir = form.getvalue("target_dir")
+targetDir = form.getfirst('target_dir')
+assert targetDir
 
 try:
-    configDict = littleParser.parseFile("../config")
-    siteTitle = configDict.get("siteTitle", '')
+    configDict = littleParser.parseFile('../config')
+    siteTitle = configDict.get('siteTitle', '')
 except:
     siteTitle = ''
 
-print "<html>"
-print "<head>"
-print "<title>%s</title>" % siteTitle
-print open("viewBuildStyle.css","r").read()
-print "</head>"
+print '<!DOCTYPE html>'
+print '<html>'
+print '<head>'
+print '<title>{}</title>'.format(siteTitle)
+print '<meta http-equiv="content-type" content="text/html; charset=utf-8">'
+print '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css">'
+print '<link rel="stylesheet" href="../style/style.css">'
+print '</head>'
 
 # the data dictionary we will pass to the ezt template
 templateData = {}
 
 # fill in data that has to do with this build
 # (i.e. setup and compilation data)
-templateData["fullBuildPath"]       = targetDir
-templateData["pathToInvocationDir"] = os.path.dirname(targetDir)
-templateData["buildDir"]            = os.path.basename(targetDir)
-templateData["invocationDir"]       = os.path.basename(os.path.dirname(targetDir))
+templateData['fullBuildPath']       = targetDir
+templateData['pathToInvocationDir'] = os.path.dirname(targetDir)
+templateData['buildDir']            = os.path.basename(targetDir)
+templateData['invocationDir']       = os.path.basename(os.path.dirname(targetDir))
 
 # YYM: hack to get _group_by_catalog work 
-templateData["isGroupByCatalog"] = None
+templateData['isGroupByCatalog'] = None
 GROUP_BY_CATALOG_DIRNAME = '_group_by_catalog'
-if templateData["invocationDir"] == GROUP_BY_CATALOG_DIRNAME:
-    templateData["isGroupByCatalog"] = True
-    templateData["invocationDir"] = os.path.basename(os.path.dirname(templateData["pathToInvocationDir"]))
-    templateData["pathToInvocationDir"] = os.path.dirname(templateData["pathToInvocationDir"])
+if templateData['invocationDir'] == GROUP_BY_CATALOG_DIRNAME:
+    templateData['isGroupByCatalog'] = True
+    templateData['invocationDir'] = os.path.basename(os.path.dirname(templateData['pathToInvocationDir']))
+    templateData['pathToInvocationDir'] = os.path.dirname(templateData['pathToInvocationDir'])
 
 
 # search for summary plot:
-filepath = os.path.join(targetDir, "summary_plot.png")
-templateData["summaryPlot"] = File(filepath) if os.path.isfile(filepath) else None
-filepath = os.path.join(targetDir, "summary_plot.log")
-templateData["summaryPlotLog"] = File(filepath) if os.path.isfile(filepath) else None
+filepath = os.path.join(targetDir, 'summary_plot.png')
+templateData['summaryPlot'] = File(filepath) if os.path.isfile(filepath) else None
+filepath = os.path.join(targetDir, 'summary_plot.log')
+templateData['summaryPlotLog'] = File(filepath) if os.path.isfile(filepath) else None
 
 
 # we assume any directories in 'targetDir' to be the output
@@ -91,16 +93,17 @@ for run in runs:
     run.imgfiles = []
     items = sorted(os.listdir(run.fullPath))
     for item in items:
-        if item.endswith(".log"):
+        item_lower = item.lower()
+        if item_lower.endswith('.log'):
             run.logfiles.append(File(run.fullPath, item))
-        elif any(item.endswith(ext) for ext in (".txt", ".dat", ".csv")):
+        elif any(item_lower.endswith(ext) for ext in ('.txt', '.dat', '.csv')):
             run.datfiles.append(File(run.fullPath, item))
-        elif item.endswith(".png"):
+        elif item_lower.endswith('.png'):
             run.imgfiles.append(File(run.fullPath, item))
 
     try:
-        with open(os.path.join(run.fullPath, "STATUS")) as f:
-            run.status = f.readline().strip()
+        with open(os.path.join(run.fullPath, 'STATUS')) as f:
+            run.status = f.readline().strip().upper()
             run.summary = f.read().strip()
     except (OSError, IOError):
         run.status = 'NO_STATUS_FILE_ERROR'
@@ -111,9 +114,9 @@ for run in runs:
             run.statusColor = color
             break
 
-templateData["runs"] = runs or None
+templateData['runs'] = runs or None
 
 # print the html generated by ezt templates
-ezt.Template("viewBuildTemplate.ezt").generate(sys.stdout, templateData)
-print "</html>"
+ezt.Template('leftFrame.ezt').generate(sys.stdout, templateData)
+print '</html>'
 

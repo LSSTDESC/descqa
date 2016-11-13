@@ -1,0 +1,72 @@
+body         {font-family: Helvetica, Verdana, Geneva, Arial, sans-serif;
+              font-size: 12px;
+              padding: 12px 8px;}
+                
+a.everblue   {color: blue;
+              text-decoration: none;}
+
+.title       {width:100%;
+              background-color:#CCC;
+              padding: 6px 2px;
+              margin: 4px 0;}
+
+h1           {font-size: 135%; margin: 0;}
+h2           {font-size: 120%;}
+
+.bigboard {width: 100%;}
+
+.bigboard td {padding: 2px 2px 4px 2px;}
+.bigboard td:first-child {width:170px;}
+.bigboard td:nth-child(2){width:25px;}
+.bigboard tr{vertical-align: text-top;}
+.bigboard tr:nth-child(odd){background-color: #bbf;}
+
+#pagesDiv {font-weight: bold;
+           font-size: 110%;
+           margin: 8px 0px;}
+
+.indenttable {margin-left: 15px;
+              border-width: 0px;
+              padding: 0px;}
+.indenttable td {border-width: 0px;
+                 padding: 0px;}
+.indenttable a {text-decoration:none;}
+
+.matrix {
+    text-align: center;
+    width: 100%;
+    table-layout: fixed;
+    font-size: 13px;
+    font-family: verdana, helvetica;
+    margin-top:20px;
+}
+
+.matrix td:first-child {
+    text-align: right;
+    width: 130px;
+    font-weight: bold;
+    padding-right: 0.4em;
+}
+.matrix tr {
+    height: 35px;
+}
+.matrix tr:first-child{
+    font-weight: bold;
+}
+
+/* style for floating stats window */
+
+#statsWindow {border: solid #333399 1px;
+              font-size: 90%;
+              position:absolute;
+              visibility:hidden;
+              z-index:1000;}
+
+#statsHeader {background: #333399;
+              color: white;
+              padding: 1px 3px;}
+
+#statsBody   {background: #ccccff;
+              color: black;
+              padding: 1px 3px;}
+

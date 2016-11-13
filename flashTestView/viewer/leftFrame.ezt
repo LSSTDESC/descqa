@@ -32,14 +32,14 @@ Summary plot:
     &nbsp;<font color="red">cannot find summary plot</font>
 [end]
 [if-any summaryPlotLog]
-    &nbsp;&nbsp;&nbsp;<a href="viewTextFile.cgi?target_file=[summaryPlotLog.path]">[summaryPlotLog.filename]</a><br>
+    &nbsp;&nbsp;&nbsp;<a href="viewFile.cgi?target_file=[summaryPlotLog.path]">[summaryPlotLog.filename]</a><br>
 [end]
 </td>
 </tr>
 [if-any summaryPlot]
 <tr valign="top">
 <td>
-    <a href="viewImageFile.cgi?target_file=[summaryPlot.path]"><img src="data:image/png;base64,[summaryPlot.data]" width="100%"></a>
+    <a href="viewFile.cgi?target_file=[summaryPlot.path]"><img src="data:image/png;base64,[summaryPlot.data]" width="100%"></a>
 </td>
 </tr>
 [end]
@@ -70,7 +70,7 @@ Summary plot:
     [if-any runs.logfiles]
       <i>Log files:</i><br>
         [for runs.logfiles]	
-        &nbsp;&nbsp;<a href="viewTextFile.cgi?target_file=[runs.logfiles.path]">[runs.logfiles.filename]</a><br>
+        &nbsp;&nbsp;<a href="viewFile.cgi?target_file=[runs.logfiles.path]">[runs.logfiles.filename]</a><br>
         [end]
       <br>
     [end]
@@ -78,7 +78,7 @@ Summary plot:
     [if-any runs.datfiles]
       <i>Outputs:</i><br>
         [for runs.datfiles]	
-        &nbsp;&nbsp;<a href="viewTextFile.cgi?target_file=[runs.datfiles.path]">[runs.datfiles.filename]</a><br>
+        &nbsp;&nbsp;<a href="viewFile.cgi?target_file=[runs.datfiles.path]">[runs.datfiles.filename]</a><br>
         [end]
       <br>
     [end]
@@ -86,7 +86,7 @@ Summary plot:
     [if-any runs.imgfiles]
       <i>Figures:</i><br>
         [for runs.imgfiles]	
-        &nbsp;&nbsp;<a href="viewImageFile.cgi?target_file=[runs.imgfiles.path]">[runs.imgfiles.filename]</a><br>
+        &nbsp;&nbsp;<a href="viewFile.cgi?target_file=[runs.imgfiles.path]">[runs.imgfiles.filename]</a><br>
         [end]	
       <br>
     [end]
@@ -94,7 +94,7 @@ Summary plot:
     </td>
     <td>
     [for runs.imgfiles]	
-        <a href="viewImageFile.cgi?target_file=[runs.imgfiles.path]"><img src="data:image/png;base64,[runs.imgfiles.data]" width="100%"></a><br>
+        <a href="viewFile.cgi?target_file=[runs.imgfiles.path]"><img src="data:image/png;base64,[runs.imgfiles.data]" width="100%"></a><br>
     [end]	
     </td>
     </tr>

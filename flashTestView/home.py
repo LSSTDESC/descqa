@@ -6,9 +6,8 @@ print "Content-type: text/html\n"
 import os
 import sys
 import stat
-sys.path.insert(0, 'lib')
-from invocations_simple import Invocation, BigBoard
-import littleParser
+from utils.invocations_simple import Invocation, BigBoard
+from utils import littleParser
 
 # config
 configDict = littleParser.parseFile('config')
@@ -19,32 +18,25 @@ siteTitle = configDict.get('siteTitle', '')
 invocationsPerPage = int(configDict.get('invocationsPerPage', 25))
 days_to_show = int(configDict.get('days_to_show', 15))
 
+print '<!DOCTYPE html>'
 print '<html>'
 print '<body>'
 print '<head>'
 print '<title>{}</title>'.format(siteTitle)
-
-# next three lines ensure browsers don't cache, as caching can cause false
-# appearances of the "please wait while the table is being regenerated" if
-# the user uses the browser's "back" button.
-print '<meta http-equiv="cache-control" content="no-cache">'
-print '<meta http-equiv="Pragma" content="no-cache">'
-print '<meta http-equiv="Expires" content="-1">'
-print open("style.css","r").read()
-print '<script src="lib/vanishPleaseWait.js"></script>'
-print '<script src="lib/statsWindow.js"></script>'
-print '<script src="lib/redirect.js"></script>'
+print '<meta http-equiv="content-type" content="text/html; charset=utf-8">'
+print '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
+print '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css">'
+print '<link rel="stylesheet" href="style/style.css">'
 print '</head>'
-print "<body onLoad=\"vanishPleaseWait(); statsWindowInit()\">"
-print "<div id=\"pleasewait\">"
-print "DESCQA has generated new data since the last time this page was viewed.<br>"
-print "Please wait while the table is being regenerated."
-print "</div>"
+print '<body>'
+print '<div id="pleasewait">'
+print '<h1>Please wait while the table is being generated.</h1>'
+print '</div>'
 sys.stdout.flush()
 
 form = cgi.FieldStorage()
 try:
-    this_page = int(form.getvalue("page"))
+    this_page = int(form.getfirst('page', 1))
 except:
     this_page = 1
 
@@ -71,9 +63,8 @@ if bigboard_cache:
 print '<div id="statsWindow"><div id="statsHeader"></div><div id="statsBody"></div></div>'
 
 # start main page
-print '<div class="clearBlock">&nbsp;</div>'
-print '<div id="titleDiv"><h1><a href="../">{}</a></h1></div>'.format(siteTitle)
-
+print '<a class="everblue" href="../">&lt; Back to home</a>'
+print '<div class="title"><h1>{}</h1></div>'.format(siteTitle)
 
 count = bigboard.get_count()
 
@@ -87,7 +78,6 @@ npages = ((count - 1) // invocationsPerPage) + 1
 if this_page > npages:
     this_page = npages
 
-print '<div class="clearBlock">&nbsp;</div>'
 print '<div id="pagesDiv">'
 
 # print a "<<" (previous page link)
@@ -111,10 +101,16 @@ for i in xrange(1, npages + 1):
 
 print '[&nbsp;{}&nbsp;]'.format('&nbsp;|&nbsp;'.join(page_links))
 print '</div>'
-print '<div class="clearBlock">&nbsp;</div>'
 
+print '<div>'
 print bigboard.get_html(invocationsPerPage*(this_page-1), invocationsPerPage)
+print '</div>'
 
+print '<script src="style/statsWindow.js"></script>'
+print '<script>'
+print 'statsWindowInit();'
+print 'document.getElementById("pleasewait").style.display="none";'
+print '</script>'
 print '</body>'
 print '</html>'
 

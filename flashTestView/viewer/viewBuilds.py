@@ -6,8 +6,8 @@ print "Content-type: text/html\n"
 
 import json
 import re
-sys.path.insert(0, "../lib")
-import littleParser
+sys.path.insert(0, '..')
+from utils import littleParser
 
 color_dict = {'PASSED': 'green', 'SKIPPED': 'gold', 'FAILED': 'orangered', 'ERROR': 'darkred'}
 
@@ -123,62 +123,38 @@ try:
 except:
     siteTitle = ''
 
+print '<!DOCTYPE html>'
 print '<html>'
 print '<head>'
+print '<title>{}</title>'.format(siteTitle)
 print '<meta http-equiv="content-type" content="text/html; charset=utf-8">'
 print '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
-print '<title>{}</title>'.format(siteTitle)
+print '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css">'
+print '<link rel="stylesheet" href="../style/style.css">'
 print '</head>'
-print '''<style>
-table {
-    text-align: center;
-    width: 100%;
-    table-layout: fixed;
-    font-size: 13px;
-    font-family: verdana, helvetica;
-    margin-top:20px;
-}
-h3 {margin: 0.2em 0;
-    width:100%;
-    background-color:grey;}
-p{
-    font-size: 12px;
-    margin: 0;
-}
-td:first-child {
-    text-align: right;
-    width: 130px;
-    font-weight: bold;
-    padding-right: 0.4em;
-}
-tr {
-    height: 35px;
-}
-tr:first-child{
-    font-weight: bold;
-}
-</style>'''
-
 print '<body>'
 
-
-print '<p class="gohome"><a href="../home.cgi">Return to the list of all runs</a></p>'
-print '<h3>{}</h3>'.format(os.path.basename(target_dir))
-print '<p class="info">'
+print '<a href="../home.cgi">&lt; Back to "big table" (list of all runs)</a></p>'
+print '<div class="title"><h1>{}</h1>'.format(os.path.basename(target_dir))
+print '<div class="runinfo">'
 if master_status:
     print 'Run by {}.'.format(master_status.get('user', 'UNKNOWN'))
     time_used = master_status.get('end_time', -1.0) - master_status.get('start_time', 0.0)
     if time_used > 0:
         print 'This run took {:.1f} minute(s).'.format(time_used/60.0)
-print '<br>&nbsp;</p>'
+print '<br>&nbsp;</div>'
 
+
+print '<div class="nav">
 test_prefix_union.insert(0, '')
 links = '&nbsp;|&nbsp;'.join((get_filter_link(target_dir, True, p, catalog_prefix, test_prefix, catalog_prefix) for p in test_prefix_union))
-print '<p class="filter">Test prefix | {}</p>'.format(links)
+print '<p>Test prefix | {}</p>'.format(links)
 
 catalog_prefix_union.insert(0, '')
 links = '&nbsp;|&nbsp;'.join((get_filter_link(target_dir, False, test_prefix, p, test_prefix, catalog_prefix) for p in catalog_prefix_union))
-print '<p class="filter">Catalog prefix | {}</p>'.format(links)
+print '<p>Catalog prefix | {}</p>'.format(links)
+print '</div>'
+
 
 table_width = (len(catalog_list) + 1)*130
 if table_width > 1000:
@@ -186,7 +162,7 @@ if table_width > 1000:
 else:
     table_width = "{}px".format(table_width)
 
-print '<div style="width:{}"><table>'.format(table_width)
+print '<div style="width:{}"><table class="matrix">'.format(table_width)
 
 header_row = ['<td><a href="viewBuild.cgi?target_dir={1}/{0}">{0}</a></td>'.format(name, os.path.join(target_dir, '_group_by_catalog')) for name in catalog_list]
 print '<tr><td>&nbsp;</td>{}</tr>'.format('\n'.join(header_row))
@@ -196,6 +172,7 @@ for group in all_groups:
         print group.get_html(catalog_list)
 
 print '</table></div>'
+
 print '</body>'
 print '</html>'
 
