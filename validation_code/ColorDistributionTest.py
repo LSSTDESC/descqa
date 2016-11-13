@@ -410,7 +410,7 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
     nsubplots = int(np.ceil(len(colors)/2.))
     fig, axes = plt.subplots(nsubplots, 2, figsize=(11, 6*nsubplots))
 
-    temp = np.zeros([len(catalog_list), 5]).tolist()
+    temp = (100*np.ones([len(catalog_list), 5])).tolist()
     #loop over colors
     for ax, index in zip(axes.flat, range(len(colors))):
 
