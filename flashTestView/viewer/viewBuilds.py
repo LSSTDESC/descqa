@@ -135,7 +135,7 @@ print '<link rel="stylesheet" href="../style/style.css">'
 print '</head>'
 print '<body>'
 
-print '<a href="../home.cgi">&lt; Back to "big table" (list of all runs)</a></p>'
+print '<a class="everblue" href="../home.cgi">&lt; Back to "big table" (list of all runs)</a></p>'
 print '<div class="title"><h1>{}</h1></div>'.format(os.path.basename(target_dir))
 if master_status:
     print '<div class="runinfo">'
