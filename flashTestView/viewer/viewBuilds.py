@@ -144,7 +144,7 @@ if master_status:
         print comment, '<br>'
     print 'Run initiated by {}'.format(master_status.get('user', 'UNKNOWN')),
     if 'start_time' in master_status:
-        print time.strftime('at %Y/%m/%d %H:%M:%S', time.localtime(master_status.get('start_time'))),
+        print time.strftime('at %Y/%m/%d %H:%M:%S PT', time.localtime(master_status.get('start_time'))),
     print '<br>'
     time_used = master_status.get('end_time', -1.0) - master_status.get('start_time', 0.0)
     if time_used > 0:

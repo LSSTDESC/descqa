@@ -60,6 +60,12 @@ class Invocation:
         user = master_status.get('user', '')
         user = '&nbsp;({})'.format(user) if user else ''
         
+        comment = master_status.get('comment', '')
+        if len(comment) > 20:
+            comment = comment[:20] + '...'
+        if comment:
+            comment = '<br>&nbsp;&nbsp;<i>{}</i>'.format(comment)
+
         test_status = format_status_count(master_status.get('status_count', {}))
         light = 'green'
         if not test_status:
@@ -73,7 +79,7 @@ class Invocation:
         output = []
         main_link = '&nbsp;<a href="viewer/viewBuilds.cgi?target_dir={}" onMouseOver="appear(\'{}\', \'{}\');" onMouseOut="disappear();">{}</a>'.format(\
                 self.path, test_status, catalog_status, self.name)
-        output.append('<td>{}{}</td>'.format(main_link, user))
+        output.append('<td>{}{}{}</td>'.format(main_link, user, comment))
         output.append('<td><img src="style/{}.gif"></td>'.format(light))
         test_links = '&nbsp;|&nbsp;'.join(('<a href="viewer/viewBuild.cgi?target_dir={0}/{1}">{1}</a>'.format(self.path, t) for t in tests))
         catalog_links = '&nbsp;|&nbsp;'.join(('<a href="viewer/viewBuild.cgi?target_dir={0}/_group_by_catalog/{1}">{1}</a>'.format(self.path, c) for c in catalogs))
