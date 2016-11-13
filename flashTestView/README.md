@@ -18,5 +18,5 @@ Debugging cgi scripts is a pain. Now, all python scripts already have `cgitb` en
 
 However, you may encouter "Internal Server Error", which is not very informative. This usually means two possibilities: 
 
-1.  The script does not have the correct permission. Try `chmod o+rx <script.py> to solve it. 
+1.  The script does not have the correct permission. run `./fix_permission.sh` to fix it.
 2.  There's syntax errors in the script. In this case, run `python <script.py>` on the server to see what's wrong. 
