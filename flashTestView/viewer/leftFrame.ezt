@@ -1,7 +1,7 @@
 <body>
 <base target="rightframe">
-<a href="../home.cgi" name="top" target="_top">Return to the list of all runs</a>
-<h1><a href="viewBuilds.cgi?target_dir=[pathToInvocationDir]" target="_top">[invocationDir]</a> :: [buildDir][if-any isGroupByCatalog] :: (Group by catalog)[end]</h1>
+<a class="everblue" href="../home.cgi" name="top" target="_top">&lt; back to the "big table" (list of all runs)</a>
+<div class="title"><h1><a class="everblue" href="viewBuilds.cgi?target_dir=[pathToInvocationDir]" target="_top">[invocationDir]</a> :: [buildDir][if-any isGroupByCatalog] :: (Group by catalog)[end]</h1></div>
 <br>
 [if-any runs]
 <table class="indenttable">
@@ -64,8 +64,8 @@ Summary plot:
     </table>
 
     <table class="indenttable">
-    <tr>
-    <td>
+    <tr valign="top">
+    <td style="padding-top:20px">
 
     [if-any runs.logfiles]
       <i>Log files:</i><br>

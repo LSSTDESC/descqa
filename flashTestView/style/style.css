@@ -2,12 +2,12 @@ body         {font-family: Helvetica, Verdana, Geneva, Arial, sans-serif;
               font-size: 12px;
               padding: 12px 8px;}
                 
-a.everblue   {color: blue;
-              text-decoration: none;}
+a.everblue, .nav a {color: blue;
+                    text-decoration: none;}
 
 .title       {width:100%;
               background-color:#CCC;
-              padding: 6px 2px;
+              padding: 6px 4px;
               margin: 4px 0;}
 
 h1           {font-size: 135%; margin: 0;}
@@ -21,9 +21,14 @@ h2           {font-size: 120%;}
 .bigboard tr{vertical-align: text-top;}
 .bigboard tr:nth-child(odd){background-color: #bbf;}
 
-#pagesDiv {font-weight: bold;
-           font-size: 110%;
-           margin: 8px 0px;}
+.runinfo {font-size: 110%;
+          margin: 12px 4px;}
+
+#pagesDiv, .nav {font-size: 110%;
+                 line-height: 1.5;
+                 margin: 4px 4px;
+                 width: 100%;}
+#pagesDiv {font-weight: bold;}
 
 .indenttable {margin-left: 15px;
               border-width: 0px;
@@ -31,12 +36,13 @@ h2           {font-size: 120%;}
 .indenttable td {border-width: 0px;
                  padding: 0px;}
 .indenttable a {text-decoration:none;}
+.indenttable h2 {margin: 0;}
 
 .matrix {
     text-align: center;
     width: 100%;
     table-layout: fixed;
-    font-size: 13px;
+    font-size: 110%;
     font-family: verdana, helvetica;
     margin-top:20px;
 }

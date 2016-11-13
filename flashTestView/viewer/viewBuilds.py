@@ -135,24 +135,24 @@ print '</head>'
 print '<body>'
 
 print '<a href="../home.cgi">&lt; Back to "big table" (list of all runs)</a></p>'
-print '<div class="title"><h1>{}</h1>'.format(os.path.basename(target_dir))
+print '<div class="title"><h1>{}</h1></div>'.format(os.path.basename(target_dir))
 print '<div class="runinfo">'
 if master_status:
     print 'Run by {}.'.format(master_status.get('user', 'UNKNOWN'))
     time_used = master_status.get('end_time', -1.0) - master_status.get('start_time', 0.0)
     if time_used > 0:
         print 'This run took {:.1f} minute(s).'.format(time_used/60.0)
-print '<br>&nbsp;</div>'
+print '</div>'
 
 
-print '<div class="nav">
+print '<div class="nav">'
 test_prefix_union.insert(0, '')
 links = '&nbsp;|&nbsp;'.join((get_filter_link(target_dir, True, p, catalog_prefix, test_prefix, catalog_prefix) for p in test_prefix_union))
-print '<p>Test prefix | {}</p>'.format(links)
+print '[&nbsp;Test prefix: {}&nbsp;]<br>'.format(links)
 
 catalog_prefix_union.insert(0, '')
 links = '&nbsp;|&nbsp;'.join((get_filter_link(target_dir, False, test_prefix, p, test_prefix, catalog_prefix) for p in catalog_prefix_union))
-print '<p>Catalog prefix | {}</p>'.format(links)
+print '[&nbsp;Catalog prefix: {}&nbsp;]'.format(links)
 print '</div>'
 
 
