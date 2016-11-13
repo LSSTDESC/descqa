@@ -100,7 +100,7 @@ def L2Diff(dataset_1, dataset_2, threshold=1.0):
         if e2 is not None:
             L2 = (np.sum( (y2 - y1int)**2 / e2**2 ))
         else:
-            L2 = (np.sum(y2 - y1int)**2 )
+            L2 = (np.sum((y2 - y1int)**2) )
     
     #normalize by the number of points
     N_points = 1.0*len(y2)
@@ -178,11 +178,11 @@ def L1Diff(dataset_1, dataset_2, threshold=1.0):
         y1int=y1
     
     #compute L1 norm and significance
-    L1 = (np.sum(y2 - y1int)**2 )
+    L1 = np.sum(np.abs(y2 - y1int))
     
     #normalize by the number of points
     N_points = 1.0*len(y2)
-    L1 = np.sqrt(L1/N_points)
+    L1 = L1/N_points
     
     #return result
     if (L1 > threshold) or (np.isnan(L1)):
