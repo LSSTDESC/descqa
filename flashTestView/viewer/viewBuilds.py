@@ -1,12 +1,14 @@
 #!/usr/bin/env python
-import sys, os
 import cgi, cgitb
 cgitb.enable()
 print "Content-type: text/html\n"
 
+import os
+import sys
 import json
 import re
 import time
+
 sys.path.insert(0, '..')
 from utils import littleParser
 
@@ -58,39 +60,61 @@ class TestGroup(TestDir):
                 self.members[name] = member
         return self.members
 
-    def get_html(self, sorted_member_names):
+    def get_html(self, sorted_member_names, target_dir_base=None):
+        target_dir = self.path if target_dir_base is None else os.path.join(target_dir_base, self.name)
         members = self.get_members()
-        html = ['<td><a href="viewBuild.cgi?target_dir={}">{}</a></td>'.format(self.path, self.name)]
+        html = ['<td><a href="viewBuild.cgi?target_dir={}">{}</a></td>'.format(target_dir, self.name)]
         for member_name in sorted_member_names:
             member = members.get(member_name)
             html.append(member.get_html() if member else '<td>&nbsp;</td>')
         return '<tr>{}</tr>'.format(''.join(html))
 
 
-def get_filter_link(target_dir, istest, new_test_prefix, new_catalog_prefix, current_test_prefix, current_catalog_prefix):
+def get_filter_link(targetDir, istest, new_test_prefix, new_catalog_prefix, current_test_prefix, current_catalog_prefix):
     text = (new_test_prefix if istest else new_catalog_prefix) or 'CLEAR'
     if new_test_prefix == current_test_prefix and new_catalog_prefix == current_catalog_prefix:
         return '<span style="color:gray">{}</span>'.format(text)
-    return '<a href="viewBuilds.cgi?target_dir={}&test_prefix={}&catalog_prefix={}">{}</a>'.format(target_dir, new_test_prefix, new_catalog_prefix, text)
+    return '<a href="viewBuilds.cgi?target_dir={}&test_prefix={}&catalog_prefix={}">{}</a>'.format(targetDir, new_test_prefix, new_catalog_prefix, text)
 
 
-# -------------- form data ---------------- #
+
+# load config
+try:
+    configDict = littleParser.parseFile('../config')
+except:
+    configDict = {}
+
+siteTitle = configDict.get('siteTitle', '')
+pathToOutputDir = configDict.get('pathToOutputDir', '')
+if not os.path.isabs(pathToOutputDir):
+    raise ValueEror('`pathToOutputDir` in `config` should be an absolute path')
+
+
+# check target_dir
 form = cgi.FieldStorage()
-target_dir = form.getfirst('target_dir')
-assert target_dir
+targetDir = form.getfirst('target_dir', '')
 
-target_dir = os.path.abspath(target_dir)
-if not re.match(r'\d{4}-\d{2}-\d{2}', os.path.basename(target_dir)):
+targetDir = os.path.abspath(os.path.join(pathToOutputDir, targetDir))
+targetDir_base = os.path.basename(targetDir)
+
+if targetDir == pathToOutputDir:
     print '<script>location.href="../home.cgi";</script>'
     sys.exit(0)
+elif targetDir_base == '_group_by_catalog':
+    print '<script>location.href="viewBuilds.cgi?target_dir={}";</script>'.format(os.path.basename(os.path.dirname(targetDir)))
+    sys.exit(0)
+elif not re.match(r'\d{4}-\d\d-\d\d', targetDir_base):
+    print '<script>location.href="viewBuild.cgi?target_dir={}";</script>'.format(targetDir)
+    sys.exit(0)
+
 
 test_prefix = form.getfirst('test_prefix', '')
 catalog_prefix = form.getfirst('catalog_prefix', '')
 
 all_groups = []
-for name in os.listdir(target_dir):
+for name in os.listdir(targetDir):
     try:
-        group = TestGroup(name, target_dir)
+        group = TestGroup(name, targetDir)
     except AssertionError:
         continue
     all_groups.append(group)
@@ -112,7 +136,7 @@ test_prefix_union = sorted(test_prefix_union)
 catalog_prefix_union = sorted(catalog_prefix_union)
 
 try:
-    with open(os.path.join(target_dir, 'STATUS.json')) as f:
+    with open(os.path.join(targetDir, 'STATUS.json')) as f:
         master_status = json.load(f)
 except:
     master_status = {}
@@ -136,7 +160,7 @@ print '</head>'
 print '<body>'
 
 print '<a class="everblue" href="../home.cgi">&lt; Back to "big table" (list of all runs)</a></p>'
-print '<div class="title"><h1>{}</h1></div>'.format(os.path.basename(target_dir))
+print '<div class="title"><h1>{}</h1></div>'.format(targetDir_base)
 if master_status:
     print '<div class="runinfo">'
     comment =  master_status.get('comment', '')
@@ -154,11 +178,11 @@ if master_status:
 
 print '<hr><div class="nav">'
 test_prefix_union.insert(0, '')
-links = '&nbsp;|&nbsp;'.join((get_filter_link(target_dir, True, p, catalog_prefix, test_prefix, catalog_prefix) for p in test_prefix_union))
+links = '&nbsp;|&nbsp;'.join((get_filter_link(targetDir_base, True, p, catalog_prefix, test_prefix, catalog_prefix) for p in test_prefix_union))
 print '[&nbsp;Test prefix: {}&nbsp;]<br>'.format(links)
 
 catalog_prefix_union.insert(0, '')
-links = '&nbsp;|&nbsp;'.join((get_filter_link(target_dir, False, test_prefix, p, test_prefix, catalog_prefix) for p in catalog_prefix_union))
+links = '&nbsp;|&nbsp;'.join((get_filter_link(targetDir_base, False, test_prefix, p, test_prefix, catalog_prefix) for p in catalog_prefix_union))
 print '[&nbsp;Catalog prefix: {}&nbsp;]'.format(links)
 print '</div><hr>'
 
@@ -171,12 +195,12 @@ else:
 
 print '<div style="width:{}"><table class="matrix">'.format(table_width)
 
-header_row = ['<td><a href="viewBuild.cgi?target_dir={1}/{0}">{0}</a></td>'.format(name, os.path.join(target_dir, '_group_by_catalog')) for name in catalog_list]
+header_row = ['<td><a href="viewBuild.cgi?target_dir={1}/{0}">{0}</a></td>'.format(name, os.path.join(targetDir_base, '_group_by_catalog')) for name in catalog_list]
 print '<tr><td>&nbsp;</td>{}</tr>'.format('\n'.join(header_row))
 
 for group in all_groups:
     if not test_prefix or group.prefix == test_prefix:
-        print group.get_html(catalog_list)
+        print group.get_html(catalog_list, targetDir_base)
 
 print '</table></div>'
 

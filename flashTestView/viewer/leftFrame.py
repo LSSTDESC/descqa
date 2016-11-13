@@ -1,11 +1,12 @@
 #!/usr/bin/env python
-import sys, os
 import cgi, cgitb
 cgitb.enable()
 print 'Content-type: text/html\n'
 
+import os
+import sys
 sys.path.insert(0, '..')
-from utils import littleParser, ezt
+from utils import ezt
 
 class FlashRun:
     '''
@@ -28,25 +29,20 @@ class File:
         else:
             self.path = os.path.join(path_or_dir, basename)
             self.filename = basename
-        if self.filename.endswith('.png'):
+        if self.filename.lower().endswith('.png'):
             self.data = open(self.path, 'rb').read().encode('base64').replace('\n', '')
 
 
-# -------------- web page starts ---------------- #
+# check target_dir
 form = cgi.FieldStorage()
 targetDir = form.getfirst('target_dir')
-assert targetDir
+if not os.path.isabs(targetDir):
+    raise ValueError('`target_dir` is not correctly set')
 
-try:
-    configDict = littleParser.parseFile('../config')
-    siteTitle = configDict.get('siteTitle', '')
-except:
-    siteTitle = ''
-
+# load form
 print '<!DOCTYPE html>'
 print '<html>'
 print '<head>'
-print '<title>{}</title>'.format(siteTitle)
 print '<meta http-equiv="content-type" content="text/html; charset=utf-8">'
 print '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css">'
 print '<link rel="stylesheet" href="../style/style.css">'
@@ -70,6 +66,8 @@ if templateData['invocationDir'] == GROUP_BY_CATALOG_DIRNAME:
     templateData['invocationDir'] = os.path.basename(os.path.dirname(templateData['pathToInvocationDir']))
     templateData['pathToInvocationDir'] = os.path.dirname(templateData['pathToInvocationDir'])
 
+# make url look nicer
+templateData['pathToInvocationDir'] = templateData['invocationDir']
 
 # search for summary plot:
 filepath = os.path.join(targetDir, 'summary_plot.png')
