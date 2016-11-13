@@ -102,6 +102,12 @@ for i in xrange(1, npages + 1):
 print '[&nbsp;{}&nbsp;]'.format('&nbsp;|&nbsp;'.join(page_links))
 print '</div>'
 
+print '<div class="legend">Legend:'
+print '<img src="style/red.gif"/> Run did not successfully complete'
+print '<img src="style/yellow.gif"/> Run completed but some tests have execution errors'
+print '<img src="style/green.gif"/> All tests successfully completed (but may be skipped or may not pass the test)'
+print '</div>'
+
 print '<div>'
 print bigboard.get_html(invocationsPerPage*(this_page-1), invocationsPerPage)
 print '</div>'
