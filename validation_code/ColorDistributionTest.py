@@ -70,12 +70,12 @@ class ColorDistributionTest(ValidationTest):
         
         super(self.__class__, self).__init__(**kwargs)
         
-        #set validation data information
+        # set validation data information
         self._data_dir = kwargs['data_dir']
         self._data_name = kwargs['data_name']
         
-        #set parameters of test
-        #colors
+        # set parameters of test
+        # colors
         if 'colors' in kwargs:
             self.colors = kwargs['colors']
         else:
@@ -83,30 +83,30 @@ class ColorDistributionTest(ValidationTest):
         for color in self.colors:
             if len(color)!=3 or color[1]!='-':
                 raise ValueError('`colors` is not in the correct format!')
-        #band of limiting magnitude
+        # band of limiting magnitude
         if 'limiting_band' in list(kwargs.keys()):
             self.limiting_band = kwargs['limiting_band']
         else:
             self.limiting_band = None
-        #limiting magnitude
+        # limiting magnitude
         if 'limiting_mag' in list(kwargs.keys()):
             self.limiting_mag = kwargs['limiting_mag']
         else:
             self.limiting_mag = None
 
         # Redshift range
-        #minimum redshift
+        # minimum redshift
         if 'zlo' in list(kwargs.keys()):
             self.zlo_obs = self.zlo_mock = kwargs['zlo']
         else:
             raise ValueError('`zlo` not found!')
-        #maximum redshift
+        # maximum redshift
         if 'zhi' in list(kwargs.keys()):
             self.zhi_obs = self.zhi_mock = kwargs['zhi']
         else:
             raise ValueError('`zhi` not found!')
 
-        #translation rules from bands to catalog specific names
+        # translation rules from bands to catalog specific names
         if 'translate' in list(kwargs.keys()):
             translate = kwargs['translate']
             self.translate = translate
@@ -180,26 +180,24 @@ class ColorDistributionTest(ValidationTest):
 
             # #----------------------------------------------------------------------------------------
             # if index==0:
-            #     self.validation_data = [(obinctr, ohist)]
+            #    self.validation_data = [(obinctr, ohist)]
             # else:
-            #     self.validation_data = self.validation_data + [(obinctr, ohist)]
+            #    self.validation_data = self.validation_data + [(obinctr, ohist)]
             # #----------------------------------------------------------------------------------------
             self.validation_data = (obinctr, ocdf)
 
-            #make sure galaxy catalog has appropiate quantities
+            # make sure galaxy catalog has appropiate quantities
             if not all(k in galaxy_catalog.quantities for k in (self.band1, self.band2)):
-                #raise an informative warning
+                # raise an informative warning
                 msg = ('galaxy catalog does not have `{}` and/or `{}` quantity, skipping the rest of the validation test.\n'.format(band1, band2))
                 warn(msg)
-                #write to log file
+                # write to log file
                 fn = os.path.join(base_output_dir, log_file)
                 with open(fn, 'a') as f:
                     f.write(msg)
                 continue
 
-            #---------------------------------- Plot color CDF -----------------------------------------
-
-            #calculate color distribution in galaxy catalog
+            # calculate color distribution in galaxy catalog
             mbinctr, mhist = self.color_distribution(galaxy_catalog, (-1, 4, 2000), base_output_dir)
             if mbinctr is None:
                 return TestResult('SKIPPED', '')
@@ -210,34 +208,6 @@ class ColorDistributionTest(ValidationTest):
             catalog_result = (mbinctr, mhist)
             
             no_cdf_q = False
-
-            #measurement from galaxy catalog
-            ax_cdf.step(mbinctr, mcdf, where="mid", label=catalog_name, color='blue')
-            #plot validation data
-            ax_cdf.step(obinctr, ocdf, label=self._data_name,color='red')
-            ax_cdf.set_xlabel(color, fontsize=12)
-            ax_cdf.set_title('')
-            xlim = np.min([mbinctr[np.argmax(mcdf>0.005)], obinctr[np.argmax(ocdf>0.005)]])
-            xmax = np.max([mbinctr[np.argmax(mcdf>0.995)], obinctr[np.argmax(ocdf>0.995)]])            
-            ax_cdf.set_xlim(xlim, xmax)
-            ax_cdf.set_ylim(0, 1)
-            ax_cdf.legend(loc='best', frameon=False)
-
-            #calculate L2diff
-            d1 = {'x':mbinctr, 'y':mcdf}
-            d2 = {'x':obinctr, 'y':ocdf}
-            L2, L2_success = L2Diff(d1, d2)
-            L2 = L2*np.sqrt(len(d1))
-            #calculate L1Diff
-            d1 = {'x':mbinctr, 'y':mcdf}
-            d2 = {'x':obinctr, 'y':ocdf}
-            L1, L1_success = L1Diff(d1, d2)
-            L1 = L1*np.sqrt(len(d1))
-            #calculate K-S statistic
-            d1 = {'x':mbinctr, 'y':mcdf}
-            d2 = {'x':obinctr, 'y':ocdf}
-            KS, KS_success = KS_test(d1, d2)
-            KS = KS
 
             # 95% and 68% quantiles
             m95min = mbinctr[np.argmax(mcdf>0.025)]
@@ -256,45 +226,87 @@ class ColorDistributionTest(ValidationTest):
             if m68min<o95min or m68max>o95max:
                 pass_q = False
 
-            #save result to file
-            filename = os.path.join(base_output_dir, summary_output_file)
-            f = open(filename, 'a')
-            if(L2_success):
-                f.write(color+" SUCCESS: %s = %G\n" %('L2Diff', L2))
-            else:
-                f.write(color+" FAILED: %s = %G\n" %('L2Diff', L2))
-            if(L1_success):
-                f.write(color+" SUCCESS: %s = %G\n" %('L1Diff', L1))
-            else:
-                f.write(color+" FAILED: %s = %G\n" %('L1Diff', L2))
-            if(KS_success):
-                f.write(color+" SUCCESS: %s = %G\n" %('K-S', KS))
-            else:
-                f.write(color+" FAILED: %s = %G\n" %('K-S', KS))
-            f.close()     
+            d1 = {'x':mbinctr, 'y':mcdf}
+            d2 = {'x':obinctr, 'y':ocdf}
+            d1_shifted = {'x':mbinctr-(mmedian-omedian), 'y':mcdf}
+            # calculate L2diff
+            L2, L2_success = L2Diff(d1, d2)
+            L2_shifted, L2_shifted_success = L2Diff(d1_shifted, d2)
+            # calculate L1Diff
+            L1, L1_success = L1Diff(d1, d2)
+            L1_shifted, L1_shifted_success = L1Diff(d1_shifted, d2)
+            # calculate K-S statistic
+            KS, KS_success = KS_test(d1, d2)
+            KS_shifted, KS_shifted_success = KS_test(d1_shifted, d2)
 
-            #---------------------------------- Plot color PDF -----------------------------------------
+            # plot CDF
+            # validation distribution
+            ax_cdf.step(obinctr, ocdf, label=self._data_name,color='red')
+            # catalog distribution
+            ax_cdf.step(mbinctr, mcdf, where="mid", label=catalog_name, color='blue')
+            # color distribution after constant shift
+            ax_cdf.step(mbinctr-(mmedian-omedian), mcdf, where="mid", label=catalog_name+' shifted', linestyle='--', color='blue')
+            ax_cdf.set_xlabel(color, fontsize=12)
+            ax_cdf.set_title('')
+            xlim = np.min([mbinctr[np.argmax(mcdf>0.005)], obinctr[np.argmax(ocdf>0.005)]])
+            xmax = np.max([mbinctr[np.argmax(mcdf>0.995)], obinctr[np.argmax(ocdf>0.995)]])            
+            ax_cdf.set_xlim(xlim, xmax)
+            ax_cdf.set_ylim(0, 1)
+            ax_cdf.legend(loc='best', frameon=False)
 
+            # plot PDF
             mhist_smooth = uniform_filter1d(mhist, 20)
             ohist_smooth = uniform_filter1d(ohist, 20)
-            #measurement from galaxy catalog
-            ax_pdf.step(mbinctr, mhist_smooth, where="mid", label=catalog_name, color='blue')
-            #validation data
+            # validation data
             ax_pdf.step(obinctr, ohist_smooth, label=self._data_name,color='red')
+            # catalog distribution
+            ax_pdf.step(mbinctr, mhist_smooth, where="mid", label=catalog_name, color='blue')
+            # color distribution after constant shift
+            ax_pdf.step(mbinctr-(mmedian-omedian), mhist_smooth, where="mid", label=catalog_name+' shifted', linestyle='--', color='blue')
             ax_pdf.set_xlabel(color, fontsize=12)
             ax_pdf.set_xlim(xlim, xmax)
             ax_pdf.set_ylim(ymin=0.)
             ax_pdf.set_title('')
             ax_pdf.legend(loc='best', frameon=False)
 
-        #save plot
+            # save result to file
+            filename = os.path.join(base_output_dir, summary_output_file)
+            f = open(filename, 'a')
+            f.write(color+" shift = %2.3f\n"%(omedian-mmedian))
+            if(L2_success):
+                f.write(color+" SUCCESS: %s = %G\n" %('L2Diff', L2))
+            else:
+                f.write(color+" FAILED: %s = %G\n" %('L2Diff', L2))
+            if(L2_shifted_success):
+                f.write(color+" shifted SUCCESS: %s = %G\n" %('L2Diff', L2_shifted))
+            else:
+                f.write(color+" shifted FAILED: %s = %G\n" %('L2Diff', L2_shifted))
+            if(L1_success):
+                f.write(color+" SUCCESS: %s = %G\n" %('L1Diff', L1))
+            else:
+                f.write(color+" FAILED: %s = %G\n" %('L1Diff', L2))
+            if(L1_shifted_success):
+                f.write(color+" shifted SUCCESS: %s = %G\n" %('L1Diff', L1_shifted))
+            else:
+                f.write(color+" shifted FAILED: %s = %G\n" %('L1Diff', L1_shifted))
+            if(KS_success):
+                f.write(color+" SUCCESS: %s = %G\n" %('K-S', KS))
+            else:
+                f.write(color+" FAILED: %s = %G\n" %('K-S', KS))
+            if(KS_shifted_success):
+                f.write(color+" shifted SUCCESS: %s = %G\n" %('K-S', KS_shifted))
+            else:
+                f.write(color+" shifted FAILED: %s = %G\n" %('K-S', KS_shifted))
+            f.close()     
+
+        # save plot
         if no_cdf_q==False:
             fn = os.path.join(base_output_dir, plot_cdf_file)
             fig_cdf.savefig(fn)
             fn = os.path.join(base_output_dir, plot_pdf_file)
             fig_pdf.savefig(fn)
 
-        #save quantiles
+        # save quantiles
         fn = os.path.join(base_output_dir, catalog_output_file)
         np.savetxt(fn, catalog_quantiles)
         fn = os.path.join(base_output_dir, validation_output_file)
@@ -319,7 +331,7 @@ class ColorDistributionTest(ValidationTest):
         galaxy_catalog : galaxy catalog reader object
         """
         
-        #get magnitudes from galaxy catalog
+        # get magnitudes from galaxy catalog
         mag1 = galaxy_catalog.get_quantities(self.band1, {'zlo': self.zlo_mock, 'zhi': self.zhi_mock})
         mag2 = galaxy_catalog.get_quantities(self.band2, {'zlo': self.zlo_mock, 'zhi': self.zhi_mock})
 
@@ -365,9 +377,9 @@ class ColorDistributionTest(ValidationTest):
             return None, None
 
                     
-        #count galaxies
+        # count galaxies
         hist, bins = np.histogram(mag1-mag2, bins=np.linspace(*bin_args))
-        #normalize the histogram so that the sum of hist is 1
+        # normalize the histogram so that the sum of hist is 1
         hist = hist/np.sum(hist)
         binctr = (bins[1:] + bins[:-1])/2.
         
@@ -378,7 +390,7 @@ class ColorDistributionTest(ValidationTest):
         Open comparsion validation data, i.e. observational comparison data.
         """
         
-        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         path = os.path.join(self.base_data_dir, self._data_dir, filename)
         
         binctr, hist = np.loadtxt(path)
@@ -411,7 +423,7 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
     fig, axes = plt.subplots(nsubplots, 2, figsize=(11, 6*nsubplots))
 
     temp = (100*np.ones([len(catalog_list), 5])).tolist()
-    #loop over colors
+    # loop over colors
     for ax, index in zip(axes.flat, range(len(colors))):
 
         # Validation results
@@ -435,7 +447,7 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
         medianprops = dict(color='b')
         D = ax.boxplot(temp, medianprops=medianprops)
         catalog_quantiles = []
-        #loop over catalogs and plot
+        # loop over catalogs and plot
         for catalog_index, (catalog_name, catalog_dir) in zip(range(len(catalog_list)),catalog_list):
             fn = os.path.join(catalog_dir, catalog_output_file)
             quantiles = np.loadtxt(fn)[index]
