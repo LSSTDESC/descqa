@@ -6,6 +6,7 @@ print "Content-type: text/html\n"
 
 import json
 import re
+import time
 sys.path.insert(0, '..')
 from utils import littleParser
 
@@ -69,7 +70,7 @@ class TestGroup(TestDir):
 def get_filter_link(target_dir, istest, new_test_prefix, new_catalog_prefix, current_test_prefix, current_catalog_prefix):
     text = (new_test_prefix if istest else new_catalog_prefix) or 'CLEAR'
     if new_test_prefix == current_test_prefix and new_catalog_prefix == current_catalog_prefix:
-        return text
+        return '<span style="color:gray">{}</span>'.format(text)
     return '<a href="viewBuilds.cgi?target_dir={}&test_prefix={}&catalog_prefix={}">{}</a>'.format(target_dir, new_test_prefix, new_catalog_prefix, text)
 
 
@@ -136,16 +137,22 @@ print '<body>'
 
 print '<a href="../home.cgi">&lt; Back to "big table" (list of all runs)</a></p>'
 print '<div class="title"><h1>{}</h1></div>'.format(os.path.basename(target_dir))
-print '<div class="runinfo">'
 if master_status:
-    print 'Run by {}.'.format(master_status.get('user', 'UNKNOWN'))
+    print '<div class="runinfo">'
+    comment =  master_status.get('comment', '')
+    if comment:
+        print comment, '<br>'
+    print 'Run initiated by {}'.format(master_status.get('user', 'UNKNOWN')),
+    if 'start_time' in master_status:
+        print time.strftime('at %Y/%m/%d %H:%M:%S', time.localtime(master_status.get('start_time'))),
+    print '<br>'
     time_used = master_status.get('end_time', -1.0) - master_status.get('start_time', 0.0)
     if time_used > 0:
         print 'This run took {:.1f} minute(s).'.format(time_used/60.0)
-print '</div>'
+    print '</div>'
 
 
-print '<div class="nav">'
+print '<hr><div class="nav">'
 test_prefix_union.insert(0, '')
 links = '&nbsp;|&nbsp;'.join((get_filter_link(target_dir, True, p, catalog_prefix, test_prefix, catalog_prefix) for p in test_prefix_union))
 print '[&nbsp;Test prefix: {}&nbsp;]<br>'.format(links)
@@ -153,11 +160,11 @@ print '[&nbsp;Test prefix: {}&nbsp;]<br>'.format(links)
 catalog_prefix_union.insert(0, '')
 links = '&nbsp;|&nbsp;'.join((get_filter_link(target_dir, False, test_prefix, p, test_prefix, catalog_prefix) for p in catalog_prefix_union))
 print '[&nbsp;Catalog prefix: {}&nbsp;]'.format(links)
-print '</div>'
+print '</div><hr>'
 
 
 table_width = (len(catalog_list) + 1)*130
-if table_width > 1000:
+if table_width > 1280:
     table_width = "100%"
 else:
     table_width = "{}px".format(table_width)

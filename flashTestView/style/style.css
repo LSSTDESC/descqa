@@ -20,12 +20,14 @@ h2           {font-size: 120%;}
 .bigboard td:nth-child(2){width:25px;}
 .bigboard tr{vertical-align: text-top;}
 .bigboard tr:nth-child(odd){background-color: #bbf;}
+.bigboard a{text-decoration: none;}
 
 .runinfo {font-size: 110%;
-          margin: 12px 4px;}
+          margin: 12px 4px;
+          line-height: 1.4;}
 
 #pagesDiv, .nav {font-size: 110%;
-                 line-height: 1.5;
+                 line-height: 1.4;
                  margin: 4px 4px;
                  width: 100%;}
 #pagesDiv {font-weight: bold;}
