@@ -387,7 +387,7 @@ def main(args):
         write_master_status(master_status, tasks, output_dir)
         report = get_status_report(tasks)
         log.info('All done! Status report:\n' + report)
-        log.info('output of this run has been stored in {}'.format(output_dir))
+        log.info('Web output: https://portal-auth.nersc.gov/project/lsst/descqa/flashTestView/viewer/viewBuilds.cgi?target_dir={}'.format(output_dir))
     
     finally:
         os.unlink(pjoin(output_dir, '.lock'))
