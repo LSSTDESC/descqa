@@ -9,6 +9,7 @@ from astropy import units as u
 import matplotlib
 matplotlib.use('Agg') # Must be before importing matplotlib.pyplot
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 
 import os
 from warnings import warn
@@ -21,12 +22,16 @@ __author__ = []
 
 catalog_output_file = 'catalog_smf.txt'
 validation_output_file = 'validation_smf.txt'
+summary_details_file = 'summary_details_smf.txt'
+summary_details_module = 'write_summary_details'
 summary_output_file = 'summary_smf.txt'
 log_file = 'log_smf.txt'
 plot_file = 'plot_smf.png'
 plot_title = 'Stellar Mass Function'
 xaxis_label = r'$\log (M^*/(M_\odot)$'
 yaxis_label = r'$\log(dn/dV\,d\log M) ({\rm Mpc}^{-3}\,{\rm dex}^{-1})$'
+summary_colormap = 'rainbow'
+test_range_color = 'red'
 
 class BinnedStellarMassFunctionTest(ValidationTest):
     """
@@ -57,6 +62,14 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         zlo : float, optional
         
         zhi : float, optional
+
+        summary_details : boolean, optional
+
+        summary_method : string, optional
+
+        threshold : float, optional
+
+        validation_range : tuple, optional
         """
         
         super(self.__class__, self).__init__(**kwargs)
@@ -93,10 +106,12 @@ class BinnedStellarMassFunctionTest(ValidationTest):
             self.zhi = float(zhi)
         else:
             self.zhi = 1000.0
-        
+
+        #set remaining parameters
         self.summary_method = kwargs.get('summary','L2Diff')
         self.threshold = kwargs.get('threshold',1.0)
-        
+        self.summary_details = kwargs.get('summary_details',False)
+        self.validation_range = kwargs.get('validation_range',(7.0,12.0))
         
     def load_validation_data(self):
         """
@@ -161,12 +176,16 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         binctr, binwid, mhist, mhmin, mhmax = self.binned_stellar_mass_function(galaxy_catalog)
         catalog_result = {'x':binctr,'dx': binwid, 'y':mhist, 'y-':mhmin, 'y+': mhmax}
         
-        #calculate summary statistic
-        summary_result, test_passed = self.calulcate_summary_statistic(catalog_result)
+        #calculate summary statistic and write detailes summary file if requested
+        summary_result, test_passed, test_details = self.calculate_summary_statistic(catalog_result,details=self.summary_details)
+        if (self.summary_details):
+            fn = os.path.join(base_output_dir, summary_details_file)
+            write_summary_details=getattr(CalcStats, summary_details_module)
+            write_summary_details(test_details, fn, method=self.summary_method, comment='')
         
         #plot results
         fn = os.path.join(base_output_dir ,plot_file)
-        self.plot_result(catalog_result, catalog_name, fn)
+        self.plot_result(catalog_result, catalog_name, fn, test_details=test_details)
         
         #save results to files
         fn = os.path.join(base_output_dir, catalog_output_file)
@@ -224,7 +243,7 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         return binctr, binwid, mhist, mhmin, mhmax
     
     
-    def calulcate_summary_statistic(self, catalog_result):
+    def calculate_summary_statistic(self, catalog_result, details=False):
         """
         Run summary statistic.
         
@@ -243,12 +262,25 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         module_name=self.summary_method
         summary_method=getattr(CalcStats, module_name)
         
-        result, test_passed = summary_method(catalog_result,self.validation_data,self.threshold)
+       #restrict range of validation data supplied for test if necessary
+        mask = (self.validation_data['x']>self.validation_range[0]) & (self.validation_data['x']<self.validation_range[1])
+        if all(mask):
+            validation_data = self.validation_data
+        else:
+            validation_data={}
+            for k in self.validation_data:
+                validation_data[k] = self.validation_data[k][mask]
+
+        test_details={}
+        if details:
+            result, test_passed, test_details = summary_method(catalog_result, validation_data, self.threshold, details=details)
+        else:
+            result, test_passed = summary_method(catalog_result, validation_data, self.threshold)
         
-        return result, test_passed
+        return result, test_passed, test_details
     
-    
-    def plot_result(self, result, catalog_name, savepath):
+
+    def plot_result(self, result, catalog_name, savepath, test_details={}):
         """
         plot the stellar mass function of the catalog and validation data
         
@@ -268,15 +300,26 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         
         #plot measurement from galaxy catalog
         sbinctr, sbinwid, shist, shmin, shmax = (result['x'], result['dx'], result['y'], result['y-'], result['y+'])
-        plt.step(sbinctr, shist, where="mid", label=catalog_name, color='blue')
+        line1, = plt.step(sbinctr, shist, where="mid", label=catalog_name, color='blue')
         plt.fill_between(sbinctr, shmin, shmax, facecolor='blue', alpha=0.3, edgecolor='none')
         
         #plot comparison data
         obinctr, ohist, ohmin, ohmax = (self.validation_data['x'], self.validation_data['y'], self.validation_data['y-'], self.validation_data['y+'])
-        plt.errorbar(obinctr, ohist, yerr=[ohist-ohmin, ohmax-ohist], label=self.observation, fmt='o',color='green')
+        pts1 = plt.errorbar(obinctr, ohist, yerr=[ohist-ohmin, ohmax-ohist], label=self.observation, fmt='o',color='green')
         
+        #add validation region to plot
+        if len(test_details)>0:          #xrange from test_details
+            xrange=test_details['x']
+        else:                            #xrange from validation_range
+            mask = (self.validation_data['x']>self.validation_range[0]) & (self.validation_data['x']<self.validation_range[1])
+            xrange = self.validation_data['x'][mask]
+        ymin,ymax=plt.gca().get_ylim()
+        plt.fill_between(xrange, ymin, ymax, color=test_range_color, alpha=0.15)
+        patch=mpatches.Patch(color=test_range_color, alpha=0.1, label='Test Region') #create color patch for legend
+        handles=[line1,pts1,patch]
+
         #add formatting
-        plt.legend(loc='best', frameon=False)
+        plt.legend(handles=handles, loc='best', frameon=False, numpoints=1, fontsize='small')
         plt.title(plot_title)
         plt.xlabel(xaxis_label)
         plt.ylabel(yaxis_label)
@@ -305,8 +348,8 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         for b, h, hn, hx in zip(*(result[k] for k in ['x','y','y-','y+'])):
             f.write("%13.6e %13.6e %13.6e %13.6e\n" % (b, h, hn, hx))
         f.close()
-    
-    
+
+
     def write_summary_file(self, result, test_passed, filename, comment=None):
         """
         write summary data file
@@ -367,7 +410,6 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
     fn = os.path.join(catalog_dir, validation_output_file)
     obinctr, ohist,ohmin, ohmax = np.loadtxt(fn, unpack=True, usecols=[0,1,2,3])
     plt.errorbar(obinctr, ohist, yerr=[ohist-ohmin, ohmax-ohist], label=validation_kwargs['observation'], fmt='o',color='black')
-    plt.legend(loc='best', frameon=False)
+    plt.legend(loc='best', frameon=False,  numpoints=1, fontsize='small')
     
     plt.savefig(output_file)
-    

@@ -9,6 +9,7 @@ from astropy import units as u
 import matplotlib
 matplotlib.use('Agg') # Must be before importing matplotlib.pyplot
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 
 import os
 from warnings import warn
@@ -22,6 +23,8 @@ __author__ = []
 catalog_output_file = 'catalog_smhm.txt'
 validation_output_file = 'validation_smhm.txt'
 summary_output_file = 'summary_smhm.txt'
+summary_details_module ='write_summary_details'
+summary_details_file = 'summary_details_smhm.txt'
 log_file = 'log_smhm.log'
 plot_file = 'plot_smhm.png'
 MassiveBlackII = 'MassiveBlackII'
@@ -29,6 +32,7 @@ plot_title = 'Average Stellar-mass - Halo-mass Relation'
 xaxis_label = '$\log M_{halo}\ (M_\odot)$'
 yaxis_label = 'Average $M^{*}\ (M_\odot)$'
 summary_colormap = 'rainbow'
+test_range_color = 'red'
 
 class StellarMassHaloMassTest(ValidationTest):
     """
@@ -59,6 +63,14 @@ class StellarMassHaloMassTest(ValidationTest):
         zlo : float, optional
         
         zhi : float, optional
+
+        summary_details : boolean, optional
+
+        summary_method : string, optional
+
+        threshold : float, optional
+
+        validation_range : tuple, optional
         """
         
         super(self.__class__, self).__init__(**kwargs)
@@ -95,11 +107,13 @@ class StellarMassHaloMassTest(ValidationTest):
             self.zhi = float(zhi)
         else:
             self.zhi = 1000.0
-        
+
+        #set remaining parameters
         self.summary_method = kwargs.get('summary','L2Diff')
         self.threshold = kwargs.get('threshold',1.0)
-        
-        
+        self.summary_details = kwargs.get('summary_details',False)
+        self.validation_range = kwargs.get('validation_range',(8.0,15.0))
+
     def load_validation_data(self):
         """
         load tabulated stellar mass halo mass function data
@@ -172,11 +186,15 @@ class StellarMassHaloMassTest(ValidationTest):
         catalog_result = {'x':binctr,'dx': binwid, 'y':mhist, 'y-':mhmin, 'y+': mhmax}
         
         #calculate summary statistic
-        summary_result, test_passed = self.calulcate_summary_statistic(catalog_result)
+        summary_result, test_passed, test_details = self.calculate_summary_statistic(catalog_result,details=self.summary_details)
+        if (self.summary_details):
+            fn = os.path.join(base_output_dir, summary_details_file)
+            write_summary_details=getattr(CalcStats, summary_details_module)
+            write_summary_details(test_details, fn, method=self.summary_method, comment='')
         
         #plot results
         fn = os.path.join(base_output_dir ,plot_file)
-        self.plot_result(catalog_result, catalog_name, fn)
+        self.plot_result(catalog_result, catalog_name, fn, test_details=test_details)
         
         #save results to files
         fn = os.path.join(base_output_dir, catalog_output_file)
@@ -234,7 +252,7 @@ class StellarMassHaloMassTest(ValidationTest):
         
         return binctr, binwid, log_ave_sm, log_min_sm, log_max_sm
 
-    def calulcate_summary_statistic(self, catalog_result):
+    def calculate_summary_statistic(self, catalog_result, details=False):
         """
         Run summary statistic.
         
@@ -252,13 +270,26 @@ class StellarMassHaloMassTest(ValidationTest):
         
         module_name=self.summary_method
         summary_method=getattr(CalcStats, module_name)
-        #valdata_topass = {k:self.validation_data[k] for k in self.validation_data if k in ['x','y','y-','y+']}
-        result, test_passed = summary_method(catalog_result,self.validation_data,self.threshold)
-        
-        return result, test_passed
+
+        #restrict range of validation data supplied for test if necessary
+        mask = (self.validation_data['x']>self.validation_range[0]) & (self.validation_data['x']<self.validation_range[1])
+        if all(mask):                                                                                                     
+            validation_data = self.validation_data                                                                        
+        else:                                                                                                             
+            validation_data={}                                                                                            
+            for k in self.validation_data:                                                                                
+                validation_data[k] = self.validation_data[k][mask]
+
+        test_details={}                                                                                                   
+        if details:
+            result, test_passed, test_details = summary_method(catalog_result, validation_data, self.threshold, details=details)
+        else:
+            result, test_passed = summary_method(catalog_result, validation_data, self.threshold)
+
+        return result, test_passed, test_details
     
     
-    def plot_result(self, result, catalog_name, savepath):
+    def plot_result(self, result, catalog_name, savepath, test_details={}):
         """
         plot the stellar mass function of the catalog and validation data
         
@@ -278,19 +309,30 @@ class StellarMassHaloMassTest(ValidationTest):
         
         #plot measurement from galaxy catalog
         sbinctr, sbinwid, shist, shmin, shmax = (result['x'], result['dx'], result['y'], result['y-'], result['y+'])
-        plt.step(sbinctr, shist, where="mid", label=catalog_name, color='blue')
+        line1, = plt.step(sbinctr, shist, where="mid", label=catalog_name, color='blue')
         plt.fill_between(sbinctr, shmin, shmax, facecolor='blue', alpha=0.3, edgecolor='none')
         
         #plot comparison data
         obinctr, ohist, ohmin, ohmax = (self.validation_data['x'], self.validation_data['y'], self.validation_data['y-'], self.validation_data['y+'])
-        plt.errorbar(obinctr, ohist, yerr=[ohist-ohmin, ohmax-ohist], label=self.observation, fmt='o',color='green')
+        pts1 = plt.errorbar(obinctr, ohist, yerr=[ohist-ohmin, ohmax-ohist], label=self.observation, fmt='o',color='green')
         #plot bin extrema for validation data
         #plt.plot(obinctr,self.validation_data['ymin'],label='min',ls='dashed',color='green')
         #plt.plot(obinctr,self.validation_data['ymax'],label='max',ls='dashed',color='green')
         #plt.fill_between(obinctr, self.validation_data['ydn'], self.validation_data['yup'], facecolor='green', alpha=0.3, edgecolor='none')
 
+        #add validation region to plot
+        if len(test_details)>0:          #xrange from test_details
+            xrange=test_details['x']
+        else:                            #xrange from validation_range
+            mask = (self.validation_data['x']>self.validation_range[0]) & (self.validation_data['x']<self.validation_range[1])
+            xrange = self.validation_data['x'][mask]
+        ymin,ymax = plt.gca().get_ylim()
+        plt.fill_between(xrange, ymin, ymax, color=test_range_color, alpha=0.15)
+        patch = mpatches.Patch(color=test_range_color, alpha=0.1, label='Test Region') #create color patch for legend
+        handles=[line1,pts1,patch]
+
         #add formatting
-        plt.legend(loc='best', frameon=False)
+        plt.legend(handles=handles, loc='best', frameon=False, numpoints=1, fontsize='small')
         plt.title(plot_title)
         plt.xlabel(xaxis_label)
         plt.ylabel(yaxis_label)
@@ -387,7 +429,7 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
     #plt.plot(obinctr,omax,label='max',ls='dashed',color='black')
     #plt.fill_between(obinctr, odn, oup, facecolor='black', alpha=0.3, edgecolor='none')
 
-    plt.legend(loc='best', frameon=False)
+    plt.legend(loc='best', frameon=False, numpoints=1, fontsize='small')
     
     plt.savefig(output_file)
     
