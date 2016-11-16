@@ -77,11 +77,11 @@ and check current status of change:
     git add <files to stage> 
     git commit -m <short but meaningful message>
     
-For now we do *not* use pull requests for changes, so unless you have made significant changes (in which case, contact the QA team frist), do a pull rebase first:
+For now we do *not* use pull requests for changes, so unless you have made significant changes (in which case, contact the QA team frist), do a pull rebase first (do **not** skip this step!):
 
     git pull -r
     
-Resolve any conflicts, and once you're done, push your changes back:
+Hopefullly there's no conflict. If there are, resolve them, and commit again. Once you're done, push your changes back:
 
     git push
     
