@@ -56,7 +56,7 @@ def L2Diff(dataset_1, dataset_2, threshold=1.0, details=False):
 
     #check for zero errors and remove
     if e1 is not None:
-        emask = (e1 > 0.)
+        emask = (np.abs(e1) > 0.)
         if (np.sum(emask) < len(emask)):
             print ("Removed "+str(len(emask)-np.sum(emask))+" zero-error points from dataset #1 for L2 test")
             e1=e1[emask]
@@ -77,7 +77,7 @@ def L2Diff(dataset_1, dataset_2, threshold=1.0, details=False):
 
     #check for zero errors and remove
     if e2 is not None:
-        emask = (e2 > 0.)
+        emask = (np.abs(e2) > 0.)
         if (np.sum(emask) < len(emask)):
             print ("Removed "+str(len(emask)-np.sum(emask))+" zero-error points from dataset #2 for L2 test")
             e2=e2[emask]

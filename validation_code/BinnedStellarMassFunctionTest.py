@@ -319,7 +319,7 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         handles=[line1,pts1,patch]
 
         #add formatting
-        plt.legend(handles=handles, loc='best', frameon=False, numpoints=1, fontsize='small')
+        plt.legend(handles=handles, loc='best', frameon=False, numpoints=1)
         plt.title(plot_title)
         plt.xlabel(xaxis_label)
         plt.ylabel(yaxis_label)

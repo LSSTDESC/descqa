@@ -136,9 +136,9 @@ class StellarMassHaloMassTest(ValidationTest):
         #column 6: bin minimum
         #column 7: bin maximum
         #column 8: 1-sigma error
-        #column 9: 16th percentile
+        #column 9: 16th percentile 
         #column 11: 84th percentile
-        binctr, mstar_ave, mave_min, mave_max, mstar_min, mstar_max, mstar_dn, mstar_up = np.loadtxt(fn, unpack=True, usecols=columns[self.observation])
+        binctr, mstar_ave, mave_min, mave_max, mstar_min, mstar_max, mstar_up, mstar_dn = np.loadtxt(fn, unpack=True, usecols=columns[self.observation])
         
         #take log of values
         binctr = np.log10(binctr)
@@ -332,7 +332,7 @@ class StellarMassHaloMassTest(ValidationTest):
         handles=[line1,pts1,patch]
 
         #add formatting
-        plt.legend(handles=handles, loc='best', frameon=False, numpoints=1, fontsize='small')
+        plt.legend(handles=handles, loc='best', frameon=False, numpoints=1)
         plt.title(plot_title)
         plt.xlabel(xaxis_label)
         plt.ylabel(yaxis_label)

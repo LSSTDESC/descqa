@@ -23,6 +23,8 @@ smf_LiWhite = _ValidationConfig('BinnedStellarMassFunctionTest',
          zlo=0.0,
          zhi=0.1,
          summary='L2Diff',
+         summary_details=True,
+         validation_range=(7.0,12.0),
 )
 
 
@@ -32,6 +34,8 @@ smf_MB2 = _ValidationConfig('BinnedStellarMassFunctionTest',
          zlo=0.0,
          zhi=0.1,
          summary='L2Diff',
+         summary_details=True,
+         validation_range=(7.0,12.0),
 )
 
 smhm_MB2 = _ValidationConfig('StellarMassHaloMassTest',
@@ -40,6 +44,8 @@ smhm_MB2 = _ValidationConfig('StellarMassHaloMassTest',
          zlo=0.0,
          zhi=0.1,
          summary='L2Diff',
+         summary_details=True,
+         validation_range=(8.0,15.0),
 )
 
 hmf_ST = _ValidationConfig('HaloMassFunctionTest',
@@ -49,6 +55,8 @@ hmf_ST = _ValidationConfig('HaloMassFunctionTest',
          zlo=0.0,
          zhi=0.1,
          summary='L2Diff',
+         summary_details=True,
+         validation_range=(5.e10,1.e15),
 )
 
 color_DEEP2 = _ValidationConfig('ColorDistributionTest',
