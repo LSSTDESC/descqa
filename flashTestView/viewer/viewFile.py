@@ -8,6 +8,7 @@ targetFile  = form.getfirst('target_file')
 try:
     with open(targetFile, 'rb') as f:
         file_content = f.read()
+
 except (OSError, IOError):
     print 'Content-type: text/plain\n'
     print '[Error] Cannot open/read file {}'.format(targetFile)

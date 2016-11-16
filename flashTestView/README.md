@@ -9,7 +9,7 @@ this directory hosts the cgi scripts for displaying the results.
 
 - "Matrix" page: `viewer/viewBuilds.py`
 
-- "Show plots" page: `viewer/viewBuild.py` is the main frame. On the left, `viewer/leftFrame.py` uses `viewer/viewBuildTemplate.ezt` as a template to generate the comparison. On the right it shows the text or png file with `viewer/viewFile.py`.
+- "Show plots" page: `viewer/viewBuild.py` is the main frame. On the left, `viewer/leftFrame.py` uses `viewer/leftFrame.ezt` as a template to generate the comparison. On the right it shows the text or png file with `viewer/viewFile.py`.
 
 
 ## How to debug:
