@@ -10,6 +10,7 @@ import matplotlib
 matplotlib.use('Agg') # Must be before importing matplotlib.pyplot
 import matplotlib.pyplot as plt
 import subprocess
+import matplotlib.patches as mpatches
 
 import os
 from warnings import warn
@@ -23,6 +24,8 @@ __author__ = []
 catalog_output_file = 'catalog_hmf.txt'
 validation_output_file = 'validation_hmf.txt'
 summary_output_file = 'summary_hmf.txt'
+summary_details_module = 'write_summary_details'
+summary_details_file = 'summary_details_hmf.txt'
 log_file = 'log_hmf.log'
 plot_file = 'plot_hmf.png'
 ShethTormen = 'Sheth-Tormen'
@@ -35,6 +38,7 @@ yaxis_label = r'$dn/dV\, d\logM\ ({\rm Mpc}^{-3})$'
 plot_rect = (0.17, 0.15, 0.79, 0.80)
 figsize=(4,4)
 summary_colormap = 'rainbow'
+test_range_color = 'red'
 
 class HaloMassFunctionTest(ValidationTest):
     """
@@ -55,6 +59,9 @@ class HaloMassFunctionTest(ValidationTest):
         
         test_name : string
             string indicating test name
+
+        ztest : float
+            redshift at which to compute validation data
         
         observation : string, optional
             name of halo-mass validation observation:
@@ -65,6 +72,14 @@ class HaloMassFunctionTest(ValidationTest):
         zlo : float, optional
         
         zhi : float, optional
+
+        summary_details : boolean, optional
+
+        summary_method : string, optional
+
+        threshold : float, optional
+
+        validation_range : tuple, optional
         """
         
         super(self.__class__, self).__init__(**kwargs)
@@ -109,8 +124,11 @@ class HaloMassFunctionTest(ValidationTest):
         else:
             self.zhi = 1000.0
 
+        #set remaining parameters
         self.summary_method = kwargs.get('summary','L2Diff')
         self.threshold = kwargs.get('threshold',1.0)
+        self.summary_details = kwargs.get('summary_details',False)
+        self.validation_range = kwargs.get('validation_range',(1e10,1e15))
 
         #validation data generated in test according to redshift request AND cosmology
 
@@ -187,11 +205,15 @@ class HaloMassFunctionTest(ValidationTest):
         
         
         #calculate summary statistic
-        summary_result, test_passed = self.calculate_summary_statistic(catalog_result)
+        summary_result, test_passed, test_details = self.calculate_summary_statistic(catalog_result,details=self.summary_details)
+        if (self.summary_details):
+            fn = os.path.join(base_output_dir, summary_details_file)
+            write_summary_details=getattr(CalcStats, summary_details_module)
+            write_summary_details(test_details, fn, method=self.summary_method, comment='')
         
         #plot results
         fn = os.path.join(base_output_dir ,plot_file)
-        self.plot_result(catalog_result, catalog_name, fn)
+        self.plot_result(catalog_result, catalog_name, fn, test_details=test_details)
         
         #save results to files
         fn = os.path.join(base_output_dir, catalog_output_file)
@@ -262,7 +284,7 @@ class HaloMassFunctionTest(ValidationTest):
         
         return binctr, binwid, mhist, mhmin, mhmax
 
-    def calculate_summary_statistic(self, catalog_result):
+    def calculate_summary_statistic(self, catalog_result, details=False):
         """
         Run summary statistic.
         
@@ -281,12 +303,25 @@ class HaloMassFunctionTest(ValidationTest):
         module_name=self.summary_method
         summary_method=getattr(CalcStats, module_name)
 
-        result, test_passed = summary_method(catalog_result,self.validation_data,self.threshold)
+        #restrict range of validation data supplied for test if necessary
+        mask = (self.validation_data['x']>self.validation_range[0]) & (self.validation_data['x']<self.validation_range[1])
+        if all(mask):
+            validation_data = self.validation_data
+        else:
+            validation_data={}
+            for k in self.validation_data:
+                validation_data[k] = self.validation_data[k][mask]
+
+        test_details={}                                                                                                   
+        if details:
+            result, test_passed, test_details = summary_method(catalog_result, validation_data, self.threshold, details=details)
+        else:
+            result, test_passed = summary_method(catalog_result, validation_data, self.threshold)
         
-        return result, test_passed
+        return result, test_passed, test_details
     
     
-    def plot_result(self, result, catalog_name, savepath):
+    def plot_result(self, result, catalog_name, savepath, test_details={}):
         """
         plot the stellar mass function of the catalog and validation data
         
@@ -307,14 +342,25 @@ class HaloMassFunctionTest(ValidationTest):
         
         #plot comparison data
         obinctr, ohist = (self.validation_data['x'], self.validation_data['y'])
-        ax1.loglog(obinctr, ohist, label=self.observation, ls="-", color='green')
+        line1, = ax1.loglog(obinctr, ohist, label=self.observation, ls="-", color='green')
 
         #plot measurement from galaxy catalog
         sbinctr, sbinwid, shist, shmin, shmax = (result['x'], result['dx'], result['y'], result['y-'], result['y+'])
-        ax1.errorbar(sbinctr, shist, yerr=[shist-shmin, shmax-shist], ls="none", color='blue', label=catalog_name, marker="o", ms=5)
-        
+        pts1 = ax1.errorbar(sbinctr, shist, yerr=[shist-shmin, shmax-shist], ls="none", color='blue', label=catalog_name, marker="o", ms=5)
+
+        #add validation region to plot 
+        if len(test_details)>0:          #xrange from test_details
+            xrange=test_details['x']
+        else:                            #xrange from validation_range
+            mask = (self.validation_data['x']>self.validation_range[0]) & (self.validation_data['x']<self.validation_range[1])
+            xrange = self.validation_data['x'][mask]
+        ymin,ymax=ax1.get_ylim()         
+        ax1.fill_between(xrange, ymin, ymax, color=test_range_color, alpha=0.15)
+        patch=mpatches.Patch(color=test_range_color, alpha=0.1, label='Test Region') #create color patch for legend
+        handles=[line1,pts1,patch]
+
         #add formatting
-        plt.legend(loc='best', frameon=False, numpoints=1, fontsize='small')
+        plt.legend(handles=handles, loc='best', frameon=False, numpoints=1, fontsize='small')
         plt.grid()
         plt.title(plot_title)
         plt.xlabel(xaxis_label)
