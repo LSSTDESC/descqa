@@ -53,15 +53,15 @@ h2           {font-size: 120%;}
     font-family: verdana, helvetica;
     margin-top:20px;
 }
-
+.matrix td{
+    padding: 0;
+    height: 35px;
+}
 .matrix td:first-child {
     text-align: right;
     width: 130px;
     font-weight: bold;
     padding-right: 0.4em;
-}
-.matrix tr {
-    height: 35px;
 }
 .matrix tr:first-child{
     font-weight: bold;
@@ -69,8 +69,8 @@ h2           {font-size: 120%;}
 
 a.celllink{
     width:100%;
-    height:100%;
     color:black;
+    display:block;
     text-decoration: none;
 }
 
