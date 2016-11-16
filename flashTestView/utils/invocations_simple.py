@@ -25,12 +25,12 @@ class Invocation:
     date, possibly with a suffix) at the top level of FlashTestView
     """
     def __init__(self, name, dir_path, days_to_show=None):
-        self.name = name
-        m = re.match(r'(20\d{2}-[01]\d-[0123]\d)(?:_(\d+))?', self.name)
-        assert m is not None
         self.path = os.path.join(dir_path, name)
         assert os.path.isdir(self.path)
         assert not os.path.exists(os.path.join(self.path, '.lock'))
+        self.name = name
+        m = re.match(r'(20\d{2}-[01]\d-[0123]\d)(?:_(\d+))?', self.name)
+        assert m is not None
         m = m.groups()
         self.date = m[0]
         self.sameday_index = int(m[1] or 0)
@@ -96,13 +96,17 @@ class BigBoard:
     thus represented is contained in the 'dir_path' member.
     """
 
-    def __init__(self, dir_path):
+    def __init__(self, dir_path, cache_file=None):
         assert os.path.isdir(dir_path)
         self.dir_path = dir_path
         self.invocationList = []
+        if cache_file:
+            loaded = self.load(cache_file)
+            if not loaded:
+                self.invocationList = []
 
 
-    def generate(self, days_to_show=None):
+    def generate(self, days_to_show=None, cache_file=None):
         newInvocationList = []
 
         for item in os.listdir(self.dir_path):
@@ -111,26 +115,40 @@ class BigBoard:
             except AssertionError:
                 continue
 
-            if self.invocationList:
-                i = bisect.bisect_left(self.invocationList, invocation)
-                if self.invocationList[i] == invocation:
-                    invocation.html = self.invocationList[i].html
+            # assume self.invocationList is sorted
+            i = bisect.bisect_left(self.invocationList, invocation)
+            if i < len(self.invocationList) and self.invocationList[i] == invocation:
+                invocation.html = self.invocationList[i].html
+
             if not invocation.html:
                 invocation.gen_invocation_html()
 
-            bisect.insort(newInvocationList, invocation)
+            newInvocationList.append(invocation)
         
-        self.invocationList = newInvocationList       
+        self.invocationList = sorted(newInvocationList)
+        
+        if cache_file:
+            return self.dump(cache_file)
 
 
     def dump(self, path):
-        with open(path, 'w') as f:
-            pickle.dump(self.invocationList, f, pickle.HIGHEST_PROTOCOL)
+        try:
+            with open(path, 'w') as f:
+                pickle.dump(self.invocationList, f, pickle.HIGHEST_PROTOCOL)
+        except:
+            return False
+        else:
+            return True
 
 
     def load(self, path):
-        with open(path, 'r') as f:
-            self.invocationList = pickle.load(f)
+        try:
+            with open(path, 'r') as f:
+                self.invocationList = pickle.load(f)
+        except:
+            return False
+        else:
+            return True
 
 
     def get_html(self, skiprows=0, nrows=50):

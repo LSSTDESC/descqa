@@ -40,23 +40,14 @@ try:
 except:
     this_page = 1
 
-bigboard = BigBoard(pathToOutputDir)
+bigboard = BigBoard(pathToOutputDir, bigboard_cache)
+cache_dumped = bigboard.generate(days_to_show, bigboard_cache)
 
-if bigboard_cache:
+if cache_dumped:
     try:
-        bigboard.load(bigboard_cache)
-    except:
-        pass
-
-bigboard.generate(days_to_show)
-
-if bigboard_cache:
-    try:
-        bigboard.dump(bigboard_cache)
-    except:
-        pass
-    else:
         os.chmod(bigboard_cache, stat.S_IWOTH+stat.S_IROTH+stat.S_IWGRP+stat.S_IRGRP+stat.S_IRUSR+stat.S_IWUSR)
+    except OSError:
+        pass
 
 # floating div which will be populated with the stats
 # from one invocation when user hovers over a datestamp
