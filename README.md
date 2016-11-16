@@ -5,9 +5,10 @@ This repository contains the descqa simulation validation framework derived from
 
 ## Instruction for DESCQA developers
 
-### Step 1: Clone or pull the git repo
+_Note: Do Steps 1 through 6 under one of your own directory on a NERSC machine. Do **not** go to the main descqa directory (unless you made changes to the web interface, in which case, see Step 7). _
 
-_Note: Do this step under one of your own directory on a NERSC machine. Do **not** do this within the main descqa directory._
+
+### Step 1: Clone or pull the git repo
 
 If you have never cloned the repo before, run:
 
@@ -24,16 +25,17 @@ Or, if you have already cloned the repo, then run:
 
 ### Step 2: Develop
 
-Hack on! Make changes in your local descqa clone. 
+Hack on! Make changes inside your local descqa clone. 
 
 
 ### Step 3: Test
 
-_Note: Stay in `your/own/directory/descqa-local` for this step. You do **not** need to go to the main descqa directory to run the test._
-
-Simply run:
+Make sure you are in your local descqa clone:
 
     cd your/own/directory/descqa-local
+
+And simply run:
+
     ./run_master.sh -v
 
 The `-v` argument allows the error messages to be printed out, which is useful for debugging. 
@@ -60,11 +62,14 @@ https://portal-auth.nersc.gov/project/lsst/descqa/flashTestView/home.cgi
 Repeat steps 2, 3, 4 as necessary.
 
 
-### Step 6: Commit and push changes. 
+### Step 6: Commit and push your changes
 
-Now that you are happy about your changes, you can commit them. First, check current status of change:
+Now that you are happy about your changes, you can commit them. First, make sure you are in your local descqa clone:
 
     cd your/own/directory/descqa-local
+
+and check current status of change:
+
     git status
 
 "Stage" everything you want to commit and then commit: 
@@ -80,6 +85,22 @@ Resolve any conflicts, and once you're done, push your changes back:
 
     git push
     
+    
+### Step 7 (ONLY IF you made changes to the web interface):
+
+Go to the main descqa direcotory on NERSC:
+
+    cd /project/projectdirs/lsst/descqa/src
+    
+Pull changes from github:
+
+    git pull
+    
+And fix permissions:
+
+    cd flashTestView
+    ./fix_permission
+   
 
 ## Code structure
 
