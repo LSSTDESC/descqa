@@ -16,7 +16,6 @@ module load numpy/1.9.2
 module load scipy/0.15.1
 module load matplotlib/1.4.3
 module load h5py/2.5.0
-module load cython/0.22
 export PYTHONPATH="$DESCQAROOTDIR/lib/python2.7/site-packages:$PYTHONPATH"
 
 # set other necessary paths
@@ -30,7 +29,7 @@ umask 0002
 set -o noglob
 
 # run master.py
-python master.py $OUTPUTDIR --catalog-dir $CATALOGDIR $@
+python master.py "$OUTPUTDIR" --catalog-dir "$CATALOGDIR" "$@"
 
 # end subshell
 )
