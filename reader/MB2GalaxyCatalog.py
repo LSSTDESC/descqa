@@ -76,15 +76,15 @@ class MB2GalaxyCatalog(GalaxyCatalog):
         """
         if type(filters) is not dict:
             raise TypeError("construct_mask: filters must be given as dict")
-        mask = np.ones((self.Ngals), dtype=np.bool_)
-        mask = mask & (np.isfinite(self.catalog['x'])) # filter out NaN positions from catalog
-        mask = mask & (np.isfinite(self.catalog['y']))
-        mask = mask & (np.isfinite(self.catalog['z']))
+        mask = np.ones(self.Ngals, dtype=bool)
+        mask &= (np.isfinite(self.catalog['x'])) # filter out NaN positions from catalog
+        mask &= (np.isfinite(self.catalog['y']))
+        mask &= (np.isfinite(self.catalog['z']))
         for filter_name in filters.keys():
             if filter_name == 'zlo':
-                mask = mask & (filters[filter_name] < self.catalog['redshift'])
+                mask &= (filters[filter_name] < self.catalog['redshift'])
             elif filter_name == 'zhi':
-                mask = mask & (filters[filter_name] > self.catalog['redshift'])
+                mask &= (filters[filter_name] > self.catalog['redshift'])
         return mask
 
     def _get_stored_property(self, quantity, filters):
@@ -94,6 +94,8 @@ class MB2GalaxyCatalog(GalaxyCatalog):
         catalog.
         """
         filter_mask = self._construct_mask(filters)
+        if not filter_mask.any():
+            return np.array([])
         return self.catalog[quantity][np.where(filter_mask)].data
 
     def _get_derived_property(self, quantity, filters):
@@ -103,6 +105,8 @@ class MB2GalaxyCatalog(GalaxyCatalog):
         a simple function call.
         """
         filter_mask = self._construct_mask(filters)
+        if not filter_mask.any():
+            return np.array([])
         arrays_required, scalars, func = self.derived[quantity]
         return func([self.catalog[name][np.where(filter_mask)].data for name in arrays_required], scalars)
 
