@@ -10,7 +10,7 @@
   <td>Tests completed:&nbsp;&nbsp;</td>
   <td>
   [for runs]
-    <a href="#run_[runs.name]" target="_self">[runs.name]</a>
+    <a href="#[runs.name]" target="_self">[runs.name]</a>
     &nbsp;&nbsp;<br>
   [end]
   </td>
@@ -51,7 +51,7 @@ Summary plot:
   [for runs]
 
     <hr>
-    <a name="run_[runs.name]"> </a>
+    <a name="[runs.name]"> </a>
     <table class="indenttable">
     <tr valign="top">
     <td>
