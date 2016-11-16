@@ -5,7 +5,7 @@ This repository contains the descqa simulation validation framework derived from
 
 ## Instruction for DESCQA developers
 
-_Note: Do Steps 1 through 6 under one of your own directory on a NERSC machine. Do **not** go to the main descqa directory (unless you made changes to the web interface, in which case, see Step 7). _
+_Note: Do Steps 1 through 6 under one of your own directory on a NERSC machine. Do **not** go to the main descqa directory (unless you made changes to the web interface, in which case, see Step 7)._
 
 
 ### Step 1: Clone or pull the git repo
@@ -86,7 +86,9 @@ Resolve any conflicts, and once you're done, push your changes back:
     git push
     
     
-### Step 7 (ONLY IF you made changes to the web interface):
+### Step 7: update main descqa direcotory (ONLY IF you made changes to the web interface)
+
+_Note: you don't need to do this step **unless** you made changes to the web interface._
 
 Go to the main descqa direcotory on NERSC:
 
