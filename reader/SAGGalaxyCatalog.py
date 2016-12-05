@@ -43,7 +43,7 @@ class SAGGalaxyCatalog(GalaxyCatalog):
                             'velocityY'   : self._get_derived_property,
                             'velocityZ'   : self._get_derived_property,
                             'stellar_mass': self._get_derived_property,
-                            'mass'        : self._get_derived_property,
+                            #'mass'        : self._get_derived_property,
                           }
 
         self.derived    = {
@@ -54,7 +54,7 @@ class SAGGalaxyCatalog(GalaxyCatalog):
                             'velocityY'    : (('Vy',), None, None),
                             'velocityZ'    : (('Vz',), None, None),
                             'stellar_mass' : (('M_star_disk', 'M_star_bulge'), np.add, -1.0),
-                            'mass'         : (('Halo/M200c',), None, -1.0),
+                            #'mass'         : (('Halo/M200c',), None, -1.0),
                           }
 
         self.catalog    = None
