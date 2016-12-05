@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
 from GalaxyCatalogInterface import GalaxyCatalog
+import os
 import h5py
 import numpy as np
 import astropy.cosmology
@@ -31,37 +32,37 @@ class SAGGalaxyCatalog(GalaxyCatalog):
     def __init__(self, fn=None):
         self.type_ext   = 'sag'
         self.filters    = { 'zlo':          True,
-                            'zhi':          True,
+                            'zhi':          True
                           }
         self.quantities = {
-                            'mass'        : self._get_derived_property,
                             'redshift'    : self._get_stored_property,
                             'positionX'   : self._get_derived_property,
                             'positionY'   : self._get_derived_property,
                             'positionZ'   : self._get_derived_property,
-                            #'Galaxy_Type' : self._get_stored_property,
-                            #'SFR'         : self._get_stored_property,
                             'velocityX'   : self._get_derived_property,
                             'velocityY'   : self._get_derived_property,
                             'velocityZ'   : self._get_derived_property,
-                            'stellar_mass': self._get_derived_property
+                            'stellar_mass': self._get_derived_property,
+                            'mass'        : self._get_derived_property,
                           }
 
         self.derived    = {
-                            'stellar_mass' : (('M_star_disk', 'M_star_bulge'), np.add, -1.0),
-                            'mass'         : (('Halo/M200c',), None, -1.0),
                             'positionX'    : (('X',), lambda x: x*1.0e-3, -1.0),
                             'positionY'    : (('Y',), lambda x: x*1.0e-3, -1.0),
                             'positionZ'    : (('Z',), lambda x: x*1.0e-3, -1.0),
-                            'velocityX'    : (('Vx',), None, 0),
-                            'velocityY'    : (('Vy',), None, 0),
-                            'velocityZ'    : (('Vz',), None, 0),
+                            'velocityX'    : (('Vx',), None, None),
+                            'velocityY'    : (('Vy',), None, None),
+                            'velocityZ'    : (('Vz',), None, None),
+                            'stellar_mass' : (('M_star_disk', 'M_star_bulge'), np.add, -1.0),
+                            'mass'         : (('Halo/M200c',), None, -1.0),
                           }
 
         self.catalog    = None
         self.sky_area   = 4.0 * np.pi * u.sr # All sky by default
+        self.h          = None
         self.cosmology  = None
         self.lightcone  = False
+
         return GalaxyCatalog.__init__(self, fn)
 
     def load(self, fn):
@@ -69,7 +70,7 @@ class SAGGalaxyCatalog(GalaxyCatalog):
         Given a catalog path, attempt to read the catalog and set up its
         internal data structures.
         """
-        self.catalog = self.SAGcollection(fn)
+        self.catalog = SAGcollection(fn)
         self.h = self.catalog.readAttr('Hubble_h')[0]
         self.box_size = float(self.catalog.boxSizeMpc)/self.h
         self.cosmology = astropy.cosmology.LambdaCDM(H0 = self.h*100.0,
@@ -96,16 +97,16 @@ class SAGGalaxyCatalog(GalaxyCatalog):
         a simple function call.
         """
         stored_keys, convert_func, h_factor = self.derived[quantity]
-    
+
         if not hasattr(convert_func, '__call__'):
             convert_func = lambda x: x
 
-        out = convert_func(*(self.catalog.readDataset(dsname=quantity, zrange=zrange) for quantity in stored_keys))
-        
+        output = convert_func(*(self._get_stored_property(key, filters) for key in stored_keys))
+
         if h_factor:
-            out *= (self.h**h_factor)
-        
-        return out
+            output *= (self.h**h_factor)
+
+        return output
 
 
 class SAGcollection():
@@ -125,7 +126,6 @@ class SAGcollection():
         self.nz        = 0
         self.boxSizeMpc = 0
         self.zminidx    = -1
-        import os
         # turam : Disable this path munging: for DESCQA we are passing in the 
         #         directory with a ".sag" extension to trigger the reader instead
         #         of the name of an individual hdf5 file; for example:
@@ -144,7 +144,6 @@ class SAGcollection():
             self.boxSizeMpc = simdat.readline()
             simdat.close()
 
-        import os
         ls = os.listdir(filename)
         ls.sort()
         for name in ls:
@@ -352,171 +351,172 @@ class SAGcollection():
         return gal
 
 
+
 class SAGdata():
-   """
-   The class 'SAGdata' stores a collection of hdf5 output files
-   created by the SAG code. It can extract a particular array from
-   all the stored files and returns a unique np array with the
-   requested data.
-   """
-   def __init__(self, simname, boxSizeMpc):
-      """
-      It creates an empty collection of files.
-      """
-      self.simname = str(simname)
-      self.filenames = []
-      self.dataList = []
-      self.nfiles = 0
-      self.boxSizeMpc = boxSizeMpc
-      self.reduced = False
+    """
+    The class 'SAGdata' stores a collection of hdf5 output files
+    created by the SAG code. It can extract a particular array from
+    all the stored files and returns a unique np array with the
+    requested data.
+    """
+    def __init__(self, simname, boxSizeMpc):
+       """
+       It creates an empty collection of files.
+       """
+       self.simname = str(simname)
+       self.filenames = []
+       self.dataList = []
+       self.nfiles = 0
+       self.boxSizeMpc = boxSizeMpc
+       self.reduced = False
 
 
-   def clear(self):
-      self.simname = ""
-      del self.filenames[:]
-      self.nfiles = self.boxSizeMpc = 0
-      self.reduced = False
-      for fsag in self.dataList:
-         fsag.close()
+    def clear(self):
+       self.simname = ""
+       del self.filenames[:]
+       self.nfiles = self.boxSizeMpc = 0
+       self.reduced = False
+       for fsag in self.dataList:
+          fsag.close()
 
 
-   def addFile(self, filename):
-      """
-      It adds an hdf5 file to the object.
-      """
-      try:
-         sag = h5py.File(filename, "r")
-      except IOError:
-         print("Cannot load file: '"+filename+"'")
-         return
-      self.filenames.append(filename)
-      self.dataList.append(sag)
-      self.nfiles += 1
+    def addFile(self, filename):
+       """
+       It adds an hdf5 file to the object.
+       """
+       try:
+          sag = h5py.File(filename, "r")
+       except IOError:
+          print("Cannot load file: '"+filename+"'")
+          return
+       self.filenames.append(filename)
+       self.dataList.append(sag)
+       self.nfiles += 1
 
-      if 1 == self.nfiles:
-         try:
-            attr = self.dataList[0].attrs['REDUCED_HDF5']
-            if attr == 'YES':
-               self.reduced = True
-         except KeyError:
-            pass
-
-
-   def readDataset(self, dsname, idxfilter=[]):
-      """
-      It returns a unique np array of the requested dataset only
-      if it exists in all loaded SAG files.
-      The idxfilter can be created with np.where(condition), for example:
-      >>> types = d.readDataset("Type")
-      >>> row, col = np.where(types == 0)
-      >>> discMass  = d.readDataset("DiscMass", idxfilter=row)
-      >>> pos = d.readDataset("Pos", idxfilter=row)
-      """
-      for i, sag in enumerate(self.dataList):
-         dsarr = np.array(sag.get(dsname))
-         if None == dsarr.all():
-            print("Dataset '"+dsname+"' not present in "+self.filenames[i])
-            return None
-         if 0 == i:
-            nparr = dsarr
-         else:
-            nparr = np.concatenate([nparr, dsarr])
-      if 0 != len(idxfilter):
-         tmp = nparr[idxfilter]
-         del nparr
-         nparr = tmp
-
-      return nparr
+       if 1 == self.nfiles:
+          try:
+             attr = self.dataList[0].attrs['REDUCED_HDF5']
+             if attr == 'YES':
+                self.reduced = True
+          except KeyError:
+             pass
 
 
-   def readAttr(self, attname, fnum=0):
-      """
-      It returns the value of the requested attribute from a particular
-      file of the list.
-      """
-      try:
-         attr = self.dataList[fnum].attrs[attname]
-         return attr
-      except KeyError:
-         print("Attribute '"+attname+"' not present in "
-               +self.filenames[fnum])
-         return None
+    def readDataset(self, dsname, idxfilter=[]):
+       """
+       It returns a unique np array of the requested dataset only
+       if it exists in all loaded SAG files.
+       The idxfilter can be created with np.where(condition), for example:
+       >>> types = d.readDataset("Type")
+       >>> row, col = np.where(types == 0)
+       >>> discMass  = d.readDataset("DiscMass", idxfilter=row)
+       >>> pos = d.readDataset("Pos", idxfilter=row)
+       """
+       for i, sag in enumerate(self.dataList):
+          dsarr = np.array(sag.get(dsname))
+          if None == dsarr.all():
+             print("Dataset '"+dsname+"' not present in "+self.filenames[i])
+             return None
+          if 0 == i:
+             nparr = dsarr
+          else:
+             nparr = np.concatenate([nparr, dsarr])
+       if 0 != len(idxfilter):
+          tmp = nparr[idxfilter]
+          del nparr
+          nparr = tmp
+
+       return nparr
 
 
-   def readUnits(self, fnum=0):
-      """
-      It returns an instance of the 'Units' class, with all the unit conversions
-      of the data found in the firts hdf5 file of the list.
-      """
-      if 0 < self.nfiles:
-         if not self.reduced:
-            m_in_g = float(self.dataList[fnum].attrs["UnitMass_in_g"])
-            l_in_cm = float(self.dataList[fnum].attrs["UnitLength_in_cm"])
-            vel_in_cm_s = float(self.dataList[fnum].attrs["UnitVelocity_in_cm_per_s"])
-         else:
-            m_in_g = 1.989e33  # Msun
-            l_in_cm = 3.085678e21  # kpc
-            vel_in_cm_s = 1e5      # km/s
-
-         h = float(self.readAttr('Hubble_h'))
-
-         units = Units(l_in_cm, m_in_g, vel_in_cm_s, h)
-         return units
-      else:
-         return None
-
-   def datasetList(self, fnum=0, group="/"):
-      ks = []
-      for tag in self.dataList[fnum][group].keys():
-         if type(self.dataList[fnum][group+tag]) is h5py._hl.dataset.Dataset:
-            ks.append(group+tag)
-         elif type(self.dataList[fnum][group+tag]) is h5py._hl.group.Group:
-            tmp = self.datasetList(fnum, group=group+tag+"/")
-            ks += tmp
-      return ks
+    def readAttr(self, attname, fnum=0):
+       """
+       It returns the value of the requested attribute from a particular
+       file of the list.
+       """
+       try:
+          attr = self.dataList[fnum].attrs[attname]
+          return attr
+       except KeyError:
+          print("Attribute '"+attname+"' not present in "
+                +self.filenames[fnum])
+          return None
 
 
-   def _gal_idxs(self, ids, dsname):
+    def readUnits(self, fnum=0):
+       """
+       It returns an instance of the 'Units' class, with all the unit conversions
+       of the data found in the firts hdf5 file of the list.
+       """
+       if 0 < self.nfiles:
+          if not self.reduced:
+             m_in_g = float(self.dataList[fnum].attrs["UnitMass_in_g"])
+             l_in_cm = float(self.dataList[fnum].attrs["UnitLength_in_cm"])
+             vel_in_cm_s = float(self.dataList[fnum].attrs["UnitVelocity_in_cm_per_s"])
+          else:
+             m_in_g = 1.989e33  # Msun
+             l_in_cm = 3.085678e21  # kpc
+             vel_in_cm_s = 1e5      # km/s
 
-      if type(ids) != list: ids = [ids]
-      idxs = []
-      boxes = []
-      for i in range(self.nfiles):
-         dset = self.dataList[i][dsname]
-         tmp = np.where(np.in1d(dset, ids, assume_unique=True))[0]
-         idxs += tmp.tolist()
-         for _ in range(len(tmp)): boxes.append(i)
-      return np.array(idxs), np.array(boxes)
+          h = float(self.readAttr('Hubble_h'))
+
+          units = Units(l_in_cm, m_in_g, vel_in_cm_s, h)
+          return units
+       else:
+          return None
+
+    def datasetList(self, fnum=0, group="/"):
+       ks = []
+       for tag in self.dataList[fnum][group].keys():
+          if type(self.dataList[fnum][group+tag]) is h5py._hl.dataset.Dataset:
+             ks.append(group+tag)
+          elif type(self.dataList[fnum][group+tag]) is h5py._hl.group.Group:
+             tmp = self.datasetList(fnum, group=group+tag+"/")
+             ks += tmp
+       return ks
 
 
-   def getGalaxies(self, dslist='all'):
-      if dslist == 'all':
-         dslist = self.datasetList()
-      gal = {}
-      for dstag in dslist:
-         if type(self.dataList[0][dstag]) is h5py._hl.dataset.Dataset:
-            gal[dstag] = self.readDataset(dstag)
-      return gal
+    def _gal_idxs(self, ids, dsname):
+
+       if type(ids) != list: ids = [ids]
+       idxs = []
+       boxes = []
+       for i in range(self.nfiles):
+          dset = self.dataList[i][dsname]
+          tmp = np.where(np.in1d(dset, ids, assume_unique=True))[0]
+          idxs += tmp.tolist()
+          for _ in range(len(tmp)): boxes.append(i)
+       return np.array(idxs), np.array(boxes)
 
 
-   def getGalaxies_by_ids(self, ids, dslist='all'):
-      """
-      It returns a dictionary with the different datasets for all the requested
-      galaxies.
-      """
-      if dslist == 'all':
-         dslist = self.datasetList()
-         dslist.remove('Histories/DeltaT_List')
-      # retrieve indexes of the galaxies:
-      idname = 'GalaxyID' if self.reduced else 'UID'
-      idxs, boxes = self._gal_idxs(ids, idname)
-      gal = {}
-      for dstag in dslist:
-         if type(self.dataList[0][dstag]) is h5py._hl.dataset.Dataset:
-            dims = self.dataList[0][dstag].shape[1]
-            l = np.zeros((len(idxs),dims), dtype=self.dataList[0][dstag].dtype)
-            for i in range(self.nfiles):
-               l_idx = (boxes == i)
-               l[l_idx] = self.dataList[i][dstag][:][idxs[l_idx]]
-            gal[dstag] = l
-      return gal
+    def getGalaxies(self, dslist='all'):
+       if dslist == 'all':
+          dslist = self.datasetList()
+       gal = {}
+       for dstag in dslist:
+          if type(self.dataList[0][dstag]) is h5py._hl.dataset.Dataset:
+             gal[dstag] = self.readDataset(dstag)
+       return gal
+
+
+    def getGalaxies_by_ids(self, ids, dslist='all'):
+       """
+       It returns a dictionary with the different datasets for all the requested
+       galaxies.
+       """
+       if dslist == 'all':
+          dslist = self.datasetList()
+          dslist.remove('Histories/DeltaT_List')
+       # retrieve indexes of the galaxies:
+       idname = 'GalaxyID' if self.reduced else 'UID'
+       idxs, boxes = self._gal_idxs(ids, idname)
+       gal = {}
+       for dstag in dslist:
+          if type(self.dataList[0][dstag]) is h5py._hl.dataset.Dataset:
+             dims = self.dataList[0][dstag].shape[1]
+             l = np.zeros((len(idxs),dims), dtype=self.dataList[0][dstag].dtype)
+             for i in range(self.nfiles):
+                l_idx = (boxes == i)
+                l[l_idx] = self.dataList[i][dstag][:][idxs[l_idx]]
+             gal[dstag] = l
+       return gal
