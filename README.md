@@ -13,7 +13,7 @@ _Note: Do Steps 1 through 6 under one of your own directory on a NERSC machine. 
 If you have never cloned the repo before, run:
 
     cd your/own/directory
-    git clone -b hackweek16 https://github.com/DarkEnergyScienceCollaboration/descqa.git descqa-local
+    git clone -b hackweek16 https://github.com/LSSTDESC/descqa.git descqa-local
 
 Note that you need the option `-b hackweek16`!
 
