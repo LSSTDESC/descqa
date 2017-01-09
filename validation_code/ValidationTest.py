@@ -5,23 +5,47 @@ class TestResult(object):
     """
     class for passing back test result
     """
-    def __init__(self, status, summary):
+    def __init__(self, score=None, summary='', passed=False, skipped=False, **kwargs):
         """
         Parameters
         ----------
-        status : str
-            run status, must be "PASSED", "FAILED", or "SKIPPED"
+        score : float or None
+            a float number to represent the test score
 
         summary : str
-            short summary, length must be less than 80
+            short summary string
+
+        passed : bool
+            if the test is passed
+
+        skipped : bool
+            if the test is skipped, overwrites all other arguments
+
+        **kwargs :
+            any other keyword arguments
         """
-        status = status.upper()
-        if status not in ('PASSED', 'FAILED', 'SKIPPED'):
-            raise ValueError('`status` must be "PASSED", "FAILED", or "SKIPPED"')
-        if not isinstance(summary, basestring) or len(summary) > 80:
-            raise ValueError('`summary` must be a string of length < 80')
-        self.status = status
-        self.summary = summary
+        self.score = score
+        self.passed = bool(passed)
+        self.skipped = bool(skipped)
+        self.summary = str(summary)
+        for k, v in kwargs:
+            self.setattr(k, v)
+        
+        
+        # the rest is just for backward compatibility with master.py
+        # will be removed once master.py is also updated
+
+        try:
+            status = score.upper()
+        except AttributeError:
+            pass
+        else:
+            if status in ('PASSED', 'FAILED', 'SKIPPED'):
+                self.status = status
+    
+        self.status = 'PASSED' if passed else 'FAILED'
+        if skipped:
+            self.status = 'SKIPPED'
 
 
 

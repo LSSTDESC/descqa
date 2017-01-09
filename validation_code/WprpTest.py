@@ -61,7 +61,7 @@ class WprpTest(ValidationTest):
             #raise an informative warning
             msg = 'galaxy catalog does not have all the required quantities {}, skipping the rest of the validation test.'.format(', '.join(required_quantities))
             warn(msg)
-            return TestResult('SKIPPED', msg)
+            return TestResult(skipped=True)
 
         #continue with the test
         gc = galaxy_catalog
@@ -112,7 +112,7 @@ class WprpTest(ValidationTest):
         L2, success = L2Diff(d1, d2, self._summary_thres)
         summary = 'L2Diff = {} {} {}'.format(L2, '<' if success else '>', self._summary_thres)
 
-        return TestResult('PASSED' if success else 'FAILED', summary)
+        return TestResult(L2, summary, success)
 
 
 class WprpPlot():
