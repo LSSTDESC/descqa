@@ -35,26 +35,28 @@ class SAGGalaxyCatalog(GalaxyCatalog):
                             'zhi':          True
                           }
         self.quantities = {
-                            'redshift'    : self._get_stored_property,
-                            'positionX'   : self._get_derived_property,
-                            'positionY'   : self._get_derived_property,
-                            'positionZ'   : self._get_derived_property,
-                            'velocityX'   : self._get_derived_property,
-                            'velocityY'   : self._get_derived_property,
-                            'velocityZ'   : self._get_derived_property,
-                            'stellar_mass': self._get_derived_property,
-                            'mass'        : self._get_derived_property,
+                            'redshift'       : self._get_stored_property,
+                            'positionX'      : self._get_derived_property,
+                            'positionY'      : self._get_derived_property,
+                            'positionZ'      : self._get_derived_property,
+                            'velocityX'      : self._get_derived_property,
+                            'velocityY'      : self._get_derived_property,
+                            'velocityZ'      : self._get_derived_property,
+                            'stellar_mass'   : self._get_derived_property,
+                            'mass'           : self._get_derived_property,
+                            'parent_halo_id' : self._get_derived_property,
                           }
 
         self.derived    = {
-                            'positionX'    : (('X',), lambda x: x*1.0e-3, -1.0),
-                            'positionY'    : (('Y',), lambda x: x*1.0e-3, -1.0),
-                            'positionZ'    : (('Z',), lambda x: x*1.0e-3, -1.0),
-                            'velocityX'    : (('Vx',), None, None),
-                            'velocityY'    : (('Vy',), None, None),
-                            'velocityZ'    : (('Vz',), None, None),
-                            'stellar_mass' : (('M_star_disk', 'M_star_bulge'), np.add, -1.0),
-                            'mass'         : (('Halo/M200c',), None, -1.0),
+                            'positionX'      : (('X',), lambda x: x*1.0e-3, -1.0),
+                            'positionY'      : (('Y',), lambda x: x*1.0e-3, -1.0),
+                            'positionZ'      : (('Z',), lambda x: x*1.0e-3, -1.0),
+                            'velocityX'      : (('Vx',), None, None),
+                            'velocityY'      : (('Vy',), None, None),
+                            'velocityZ'      : (('Vz',), None, None),
+                            'stellar_mass'   : (('M_star_disk', 'M_star_bulge'), np.add, -1.0),
+                            'mass'           : (('Halo/M200c',), None, -1.0),
+                            'parent_halo_id' : (('Galaxy_Type',), lambda x: np.where(x==0, -1, 100), None),
                           }
 
         self.catalog    = None
