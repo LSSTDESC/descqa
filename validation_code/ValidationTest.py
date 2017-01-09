@@ -34,7 +34,9 @@ class TestResult(object):
         
         # the rest is just for backward compatibility with master.py
         # will be removed once master.py is also updated
-
+        
+        self.status = 'PASSED' if passed else 'FAILED'
+        
         try:
             status = score.upper()
         except AttributeError:
@@ -43,7 +45,6 @@ class TestResult(object):
             if status in ('PASSED', 'FAILED', 'SKIPPED'):
                 self.status = status
     
-        self.status = 'PASSED' if passed else 'FAILED'
         if skipped:
             self.status = 'SKIPPED'
 
