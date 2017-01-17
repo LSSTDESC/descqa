@@ -126,22 +126,22 @@ class WprpPlot():
 
     def __exit__(self, *exc_args):
         self.ax.set_xscale('log')
-        self.ax.set_yscale('log')
+        self.ax.set_yscale('linear')
         self.ax.set_xlim(0.1, 50.0)
-        self.ax.set_ylim(1.0, 3.0e3)
+        #self.ax.set_ylim(1.0, 3.0e3)
         self.ax.set_xlabel(r'$r_p \; {\rm [Mpc]}$')
-        self.ax.set_ylabel(r'$w_p(r_p) \; {\rm [Mpc]}$')
+        self.ax.set_ylabel(r'$r_p \, w_p(r_p) \; {\rm [Mpc]}$')
         self.ax.set_title(r'Projected correlation function ($M_* > {0:.2E} \, {{\rm M}}_\odot$)'.format(self.kwargs['sm_cut']))
-        self.ax.legend(loc='best', frameon=False)
+        self.ax.legend(loc='upper left', frameon=False, fontsize='small', ncol=2)
         self.fig.tight_layout()
         self.fig.savefig(self.savefig)
 
     def add_line(self, rp, wp, wp_err, label, **kwargs):
-        l = self.ax.loglog(rp, wp, label=label, lw=1.5, **kwargs)[0]
-        self.ax.fill_between(rp, wp+wp_err, np.where(wp > wp_err, wp - wp_err, 0.01), alpha=0.15, color=l.get_color(), lw=0)
+        l = self.ax.loglog(rp, rp*wp, label=label, lw=1.5, **kwargs)[0]
+        self.ax.fill_between(rp, rp*(wp+wp_err), rp*(wp-wp_err), alpha=0.15, color=l.get_color(), lw=0)
 
     def add_points(self, rp, wp, wp_err, label, **kwargs):
-        self.ax.errorbar(rp, wp, wp_err, label=label, ls='', **kwargs)[0]
+        self.ax.errorbar(rp, rp*wp, rp*wp_err, label=label, ls='', **kwargs)[0]
 
 
 def save_wprp(output_file, rp, wp, wp_err):
