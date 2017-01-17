@@ -32,8 +32,11 @@ if targetItem:
 targetDir = os.path.abspath(os.path.join(pathToOutputDir, targetDir))
 targetDir_base = os.path.basename(targetDir)
 
+test_prefix=form.getfirst('test_prefix','')
+catalog_prefix=form.getfirst('catalog_prefix','')
+
 if targetDir == pathToOutputDir:
-    print '<script>location.href="../home.cgi";</script>'
+    print '<script>location.href="../front.cgi";</script>'
     sys.exit(0)
 elif re.match(r'\d{4}-\d\d-\d\d', targetDir_base):
     print '<script>location.href="viewBuilds.cgi?target_dir={}";</script>'.format(targetDir_base)
@@ -50,7 +53,7 @@ print '<title>{}</title>'.format(siteTitle)
 print '<meta http-equiv="content-type" content="text/html; charset=utf-8">'
 print '</head>'
 print '<frameset cols="50%,*">'
-print '<frame src="leftFrame.cgi?target_dir={}{}" name="leftframe">'.format(targetDir, targetItem)
+print '<frame src="leftFrame.cgi?target_dir={}&test_prefix={}&catalog_prefix={}{}" name="leftframe">'.format(targetDir,test_prefix,catalog_prefix,targetItem)
 print '<frame src="javascript:parent.blank()" name="rightframe">'
 print '</frameset>'
 print '</html>'

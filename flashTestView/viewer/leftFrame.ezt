@@ -1,7 +1,7 @@
 <body>
 <base target="rightframe">
 <a class="everblue" href="../home.cgi" name="top" target="_top">&lt; Back to "big table" (list of all runs)</a><br>
-<a class="everblue" href="viewBuilds.cgi?target_dir=[pathToInvocationDir]" target="_top">&lt; Back to "matrix" (for this run)</a>
+<a class="everblue" href="viewBuilds.cgi?target_dir=[pathToInvocationDir]&test_prefix=[test_prefix]&catalog_prefix=[catalog_prefix]" target="_top">&lt; Back to "matrix" (for this run)</a>
 <div class="title"><h1><a class="everblue" href="viewBuilds.cgi?target_dir=[pathToInvocationDir]" target="_top">[invocationDir]</a> :: [buildDir][if-any isGroupByCatalog] :: (Group by catalog)[end]</h1></div>
 <br>
 [if-any runs]

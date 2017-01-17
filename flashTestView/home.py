@@ -54,7 +54,26 @@ if cache_dumped:
 print '<div id="statsWindow"><div id="statsHeader"></div><div id="statsBody"></div></div>'
 
 # start main page
-print '<a class="everblue" href="../">&lt; Back to home</a>'
+print '''<!DOCTYPE html>
+<html>
+<head>
+<title>DESCQA: LSST DESC Quality Assurance</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css">
+<link rel="stylesheet" href="style/style.css">
+</head>
+<body>
+<div id="header" class="without-secondary-menu"><div class="section clearfix" style="background-image: -webkit-linear-gradient(top, #dfe1e1 0%, #878d91 100%);">
+<a href="/project/lsst/descqa/flashTestView/front.cgi" title="Home" rel="home" id="logo">
+<img src="http://lsst-desc.org/sites/default/files/desc-logo-small.png" alt="Home" />
+</a>  
+<div id="name-and-slogan">
+<div id="site-name"> </div>
+</div> 
+</div></div>
+'''
+print '<a class="everblue" href="/project/lsst/descqa/flashTestView/front.cgi">&lt; Back to home</a>'
 print '<div class="title"><h1>{}</h1></div>'.format(siteTitle)
 
 count = bigboard.get_count()

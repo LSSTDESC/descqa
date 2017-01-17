@@ -15,9 +15,11 @@ from utils import littleParser
 color_dict = {'PASSED': 'green', 'SKIPPED': 'gold', 'FAILED': 'orangered', 'ERROR': 'darkred'}
 
 class TestDir(object):
-    def __init__(self, name, parent_dir):
+    def __init__(self, name, parent_dir,test_prefix,catalog_prefix):
         assert not name.startswith('_')
         self.name = name
+        self.test_prefix=test_prefix
+        self.catalog_prefix=catalog_prefix
         self.path = os.path.join(parent_dir, name)
         assert os.path.isdir(self.path)
         self.prefix = name.partition('_')[0]
@@ -40,8 +42,8 @@ class TestMember(TestDir):
             status = status.rpartition('_')[-1]
             color = color_dict.get(status, 'darkred')
             
-            self.html = '<td style="background-color:{}"><a class="celllink" href="viewBuild.cgi?target_dir={}&target_item={}">{}</a></td>'.format(\
-                    color, os.path.dirname(self.path), self.name, cgi.escape(status))
+            self.html = '<td style="background-color:{}"><a class="celllink" href="viewBuild.cgi?target_dir={}&target_item={}&test_prefix={}&catalog_prefix={}">{}</a></td>'.format(\
+                    color, os.path.dirname(self.path), self.name,self.test_prefix,self.catalog_prefix,cgi.escape(status))
         
         return self.html
 
@@ -55,7 +57,7 @@ class TestGroup(TestDir):
 
             for name in os.listdir(self.path):
                 try:
-                    member = TestMember(name, self.path)
+                    member = TestMember(name, self.path, self.test_prefix, self.catalog_prefix)
                 except AssertionError:
                     continue
                 self.members[name] = member
@@ -64,7 +66,7 @@ class TestGroup(TestDir):
     def get_html(self, sorted_member_names, target_dir_base=None):
         target_dir = self.path if target_dir_base is None else os.path.join(target_dir_base, self.name)
         members = self.get_members()
-        html = ['<td><a href="viewBuild.cgi?target_dir={}">{}</a></td>'.format(target_dir, self.name)]
+        html = ['<td><a href="viewBuild.cgi?target_dir={}&test_prefix={}&catalog_prefix={}">{}</a></td>'.format(target_dir,self.test_prefix,self.catalog_prefix,self.name)]
         for member_name in sorted_member_names:
             member = members.get(member_name)
             html.append(member.get_html() if member else '<td>&nbsp;</td>')
@@ -115,7 +117,7 @@ catalog_prefix = form.getfirst('catalog_prefix', '')
 all_groups = []
 for name in os.listdir(targetDir):
     try:
-        group = TestGroup(name, targetDir)
+        group = TestGroup(name, targetDir, test_prefix, catalog_prefix)
     except AssertionError:
         continue
     all_groups.append(group)
@@ -196,7 +198,7 @@ else:
 
 print '<div style="width:{}"><table class="matrix">'.format(table_width)
 
-header_row = ['<td><a href="viewBuild.cgi?target_dir={1}/{0}">{0}</a></td>'.format(name, os.path.join(targetDir_base, '_group_by_catalog')) for name in catalog_list]
+header_row = ['<td><a href="viewBuild.cgi?target_dir={1}/{0}&test_prefix={2}&catalog_prefix={3}">{0}</a></td>'.format(name, os.path.join(targetDir_base, '_group_by_catalog'),test_prefix,catalog_prefix) for name in catalog_list]
 print '<tr><td>&nbsp;</td>{}</tr>'.format('\n'.join(header_row))
 
 for group in all_groups:
