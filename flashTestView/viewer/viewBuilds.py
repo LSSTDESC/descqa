@@ -35,15 +35,21 @@ class TestMember(TestDir):
         if self.html is None:
             try:
                 with open(os.path.join(self.path, 'STATUS')) as f:
-                    status = f.readline().strip()
+                    lines = f.readlines()
             except (OSError, IOError):
                 status = 'NO_STATUS_FILE_ERROR'
+            else:
+                status = lines[0].strip()
+                try:
+                    score = '<br>' + cgi.escape(lines[2].strip())
+                except IndexError:
+                    score = ''
             
             status = status.rpartition('_')[-1]
             color = color_dict.get(status, 'darkred')
             
-            self.html = '<td style="background-color:{}"><a class="celllink" href="viewBuild.cgi?target_dir={}&target_item={}&test_prefix={}&catalog_prefix={}">{}</a></td>'.format(\
-                    color, os.path.dirname(self.path), self.name,self.test_prefix,self.catalog_prefix,cgi.escape(status))
+            self.html = '<td style="background-color:{}"><a class="celllink" href="viewBuild.cgi?target_dir={}&target_item={}&test_prefix={}&catalog_prefix={}">{}{}</a></td>'.format(\
+                    color, os.path.dirname(self.path), self.name,self.test_prefix, self.catalog_prefix, cgi.escape(status), score)
         
         return self.html
 
