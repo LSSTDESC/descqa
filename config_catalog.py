@@ -14,10 +14,10 @@ class _CatalogConfig():
         self.kwargs = kwargs
 
     def set_data_dir(self, dirpath):
-        if 'fn' in self.kwargs and len(self.kwargs) == 1: # old style
+        self.kwargs['base_catalog_dir'] = dirpath
+        if 'fn' in self.kwargs: # old style, should remove in the future
             self.kwargs['fn'] = _os.path.join(dirpath, self.kwargs['fn'])
-        else:
-            self.kwargs['base_catalog_dir'] = dirpath
+
 # ---- End of DO NOT CHANGE ----
 
 SHAM_LiWhite = _CatalogConfig('SHAMGalaxyCatalog', match_to='LiWhite',description='This catalog is based on the dark matter only (DMO) version of the MB-2 simulation, and has been tuned to reproduce the Li & White stellar mass function. The abundance matching technique, also known as subhalo abundance matching (SHAM), is a generic scheme to connect one galaxy property (e.g., stellar mass or luminosity) with one halo property (e.g., halo mass) by assuming an approximately monotonic relation between these two properties.  The two properties are matched at the same cumulative number density, and the resulting galaxy catalog, by explicit construction, preserves the input stellar mass (or luminosity) function.')
