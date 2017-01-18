@@ -24,30 +24,25 @@ class TestResult(object):
         **kwargs :
             any other keyword arguments
         """
-        self.score = score
-        self.passed = bool(passed)
+
         self.skipped = bool(skipped)
-        self.summary = str(summary)
+        self.passed = bool(passed)
+        self.summary = str(summary).strip()
         for k, v in kwargs:
             self.setattr(k, v)
         
-        
-        # the rest is just for backward compatibility with master.py
-        # will be removed once master.py is also updated
-        
-        self.status = 'PASSED' if passed else 'FAILED'
-        
-        try:
-            status = score.upper()
-        except AttributeError:
-            pass
-        else:
-            if status in ('PASSED', 'FAILED', 'SKIPPED'):
-                self.status = status
-    
-        if skipped:
-            self.status = 'SKIPPED'
-
+        # set score
+        if not self.skipped:
+            try:
+                self.score = float(score)
+            except (TypeError, ValueError):
+                if isinstance(score, basestring) and score.upper() in ('PASSED', 'FAILED', 'SKIPPED'):
+                    # this is for backward compatibility in other validations
+                    status = score.upper()
+                    self.passed = (status == 'PASSED')
+                    self.skipped = (status == 'SKIPPED')
+                else:
+                    raise ValueError('Must set a float value for `score`')
 
 
 class ValidationTest(object):

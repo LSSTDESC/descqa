@@ -123,16 +123,19 @@ class TaskDirectory():
             self._path[key] = pjoin(self.output_dir, validation_name, catalog_name) if catalog_name else pjoin(self.output_dir, validation_name)
         return self._path[key]
 
-    def set_status(self, validation_name, catalog_name, status, summary=None):
-        status = status.strip().upper()
-        if not any(status.endswith(t) for t in ('PASSED', 'FAILED', 'ERROR', 'SKIPPED')):
-            raise ValueError('status message not set correctly!')
-        
+    def result_to_text(self, test_result):
+        t = 'SKIPPED' if test_result.skipped else ('PASSED' if test_result.passed else 'FAILED')
+        return 'VALIDATION_TEST_' + t
+
+    def set_status(self, validation_name, catalog_name, test_result):
+        status = test_result.upper() if isinstance(test_result, basestring) else self.result_to_text(test_result)
         self._status[validation_name][catalog_name] = status
         with open(pjoin(self.get_path(validation_name, catalog_name), 'STATUS'), 'w') as f:
             f.write(status + '\n')
-            if summary:
-                f.write(summary.strip() + '\n')
+            if hasattr(test_result, 'summary'):
+                f.write(test_result.summary + '\n')
+            if hasattr(test_result, 'score'):
+                f.write('{:.7g}\n'.format(test_result.score))
 
     def get_status(self, validation_name=None, catalog_name=None):
         if catalog_name:
@@ -218,7 +221,6 @@ def run(tasks, validations_to_run, catalogs_to_run, log):
             catcher = ExceptionAndStdStreamCatcher()
             with CatchExceptionAndStdStream(catcher):
                 result = vt.run_validation_test(gc, catalog_name, final_output_dir)
-                assert result.status in ('PASSED', 'FAILED', 'SKIPPED') and isinstance(result.summary, basestring)
 
             if catcher.output:
                 write_to_traceback(catcher.output)
@@ -229,11 +231,9 @@ def run(tasks, validations_to_run, catalogs_to_run, log):
                     continue
                 else:
                     log.debug('stdout/stderr while running "{}" test on "{}" catalog:\n'.format(validation_name, catalog_name) + catcher.output)
-                
-            tasks.set_status(validation_name, catalog_name, 'VALIDATION_TEST_{}'.format(result.status), result.summary)
-            log.info('{} "{}" test on "{}" catalog'.format('skipping' if result.status == 'SKIPPED' else 'finishing', 
-                    validation_name, catalog_name))
-
+            
+            tasks.set_status(validation_name, catalog_name, result)
+            log.info('{} "{}" test on "{}" catalog'.format('skipping' if result.skipped else 'finishing', validation_name, catalog_name))
 
 
 def call_summary_plot(tasks, validations_to_run, log):
