@@ -305,6 +305,8 @@ class ColorDistributionTest(ValidationTest):
             fig_cdf.savefig(fn)
             fn = os.path.join(base_output_dir, plot_pdf_file)
             fig_pdf.savefig(fn)
+        
+        plt.close()
 
         # save quantiles
         fn = os.path.join(base_output_dir, catalog_output_file)
@@ -476,3 +478,4 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
 
     plt.tight_layout()
     plt.savefig(output_file)
+    plt.close()

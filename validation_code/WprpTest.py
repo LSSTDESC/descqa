@@ -135,6 +135,7 @@ class WprpPlot():
         self.ax.legend(loc='upper left', frameon=False, fontsize='small', ncol=2)
         self.fig.tight_layout()
         self.fig.savefig(self.savefig)
+        plt.close(self.fig)
 
     def add_line(self, rp, wp, wp_err, label, **kwargs):
         l = self.ax.loglog(rp, rp*wp, label=label, lw=1.5, **kwargs)[0]

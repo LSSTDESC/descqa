@@ -339,6 +339,7 @@ class StellarMassHaloMassTest(ValidationTest):
         
         #save plot
         fig.savefig(savepath)
+        plt.close(fig)
     
     
     def write_file(self, result, filename, comment=None):
@@ -432,4 +433,4 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
     plt.legend(loc='best', frameon=False, numpoints=1, fontsize='small')
     
     plt.savefig(output_file)
-    
+    plt.close(fig)
