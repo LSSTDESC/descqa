@@ -29,7 +29,8 @@ class SAGGalaxyCatalog(GalaxyCatalog):
                   names.
     """
 
-    def __init__(self, fn=None):
+    def __init__(self, **kwargs):
+        fn = kwargs.get('fn')
         self.type_ext   = 'sag'
         self.filters    = { 'zlo':          True,
                             'zhi':          True

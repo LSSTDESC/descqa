@@ -11,7 +11,9 @@ class MB2GalaxyCatalog(GalaxyCatalog):
     Massive Black 2 galaxy catalog class.
     """
 
-    def __init__(self, fn=None):
+    def __init__(self, **kwargs):
+        fn = kwargs.get('fn')
+
         self.type_ext =   'MB2'
         self.filters  = {
                           'zlo':                   True,

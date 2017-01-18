@@ -28,7 +28,8 @@ class UWGalaxyCatalog(GalaxyCatalog):
     """
 
 
-    def __init__(self, fn=None):
+    def __init__(self, **kwargs):
+        fn = kwargs.get('fn')
         self.type_ext     = 'uw'
         self.filters      = { 'zlo':                True,
                               'zhi':                True

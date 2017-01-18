@@ -11,7 +11,8 @@ class iHODGalaxyCatalog(GalaxyCatalog):
     iHOD galaxy catalog class.
     """
 
-    def __init__(self, fn=None):
+    def __init__(self, **kwargs):
+        fn = kwargs.get('fn')
         self.type_ext =   'iHOD'
         self.filters  = {
                           'zlo':                   True,

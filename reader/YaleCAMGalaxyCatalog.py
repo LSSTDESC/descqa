@@ -23,7 +23,7 @@ class YaleCAMGalaxyCatalog(GalaxyCatalog):
     The Yale CAM galaxy mocks store all physical properties internally in units where h=1.
     """
     
-    def __init__(self, fn=None):
+    def __init__(self, **kwargs):
         """
         Initialize Yale CAM galaxy catalog class.
         
@@ -32,7 +32,8 @@ class YaleCAMGalaxyCatalog(GalaxyCatalog):
         fn : string
             filename of mock catalog
         """
-        
+        fn = kwargs.get('fn')
+
         # set file type and location
         self.type_ext = 'hdf5'
         self.root_path = '/global/project/projectdirs/lsst/descqa/'
