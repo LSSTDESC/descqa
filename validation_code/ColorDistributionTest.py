@@ -136,9 +136,9 @@ class ColorDistributionTest(ValidationTest):
         nsubplots = int(np.ceil(len(self.colors)/2.))
         fig_cdf, axes_cdf = plt.subplots(nsubplots, 2, figsize=(11, 4*nsubplots))
         fig_pdf, axes_pdf = plt.subplots(nsubplots, 2, figsize=(11, 4*nsubplots))
-        no_pdf_q = True
-        no_cdf_q = True
-        pass_q = True
+        skip_q = True   # False if any color exists in the catalog
+        pass_q = True   # False if any color fails
+        pass_count = 0   # Number of colors that pass the test
 
         if self.load_validation_catalog_q:
             if self._data_name=='DEEP2':
@@ -147,9 +147,8 @@ class ColorDistributionTest(ValidationTest):
                 vsummary = load_SDSS(self.colors, self.zlo_obs, self.zhi_obs)            
 
         filename = os.path.join(base_output_dir, summary_output_file)
-        f = open(filename, 'a')
-        f.write('%2.3f < z < %2.3f\n'%(self.zlo_obs, self.zhi_obs))
-        f.close()     
+        with open(filename, 'a') as f:
+            f.write('%2.3f < z < %2.3f\n'%(self.zlo_obs, self.zhi_obs))
 
         # initialize array for quantiles
         catalog_quantiles = np.zeros([len(self.colors), 5])
@@ -189,7 +188,7 @@ class ColorDistributionTest(ValidationTest):
             # make sure galaxy catalog has appropiate quantities
             if not all(k in galaxy_catalog.quantities for k in (self.band1, self.band2)):
                 # raise an informative warning
-                msg = ('galaxy catalog does not have `{}` and/or `{}` quantity, skipping the rest of the validation test.\n'.format(band1, band2))
+                msg = ('galaxy catalog does not have `{}` and/or `{}` quantities.\n'.format(band1, band2))
                 warn(msg)
                 # write to log file
                 fn = os.path.join(base_output_dir, log_file)
@@ -200,15 +199,24 @@ class ColorDistributionTest(ValidationTest):
             # calculate color distribution in galaxy catalog
             mbinctr, mhist = self.color_distribution(galaxy_catalog, (-1, 4, 2000), base_output_dir)
             if mbinctr is None:
-                return TestResult('SKIPPED', '')
+                # raise an informative warning
+                msg = ('The `{}` and/or `{}` quantities don\'t have the correct range or format.\n'.format(band1, band2))
+                warn(msg)
+                # write to log file
+                fn = os.path.join(base_output_dir, log_file)
+                with open(fn, 'a') as f:
+                    f.write(msg)
+                continue
+
+            # At least one color exists
+            skip_q = False
+
             mcdf = np.zeros(len(mhist))
             mcdf[0] = mhist[0]
             for cdf_index in range(1, len(mhist)):
                 mcdf[cdf_index] = mcdf[cdf_index-1]+mhist[cdf_index]
             catalog_result = (mbinctr, mhist)
             
-            no_cdf_q = False
-
             # 95% and 68% quantiles
             m95min = mbinctr[np.argmax(mcdf>0.025)]
             m95max = mbinctr[np.argmax(mcdf>0.975)]
@@ -222,9 +230,6 @@ class ColorDistributionTest(ValidationTest):
             omedian = obinctr[np.argmax(ocdf>0.5)]
             catalog_quantiles[index] = np.array([m95min, m68min, mmedian, m68max, m95max])
             validation_quantiles[index] = np.array([o95min, o68min, omedian, o68max, o95max])
-
-            if m68min<o95min or m68max>o95max:
-                pass_q = False
 
             d1 = {'x':mbinctr, 'y':mcdf}
             d2 = {'x':obinctr, 'y':ocdf}
@@ -271,36 +276,24 @@ class ColorDistributionTest(ValidationTest):
 
             # save result to file
             filename = os.path.join(base_output_dir, summary_output_file)
-            f = open(filename, 'a')
-            f.write(color+" shift = %2.3f\n"%(omedian-mmedian))
-            if(L2_success):
-                f.write(color+" SUCCESS: %s = %G\n" %('L2Diff', L2))
-            else:
-                f.write(color+" FAILED: %s = %G\n" %('L2Diff', L2))
-            if(L2_shifted_success):
-                f.write(color+" shifted SUCCESS: %s = %G\n" %('L2Diff', L2_shifted))
-            else:
-                f.write(color+" shifted FAILED: %s = %G\n" %('L2Diff', L2_shifted))
-            if(L1_success):
-                f.write(color+" SUCCESS: %s = %G\n" %('L1Diff', L1))
-            else:
-                f.write(color+" FAILED: %s = %G\n" %('L1Diff', L2))
-            if(L1_shifted_success):
-                f.write(color+" shifted SUCCESS: %s = %G\n" %('L1Diff', L1_shifted))
-            else:
-                f.write(color+" shifted FAILED: %s = %G\n" %('L1Diff', L1_shifted))
-            if(KS_success):
-                f.write(color+" SUCCESS: %s = %G\n" %('K-S', KS))
-            else:
-                f.write(color+" FAILED: %s = %G\n" %('K-S', KS))
-            if(KS_shifted_success):
-                f.write(color+" shifted SUCCESS: %s = %G\n" %('K-S', KS_shifted))
-            else:
-                f.write(color+" shifted FAILED: %s = %G\n" %('K-S', KS_shifted))
-            f.close()     
+            with open(filename, 'a') as f:
+                f.write("Median "+color+" difference (obs - mock) = %2.3f\n"%(omedian-mmedian))
+                f.write(color+"{}: {} = {}\n".format(' SUCCESS: ' if L2_success else 'FAILED: ', 'L2Diff', L2))
+                f.write(color+"{}: {} = {}\n".format(' SUCCESS: ' if L2_shifted_success else 'FAILED: ', 'L2Diff (shifted)', L2_shifted))
+                f.write(color+"{}: {} = {}\n".format(' SUCCESS: ' if L1_success else 'FAILED: ', 'L1Diff', L1))
+                f.write(color+"{}: {} = {}\n".format(' SUCCESS: ' if L1_shifted_success else 'FAILED: ', 'L1Diff (shifted)', L1_shifted))
+                f.write(color+"{}: {} = {}\n".format(' SUCCESS: ' if KS_success else 'FAILED: ', 'K-S', KS))
+                f.write(color+"{}: {} = {}\n".format(' SUCCESS: ' if KS_shifted_success else 'FAILED: ', 'K-S (shifted)', KS_shifted))
 
-        # save plot
-        if no_cdf_q==False:
+            # The test is considered pass if the 68% quantiles of the mock catalog
+            # is within the 95% quantiles of the observed catalog
+            if m68min<o95min or m68max>o95max:
+                pass_q = False
+            else:
+                pass_count+=1
+
+        if not skip_q:
+            # save plots
             fn = os.path.join(base_output_dir, plot_cdf_file)
             fig_cdf.savefig(fn)
             fn = os.path.join(base_output_dir, plot_pdf_file)
@@ -315,14 +308,14 @@ class ColorDistributionTest(ValidationTest):
         np.savetxt(fn, validation_quantiles)
 
         #--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--
-        msg = ''
-        if no_cdf_q:
-            result = 'SKIPPED'
+        if skip_q:
+            return TestResult(summary='No available colors for comparison. ', skipped=True)
         elif pass_q:
-            result = 'PASSED'
+            return TestResult(score=pass_count/float(len(self.colors)), 
+                summary='{}/{} - All colors pass the test. '.format(pass_count, len(self.colors)), passed=True)
         else:
-            result = 'FAILED'
-        return TestResult(result, msg)
+            return TestResult(score=pass_count/float(len(self.colors)), 
+                summary='{}/{} - Not all colors pass the test. '.format(pass_count, len(self.colors)), passed=False)
             
     def color_distribution(self, galaxy_catalog, bin_args, base_output_dir):
         """
