@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from astropy.io import fits
 
-def load_DEEP2(colors, zlo, zhi):
+def load_DEEP2(colors, zlo, zhi, limiting_band, limiting_mag):
     """
     Compute the CDF of DEEP2 colors for some redshift range. 
 
@@ -39,8 +39,9 @@ def load_DEEP2(colors, zlo, zhi):
         translate = {'u':'u_apercor', 'g':'g_apercor', 'r':'r_apercor', 'i':'i_apercor', 'z':'z_apercor'}
     else:
         translate = {'u':'u', 'g':'g', 'r':'r', 'i':'i', 'z':'z'}
-        
-    mask_redshift = (cat['zhelio']>zlo) & (cat['zhelio']<zhi)
+
+    limiting_band_name = translate[limiting_band]
+    mask_all = (cat['zhelio']>zlo) & (cat['zhelio']<zhi) & (cat[limiting_band_name]<limiting_mag)
 
     vsummary = []
     # PDF with small bins for calculating CDF
@@ -49,7 +50,7 @@ def load_DEEP2(colors, zlo, zhi):
         band1 = translate[color[0]]
         band2 = translate[color[2]]
 
-        mask = mask_redshift & (np.abs(cat[band1])>0) & (np.abs(cat[band1])<50) & (np.abs(cat[band2])>0) & (np.abs(cat[band2])<50)
+        mask = mask_all & (np.abs(cat[band1])>0) & (np.abs(cat[band1])<50) & (np.abs(cat[band2])>0) & (np.abs(cat[band2])<50)
         bins = np.linspace(-1, 4, 2000)
         hist, bin_edges = np.histogram((cat[band1]-cat[band2])[mask], bins=bins)
         hist = hist/np.sum(hist)
@@ -59,7 +60,7 @@ def load_DEEP2(colors, zlo, zhi):
 
     return vsummary
 
-def load_SDSS(colors, zlo, zhi):
+def load_SDSS(colors, zlo, zhi, limiting_band, limiting_mag):
     """
     Compute the CDF of SDSS colors for some redshift range. 
 
@@ -80,7 +81,8 @@ def load_SDSS(colors, zlo, zhi):
 
     translate = {'u':'modelMag_u', 'g':'modelMag_g', 'r':'modelMag_r', 'i':'modelMag_i', 'z':'modelMag_z'}
         
-    mask_redshift = (cat['z']>zlo) & (cat['z']<zhi)
+    limiting_band_name = translate[limiting_band]
+    mask_all = (cat['z']>zlo) & (cat['z']<zhi) & (cat[limiting_band_name]<limiting_mag)
 
     vsummary = []
     # PDF with small bins for calculating CDF
@@ -89,7 +91,7 @@ def load_SDSS(colors, zlo, zhi):
         band1 = translate[color[0]]
         band2 = translate[color[2]]
 
-        mask = mask_redshift & (np.abs(cat[band1])>0) & (np.abs(cat[band1])<50) & (np.abs(cat[band2])>0) & (np.abs(cat[band2])<50)
+        mask = mask_all & (np.abs(cat[band1])>0) & (np.abs(cat[band1])<50) & (np.abs(cat[band2])>0) & (np.abs(cat[band2])<50)
         bins = np.linspace(-1, 4, 2000)
         hist, bin_edges = np.histogram((cat[band1]-cat[band2])[mask], bins=bins)
         hist = hist/np.sum(hist)

@@ -44,10 +44,10 @@ class ColorDistributionTest(ValidationTest):
         translate : dictionary, optional
             translate the bands to catalog specific names
 
-        limiting_band: string, optional
+        limiting_band: string, required
             band of the magnitude limit in the validation catalog
 
-        limiting_mag: float, optional
+        limiting_mag: float, required
             the magnitude limit
 
         zlo : float, requred
@@ -55,10 +55,10 @@ class ColorDistributionTest(ValidationTest):
         
         zhi : float, requred
             maximum redshift of the validation catalog
-                            
+                
         data_dir : string, required
             path to the validation data directory
-            
+
         data_name : string, required
             name of the validation data
         
@@ -87,12 +87,12 @@ class ColorDistributionTest(ValidationTest):
         if 'limiting_band' in list(kwargs.keys()):
             self.limiting_band = kwargs['limiting_band']
         else:
-            self.limiting_band = None
+            raise ValueError('`limiting_band` not found!')
         # limiting magnitude
         if 'limiting_mag' in list(kwargs.keys()):
             self.limiting_mag = kwargs['limiting_mag']
         else:
-            self.limiting_mag = None
+            raise ValueError('`limiting_mag` not found!')
 
         # Redshift range
         # minimum redshift
@@ -142,9 +142,9 @@ class ColorDistributionTest(ValidationTest):
 
         if self.load_validation_catalog_q:
             if self._data_name=='DEEP2':
-                vsummary = load_DEEP2(self.colors, self.zlo_obs, self.zhi_obs)            
+                vsummary = load_DEEP2(self.colors, self.zlo_obs, self.zhi_obs, self.limiting_band, self.limiting_mag)
             elif self._data_name=='SDSS':
-                vsummary = load_SDSS(self.colors, self.zlo_obs, self.zhi_obs)            
+                vsummary = load_SDSS(self.colors, self.zlo_obs, self.zhi_obs, self.limiting_band, self.limiting_mag)
 
         filename = os.path.join(base_output_dir, summary_output_file)
         with open(filename, 'a') as f:
@@ -175,7 +175,7 @@ class ColorDistributionTest(ValidationTest):
                 ocdf = np.zeros(len(ohist))
                 ocdf[0] = ohist[0]
                 for cdf_index in range(1, len(ohist)):
-                    ocdf[cdf_index] = ocdf[cdf_index-1]+ohist[cdf_index]            
+                    ocdf[cdf_index] = ocdf[cdf_index-1]+ohist[cdf_index]
 
             # #----------------------------------------------------------------------------------------
             # if index==0:
@@ -216,7 +216,7 @@ class ColorDistributionTest(ValidationTest):
             for cdf_index in range(1, len(mhist)):
                 mcdf[cdf_index] = mcdf[cdf_index-1]+mhist[cdf_index]
             catalog_result = (mbinctr, mhist)
-            
+
             # 95% and 68% quantiles
             m95min = mbinctr[np.argmax(mcdf>0.025)]
             m95max = mbinctr[np.argmax(mcdf>0.975)]
@@ -254,7 +254,7 @@ class ColorDistributionTest(ValidationTest):
             ax_cdf.set_xlabel(color, fontsize=12)
             ax_cdf.set_title('')
             xlim = np.min([mbinctr[np.argmax(mcdf>0.005)], obinctr[np.argmax(ocdf>0.005)]])
-            xmax = np.max([mbinctr[np.argmax(mcdf>0.995)], obinctr[np.argmax(ocdf>0.995)]])            
+            xmax = np.max([mbinctr[np.argmax(mcdf>0.995)], obinctr[np.argmax(ocdf>0.995)]])
             ax_cdf.set_xlim(xlim, xmax)
             ax_cdf.set_ylim(0, 1)
             ax_cdf.legend(loc='best', frameon=False)
@@ -316,7 +316,7 @@ class ColorDistributionTest(ValidationTest):
         else:
             return TestResult(score=pass_count/float(len(self.colors)), 
                 summary='{}/{} - Not all colors pass the test. '.format(pass_count, len(self.colors)), passed=False)
-            
+
     def color_distribution(self, galaxy_catalog, bin_args, base_output_dir):
         """
         Calculate the color distribution.
@@ -349,18 +349,12 @@ class ColorDistributionTest(ValidationTest):
         # print()
         # ############ DEBUG ############
 
-        if self.limiting_band is not None:
-            #apply magnitude limit and remove nonsensical magnitude values
-            limiting_band_name = self.translate[self.limiting_band]
-            mag_lim = galaxy_catalog.get_quantities(limiting_band_name, {'zlo': self.zlo_mock, 'zhi': self.zhi_mock})
-            mask = (mag_lim<self.limiting_mag) & (mag1>0) & (mag1<50) & (mag2>0) & (mag2<50)
-            mag1 = mag1[mask]
-            mag2 = mag2[mask]
-        else:
-            #remove nonsensical magnitude values
-            mask = (mag1>0) & (mag1<50) & (mag2>0) & (mag2<50)
-            mag1 = mag1[mask]
-            mag2 = mag2[mask]
+        #apply magnitude limit and remove nonsensical magnitude values
+        limiting_band_name = self.translate[self.limiting_band]
+        mag_lim = galaxy_catalog.get_quantities(limiting_band_name, {'zlo': self.zlo_mock, 'zhi': self.zhi_mock})
+        mask = (mag_lim<self.limiting_mag) & (mag1>0) & (mag1<50) & (mag2>0) & (mag2<50)
+        mag1 = mag1[mask]
+        mag2 = mag2[mask]
 
         if np.sum(mask)==0:
             msg = 'No object in the magnitude range!\n'
@@ -371,7 +365,7 @@ class ColorDistributionTest(ValidationTest):
                 f.write(msg)
             return None, None
 
-                    
+        
         # count galaxies
         hist, bins = np.histogram(mag1-mag2, bins=np.linspace(*bin_args))
         # normalize the histogram so that the sum of hist is 1
