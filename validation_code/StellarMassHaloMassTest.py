@@ -171,19 +171,22 @@ class StellarMassHaloMassTest(ValidationTest):
         """
         
         #make sure galaxy catalog has appropiate quantities
-        if not 'stellar_mass' in galaxy_catalog.quantities or not 'mass' in galaxy_catalog.quantities:
+        if not 'stellar_mass' in galaxy_catalog.quantities or not 'mass' in galaxy_catalog.quantities or not 'parent_halo_id' in galaxy_catalog.quantities:
             #raise an informative warning
-            msg = ('galaxy catalog does not have either `mass` or `stellar_mass` quantity, skipping the rest of the validation test.')
+            msg = ('galaxy catalog does not have either `mass`, `stellar_mass` or `parent_halo_id` quantity, skipping the rest of the validation test.')
             warn(msg)
             #write to log file
             fn = os.path.join(base_output_dir ,log_file)
             with open(fn, 'a') as f:
                 f.write(msg)
-            return TestResult('SKIPPED', 'missing required quantities: stellar mass and/or halomass')
+            return TestResult('SKIPPED', 'missing required quantities: main halos with stellar mass and/or halomass')
 
         #calculate stellar mass - halo mass function in galaxy catalog
-        binctr, binwid, mhist, mhmin, mhmax = self.profile_stellar_mass_vs_halo_mass(galaxy_catalog)
-        catalog_result = {'x':binctr,'dx': binwid, 'y':mhist, 'y-':mhmin, 'y+': mhmax}
+        try:
+            binctr, binwid, mhist, mhmin, mhmax = self.profile_stellar_mass_vs_halo_mass(galaxy_catalog)
+            catalog_result = {'x':binctr,'dx': binwid, 'y':mhist, 'y-':mhmin, 'y+': mhmax}
+        except ValueError as e:
+            return TestResult('SKIPPED', '{}'.format(e)[:80])
         
         #calculate summary statistic
         summary_result, test_passed, test_details = self.calculate_summary_statistic(catalog_result,details=self.summary_details)
@@ -207,7 +210,7 @@ class StellarMassHaloMassTest(ValidationTest):
         self.write_summary_file(summary_result, test_passed, fn)
 
         msg = "{} = {:G} {} {:G}".format(self.summary_method, summary_result, '<' if test_passed else '>', self.threshold)
-        return TestResult('PASSED' if test_passed else 'FAILED', msg)
+        return TestResult(summary_result,msg,test_passed)
     
     def profile_stellar_mass_vs_halo_mass(self, galaxy_catalog):
         """
@@ -221,13 +224,19 @@ class StellarMassHaloMassTest(ValidationTest):
         #get stellar masses and halo masses from galaxy catalog
         stellarmasses = galaxy_catalog.get_quantities("stellar_mass", {'zlo': self.zlo, 'zhi': self.zhi})
         halomasses = galaxy_catalog.get_quantities("mass", {'zlo': self.zlo, 'zhi': self.zhi})
+        parent_halo_id = galaxy_catalog.get_quantities("parent_halo_id", {'zlo': self.zlo, 'zhi': self.zhi})
 
-        #remove non-finite r negative numbers
-        mask = np.isfinite(stellarmasses) & (stellarmasses > 0.0)
+        #remove non-finite or negative numbers and select main halos
+        mask = np.isfinite(stellarmasses) & (stellarmasses > 0.0) & (parent_halo_id == -1) & np.isfinite(halomasses) & (halomasses > 0.0)
+        #check if we have catalog data left
+        if (np.sum(mask) ==0):
+            msg=('galaxy catalog does not return any valid halos, skipping this validation test.')
+            warn(msg) 
+            raise ValueError(msg)
+
         stellarmasses = stellarmasses[mask]
-        mask = np.isfinite(halomasses) & (halomasses > 0.0)
         halomasses = halomasses[mask]
-        
+
         #bin halo masses in log bins
         logm = np.log10(halomasses)
         mhist, mbins = np.histogram(logm, bins=self.mhalo_log_bins)
@@ -340,7 +349,6 @@ class StellarMassHaloMassTest(ValidationTest):
         #save plot
         fig.savefig(savepath)
         plt.close(fig)
-    
     
     def write_file(self, result, filename, comment=None):
         """

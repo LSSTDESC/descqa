@@ -61,6 +61,7 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
                              'velocityX':             self._get_stored_property,
                              'velocityY':             self._get_stored_property,
                              'velocityZ':             self._get_stored_property,
+                             'parent_halo_id':        self._get_stored_property,
                              'disk_ra':               self._get_stored_property,
                              'disk_dec':              self._get_stored_property,
                              'disk_sigma0':           self._get_stored_property,

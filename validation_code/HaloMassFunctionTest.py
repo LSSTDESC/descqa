@@ -93,7 +93,7 @@ class HaloMassFunctionTest(ValidationTest):
                 msg = ('`observation` not available')
                 raise ValueError(msg)
         else:
-            self.observation = ShethTormen
+            self.observation = Tinker
 
         if 'ztest' in kwargs:
             self.ztest=kwargs['ztest']
@@ -226,7 +226,7 @@ class HaloMassFunctionTest(ValidationTest):
         self.write_summary_file(summary_result, test_passed, fn)
 
         msg = "{} = {:G} {} {:G}".format(self.summary_method, summary_result, '<' if test_passed else '>', self.threshold)
-        return TestResult('PASSED' if test_passed else 'FAILED', msg)
+        return TestResult(summary_result,msg,test_passed)
     
     def get_galaxy_data(self,galaxy_catalog):
         """ 
@@ -234,13 +234,25 @@ class HaloMassFunctionTest(ValidationTest):
         """
         #make sure galaxy catalog has appropiate quantities
         if not 'mass' in galaxy_catalog.quantities:
-            msg = ('galaxy catalog does not have `mass` quantity, skipping the rest of the validation test.')
+            msg = ('galaxy catalog does not have `mass` quantity, skipping this validation test.')
             warn(msg)
             raise ValueError(msg)
 
-        #calculate stellar mass function in galaxy catalog
+        if not 'parent_halo_id' in galaxy_catalog.quantities:
+            msg = ('galaxy catalog does not have `parent_halo_id` quantity, skipping this validation test.')
+            warn(msg)
+            raise ValueError(msg)
+
+        #calculate halo mass function in galaxy catalog
         binctr, binwid, mhist, mhmin, mhmax = self.binned_halo_mass_function(galaxy_catalog)
         catalog_result = {'x':binctr,'dx': binwid, 'y':mhist, 'y-':mhmin, 'y+': mhmax}
+
+        #check for non-zero values 
+        mask = (mhist > 0)
+        if(np.sum(mask) == 0):
+            msg = ('galaxy catalog does not return any valid halos, skipping this validation test.')
+            warn(msg)
+            raise ValueError(msg)            
 
         return catalog_result
 
@@ -255,9 +267,10 @@ class HaloMassFunctionTest(ValidationTest):
         
         #get halo masses from galaxy catalog
         halomasses = galaxy_catalog.get_quantities("mass", {'zlo': self.zlo, 'zhi': self.zhi})
+        parent_halo_id = galaxy_catalog.get_quantities("parent_halo_id", {'zlo': self.zlo, 'zhi': self.zhi})
 
-        #remove non-finite r negative numbers
-        mask = np.isfinite(halomasses) & (halomasses > 0.0)
+        #remove non-finite r negative numbers and select central halos only
+        mask = np.isfinite(halomasses) & (halomasses > 0.0) & (parent_halo_id == -1)
         halomasses = halomasses[mask]
         
         #bin halo masses in log bins
@@ -337,9 +350,10 @@ class HaloMassFunctionTest(ValidationTest):
             file to save plot
         """
         
-        fig = plt.figure(figsize=figsize)
+        #fig = plt.figure(figsize=figsize)
+        fig = plt.figure()
         ax1 = fig.add_axes(plot_rect)
-        
+
         #plot comparison data
         obinctr, ohist = (self.validation_data['x'], self.validation_data['y'])
         line1, = ax1.loglog(obinctr, ohist, label=self.observation, ls="-", color='green')
@@ -361,7 +375,7 @@ class HaloMassFunctionTest(ValidationTest):
 
         #add formatting
         plt.legend(handles=handles, loc='best', frameon=False, numpoints=1, fontsize='small')
-        plt.grid()
+        #plt.grid()
         plt.title(plot_title)
         plt.xlabel(xaxis_label)
         plt.ylabel(yaxis_label)
@@ -435,7 +449,8 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
         keyword arguments used in the validation
     """
     #initialize plot
-    fig = plt.figure(figsize=figsize)
+    #fig = plt.figure(figsize=figsize)
+    fig = plt.figure()    
     ax1 = fig.add_axes(plot_rect)
     
     #setup colors from colormap
@@ -457,7 +472,7 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
     plt.title(plot_title)
     plt.xlabel(xaxis_label)
     plt.ylabel(yaxis_label)
-    plt.grid()
+    #plt.grid()
 
     plt.savefig(output_file)
     plt.close(fig)

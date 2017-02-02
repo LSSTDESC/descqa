@@ -198,7 +198,7 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         self.write_summary_file(summary_result, test_passed, fn)
 
         msg = "{} = {:G} {} {:G}".format(self.summary_method, summary_result, '<' if test_passed else '>', self.threshold)
-        return TestResult('PASSED' if test_passed else 'FAILED', msg)
+        return TestResult(summary_result,msg,test_passed)
     
     def binned_stellar_mass_function(self, galaxy_catalog):
         """
