@@ -73,6 +73,7 @@ class ColorDistributionTest(ValidationTest):
         # set validation data information
         self._data_dir = kwargs['data_dir']
         self._data_name = kwargs['data_name']
+        self._raw_data_fname = kwargs['raw_data_fname']
         
         # set parameters of test
         # colors
@@ -142,9 +143,9 @@ class ColorDistributionTest(ValidationTest):
 
         if self.load_validation_catalog_q:
             if self._data_name=='DEEP2':
-                vsummary = load_DEEP2(self.colors, self.zlo_obs, self.zhi_obs, self.limiting_band, self.limiting_mag)
+                vsummary = load_DEEP2(self._raw_data_fname, self.colors, self.zlo_obs, self.zhi_obs, self.limiting_band, self.limiting_mag)
             elif self._data_name=='SDSS':
-                vsummary = load_SDSS(self.colors, self.zlo_obs, self.zhi_obs, self.limiting_band, self.limiting_mag)
+                vsummary = load_SDSS(self._raw_data_fname, self.colors, self.zlo_obs, self.zhi_obs, self.limiting_band, self.limiting_mag)
 
         filename = os.path.join(base_output_dir, summary_output_file)
         with open(filename, 'a') as f:

@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from astropy.io import fits
 
-def load_DEEP2(colors, zlo, zhi, limiting_band, limiting_mag):
+def load_DEEP2(filename, colors, zlo, zhi, limiting_band, limiting_mag):
     """
     Compute the CDF of DEEP2 colors for some redshift range. 
 
@@ -24,7 +24,7 @@ def load_DEEP2(colors, zlo, zhi, limiting_band, limiting_mag):
     # MAG_APERCOR or MAG_AUTO
     mag_apercor_q = True
 
-    cat = fits.getdata('/project/projectdirs/lsst/rongpu/descqa/DEEP2_uniq_Terapix_Subaru.fits')
+    cat = fits.getdata(filename)
 
     mask = (cat['cfhtls_source']>=0) & (cat['r_radius_arcsec']!=99)
     mask = (cat['zquality']>=3) & (cat['cfhtls_source']>=0) & (cat['r_radius_arcsec']!=99)
@@ -60,7 +60,7 @@ def load_DEEP2(colors, zlo, zhi, limiting_band, limiting_mag):
 
     return vsummary
 
-def load_SDSS(colors, zlo, zhi, limiting_band, limiting_mag):
+def load_SDSS(filename, colors, zlo, zhi, limiting_band, limiting_mag):
     """
     Compute the CDF of SDSS colors for some redshift range. 
 
@@ -77,7 +77,7 @@ def load_SDSS(colors, zlo, zhi, limiting_band, limiting_mag):
             maximum redshift of the validation catalog
     """
     
-    cat = fits.getdata('/project/projectdirs/lsst/rongpu/descqa/SpecPhoto_sdss_extinction_corrected_trimmed.fit')
+    cat = fits.getdata(filename)
 
     translate = {'u':'modelMag_u', 'g':'modelMag_g', 'r':'modelMag_r', 'i':'modelMag_i', 'z':'modelMag_z'}
         
