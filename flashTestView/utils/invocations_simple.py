@@ -42,7 +42,7 @@ class Invocation:
     def __cmp__(self, other):
         return cmp(other.date, self.date) or cmp(other.sameday_index, self.sameday_index)
 
-    def gen_invocation_html(self):
+    def gen_invocation_html(self,new_style):
         tests = [d for d in os.listdir(self.path) if os.path.isdir(os.path.join(self.path, d)) and not d.startswith('_')]
         tests.sort()
         
@@ -76,13 +76,22 @@ class Invocation:
 
         catalog_status = format_status_count(master_status.get('status_count_group_by_catalog', {}))
 
+
         output = []
-        main_link = '&nbsp;<a href="viewer/viewBuilds.cgi?target_dir={}" onMouseOver="appear(\'{}\', \'{}\');" onMouseOut="disappear();">{}</a>'.format(\
-                self.name, test_status, catalog_status, self.name)
-        output.append('<td>{}{}{}</td>'.format(main_link, user, comment))
-        output.append('<td><img src="style/{}.gif"></td>'.format(light))
-        test_links = '&nbsp;|&nbsp;'.join(('<a href="viewer/viewBuild.cgi?target_dir={0}/{1}">{1}</a>'.format(self.name, t) for t in tests))
-        catalog_links = '&nbsp;|&nbsp;'.join(('<a href="viewer/viewBuild.cgi?target_dir={0}/_group_by_catalog/{1}">{1}</a>'.format(self.name, c) for c in catalogs))
+        if new_style:
+            main_link = '&nbsp;<a href="index.cgi?run={}" onMouseOver="appear(\'{}\', \'{}\');" onMouseOut="disappear();">{}</a>'.format(\
+                    self.name, test_status, catalog_status, self.name)
+            output.append('<td>{}{}{}</td>'.format(main_link, user, comment))
+            output.append('<td><img src="style/{}.gif"></td>'.format(light))
+            test_links = '&nbsp;|&nbsp;'.join(('<a href="index.cgi?run={0}&test={1}">{1}</a>'.format(self.name, t) for t in tests))
+            catalog_links = '&nbsp;|&nbsp;'.join(('<a href="index.cgi?run={0}&catalog={1}">{1}</a>'.format(self.name, c) for c in catalogs))
+        else:
+            main_link = '&nbsp;<a href="viewer/viewBuilds.cgi?target_dir={}" onMouseOver="appear(\'{}\', \'{}\');" onMouseOut="disappear();">{}</a>'.format(\
+                    self.name, test_status, catalog_status, self.name)
+            output.append('<td>{}{}{}</td>'.format(main_link, user, comment))
+            output.append('<td><img src="style/{}.gif"></td>'.format(light))
+            test_links = '&nbsp;|&nbsp;'.join(('<a href="viewer/viewBuild.cgi?target_dir={0}/{1}">{1}</a>'.format(self.name, t) for t in tests))
+            catalog_links = '&nbsp;|&nbsp;'.join(('<a href="viewer/viewBuild.cgi?target_dir={0}/_group_by_catalog/{1}">{1}</a>'.format(self.name, c) for c in catalogs))
         output.append('<td>TESTS:&nbsp;{}<br>{}{}&nbsp;</td>'.format(test_links, 'CATALOGS:&nbsp;' if catalog_links else '',  catalog_links))
 
         self.html = '\n'.join(output)
@@ -106,7 +115,7 @@ class BigBoard:
                 self.invocationList = []
 
 
-    def generate(self, days_to_show=None, cache_file=None):
+    def generate(self, days_to_show=None, cache_file=None, new_style=False):
         newInvocationList = []
 
         for item in os.listdir(self.dir_path):
@@ -121,7 +130,7 @@ class BigBoard:
                 invocation.html = self.invocationList[i].html
 
             if not invocation.html:
-                invocation.gen_invocation_html()
+                invocation.gen_invocation_html(new_style)
 
             newInvocationList.append(invocation)
         
