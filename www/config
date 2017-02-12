@@ -1,5 +1,5 @@
 siteTitle          : DESCQA: LSST DESC Quality Assurance
 pathToOutputDir    : /global/projecta/projectdirs/lsst/descqa/run/edison
-bigboard_cache     : cache/bigboard.pkl
+bigboard_cache     : /global/projecta/projectdirs/lsst/descqa/src/www/cache/bigboard.pkl
 invocationsPerPage : 25
 days_to_show       : 30

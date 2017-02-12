@@ -65,7 +65,7 @@ print '''<!DOCTYPE html>
 </head>
 <body>
 <div id="header" class="without-secondary-menu"><div class="section clearfix" style="background-image: -webkit-linear-gradient(top, #dfe1e1 0%, #878d91 100%);">
-<a href="/project/lsst/descqa/flashTestView/front.cgi" title="Home" rel="home" id="logo">
+<a href="index.cgi" title="Home" rel="home" id="logo">
 <img src="http://lsst-desc.org/sites/default/files/desc-logo-small.png" alt="Home" />
 </a>  
 <div id="name-and-slogan">
@@ -73,7 +73,7 @@ print '''<!DOCTYPE html>
 </div> 
 </div></div>
 '''
-print '<a class="everblue" href="/project/lsst/descqa/flashTestView/front.cgi">&lt; Back to home</a>'
+print '<a class="everblue" href="index.cgi">&lt; Back to home</a>'
 print '<div class="title"><h1>{}</h1></div>'.format(siteTitle)
 
 count = bigboard.get_count()

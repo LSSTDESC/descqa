@@ -340,20 +340,26 @@ def all_runs(page):
     siteTitle = configDict.get('siteTitle', '')
     days_to_show = int(configDict.get('days_to_show', 15))
 
-    bigboard_cache='cache/bigboard_new.pkl'
-    bigboard = BigBoard(pathToOutputDir, bigboard_cache)
-    count = bigboard.get_count()
-    if not count:
-        print '<h1>nothing to show!</h1>'
-        print '</body></html>'
-        sys.exit(0)
+    bigboard_cache = configDict.get('bigboard_cache')
+    try:
+        bigboard_cache += '.new'
+    except TypeError:
+        pass
 
+    bigboard = BigBoard(pathToOutputDir, bigboard_cache)
     cache_dumped = bigboard.generate(days_to_show, bigboard_cache, new_style=True)
+
     if cache_dumped:
         try:
             os.chmod(bigboard_cache, stat.S_IWOTH+stat.S_IROTH+stat.S_IWGRP+stat.S_IRGRP+stat.S_IRUSR+stat.S_IWUSR)
         except OSError:
             pass
+
+    count = bigboard.get_count()
+    if not count:
+        print '<h1>nothing to show!</h1>'
+        print '</body></html>'
+        sys.exit(0)
 
     npages = ((count - 1) // invocationsPerPage) + 1
     if page > npages:
@@ -430,8 +436,8 @@ try:
       if run:
         catalog = form.getfirst('catalog')
         test = form.getfirst('test')
-        if 'leftframe' in form.keys():
-            left_frame(run,catalog,test)
+        if 'leftframe' in form:
+            left_frame(run, catalog,test)
         elif run == 'all':
             try:
                 page = int(form.getfirst('page', 1))
