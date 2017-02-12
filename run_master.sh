@@ -7,7 +7,7 @@
 set -e
 
 # set DESCQA root directory
-DESCQAROOTDIR="/scratch2/scratchdirs/yymao/descqa-backup"
+DESCQAROOTDIR="/global/projecta/projectdirs/lsst/descqa"
 
 # load python module and set PYTHONPATH
 export PYTHONPATH=""

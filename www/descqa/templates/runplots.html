@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>{{ siteTitle }}</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+</head>
+<frameset rows="170px,*">
+   <frame noresize="noresize" frameborder="0" src="index.cgi?header=1">
+   swoijwdoij
+   </frame>
+   <frameset cols="50%,*">
+      {% if test %}
+      <frame src="index.cgi?leftframe=1&run={{ run }}&test={{ test }}&test_prefix={{ test_prefix }}&catalog_prefix={{ catalog_prefix }}{% if catalog %}#{{ catalog }}{% endif %}" name="leftframe">
+      {% elif catalog %}
+      <frame src="index.cgi?leftframe=1&run={{ run }}&catalog={{ catalog }}&test_prefix={{ test_prefix }}&catalog_prefix={{ catalog_prefix }}" name="leftframe">
+      {% endif %}
+      <frame src="javascript:parent.blank()" name="rightframe">
+   </frameset>
+</frameset>
+</html>'
+
