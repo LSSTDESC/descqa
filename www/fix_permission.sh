@@ -2,7 +2,7 @@
 
 python -m py_compile utils/*.py descqa/*.py
 
-chmod o+r    config
+chmod o+r    config .htaccess
 chmod o+rx   *.cgi
 chmod o+rx   style utils viewer descqa descqa/templates
 chmod o+rwx  cache
