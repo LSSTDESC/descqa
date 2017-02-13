@@ -40,21 +40,30 @@ class SAGGalaxyCatalog(GalaxyCatalog):
                             'positionX'      : self._get_derived_property,
                             'positionY'      : self._get_derived_property,
                             'positionZ'      : self._get_derived_property,
-                            'velocityX'      : self._get_derived_property,
-                            'velocityY'      : self._get_derived_property,
-                            'velocityZ'      : self._get_derived_property,
+                            'velocityX'      : self._self._stored_property_wrapper('Vx),
+                            'velocityY'      : self._self._stored_property_wrapper('Vy),
+                            'velocityZ'      : self._self._stored_property_wrapper('Vz),
                             'stellar_mass'   : self._get_derived_property,
                             'mass'           : self._get_derived_property,
                             'parent_halo_id' : self._get_derived_property,
+                            'LSST_u:rest:'         : self._stored_property_wrapper('Mag_id224_AB_tot_r'),
+                            'LSST_g:rest:'         : self._stored_property_wrapper('Mag_id225_AB_tot_r'),
+                            'LSST_r:rest:'         : self._stored_property_wrapper('Mag_id226_AB_tot_r'),
+                            'LSST_i:rest:'         : self._stored_property_wrapper('Mag_id227_AB_tot_r'),
+                            'LSST_z:rest:'         : self._stored_property_wrapper('Mag_id228_AB_tot_r'),
+                            'LSST_y:rest:'         : self._stored_property_wrapper('Mag_id229_AB_tot_r'),
+                            'LSST_u:observed:'     : self._stored_property_wrapper('Mag_id224_AB_tot_o'),
+                            'LSST_g:observed:'     : self._stored_property_wrapper('Mag_id225_AB_tot_o'),
+                            'LSST_r:observed:'     : self._stored_property_wrapper('Mag_id226_AB_tot_o'),
+                            'LSST_i:observed:'     : self._stored_property_wrapper('Mag_id227_AB_tot_o'),
+                            'LSST_z:observed:'     : self._stored_property_wrapper('Mag_id228_AB_tot_o'),
+                            'LSST_y:observed:'     : self._stored_property_wrapper('Mag_id229_AB_tot_o')
                           }
 
         self.derived    = {
                             'positionX'      : (('X',), lambda x: x*1.0e-3, -1.0),
                             'positionY'      : (('Y',), lambda x: x*1.0e-3, -1.0),
                             'positionZ'      : (('Z',), lambda x: x*1.0e-3, -1.0),
-                            'velocityX'      : (('Vx',), None, None),
-                            'velocityY'      : (('Vy',), None, None),
-                            'velocityZ'      : (('Vz',), None, None),
                             'stellar_mass'   : (('M_star_disk', 'M_star_bulge'), np.add, -1.0),
                             'mass'           : (('Halo/M200c',), None, -1.0),
                             'parent_halo_id' : (('Galaxy_Type',), lambda x: np.where(x==0, -1, 100), None),
@@ -110,6 +119,19 @@ class SAGGalaxyCatalog(GalaxyCatalog):
             output *= (self.h**h_factor)
 
         return output
+                                                                                   
+    def _stored_property_wrapper(self, name):
+        """
+        private function used to translate desc keywords into stored keywords in the mock
+        
+        Parameters
+        ----------
+        name : string
+            key into stored mock catalogue
+        
+        """
+        
+        return (lambda quantity, filter : self._get_stored_property(name, filter))
 
 
 class SAGcollection():
