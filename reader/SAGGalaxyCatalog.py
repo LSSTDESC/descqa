@@ -40,9 +40,9 @@ class SAGGalaxyCatalog(GalaxyCatalog):
                             'positionX'      : self._get_derived_property,
                             'positionY'      : self._get_derived_property,
                             'positionZ'      : self._get_derived_property,
-                            'velocityX'      : self._self._stored_property_wrapper('Vx),
-                            'velocityY'      : self._self._stored_property_wrapper('Vy),
-                            'velocityZ'      : self._self._stored_property_wrapper('Vz),
+                            'velocityX'      : self._stored_property_wrapper('Vx'),
+                            'velocityY'      : self._stored_property_wrapper('Vy'),
+                            'velocityZ'      : self._stored_property_wrapper('Vz'),
                             'stellar_mass'   : self._get_derived_property,
                             'mass'           : self._get_derived_property,
                             'parent_halo_id' : self._get_derived_property,
@@ -57,7 +57,12 @@ class SAGGalaxyCatalog(GalaxyCatalog):
                             'LSST_r:observed:'     : self._stored_property_wrapper('Mag_id226_AB_tot_o'),
                             'LSST_i:observed:'     : self._stored_property_wrapper('Mag_id227_AB_tot_o'),
                             'LSST_z:observed:'     : self._stored_property_wrapper('Mag_id228_AB_tot_o'),
-                            'LSST_y:observed:'     : self._stored_property_wrapper('Mag_id229_AB_tot_o')
+                            'LSST_y:observed:'     : self._stored_property_wrapper('Mag_id229_AB_tot_o'),
+                            'SDSS_u:observed:'     : self._stored_property_wrapper('Mag_id224_AB_tot_o'),
+                            'SDSS_g:observed:'     : self._stored_property_wrapper('Mag_id225_AB_tot_o'),
+                            'SDSS_r:observed:'     : self._stored_property_wrapper('Mag_id226_AB_tot_o'),
+                            'SDSS_i:observed:'     : self._stored_property_wrapper('Mag_id227_AB_tot_o'),
+                            'SDSS_z:observed:'     : self._stored_property_wrapper('Mag_id228_AB_tot_o'),
                           }
 
         self.derived    = {
