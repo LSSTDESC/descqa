@@ -60,7 +60,7 @@ https://portal.nersc.gov/project/lsst/descqa/index.cgi?run=all
 Repeat steps 2, 3, 4 as necessary.
 
 
-### Step 6: Commit and push your changes
+### Step 6: Commit and push your changes (only if you are a DESCQA member)
 
 Now that you are happy about your changes, you can commit them. First, make sure you are in your local descqa clone:
 
