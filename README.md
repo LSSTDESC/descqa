@@ -13,9 +13,7 @@ _Note: Do Steps 1 through 6 under one of your own directory on a NERSC machine. 
 If you have never cloned the repo before, run:
 
     cd your/own/directory
-    git clone -b hackweek16 https://github.com/LSSTDESC/descqa.git descqa-local
-
-Note that you need the option `-b hackweek16`!
+    git clone https://github.com/LSSTDESC/descqa.git descqa-local
 
 Or, if you have already cloned the repo, then run:
 
@@ -90,11 +88,7 @@ Hopefullly there's no conflict. If there are, resolve them, and commit again. On
 
 _Note: you don't need to do this step **unless** you made changes to the web interface._
 
-Go to the main descqa direcotory on NERSC:
-
-    cd /project/projectdirs/lsst/descqa/src
-    
-Pull changes from github:
+Go to the main descqa direcotory on NERSC and pull changes from github:
 
     git pull
     
