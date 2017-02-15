@@ -20,6 +20,13 @@ Or, if you have already cloned the repo, then run:
     cd your/own/directory/descqa-local
     git pull
 
+_Note: If you have been using the `hackweek16` branch, please rename it to `master` by running:
+
+    cd your/own/directory/descqa-local
+    git pull origin master
+    git branch -m hackweek16 master
+    git config --local branch.master.merge refs/heads/master    
+
 
 ### Step 2: Develop
 
