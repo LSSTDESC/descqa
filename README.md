@@ -52,7 +52,7 @@ _Note: If you see error message about conflicting modules, please unload the mod
 
 As the master script is running, all the error messages will be printed out in real time if you have set `-v`. You can also go to the web interface to check you result:
 
-https://portal-auth.nersc.gov/project/lsst/descqa/flashTestView/home.cgi
+https://portal.nersc.gov/project/lsst/descqa/index.cgi?run=all
 
 
 ### Step 5: Iterate
