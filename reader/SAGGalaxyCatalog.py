@@ -283,6 +283,8 @@ class SAGcollection():
             else:
                 # search for the lowest match:
                 zarr = self._lookup_z(zl, zh)
+                if not zarr:
+                    return np.array([])
                 iarr = [self.redshift.index(min(zarr))]
 
         if 'idxfilter' in kwargs.keys():
