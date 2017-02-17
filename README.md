@@ -101,7 +101,7 @@ Go to the main descqa direcotory on NERSC and pull changes from github:
     
 And fix permissions:
 
-    cd flashTestView
+    cd www
     ./fix_permission
    
 
@@ -115,7 +115,7 @@ And fix permissions:
 - `reader/`: directory that hosts all the reader classes
 - `validation_code/`: directory that hosts all the validation test classes and relevent utilities
 - `validation_data/`: directory that hosts small data files that validation tests need
-- `flashTestView/`: directory that hosts the web interface
+- `www/`: directory that hosts the web interface
 
 _Note: actual catalog files are not in this repo as they are generally much bigger._
 
