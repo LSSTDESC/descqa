@@ -25,11 +25,12 @@ validation_output_file = 'validation_smf.txt'
 summary_details_file = 'summary_details_smf.txt'
 summary_details_module = 'write_summary_details'
 summary_output_file = 'summary_smf.txt'
+jackknife_stats_module='get_jackknife_masks'
 log_file = 'log_smf.txt'
 plot_file = 'plot_smf.png'
 plot_title = 'Stellar Mass Function'
 xaxis_label = r'$\log (M^*/(M_\odot)$'
-yaxis_label = r'$\log(dn/dV\,d\log M) ({\rm Mpc}^{-3}\,{\rm dex}^{-1})$'
+yaxis_label = r'$dn/dV\,d\log M ({\rm Mpc}^{-3}\,{\rm dex}^{-1})$'
 summary_colormap = 'rainbow'
 test_range_color = 'red'
 
@@ -91,9 +92,11 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         
         #stellar mass bins
         if 'bins' in kwargs:
-            self.mstar_log_bins = np.linspace(*kwargs['bins'])
+            self.mstar_log_bins = kwargs['bins']
         else:
-            self.mstar_log_bins = np.linspace(7.0, 12.0, 26)
+            msg = ('`binning` not available')
+            raise ValueError(msg)            
+
         #minimum redshift
         if 'zlo' in kwargs:
             zlo = kwargs['zlo']
@@ -112,6 +115,7 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         self.threshold = kwargs.get('threshold',1.0)
         self.summary_details = kwargs.get('summary_details',False)
         self.validation_range = kwargs.get('validation_range',(7.0,12.0))
+        self.Njackknife_samples=kwargs.get('Njackknife_samples',0)
         
     def load_validation_data(self):
         """
@@ -134,11 +138,13 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         #column 3: 1-sigma error
         binctr, mhist, merr = np.loadtxt(fn, unpack=True, usecols=columns[self.observation])
         
-        #take log of values
+        #take log of mass values
         binctr = np.log10(binctr)
-        mhmax = np.log10(mhist + merr)
-        mhmin = np.log10(mhist - merr)
-        mhist = np.log10(mhist)
+        mhmin = mhist - merr
+        mhmin = mhist + merr
+        #mhmax = np.log10(mhist + merr)
+        #mhmin = np.log10(mhist - merr)
+        #mhist = np.log10(mhist)
         
         return binctr, mhist, mhmin, mhmax
     
@@ -173,8 +179,8 @@ class BinnedStellarMassFunctionTest(ValidationTest):
             return TestResult('SKIPPED', msg)
         
         #calculate stellar mass function in galaxy catalog
-        binctr, binwid, mhist, mhmin, mhmax = self.binned_stellar_mass_function(galaxy_catalog)
-        catalog_result = {'x':binctr,'dx': binwid, 'y':mhist, 'y-':mhmin, 'y+': mhmax}
+        binctr, binwid, mhist, mhmin, mhmax, covariance = self.binned_stellar_mass_function(galaxy_catalog)
+        catalog_result = {'x':binctr,'dx': binwid, 'y':mhist, 'y-':mhmin, 'y+': mhmax, 'covariance': covariance}
         
         #calculate summary statistic and write detailes summary file if requested
         summary_result, test_passed, test_details = self.calculate_summary_statistic(catalog_result,details=self.summary_details)
@@ -215,16 +221,31 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         #remove non-finite r negative numbers
         mask = np.isfinite(masses) & (masses > 0.0)
         masses = masses[mask]
-        
-        #count galaxies in log bins
+
+        #histogram points and compute bin positions
         mhist, mbins = np.histogram(np.log10(masses), bins=self.mstar_log_bins)
-        binctr = (mbins[1:] + mbins[:-1])*0.5
+        summass, _    = np.histogram(np.log10(masses), bins=self.mstar_log_bins, weights=masses)
+        binctr = np.log10(summass/mhist)
+        #binctr = (mbins[1:] + mbins[:-1])*0.5
         binwid = mbins[1:] - mbins[:-1]
-        
+
+        #count galaxies in log bins
+        #get errors from jackknife samples if requested
+        if (self.Njackknife_samples>0):
+            jackknife_stats=getattr(CalcStats, jackknife_stats_module)
+            x = galaxy_catalog.get_quantities("x", {'zlo': self.zlo, 'zhi': self.zhi})
+            y = galaxy_catalog.get_quantities("y", {'zlo': self.zlo, 'zhi': self.zhi})
+            z = galaxy_catalog.get_quantities("z", {'zlo': self.zlo, 'zhi': self.zhi})
+            paramdict['bins']=self.mstar_log_bins
+            mhist,merrors,covariance=jackknife_stats(x[mask],y[mask],z[mask],self.Njackknife_samples,galaxy_catalog.box_size,masses,np.histogram,paramdict)
+        else:
+            merrors=np.sqrt(mhist)
+            covariance=np.diag(mhist)
+
         #calculate volume
         if galaxy_catalog.lightcone:
-            Vhi = galaxy_catalog.get_cosmology().comoving_volume(zhi)
-            Vlo = galaxy_catalog.get_cosmology().comoving_volume(zlo)
+            Vhi = galaxy_catalog.get_cosmology().comoving_volume(self.zhi)
+            Vlo = galaxy_catalog.get_cosmology().comoving_volume(self.zlo)
             dV = float((Vhi - Vlo)/u.Mpc**3)
             # TODO: need to consider completeness in volume
             af = float(galaxy_catalog.get_sky_area() / (4.*np.pi*u.sr))
@@ -232,15 +253,17 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         else:
             vol = galaxy_catalog.box_size**3.0
         
-        #calculate number differential density
-        mhmin = (mhist - np.sqrt(mhist)) / binwid / vol
-        mhmax = (mhist + np.sqrt(mhist)) / binwid / vol
-        mhist = mhist / binwid / vol
-        mhist = np.log10(mhist)
-        mhmin = np.log10(mhmin)
-        mhmax = np.log10(mhmax)
         
-        return binctr, binwid, mhist, mhmin, mhmax
+        #calculate number differential density
+        mhmin = (mhist - merror) / binwid / vol
+        mhmax = (mhist + merror) / binwid / vol
+        mhist = mhist / binwid / vol
+        covariance = covariance / binwid / vol
+        #mhist = np.log10(mhist)
+        #mhmin = np.log10(mhmin)
+        #mhmax = np.log10(mhmax)
+        
+        return binctr, binwid, mhist, mhmin, mhmax, covariance
     
     
     def calculate_summary_statistic(self, catalog_result, details=False):
@@ -299,6 +322,7 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         fig = plt.figure()
         
         #plot measurement from galaxy catalog
+        plt.yscale('log')
         sbinctr, sbinwid, shist, shmin, shmax = (result['x'], result['dx'], result['y'], result['y-'], result['y+'])
         line1, = plt.step(sbinctr, shist, where="mid", label=catalog_name, color='blue')
         plt.fill_between(sbinctr, shmin, shmax, facecolor='blue', alpha=0.3, edgecolor='none')
@@ -396,6 +420,7 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
     plt.title(plot_title)
     plt.xlabel(xaxis_label)
     plt.ylabel(yaxis_label)    
+    plt.yscale('log')
 
     #setup colors from colormap
     colors= matplotlib.cm.get_cmap('nipy_spectral')(np.linspace(0.,1.,len(catalog_list)))

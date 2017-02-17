@@ -2,6 +2,7 @@
 
 # ---- DO NOT change this section ----
 import os as _os
+import numpy as np
 
 class _ValidationConfig():
     def __init__(self, module, **kwargs):
@@ -19,7 +20,7 @@ class _ValidationConfig():
 
 smf_LiWhite = _ValidationConfig('BinnedStellarMassFunctionTest',
          observation='LiWhite2009',
-         bins=(7.0,12.0,26),
+         bins=np.linspace(7.0,12.0,26),
          zlo=0.0,
          zhi=0.1,
          summary='L2Diff',
@@ -31,7 +32,7 @@ smf_LiWhite = _ValidationConfig('BinnedStellarMassFunctionTest',
 
 smf_MB2 = _ValidationConfig('BinnedStellarMassFunctionTest',
          observation='MassiveBlackII',
-         bins=(7.0,12.0,26),
+         bins=np.linspace(7.0,12.0,26),
          zlo=0.0,
          zhi=0.1,
          summary='L2Diff',
@@ -59,7 +60,7 @@ hmf_T = _ValidationConfig('HaloMassFunctionTest',
          zhi=0.1,
          summary='L2Diff',
          summary_details=True,
-         validation_range=(5.e10,1.e15),
+         validation_range=(1.e11,1.e15),
          description='The mass distribution of halos is one of the essential components of precision cosmology, and occupies a central place in the paradigm of structure formation.  There are two common ways to define halos in a simulation.  One is based on identifying overdense regions above a certain threshold.  The other method, the FOF algorithm, is based on finding neighbors of particles and neighbors of neighbors as defined by a given separation distance. In DESCQA, we calculate the halo mass function from each catalog, and compare it against some well-established analytic fits in the literature.  We assume Poisson error bars.  We use the Bhattacharya et al. 2001 fit for the FOF halos, and Tinker et al. 2008 fit for the case of SO halos.'
 )
 
