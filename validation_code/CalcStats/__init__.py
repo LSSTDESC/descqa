@@ -3,7 +3,7 @@ import numpy as np
 
 def L2Diff(dataset_1, dataset_2, threshold=1.0, details=False):
     """
-    compute the L2 norm for 2 datasets
+    compute the L2Diff between 2 datasets
     
     checks the x values to see if interpolation is needed
     threshold sets criterion for passing the test
@@ -108,7 +108,7 @@ def L2Diff(dataset_1, dataset_2, threshold=1.0, details=False):
         if e1 is not None:
             e1int = e1
     
-    #compute L2 norm
+    #compute L2Diff
     if e1 is not None:
         if e2 is not None:
             diff = (y2 - y1int)**2 / (e1int**2 + e2**2)            
@@ -119,12 +119,10 @@ def L2Diff(dataset_1, dataset_2, threshold=1.0, details=False):
             diff = (y2 - y1int)**2 / e2**2 
         else:
             diff = (y2 - y1int)**2
-    diff=np.sqrt(diff)
-    L2= np.sum(diff)
     
     #normalize by the number of points
     N_points = 1.0*len(y2)
-    L2 = L2/N_points
+    L2= np.sqrt(np.sum(diff)/N_points)
 
     #return result
     if (L2 > threshold) or (np.isnan(L2)):
@@ -137,13 +135,18 @@ def L2Diff(dataset_1, dataset_2, threshold=1.0, details=False):
         if e1 is not None:
             if e2 is not None:
                 results={'diff':diff,'x':x2,'y1int':y1int,'y2':y2,'e1int':e1int,'e2':e2}
+                results['description']='(y2-y1)**2/(e1**2+e2**2)'
             else:
                 results={'diff':diff,'x':x2,'y1int':y1int,'y2':y2,'e1int':e1int}
+                results['description']='(y2-y1)**2/(e1**2)'
         else:
             if e2 is not None:
                 results={'diff':diff,'x':x2,'y1int':y1int,'y2':y2,'e2':e2}
+                results['description']='(y2-y1)**2/(e2**2)'
             else:
                 results={'diff':diff,'x':x2,'y1int':y1int,'y2':y2}
+                results['description']='(y2 - y1)**2'
+        results['L2Diff']='sqrt(sum('+results['description']+')/N_points)'
 
         return L2, success, results
     else:
@@ -152,7 +155,7 @@ def L2Diff(dataset_1, dataset_2, threshold=1.0, details=False):
 
 def L1Diff(dataset_1, dataset_2, threshold=1.0, details=False):
     """
-    compute the L1 norm for 2 datasets
+    compute the L1Diff for 2 datasets
     
     checks the x values to see if interpolation is needed
     threshold sets criterion for passing the test
@@ -211,7 +214,7 @@ def L1Diff(dataset_1, dataset_2, threshold=1.0, details=False):
     else:
         y1int=y1
     
-    #compute L1 norm and significance
+    #compute L1Diff and significance
     diff= np.abs(y2 - y1int)
     L1 = np.sum(diff)
     
@@ -228,6 +231,8 @@ def L1Diff(dataset_1, dataset_2, threshold=1.0, details=False):
     if (details):
         #save detailed results to dictionary if requested
         results={'diff':diff,'x':x2,'y1int':y1int,'y2':y2}
+        results['description']='abs(y2 - y1)'
+        results['L1Diff']='sum('+results['description']+')/N_points'
         return L1, success, results
     else:
         return L1, success
@@ -301,6 +306,8 @@ def KS_test(dataset_1, dataset_2, threshold=1.0, details=False):
     if (details):
         #save detailed results to dictionary if requested
         results={'diff':diff,'x':x2,'y1int':y1int,'y2':y2}
+        results['description']='abs(y2 - y1)'
+        results['KS']='max('+results['description']+')'
         return KS, success, results
     else:
         return KS, success
@@ -325,8 +332,15 @@ def write_summary_details(results, filename, method='diff',comment=None):
         f = open(filename, 'w')
         if comment:
             f.write('# {0}\n'.format(comment))
+        if (results.has_key(method)):
+            f.write('# {0}\n'.format(method+' = '+results[method]))
+        if (results.has_key('description')):
+            description=results['description']
+        else:
+            description=method
+        
         #write header and results depending on dict contents
-        f.write('# {0}\n'.format('Columns are: '+method+', x, y1, y2, (e1), (e2)'))
+        f.write('# {0}\n'.format('Columns: '+description+', x, y1, y2, (e1), (e2)'))
         if ('e1int' in results and 'e2' in results):
             for b, h, hn, hx, en, ex in zip(*(results[k] for k in ['diff','x','y1int','y2','e1int','e2'])):
                 f.write("%13.6e %13.6e %13.6e %13.6e %13.6e %13.6e\n" % (b, h, hn, hx, en, ex))
@@ -339,12 +353,47 @@ def write_summary_details(results, filename, method='diff',comment=None):
         else:
             for b, h, hn, hx in zip(*(results[k] for k in ['diff','x','y1int','y2'])):
                 f.write("%13.6e %13.6e %13.6e %13.6e\n" % (b, h, hn, hx))
-        #f.write('Check average '+method+': %13.6e\n' %(np.sum(results['diff'])/len(results['y2'])) )
+
         f.close()
     else:
         msg = ('Empty summary_details dict')
         warn(msg)
-    
 
 
+def get_jackknife_masks(x,y,z,Nsub,box_size):
+    """
+    compute masks for Nsub**3 volume subsamples
 
+    Parameters
+    ----------
+    x:  x positions for data array
+    y:  y positions for data array
+    z:  z positions for data array
+
+    Nsub number of sub-samples in each dimension
+    box_size:  size of simulation box
+
+    Returns
+    -------
+    masks: dictionary of masks selecting positions in subvolumes
+    """
+
+    masks={}
+    dsize=box_size/Nsub
+    for nx in range(Nsub):
+        xmin=nx*dsize
+        xmax=(nx+1)*dsize
+
+        for ny in range(Nsub):
+            ymin=ny*dsize
+            ymax=(ny+1)*dsize
+
+            for nz in range(Nsub):
+                zmin=nz*dsize
+                zmax=(nz+1)*dsize
+                masks[str(nx)+str(ny)+str(nx)]=(x>=xmin) & (x<xmax) & (y>=ymin) & (y<ymax) & (x>=zmin) & (z<zmax)
+
+    #
+
+    return masks
+                
