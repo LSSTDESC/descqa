@@ -1,3 +1,4 @@
+__all__ = ['L2Diff', 'L1Diff', 'KS_test', 'write_summary_details', 'get_subvolume_indices', 'jackknife']
 from __future__ import division, print_function
 import numpy as np
 
@@ -360,40 +361,23 @@ def write_summary_details(results, filename, method='diff',comment=None):
         warn(msg)
 
 
-def get_jackknife_masks(x,y,z,Nsub,box_size):
-    """
-    compute masks for Nsub**3 volume subsamples
+def get_subvolume_indices(x, y, z, box_size, n_side):
+    side_size = box_size/n_side
+    return np.ravel_multi_index(np.floor(np.vstack((x, y, z))/side_size).astype(int), (n_side,)*3, 'wrap')
 
-    Parameters
-    ----------
-    x:  x positions for data array
-    y:  y positions for data array
-    z:  z positions for data array
 
-    Nsub number of sub-samples in each dimension
-    box_size:  size of simulation box
+def jackknife(data, jack_indices, n_jack, func, args=(), kwargs={}):
+    full = func(data, *args, **kwargs)
 
-    Returns
-    -------
-    masks: dictionary of masks selecting positions in subvolumes
-    """
+    jack = []
+    for i in xrange(n_jack):
+        jack.append(func(data[jack_indices != i], *args, **kwargs))
+    jack = np.array(jack)
+    
+    if jack.ndim == 1:
+        bias = (jack.mean() - full)*(n_jack-1)
+        return full-bias, np.var(X)*(n_jack-1)
+    else:
+        bias = (jack.mean(axis=0) - np.array(full))*(n_jack-1)
+        return full-bias, np.cov(X, bias=True)*(n_jack-1)
 
-    masks={}
-    dsize=box_size/Nsub
-    for nx in range(Nsub):
-        xmin=nx*dsize
-        xmax=(nx+1)*dsize
-
-        for ny in range(Nsub):
-            ymin=ny*dsize
-            ymax=(ny+1)*dsize
-
-            for nz in range(Nsub):
-                zmin=nz*dsize
-                zmax=(nz+1)*dsize
-                masks[str(nx)+str(ny)+str(nx)]=(x>=xmin) & (x<xmax) & (y>=ymin) & (y<ymax) & (x>=zmin) & (z<zmax)
-
-    #
-
-    return masks
-                

@@ -25,7 +25,6 @@ validation_output_file = 'validation_smf.txt'
 summary_details_file = 'summary_details_smf.txt'
 summary_details_module = 'write_summary_details'
 summary_output_file = 'summary_smf.txt'
-jackknife_stats_module='get_jackknife_masks'
 log_file = 'log_smf.txt'
 plot_file = 'plot_smf.png'
 plot_title = 'Stellar Mass Function'
@@ -232,12 +231,13 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         #count galaxies in log bins
         #get errors from jackknife samples if requested
         if (self.Njackknife_samples>0):
-            jackknife_stats=getattr(CalcStats, jackknife_stats_module)
             x = galaxy_catalog.get_quantities("x", {'zlo': self.zlo, 'zhi': self.zhi})
             y = galaxy_catalog.get_quantities("y", {'zlo': self.zlo, 'zhi': self.zhi})
             z = galaxy_catalog.get_quantities("z", {'zlo': self.zlo, 'zhi': self.zhi})
             paramdict['bins']=self.mstar_log_bins
-            mhist,merrors,covariance=jackknife_stats(x[mask],y[mask],z[mask],self.Njackknife_samples,galaxy_catalog.box_size,masses,np.histogram,paramdict)
+            jack_indices = CalcStats.get_subvolume_indices(x, y, z, galaxy_catalog.box_size, self.Njackknife_samples)
+            mhist, covariance = CalcStats.jackknife(np.log10(masses), jack_indices, self.Njackknife_samples**3, \
+                    lambda m: np.histogram(m, bins=self.mstar_log_bins)[0])
         else:
             merrors=np.sqrt(mhist)
             covariance=np.diag(mhist)
@@ -285,7 +285,7 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         module_name=self.summary_method
         summary_method=getattr(CalcStats, module_name)
         
-       #restrict range of validation data supplied for test if necessary
+        #restrict range of validation data supplied for test if necessary
         mask = (self.validation_data['x']>self.validation_range[0]) & (self.validation_data['x']<self.validation_range[1])
         if all(mask):
             validation_data = self.validation_data
