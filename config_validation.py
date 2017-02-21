@@ -32,7 +32,7 @@ smf_LiWhite = _ValidationConfig('BinnedStellarMassFunctionTest',
 
 smf_MB2 = _ValidationConfig('BinnedStellarMassFunctionTest',
          observation='MassiveBlackII',
-         bins=np.linspace(7.0,12.0,26),
+         bins=_np.linspace(7.0,12.0,26),
          zlo=0.0,
          zhi=0.1,
          summary='L2Diff',

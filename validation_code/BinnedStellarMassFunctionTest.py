@@ -140,7 +140,7 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         #take log of mass values
         binctr = np.log10(binctr)
         mhmin = mhist - merr
-        mhmin = mhist + merr
+        mhmax = mhist + merr
         #mhmax = np.log10(mhist + merr)
         #mhmin = np.log10(mhist - merr)
         #mhist = np.log10(mhist)
@@ -239,9 +239,11 @@ class BinnedStellarMassFunctionTest(ValidationTest):
             mhist, covariance = CalcStats.jackknife(np.log10(masses), jack_indices, self.Njackknife_samples**3, \
                     lambda m: np.histogram(m, bins=self.mstar_log_bins)[0])
         else:
-            merrors=np.sqrt(mhist)
-            covariance=np.diag(mhist)
+            covariance = np.diag(mhist)
 
+        # for backward compatibility, TODO: should be remove
+        merror = np.sqrt(np.diag(covariance))
+        
         #calculate volume
         if galaxy_catalog.lightcone:
             Vhi = galaxy_catalog.get_cosmology().comoving_volume(self.zhi)
@@ -258,7 +260,7 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         mhmin = (mhist - merror) / binwid / vol
         mhmax = (mhist + merror) / binwid / vol
         mhist = mhist / binwid / vol
-        covariance = covariance / binwid / vol
+        covariance = covariance / ((binwid * vol)**2.0)
         #mhist = np.log10(mhist)
         #mhmin = np.log10(mhmin)
         #mhmax = np.log10(mhmax)
