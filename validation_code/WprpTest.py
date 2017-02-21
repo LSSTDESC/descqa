@@ -100,12 +100,8 @@ class WprpTest(ValidationTest):
         rp = np.sqrt(rbins[1:]*rbins[:-1])
         wp_err = np.sqrt(np.diag(wp_cov))
         save_wprp(os.path.join(output_dir, catalog_output), rp, wp, wp_err)
-    
-        raw_data = np.loadtxt(self._datafile)
-        rp_data = raw_data[:,0]
-        wp_data = raw_data[:,1]
-        wp_cov_data = raw_data[:,2:]
-        wp_err_data = np.sqrt(np.diag(wp_cov_data))
+
+        rp_data, wp_data, wp_cov_data, wp_err_data = load_wprp_data(self._datafile)
         save_wprp(os.path.join(output_dir, validation_output), rp_data, wp_data, wp_err_data)
 
         with WprpPlot(os.path.join(output_dir, 'wprp.png'), sm_cut=sm_cut) as plot:
@@ -158,6 +154,15 @@ def load_wprp(filename):
     return np.loadtxt(filename, unpack=True)
 
 
+def load_wprp_data(filename):
+    raw_data = np.loadtxt(filename)
+    rp = raw_data[:,0]
+    wp = raw_data[:,1]
+    wp_cov = raw_data[:,2:]
+    wp_err = np.sqrt(np.diag(wp_cov))
+    return rp, wp, wp_cov, wp_err
+
+
 def plot_summary(output_file, catalog_list, validation_kwargs):
     """
     make summary plot for validation test
@@ -181,7 +186,7 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
             rp, wp, wp_err = load_wprp(os.path.join(catalog_output_dir, catalog_output))
             plot.add_line(rp, wp, wp_err, catalog, color=color)
         
-        rp, wp, wp_err = np.loadtxt(os.path.join(validation_kwargs['base_data_dir'], validation_kwargs['datafile'])).T
+        rp, wp, wp_cov, wp_err = load_wprp_data(os.path.join(validation_kwargs['base_data_dir'], validation_kwargs['datafile']))
         plot.add_points(rp, wp, wp_err, validation_kwargs['dataname'], color='r', marker='s')
 
 
