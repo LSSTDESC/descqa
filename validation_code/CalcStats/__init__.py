@@ -1,5 +1,7 @@
 from __future__ import division, print_function
 import numpy as np
+from scipy.stats import chi2
+
 
 def L2Diff(dataset_1, dataset_2, threshold=1.0, details=False):
     """
