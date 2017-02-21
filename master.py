@@ -135,7 +135,7 @@ class TaskDirectory():
             if hasattr(test_result, 'summary'):
                 f.write(test_result.summary + '\n')
             if hasattr(test_result, 'score'):
-                f.write('{:.7g}\n'.format(test_result.score))
+                f.write('{:.3g}\n'.format(test_result.score))
 
     def get_status(self, validation_name=None, catalog_name=None):
         if catalog_name:

@@ -112,7 +112,7 @@ def left_frame(selected_run,catalog,test):
         try:
             with open(os.path.join(run.fullPath, 'STATUS')) as f:
                 run.status = f.readline().strip().upper()
-                run.summary = f.read().strip()
+                run.summary = f.readline().strip()
         except (OSError, IOError):
             import traceback
             print '<pre>'

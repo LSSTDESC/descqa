@@ -17,30 +17,30 @@ from warnings import warn
 from ValidationTest import ValidationTest, TestResult
 import CalcStats
 
-__all__ = ['BinnedStellarMassFunctionTest','plot_summary']
+__all__ = ['ValidationTestTemplate','plot_summary']
 __author__ = []
 
-catalog_output_file = 'catalog_smf.txt'
-validation_output_file = 'validation_smf.txt'
-summary_details_file = 'summary_details_smf.txt'
+catalog_output_file = 'catalog_test.txt'
+validation_output_file = 'validation_test.txt'
+summary_details_file = 'summary_details_test.txt'
 summary_details_module = 'write_summary_details'
-summary_output_file = 'summary_smf.txt'
-log_file = 'log_smf.txt'
-plot_file = 'plot_smf.png'
+summary_output_file = 'summary_test.txt'
+log_file = 'log_test.txt'
+plot_file = 'plot_test.png'
 plot_title = 'Stellar Mass Function'
 xaxis_label = r'$\log (M^*/(M_\odot)$'
-yaxis_label = r'$dn/dV\,d\log M ({\rm Mpc}^{-3}\,{\rm dex}^{-1})$'
+yaxis_label = r'$\log(dn/dV\,d\log M) ({\rm Mpc}^{-3}\,{\rm dex}^{-1})$'
 summary_colormap = 'rainbow'
 test_range_color = 'red'
 
-class BinnedStellarMassFunctionTest(ValidationTest):
+class ValidationTestTemplate(ValidationTest):
     """
     validaton test class object to compute stellar mass function bins
     """
     
     def __init__(self, **kwargs):
         """
-        initialize a stellar mass function validation test
+        initialize a validation test
         
         Parameters
         ----------
@@ -54,8 +54,7 @@ class BinnedStellarMassFunctionTest(ValidationTest):
             string indicating test name
         
         observation : string, optional
-            name of stellar mass validation observation:
-            LiWhite2009, MassiveBlackII
+            name of validation observation:
         
         bins : tuple, optional
         
@@ -76,26 +75,24 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         
         #load validation data
         if 'observation' in kwargs:
-            available_observations = ['LiWhite2009', 'MassiveBlackII']
+            available_observations = ['TestObservation']
             if kwargs['observation'] in available_observations:
                 self.observation = kwargs['observation']
             else:
                 msg = ('`observation` not available')
                 raise ValueError(msg)
         else:
-            self.observation = 'LiWhite2009'
+            self.observation = 'TestObservation'
         
         obinctr, ohist, ohmin, ohmax = self.load_validation_data()
         #bin center, number density, lower bound, upper bound
         self.validation_data = {'x':obinctr, 'y':ohist, 'y-':ohmin, 'y+':ohmax}
         
-        #stellar mass bins
+        #setup binning for observable
         if 'bins' in kwargs:
-            self.mstar_log_bins = kwargs['bins']
+            self.obs_log_bins = np.linspace(*kwargs['bins'])
         else:
-            msg = ('`binning` not available')
-            raise ValueError(msg)            
-
+            self.obs_log_bins = np.linspace(7.0, 12.0, 26)  #default binning
         #minimum redshift
         if 'zlo' in kwargs:
             zlo = kwargs['zlo']
@@ -110,11 +107,10 @@ class BinnedStellarMassFunctionTest(ValidationTest):
             self.zhi = 1000.0
 
         #set remaining parameters
-        self.summary_method = kwargs.get('summary','L2Diff')
-        self.threshold = kwargs.get('threshold',1.0)
-        self.summary_details = kwargs.get('summary_details',False)
-        self.validation_range = kwargs.get('validation_range',(7.0,12.0))
-        self.Njackknife_samples=kwargs.get('Njackknife_samples',0)
+        self.summary_method = kwargs.get('summary','L2Diff')  #test statistic
+        self.threshold = kwargs.get('threshold',1.0)          #pass-fail threshold
+        self.summary_details = kwargs.get('summary_details',False)  #detailed output
+        self.validation_range = kwargs.get('validation_range',(7.0,12.0)) #test range
         
     def load_validation_data(self):
         """
@@ -122,28 +118,26 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         """
         
         #associate files with observations
-        stellar_mass_fuction_files = {'LiWhite2009':'LIWHITE/StellarMassFunction/massfunc_dataerr.txt',
-                                      'MassiveBlackII':'LIWHITE/StellarMassFunction/massfunc_dataerr.txt'}
+        validation_data_files = {'file1':'path_to_data_directory/datafile_1.txt',
+                                      'file2':'path_to_data_directory/datafile_2.txt'}
         
         #set the columns to use in each file
-        columns = {'LiWhite2009':(0,5,6),
-                   'MassiveBlackII':(0,1,2),}
+        columns = {'file1':(0,5,6),
+                   'file2':(0,1,2),}
         
         #get path to file
-        fn = os.path.join(self.base_data_dir, stellar_mass_fuction_files[self.observation])
+        fn = os.path.join(self.base_data_dir, validation_data_files[self.observation])
         
-        #column 1: stellar mass bin center
+        #column 1: bin center
         #column 2: number density
         #column 3: 1-sigma error
         binctr, mhist, merr = np.loadtxt(fn, unpack=True, usecols=columns[self.observation])
         
-        #take log of mass values
+        #take log of values
         binctr = np.log10(binctr)
-        mhmin = mhist - merr
-        mhmax = mhist + merr
-        #mhmax = np.log10(mhist + merr)
-        #mhmin = np.log10(mhist - merr)
-        #mhist = np.log10(mhist)
+        mhmax = np.log10(mhist + merr)
+        mhmin = np.log10(mhist - merr)
+        mhist = np.log10(mhist)
         
         return binctr, mhist, mhmin, mhmax
     
@@ -167,9 +161,9 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         """
         
         #make sure galaxy catalog has appropiate quantities
-        if not 'stellar_mass' in galaxy_catalog.quantities:
+        if not 'test_observable' in galaxy_catalog.quantities:
             #raise an informative warning
-            msg = ('galaxy catalog does not have `stellar_mass` quantity, skipping the rest of the validation test.')
+            msg = ('galaxy catalog does not have `test_observable` quantity, skipping the rest of the validation test.')
             warn(msg)
             #write to log file
             fn = os.path.join(base_output_dir ,log_file)
@@ -177,9 +171,9 @@ class BinnedStellarMassFunctionTest(ValidationTest):
                 f.write(msg)
             return TestResult('SKIPPED', msg)
         
-        #calculate stellar mass function in galaxy catalog
-        binctr, binwid, mhist, mhmin, mhmax, covariance = self.binned_stellar_mass_function(galaxy_catalog)
-        catalog_result = {'x':binctr,'dx': binwid, 'y':mhist, 'y-':mhmin, 'y+': mhmax, 'covariance': covariance}
+        #calculate test observable in galaxy catalog
+        binctr, binwid, mhist, mhmin, mhmax = self.binned_observable(galaxy_catalog)
+        catalog_result = {'x':binctr,'dx': binwid, 'y':mhist, 'y-':mhmin, 'y+': mhmax}
         
         #calculate summary statistic and write detailes summary file if requested
         summary_result, test_passed, test_details = self.calculate_summary_statistic(catalog_result,details=self.summary_details)
@@ -205,49 +199,31 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         msg = "{} = {:G} {} {:G}".format(self.summary_method, summary_result, '<' if test_passed else '>', self.threshold)
         return TestResult(summary_result,msg,test_passed)
     
-    def binned_stellar_mass_function(self, galaxy_catalog):
+    def binned_observable(self, galaxy_catalog):
         """
-        calculate the stellar mass function in bins
+        calculate observable in bins
         
         Parameters
         ----------
         galaxy_catalog : galaxy catalog reader object
         """
         
-        #get stellar masses from galaxy catalog
-        masses = galaxy_catalog.get_quantities("stellar_mass", {'zlo': self.zlo, 'zhi': self.zhi})
+        #get stellar catalog_data from galaxy catalog
+        catalog_data = galaxy_catalog.get_quantities("test_observable", {'zlo': self.zlo, 'zhi': self.zhi})
         
         #remove non-finite r negative numbers
-        mask = np.isfinite(masses) & (masses > 0.0)
-        masses = masses[mask]
-
-        #histogram points and compute bin positions
-        mhist, mbins = np.histogram(np.log10(masses), bins=self.mstar_log_bins)
-        summass, _    = np.histogram(np.log10(masses), bins=self.mstar_log_bins, weights=masses)
-        binctr = np.log10(summass/mhist)
-        #binctr = (mbins[1:] + mbins[:-1])*0.5
-        binwid = mbins[1:] - mbins[:-1]
-
+        mask = np.isfinite(catalog_data) & (catalog_data > 0.0)
+        catalog_data = catalog_data[mask]
+        
         #count galaxies in log bins
-        #get errors from jackknife samples if requested
-        if (self.Njackknife_samples>0):
-            x = galaxy_catalog.get_quantities("x", {'zlo': self.zlo, 'zhi': self.zhi})
-            y = galaxy_catalog.get_quantities("y", {'zlo': self.zlo, 'zhi': self.zhi})
-            z = galaxy_catalog.get_quantities("z", {'zlo': self.zlo, 'zhi': self.zhi})
-            paramdict['bins']=self.mstar_log_bins
-            jack_indices = CalcStats.get_subvolume_indices(x, y, z, galaxy_catalog.box_size, self.Njackknife_samples)
-            mhist, covariance = CalcStats.jackknife(np.log10(masses), jack_indices, self.Njackknife_samples**3, \
-                    lambda m: np.histogram(m, bins=self.mstar_log_bins)[0])
-        else:
-            covariance = np.diag(mhist)
-
-        # for backward compatibility, TODO: should be remove
-        merror = np.sqrt(np.diag(covariance))
+        mhist, mbins = np.histogram(np.log10(catalog_data), bins=self.obs_log_bins)
+        binctr = (mbins[1:] + mbins[:-1])*0.5
+        binwid = mbins[1:] - mbins[:-1]
         
         #calculate volume
         if galaxy_catalog.lightcone:
-            Vhi = galaxy_catalog.get_cosmology().comoving_volume(self.zhi)
-            Vlo = galaxy_catalog.get_cosmology().comoving_volume(self.zlo)
+            Vhi = galaxy_catalog.get_cosmology().comoving_volume(zhi)
+            Vlo = galaxy_catalog.get_cosmology().comoving_volume(zlo)
             dV = float((Vhi - Vlo)/u.Mpc**3)
             # TODO: need to consider completeness in volume
             af = float(galaxy_catalog.get_sky_area() / (4.*np.pi*u.sr))
@@ -255,17 +231,15 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         else:
             vol = galaxy_catalog.box_size**3.0
         
-        
         #calculate number differential density
-        mhmin = (mhist - merror) / binwid / vol
-        mhmax = (mhist + merror) / binwid / vol
+        mhmin = (mhist - np.sqrt(mhist)) / binwid / vol
+        mhmax = (mhist + np.sqrt(mhist)) / binwid / vol
         mhist = mhist / binwid / vol
-        covariance = covariance / ((binwid * vol)**2.0)
-        #mhist = np.log10(mhist)
-        #mhmin = np.log10(mhmin)
-        #mhmax = np.log10(mhmax)
+        mhist = np.log10(mhist)
+        mhmin = np.log10(mhmin)
+        mhmax = np.log10(mhmax)
         
-        return binctr, binwid, mhist, mhmin, mhmax, covariance
+        return binctr, binwid, mhist, mhmin, mhmax
     
     
     def calculate_summary_statistic(self, catalog_result, details=False):
@@ -287,7 +261,7 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         module_name=self.summary_method
         summary_method=getattr(CalcStats, module_name)
         
-        #restrict range of validation data supplied for test if necessary
+       #restrict range of validation data supplied for test if necessary
         mask = (self.validation_data['x']>self.validation_range[0]) & (self.validation_data['x']<self.validation_range[1])
         if all(mask):
             validation_data = self.validation_data
@@ -324,7 +298,6 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         fig = plt.figure()
         
         #plot measurement from galaxy catalog
-        plt.yscale('log')
         sbinctr, sbinwid, shist, shmin, shmax = (result['x'], result['dx'], result['y'], result['y-'], result['y+'])
         line1, = plt.step(sbinctr, shist, where="mid", label=catalog_name, color='blue')
         plt.fill_between(sbinctr, shmin, shmax, facecolor='blue', alpha=0.3, edgecolor='none')
@@ -422,7 +395,6 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
     plt.title(plot_title)
     plt.xlabel(xaxis_label)
     plt.ylabel(yaxis_label)    
-    plt.yscale('log')
 
     #setup colors from colormap
     colors= matplotlib.cm.get_cmap('nipy_spectral')(np.linspace(0.,1.,len(catalog_list)))

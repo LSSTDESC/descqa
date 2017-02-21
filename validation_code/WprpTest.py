@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 from ValidationTest import ValidationTest, TestResult
 
-from CalcStats import L2Diff
+from CalcStats import chisq, chisq_threshold
 from helpers.CorrelationFunction import projected_correlation
 
 catalog_output = 'catalog_wprp.txt'
@@ -17,12 +17,12 @@ validation_output = 'validation_wprp.txt'
 
 class WprpTest(ValidationTest):
     """
-    validaton test class object to compute project 2-point correlation function wp(rp)
+    validation test class object to compute project 2-point correlation function wp(rp)
     """
-    
+
     def __init__(self, **kwargs):
         super(self.__class__, self).__init__(**kwargs)
-        
+
         #set validation data information
         self._datafile = os.path.join(kwargs['base_data_dir'], kwargs['datafile'])
         self._dataname = kwargs['dataname']
@@ -37,7 +37,7 @@ class WprpTest(ValidationTest):
     def run_validation_test(self, galaxy_catalog, galaxy_catalog_name, output_dir):
         """
         Load galaxy catalog and (re)calculate the stellar mass function.
-        
+
         Parameters
         ----------
         galaxy_catalog : galaxy catalog reader object
@@ -54,7 +54,7 @@ class WprpTest(ValidationTest):
         test_result : TestResult object
         """
         
-        #make sure galaxy catalog has appropiate quantities
+        #make sure galaxy catalog has appropriate quantities
         required_quantities = ('stellar_mass', 'positionX', 'positionY', 'positionZ', 'velocityZ')
 
         if not all(q in galaxy_catalog.quantities for q in required_quantities):
@@ -92,27 +92,28 @@ class WprpTest(ValidationTest):
     
         vz /= (100.0*h)
         z += vz
+        del vz
 
         # calc wp(rp)
         points = np.remainder(np.vstack((x,y,z)).T, gc.box_size)
         wp, wp_cov = projected_correlation(points, rbins, zmax, gc.box_size, njack)
         rp = np.sqrt(rbins[1:]*rbins[:-1])
         wp_err = np.sqrt(np.diag(wp_cov))
-
         save_wprp(os.path.join(output_dir, catalog_output), rp, wp, wp_err)
-        d1 = {'x':rp, 'y':wp, 'dy':wp_err}
-        
+
+        rp_data, wp_data, wp_cov_data, wp_err_data = load_wprp_data(self._datafile)
+        save_wprp(os.path.join(output_dir, validation_output), rp_data, wp_data, wp_err_data)
+
         with WprpPlot(os.path.join(output_dir, 'wprp.png'), sm_cut=sm_cut) as plot:
             plot.add_line(rp, wp, wp_err, galaxy_catalog_name)
-            rp, wp, wp_err = np.loadtxt(self._datafile).T
-            save_wprp(os.path.join(output_dir, validation_output), rp, wp, wp_err)
-            d2 = {'x':rp, 'y':wp, 'dy':wp_err}
-            plot.add_points(rp, wp, wp_err, self._dataname, color='r', marker='s')
+            plot.add_points(rp_data, wp_data, wp_err_data, self._dataname, color='r', marker='s')
         
-        L2, success = L2Diff(d1, d2, self._summary_thres)
-        summary = 'L2Diff = {} {} {}'.format(L2, '<' if success else '>', self._summary_thres)
+        chisq_value = chisq(wp, wp_data, wp_cov + wp_cov_data)
+        chisq_thres_value = chisq_threshold(len(wp))
+        success = (chisq_value < chisq_thres_value)
+        summary = 'chi2 = {} {} {}'.format(chisq_value, '<' if success else '>=', chisq_thres_value)
 
-        return TestResult(L2, summary, success)
+        return TestResult(chisq_value, summary, success)
 
 
 class WprpPlot():
@@ -153,6 +154,15 @@ def load_wprp(filename):
     return np.loadtxt(filename, unpack=True)
 
 
+def load_wprp_data(filename):
+    raw_data = np.loadtxt(filename)
+    rp = raw_data[:,0]
+    wp = raw_data[:,1]
+    wp_cov = raw_data[:,2:]
+    wp_err = np.sqrt(np.diag(wp_cov))
+    return rp, wp, wp_cov, wp_err
+
+
 def plot_summary(output_file, catalog_list, validation_kwargs):
     """
     make summary plot for validation test
@@ -176,7 +186,7 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
             rp, wp, wp_err = load_wprp(os.path.join(catalog_output_dir, catalog_output))
             plot.add_line(rp, wp, wp_err, catalog, color=color)
         
-        rp, wp, wp_err = np.loadtxt(os.path.join(validation_kwargs['base_data_dir'], validation_kwargs['datafile'])).T
+        rp, wp, wp_cov, wp_err = load_wprp_data(os.path.join(validation_kwargs['base_data_dir'], validation_kwargs['datafile']))
         plot.add_points(rp, wp, wp_err, validation_kwargs['dataname'], color='r', marker='s')
 
 

@@ -2,6 +2,7 @@
 
 # ---- DO NOT change this section ----
 import os as _os
+import numpy as _np
 
 class _ValidationConfig():
     def __init__(self, module, **kwargs):
@@ -19,7 +20,7 @@ class _ValidationConfig():
 
 smf_LiWhite = _ValidationConfig('BinnedStellarMassFunctionTest',
          observation='LiWhite2009',
-         bins=(7.0,12.0,26),
+         bins=_np.linspace(7.0,12.0,26),
          zlo=0.0,
          zhi=0.1,
          summary='L2Diff',
@@ -31,7 +32,7 @@ smf_LiWhite = _ValidationConfig('BinnedStellarMassFunctionTest',
 
 smf_MB2 = _ValidationConfig('BinnedStellarMassFunctionTest',
          observation='MassiveBlackII',
-         bins=(7.0,12.0,26),
+         bins=_np.linspace(7.0,12.0,26),
          zlo=0.0,
          zhi=0.1,
          summary='L2Diff',
@@ -59,7 +60,7 @@ hmf_T = _ValidationConfig('HaloMassFunctionTest',
          zhi=0.1,
          summary='L2Diff',
          summary_details=True,
-         validation_range=(5.e10,1.e15),
+         validation_range=(1.e11,1.e15),
          description='The mass distribution of halos is one of the essential components of precision cosmology, and occupies a central place in the paradigm of structure formation.  There are two common ways to define halos in a simulation.  One is based on identifying overdense regions above a certain threshold.  The other method, the FOF algorithm, is based on finding neighbors of particles and neighbors of neighbors as defined by a given separation distance. In DESCQA, we calculate the halo mass function from each catalog, and compare it against some well-established analytic fits in the literature.  We assume Poisson error bars.  We use the Bhattacharya et al. 2001 fit for the FOF halos, and Tinker et al. 2008 fit for the case of SO halos.'
 )
 
@@ -98,7 +99,7 @@ wprp_SDSS_m98 = _ValidationConfig('WprpTest',
          dataname='SDSS',
          sm_cut=10.0**9.8,
          zmax=40.0,
-         rbins=(-1.0,1.3,13),
+         rbins=(-1.0,1.3,12),
          njack=10,
          summary='L2Diff',
          description='For each of the mock catalogs, we calculate the projected two-point correlation function, w<sub>p</sub>(r<sub>p</sub>), in the thin-plane approximation.  We use the catalog at one single epoch and then add redshift space distortion along one spatial axis (z-axis).  We then calculate the projected pair counts, with a projection depth of 80 Mpc/h. We assume periodic boundary conditions for all three spatial axes. We estimate the sample variance of w<sub>p</sub>(r<sub>p</sub>) using the jackknife technique.'
@@ -109,7 +110,7 @@ wprp_MB2_m98 = _ValidationConfig('WprpTest',
          dataname='MB2',
          sm_cut=10.0**9.8,
          zmax=40.0,
-         rbins=(-1.0,1.3,13),
+         rbins=(-1.0,1.3,12),
          njack=10,
          summary='L2Diff',
          description='For each of the mock catalogs, we calculate the projected two-point correlation function, w_p(r_p), in the thin-plane approximation.  We use the catalog at one single epoch and then add redshift space distortion along one spatial axis (z-axis).  We then calculate the projected pair counts, with a projection depth of 80 Mpc/h. We assume periodic boundary conditions for all three spatial axes. We estimate the sample variance of w_p(r_p) using the jackknife technique.'
