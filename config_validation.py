@@ -2,7 +2,7 @@
 
 # ---- DO NOT change this section ----
 import os as _os
-import numpy as np
+import numpy as _np
 
 class _ValidationConfig():
     def __init__(self, module, **kwargs):
@@ -20,7 +20,7 @@ class _ValidationConfig():
 
 smf_LiWhite = _ValidationConfig('BinnedStellarMassFunctionTest',
          observation='LiWhite2009',
-         bins=np.linspace(7.0,12.0,26),
+         bins=_np.linspace(7.0,12.0,26),
          zlo=0.0,
          zhi=0.1,
          summary='L2Diff',
