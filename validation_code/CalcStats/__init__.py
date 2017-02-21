@@ -380,3 +380,14 @@ def jackknife(data, jack_indices, n_jack, func, args=(), kwargs={}):
         bias = (jack.mean(axis=0) - np.array(full))*(n_jack-1)
         return full-bias, np.cov(X, bias=True)*(n_jack-1)
 
+
+def chisq(prediction, observation, covariance):
+    d = np.asarray(prediction) - np.asarray(observation)
+    cov = np.asarray(covariance)
+    if cov.ndim == 1:
+        cov = np.diag(cov)
+    return np.dot(d, np.dot(np.linalg.inv(cov), d))
+
+
+def chisq_threshold(dof, conf_level=0.95):
+    return chi2.isf(1.0-conf_level, dof)
