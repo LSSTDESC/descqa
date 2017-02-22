@@ -19,14 +19,21 @@ class iHODGalaxyCatalog(GalaxyCatalog):
                           'zhi':                   True
                         }
         self.quantities = {
-                             # 'redshift':          self._get_stored_property,
                              'positionX':                 self._get_stored_property,
                              'positionY':                 self._get_stored_property,
                              'positionZ':                 self._get_stored_property,
+                             'velocityX':                 self._get_stored_property,
+                             'velocityY':                 self._get_stored_property,
                              'velocityZ':                 self._get_stored_property,
-                             'stellar_mass':      self._get_stored_property,
-                             'mass':      self._get_stored_property,
-                             #'color':      self._get_stored_property,
+                             'stellar_mass':              self._get_stored_property,
+                             'mass':                      self._get_stored_property,
+                             'halo_id':                   self._get_stored_property,
+                             'parent_halo_id':            self._get_stored_property,
+                             'SDSS_u:observed:':          self._get_stored_property,
+                             'SDSS_g:observed:':          self._get_stored_property,
+                             'SDSS_r:observed:':          self._get_stored_property,
+                             'SDSS_i:observed:':          self._get_stored_property,
+                             'SDSS_z:observed:':          self._get_stored_property,
                            }
 
         self.Ngals        = 0
