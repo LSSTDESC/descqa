@@ -377,10 +377,10 @@ def jackknife(data, jack_indices, n_jack, func, args=(), kwargs={}):
     
     if jack.ndim == 1:
         bias = (jack.mean() - full)*(n_jack-1)
-        return full-bias, np.var(X)*(n_jack-1)
+        return full-bias, np.var(jack)*(n_jack-1)
     else:
         bias = (jack.mean(axis=0) - np.array(full))*(n_jack-1)
-        return full-bias, np.cov(X, bias=True)*(n_jack-1)
+        return full-bias, np.cov(jack, rowvar=False, bias=True)*(n_jack-1)
 
 
 def chisq(prediction, observation, covariance):

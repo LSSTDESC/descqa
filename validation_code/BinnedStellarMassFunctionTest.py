@@ -231,18 +231,19 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         #count galaxies in log bins
         #get errors from jackknife samples if requested
         if (self.Njackknife_samples>0):
-            x = galaxy_catalog.get_quantities("x", {'zlo': self.zlo, 'zhi': self.zhi})
-            y = galaxy_catalog.get_quantities("y", {'zlo': self.zlo, 'zhi': self.zhi})
-            z = galaxy_catalog.get_quantities("z", {'zlo': self.zlo, 'zhi': self.zhi})
-            paramdict['bins']=self.mstar_log_bins
+            x = galaxy_catalog.get_quantities("positionX", {'zlo': self.zlo, 'zhi': self.zhi})
+            y = galaxy_catalog.get_quantities("positionY", {'zlo': self.zlo, 'zhi': self.zhi})
+            z = galaxy_catalog.get_quantities("positionZ", {'zlo': self.zlo, 'zhi': self.zhi})
             jack_indices = CalcStats.get_subvolume_indices(x, y, z, galaxy_catalog.box_size, self.Njackknife_samples)
             mhist, covariance = CalcStats.jackknife(np.log10(masses), jack_indices, self.Njackknife_samples**3, \
                     lambda m: np.histogram(m, bins=self.mstar_log_bins)[0])
+            print(covariance.shape)
         else:
             covariance = np.diag(mhist)
 
         # for backward compatibility, TODO: should be remove
         merror = np.sqrt(np.diag(covariance))
+        print(merror.shape)
         
         #calculate volume
         if galaxy_catalog.lightcone:
@@ -260,7 +261,8 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         mhmin = (mhist - merror) / binwid / vol
         mhmax = (mhist + merror) / binwid / vol
         mhist = mhist / binwid / vol
-        covariance = covariance / ((binwid * vol)**2.0)
+        # binwid needs to be the same for all bins
+        covariance = covariance / ((binwid[0] * vol)**2.0)
         #mhist = np.log10(mhist)
         #mhmin = np.log10(mhmin)
         #mhmax = np.log10(mhmax)
