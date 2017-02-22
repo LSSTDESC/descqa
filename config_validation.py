@@ -26,6 +26,7 @@ smf_LiWhite = _ValidationConfig('BinnedStellarMassFunctionTest',
          summary='L2Diff',
          summary_details=True,
          validation_range=(7.0,12.0),
+         Njackknife_samples=5,
          description='We calculate the stellar-mass density as a function of the total stellar mass for each galaxy. Stellar masses are defined as the mass locked up in long-lived stars and stellar remnants (the most common definition).  For the SAM models, the total stellar mass is the sum of the disk and spheroid components. The densities are derived from the number counts of galaxies in each stellar mass bin, divided by the simulation volume. These densities are compared with the data from Li and White 2009.'
 )
 
