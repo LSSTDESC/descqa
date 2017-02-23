@@ -20,9 +20,10 @@ class _CatalogConfig():
 
 # ---- End of DO NOT CHANGE ----
 
-SHAM_LiWhite = _CatalogConfig('SHAMGalaxyCatalog', match_to='LiWhite',description='This catalog is based on the dark matter only (DMO) version of the MB-2 simulation, and has been tuned to reproduce the Li & White stellar mass function. The abundance matching technique, also known as subhalo abundance matching (SHAM), is a generic scheme to connect one galaxy property (e.g., stellar mass or luminosity) with one halo property (e.g., halo mass) by assuming an approximately monotonic relation between these two properties.  The two properties are matched at the same cumulative number density, and the resulting galaxy catalog, by explicit construction, preserves the input stellar mass (or luminosity) function.')
+SHAM_LiWhite = _CatalogConfig('SHAMGalaxyCatalog', match_to='LiWhite',
+        description='This catalog is based on the dark matter only (DMO) version of the MB-2 simulation, and has been tuned to reproduce the Li & White stellar mass function. The abundance matching technique, also known as subhalo abundance matching (SHAM), is a generic scheme to connect one galaxy property (e.g., stellar mass or luminosity) with one halo property (e.g., halo mass) by assuming an approximately monotonic relation between these two properties.  The two properties are matched at the same cumulative number density, and the resulting galaxy catalog, by explicit construction, preserves the input stellar mass (or luminosity) function.')
 
-SHAM_MB2 = _CatalogConfig('SHAMGalaxyCatalog', match_to='MB2',
+SHAM_MB2 = _CatalogConfig('SHAMGalaxyCatalog', match_to='MBII',
         description='This catalog is similar to SHAM Li White but has been tuned to the stellar mass function measured from a hydro-simulation, MassiveBlackII.')
 
 CAM_LiWhite = _CatalogConfig('YaleCAMGalaxyCatalog', 
