@@ -45,23 +45,23 @@ class SAGGalaxyCatalog(GalaxyCatalog):
                             'stellar_mass'   : self._get_derived_property,
                             'mass'           : self._get_derived_property,
                             'parent_halo_id' : self._get_derived_property,
-                            'LSST_u:rest:'         : self._stored_property_wrapper('Mag_id224_AB_tot_r'),
-                            'LSST_g:rest:'         : self._stored_property_wrapper('Mag_id225_AB_tot_r'),
-                            'LSST_r:rest:'         : self._stored_property_wrapper('Mag_id226_AB_tot_r'),
-                            'LSST_i:rest:'         : self._stored_property_wrapper('Mag_id227_AB_tot_r'),
-                            'LSST_z:rest:'         : self._stored_property_wrapper('Mag_id228_AB_tot_r'),
-                            'LSST_y:rest:'         : self._stored_property_wrapper('Mag_id229_AB_tot_r'),
-                            'LSST_u:observed:'     : self._stored_property_wrapper('Mag_id224_AB_tot_o'),
-                            'LSST_g:observed:'     : self._stored_property_wrapper('Mag_id225_AB_tot_o'),
-                            'LSST_r:observed:'     : self._stored_property_wrapper('Mag_id226_AB_tot_o'),
-                            'LSST_i:observed:'     : self._stored_property_wrapper('Mag_id227_AB_tot_o'),
-                            'LSST_z:observed:'     : self._stored_property_wrapper('Mag_id228_AB_tot_o'),
-                            'LSST_y:observed:'     : self._stored_property_wrapper('Mag_id229_AB_tot_o'),
-                            'SDSS_u:observed:'     : self._stored_property_wrapper('Mag_id224_AB_tot_o'),
-                            'SDSS_g:observed:'     : self._stored_property_wrapper('Mag_id225_AB_tot_o'),
-                            'SDSS_r:observed:'     : self._stored_property_wrapper('Mag_id226_AB_tot_o'),
-                            'SDSS_i:observed:'     : self._stored_property_wrapper('Mag_id227_AB_tot_o'),
-                            'SDSS_z:observed:'     : self._stored_property_wrapper('Mag_id228_AB_tot_o'),
+                            'LSST_u:rest:'         : self._stored_property_wrapper('SED/Magnitudes/Mag_id224_AB_tot_r'),
+                            'LSST_g:rest:'         : self._stored_property_wrapper('SED/Magnitudes/Mag_id225_AB_tot_r'),
+                            'LSST_r:rest:'         : self._stored_property_wrapper('SED/Magnitudes/Mag_id226_AB_tot_r'),
+                            'LSST_i:rest:'         : self._stored_property_wrapper('SED/Magnitudes/Mag_id227_AB_tot_r'),
+                            'LSST_z:rest:'         : self._stored_property_wrapper('SED/Magnitudes/Mag_id228_AB_tot_r'),
+                            'LSST_y:rest:'         : self._stored_property_wrapper('SED/Magnitudes/Mag_id229_AB_tot_r'),
+                            'LSST_u:observed:'     : self._stored_property_wrapper('SED/Magnitudes/Mag_id224_AB_tot_o'),
+                            'LSST_g:observed:'     : self._stored_property_wrapper('SED/Magnitudes/Mag_id225_AB_tot_o'),
+                            'LSST_r:observed:'     : self._stored_property_wrapper('SED/Magnitudes/Mag_id226_AB_tot_o'),
+                            'LSST_i:observed:'     : self._stored_property_wrapper('SED/Magnitudes/Mag_id227_AB_tot_o'),
+                            'LSST_z:observed:'     : self._stored_property_wrapper('SED/Magnitudes/Mag_id228_AB_tot_o'),
+                            'LSST_y:observed:'     : self._stored_property_wrapper('SED/Magnitudes/Mag_id229_AB_tot_o'),
+                            'SDSS_u:observed:'     : self._quantity_alias('LSST_u:observed:'),
+                            'SDSS_g:observed:'     : self._quantity_alias('LSST_g:observed:'),
+                            'SDSS_r:observed:'     : self._quantity_alias('LSST_r:observed:'),
+                            'SDSS_i:observed:'     : self._quantity_alias('LSST_i:observed:'),
+                            'SDSS_z:observed:'     : self._quantity_alias('LSST_z:observed:'),
                           }
 
         self.derived    = {
@@ -103,7 +103,8 @@ class SAGGalaxyCatalog(GalaxyCatalog):
         array. This is for properties that are explicitly stored in the
         catalog.
         """
-        zrange = [filters['zlo'], filters['zhi']] if 'zlo' in filters and 'zhi' in filters else None
+        #zrange = [filters['zlo'], filters['zhi']] if 'zlo' in filters and 'zhi' in filters else None
+        zrange = None #TODO: should fix this
         return self.catalog.readDataset(dsname=quantity, zrange=zrange).flatten()
 
     def _get_derived_property(self, quantity, filters):
@@ -133,9 +134,21 @@ class SAGGalaxyCatalog(GalaxyCatalog):
         name : string
             key into stored mock catalogue
         
-        """
-        
+        """        
         return (lambda quantity, filter : self._get_stored_property(name, filter))
+
+    def _quantity_alias(self, name):
+        """
+        private function used to alias a desc keyword into another existing quantity keyword
+        
+        Parameters
+        ----------
+        name : string
+            name to alias
+        
+        """
+        return (lambda quantity, filter : self.quantities[name](quantity, filter))
+
 
 
 class SAGcollection():
