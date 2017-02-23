@@ -36,7 +36,6 @@ class SAGGalaxyCatalog(GalaxyCatalog):
                             'zhi':          True
                           }
         self.quantities = {
-                            'redshift'       : self._get_stored_property,
                             'positionX'      : self._get_derived_property,
                             'positionY'      : self._get_derived_property,
                             'positionZ'      : self._get_derived_property,
@@ -105,7 +104,7 @@ class SAGGalaxyCatalog(GalaxyCatalog):
         catalog.
         """
         zrange = [filters['zlo'], filters['zhi']] if 'zlo' in filters and 'zhi' in filters else None
-        return self.catalog.readDataset(dsname=quantity, zrange=zrange)
+        return self.catalog.readDataset(dsname=quantity, zrange=zrange).flatten()
 
     def _get_derived_property(self, quantity, filters):
         """
