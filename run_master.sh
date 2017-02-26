@@ -18,6 +18,10 @@ module load matplotlib/1.4.3
 module load h5py/2.5.0
 export PYTHONPATH="$DESCQAROOTDIR/lib/python2.7/site-packages:$PYTHONPATH"
 
+# for kcorrect 
+export KCORRECT_DIR="$DESCQAROOTDIR/lib/kcorrect"
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$KCORRECT_DIR/lib"
+
 # set other necessary paths
 OUTPUTDIR="$DESCQAROOTDIR/run/edison"
 CATALOGDIR="$DESCQAROOTDIR/catalog"
