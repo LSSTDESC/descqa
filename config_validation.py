@@ -33,11 +33,9 @@ smf_LiWhite = _ValidationConfig('BinnedStellarMassFunctionTest',
 smf_MB2 = _ValidationConfig('BinnedStellarMassFunctionTest',
          observation='MassiveBlackII',
          bins=[7.,7.3,7.6,7.9,8.2,8.5,8.8,9.1,9.4,9.7,10.,10.3,10.6,10.9,11.2,11.5,11.8,12.1],
+         validation_range=(9.1,11.8),
          zlo=0.045,
          zhi=0.065,
-         summary_statistic='chisq',
-         validation_range=(9.1,11.8),
-         jackknife_nside=5,
          description='We calculate the stellar-mass density as a function of the total stellar mass for each galaxy. Stellar masses are defined as the mass locked up in long-lived stars and stellar remnants (the most common definition).  For the SAM models, the total stellar mass is the sum of the disk and spheroid components. The densities are derived from the number counts of galaxies in each stellar mass bin, divided by the simulation volume. These densities are compared with the data from the MassiveBlackII simulation.'
 )
 
@@ -56,13 +54,11 @@ smhm_MB2 = _ValidationConfig('StellarMassHaloMassTest',
 
 hmf_T = _ValidationConfig('HaloMassFunctionTest',
          observation='Tinker',
+         bins=(8.0, 15.0, 29),
+         validation_range=(11.5, 14.5),
          ztest=0.0625,
-         bins=(7.0,15.0,25),
          zlo=0.045,
          zhi=0.065,
-         summary='L2Diff',
-         summary_details=True,
-         validation_range=(1.e11,1.e15),
          description='The mass distribution of halos is one of the essential components of precision cosmology, and occupies a central place in the paradigm of structure formation.  There are two common ways to define halos in a simulation.  One is based on identifying overdense regions above a certain threshold.  The other method, the FOF algorithm, is based on finding neighbors of particles and neighbors of neighbors as defined by a given separation distance. In DESCQA, we calculate the halo mass function from each catalog, and compare it against some well-established analytic fits in the literature.  We assume Poisson error bars.  We use the Bhattacharya et al. 2001 fit for the FOF halos, and Tinker et al. 2008 fit for the case of SO halos.'
 )
 
