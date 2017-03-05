@@ -20,35 +20,21 @@ class _ValidationConfig():
 
 smf_LiWhite = _ValidationConfig('BinnedStellarMassFunctionTest',
          observation='LiWhite2009',
-         bins=[7.,7.3,7.6,7.9,8.2,8.5,8.8,9.1,9.4,9.7,10.,10.3,10.6,10.9,11.2,11.5,11.8,12.1],
+         bins=(7.0, 12.1, 18),
+         validation_range=(9.1, 11.8),
          zlo=0.045,
          zhi=0.065,
-         summary_statistic='chisq',
-         validation_range=(9.1,11.8),
-         jackknife_nside=5,
          description='We calculate the stellar-mass density as a function of the total stellar mass for each galaxy. Stellar masses are defined as the mass locked up in long-lived stars and stellar remnants (the most common definition).  For the SAM models, the total stellar mass is the sum of the disk and spheroid components. The densities are derived from the number counts of galaxies in each stellar mass bin, divided by the simulation volume. These densities are compared with the data from Li and White 2009.'
 )
 
 
 smf_MB2 = _ValidationConfig('BinnedStellarMassFunctionTest',
          observation='MassiveBlackII',
-         bins=[7.,7.3,7.6,7.9,8.2,8.5,8.8,9.1,9.4,9.7,10.,10.3,10.6,10.9,11.2,11.5,11.8,12.1],
-         validation_range=(9.1,11.8),
+         bins=(7.0, 12.1, 18),
+         validation_range=(9.1, 11.8),
          zlo=0.045,
          zhi=0.065,
          description='We calculate the stellar-mass density as a function of the total stellar mass for each galaxy. Stellar masses are defined as the mass locked up in long-lived stars and stellar remnants (the most common definition).  For the SAM models, the total stellar mass is the sum of the disk and spheroid components. The densities are derived from the number counts of galaxies in each stellar mass bin, divided by the simulation volume. These densities are compared with the data from the MassiveBlackII simulation.'
-)
-
-
-smhm_MB2 = _ValidationConfig('StellarMassHaloMassTest',
-         observation='MassiveBlackII',
-         bins=(7.0,15.0,25),
-         zlo=0.045,
-         zhi=0.065,
-         summary='L2Diff',
-         summary_details=True,
-         validation_range=(8.0,15.0),
-         description=''
 )
 
 
@@ -61,6 +47,17 @@ hmf_T = _ValidationConfig('HaloMassFunctionTest',
          zhi=0.065,
          description='The mass distribution of halos is one of the essential components of precision cosmology, and occupies a central place in the paradigm of structure formation.  There are two common ways to define halos in a simulation.  One is based on identifying overdense regions above a certain threshold.  The other method, the FOF algorithm, is based on finding neighbors of particles and neighbors of neighbors as defined by a given separation distance. In DESCQA, we calculate the halo mass function from each catalog, and compare it against some well-established analytic fits in the literature.  We assume Poisson error bars.  We use the Bhattacharya et al. 2001 fit for the FOF halos, and Tinker et al. 2008 fit for the case of SO halos.'
 )
+
+
+smhm_MB2 = _ValidationConfig('StellarMassHaloMassTest',
+         observation='MassiveBlackII',
+         bins=(7.5, 15.0, 26),
+         validation_range=(11.4, 14.4),
+         zlo=0.045,
+         zhi=0.065,
+         description='Mean stellar mass as a function of halo mass for host halos.'
+)
+
 
 """
 color_DEEP2 = _ValidationConfig('ColorDistributionTest',
@@ -115,4 +112,3 @@ wprp_MB2_m98 = _ValidationConfig('WprpTest',
          njack=10,
          description='For each of the mock catalogs, we calculate the projected two-point correlation function, w_p(r_p), in the thin-plane approximation.  We use the catalog at one single epoch and then add redshift space distortion along one spatial axis (z-axis).  We then calculate the projected pair counts, with a projection depth of 80 Mpc/h. We assume periodic boundary conditions for all three spatial axes. We estimate the sample variance of w_p(r_p) using the jackknife technique.'
 )
-

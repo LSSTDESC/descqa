@@ -13,6 +13,7 @@ import CalcStats
 
 __all__ = ['BinnedStellarMassFunctionTest', 'write_file', 'load_file', 'OnePointFunctionPlot', 'plot_summary']
 
+
 class BinnedStellarMassFunctionTest(ValidationTest):
     """
     validation test class object to compute stellar mass function bins
@@ -27,8 +28,8 @@ class BinnedStellarMassFunctionTest(ValidationTest):
             plot_title='Stellar Mass Function',
             xaxis_label=r'$\log (M^*/(M_\odot)$',
             yaxis_label=r'$dn/dV\,d\log M ({\rm Mpc}^{-3}\,{\rm dex}^{-1})$',
-            summary_colormap='rainbow',
-            test_range_color='red')
+            plot_validation_as_line=False,
+    )
 
     required_quantities = ('stellar_mass', 'positionX', 'positionY', 'positionZ')
 
@@ -38,7 +39,6 @@ class BinnedStellarMassFunctionTest(ValidationTest):
             'observation': 'LiWhite2009',
             'zlo': 0,
             'zhi': 1000.0,
-            'validation_range': (9.0, 12.0),
             'summary_statistic': 'chisq',
             'jackknife_nside': 5,
     }
@@ -46,13 +46,16 @@ class BinnedStellarMassFunctionTest(ValidationTest):
     enable_interp_validation = None
 
 
-    def _import_kwargs(self, kwargs, key, attr_name=None, func=None):
+    def _import_kwargs(self, kwargs, key, attr_name=None, func=None, required=False):
         if attr_name is None:
             attr_name = key
         val = kwargs.get(key, self.default_kwargs.get(key))
+        if required and val is None:
+            raise ValueError('Must specify test option `{}`'.format(key))
         if callable(func):
             val = func(val)
         setattr(self, attr_name, val)
+        return val
 
 
     def __init__(self, **kwargs):
@@ -93,19 +96,23 @@ class BinnedStellarMassFunctionTest(ValidationTest):
 
         #load validation data
         self._import_kwargs(kwargs, 'observation')
-        if self.observation not in self.available_observations:
+        if self.available_observations and self.observation not in self.available_observations:
             raise ValueError('`observation` not available')
 
+        self._import_kwargs(kwargs, 'bins', func=lambda b: np.linspace(*b), required=True)
+        if self._import_kwargs(kwargs, 'validation_range') is None:
+            self.validation_range = self.bins[[0, -1]]
+
         #redshift range
-        self._import_kwargs(kwargs, 'zlo', func=float)
-        self._import_kwargs(kwargs, 'zhi', func=float)
+        self._import_kwargs(kwargs, 'zlo', func=float, required=True)
+        self._import_kwargs(kwargs, 'zhi', func=float, required=True)
+        self._zfilter = {'zlo': self.zlo, 'zhi': self.zhi}
 
         #statistic options
-        self._import_kwargs(kwargs, 'validation_range')
-        self._import_kwargs(kwargs, 'summary_statistic')
+        self._import_kwargs(kwargs, 'summary_statistic', required=True)
 
         if self.summary_statistic == 'chisq':
-            self._import_kwargs(kwargs, 'jackknife_nside', func=int)
+            self._import_kwargs(kwargs, 'jackknife_nside', func=int, required=True)
         elif self.summary_statistic == 'lpnorm':
             self.jackknife_nside = 0
         else:
@@ -116,17 +123,12 @@ class BinnedStellarMassFunctionTest(ValidationTest):
             if not hasattr(self, k):
                 setattr(self, k, kwargs[k])
 
-        self._init_special(kwargs)
+        self._init_follow_up(kwargs)
+        self.load_validation_data()
 
 
-    def _init_special(self, kwargs):
-        #load validation_data
-        self.validation_data = self.load_validation_data()
-
-        #stellar mass bins
-        self._import_kwargs(kwargs, 'bins', func=np.array)
-        if self.bins.size <= 1:
-            raise ValueError('`bins` not available or ill defined')
+    def _init_follow_up(self, kwargs):
+        pass
 
 
     def load_validation_data(self):
@@ -136,7 +138,7 @@ class BinnedStellarMassFunctionTest(ValidationTest):
 
         #associate files with observations
         stellar_mass_function_files = {'LiWhite2009':'LIWHITE/StellarMassFunction/massfunc_dataerr.txt',
-                                      'MassiveBlackII':'LIWHITE/StellarMassFunction/massfunc_dataerr.txt'}
+                                       'MassiveBlackII':'LIWHITE/StellarMassFunction/massfunc_dataerr.txt'}
 
         #set the columns to use in each file
         columns = {'LiWhite2009':(0,5,6),
@@ -150,7 +152,8 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         #column 3: 1-sigma error
         binctr, mhist, merr = np.loadtxt(fn, unpack=True, usecols=columns[self.observation])
 
-        return {'x':np.log10(binctr), 'y':mhist, 'y-':mhist-merr, 'y+':mhist+merr, 'cov':np.diag(merr*merr)}
+        self.validation_data = {'x':np.log10(binctr), 'y':mhist, 'y-':mhist-merr, 'y+':mhist+merr, 'cov':np.diag(merr*merr)}
+        return self.validation_data
 
 
     def _prepare_validation_test(self, galaxy_catalog, catalog_name, base_output_dir):
@@ -178,10 +181,10 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         #make sure galaxy catalog has appropriate quantities
         if not all(k in galaxy_catalog.quantities for k in self.required_quantities):
             #raise an informative warning
-            msg = ('galaxy catalog does not have all the required quantities, skipping the rest of the validation test.')
+            msg = 'galaxy catalog {} does not have all the required quantities: {}, skipping the rest of the validation test.'.format(\
+                    catalog_name, ', '.join(self.required_quantities))
             warn(msg)
-            fn = os.path.join(base_output_dir, self.log_file)
-            with open(fn, 'a') as f:
+            with open(os.path.join(base_output_dir, self.log_file), 'a') as f:
                 f.write(msg)
             return TestResult(skipped=True)
 
@@ -197,8 +200,9 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         fn = os.path.join(base_output_dir, self.output_config['validation_output_file'])
         write_file(self.validation_data, fn)
 
-        fn = os.path.join(base_output_dir, self.output_config['covariance_matrix_file'])
-        np.savetxt(fn, catalog_result['cov'])
+        if 'cov' in catalog_result:
+            fn = os.path.join(base_output_dir, self.output_config['covariance_matrix_file'])
+            np.savetxt(fn, catalog_result['cov'])
 
         #plot results
         fn = os.path.join(base_output_dir, self.output_config['plot_file'])
@@ -207,7 +211,7 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         return self.calculate_summary_statistic(catalog_result)
 
 
-    def get_mass_and_mask(self, galaxy_catalog):
+    def get_quantities_from_catalog(self, galaxy_catalog):
         """
         obtain the masses and mask fom the galaxy catalog
 
@@ -216,16 +220,19 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         galaxy_catalog : galaxy catalog reader object
         """
         #get stellar masses from galaxy catalog
-        masses = galaxy_catalog.get_quantities("stellar_mass", {'zlo': self.zlo, 'zhi': self.zhi})
-        x = galaxy_catalog.get_quantities("positionX", {'zlo': self.zlo, 'zhi': self.zhi})
+        sm = galaxy_catalog.get_quantities("stellar_mass", self._zfilter)
+        x = galaxy_catalog.get_quantities("positionX", self._zfilter)
+        y = galaxy_catalog.get_quantities("positionY", self._zfilter)
+        z = galaxy_catalog.get_quantities("positionZ", self._zfilter)
 
         #remove non-finite or negative numbers
-        mask  = np.isfinite(masses)
-        mask &= (masses > 0.0)
+        mask = np.isfinite(sm)
+        mask &= (sm > 0)
         mask &= np.isfinite(x)
-        masses = masses[mask]
+        mask &= np.isfinite(y)
+        mask &= np.isfinite(z)
 
-        return masses, mask
+        return dict(mass=sm[mask], x=x[mask], y=y[mask], z=z[mask])
 
 
     def calc_catalog_result(self, galaxy_catalog):
@@ -238,30 +245,26 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         """
 
         #get stellar masses from galaxy catalog
-        masses, mask = self.get_mass_and_mask(galaxy_catalog)
-        logmasses = np.log10(masses)
+        quantities = self.get_quantities_from_catalog(galaxy_catalog)
+        log_mass = np.log10(quantities['mass'])
 
         #histogram points and compute bin positions
-        mhist, mbins = np.histogram(logmasses, bins=self.bins)
-        mhist = mhist.astype(float)
-        summass, _   = np.histogram(logmasses, bins=self.bins, weights=masses)
-        binctr = (mbins[1:] + mbins[:-1])*0.5
+        mhist = np.histogram(log_mass, bins=self.bins)[0].astype(float)
+        summass = np.histogram(log_mass, bins=self.bins, weights=quantities['mass'])[0]
+        binwid = self.bins[1:] - self.bins[:-1]
+        binctr = (self.bins[1:] + self.bins[:-1])*0.5
         has_mass = (mhist > 0)
         binctr[has_mass] = np.log10(summass/mhist)[has_mass]
-        binwid = mbins[1:] - mbins[:-1]
 
         #count galaxies in log bins
         #get errors from jackknife samples if requested
         if self.jackknife_nside > 0:
-            x = galaxy_catalog.get_quantities("positionX", {'zlo': self.zlo, 'zhi': self.zhi})[mask]
-            y = galaxy_catalog.get_quantities("positionY", {'zlo': self.zlo, 'zhi': self.zhi})[mask]
-            z = galaxy_catalog.get_quantities("positionZ", {'zlo': self.zlo, 'zhi': self.zhi})[mask]
-            jack_indices = CalcStats.get_subvolume_indices(x, y, z, galaxy_catalog.box_size, self.jackknife_nside)
+            jack_indices = CalcStats.get_subvolume_indices(quantities['x'], quantities['y'], quantities['z'], \
+                    galaxy_catalog.box_size, self.jackknife_nside)
             njack = self.jackknife_nside**3
-            mhist, bias, covariance = CalcStats.jackknife(logmasses, jack_indices, njack, \
+            mhist, _, covariance = CalcStats.jackknife(log_mass, jack_indices, njack, \
                     lambda m, scale: np.histogram(m, bins=self.bins)[0]*scale, \
                     full_args=(1.0,), jack_args=(njack/(njack-1.0),))
-            del x, y, z, jack_indices
         else:
             covariance = np.diag(mhist)
 
@@ -362,8 +365,46 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         config = self.output_config
         with OnePointFunctionPlot(savepath, title=config['plot_title'], xlabel=config['xaxis_label'], ylabel=config['yaxis_label']) as plot:
             plot.add_line(result, label=catalog_name, color='b')
-            plot.add_points(self.validation_data, label=self.observation, marker='o', color='g')
-            plot.add_vband(*self.validation_range, color=self.output_config['test_range_color'], label='Test Region')
+            if config['plot_validation_as_line']:
+                plot.add_line(self.validation_data, label=self.observation, color='g')
+            else:
+                plot.add_points(self.validation_data, label=self.observation, marker='o', color='g')
+            plot.add_vband(*self.validation_range, color='r', label='Test Region')
+
+
+    @classmethod
+    def plot_summary(self, output_file, catalog_list, validation_kwargs):
+        """
+        make summary plot for validation test
+
+        Parameters
+        ----------
+        output_file: string
+            filename for summary plot
+
+        catalog_list: list of tuple
+            list of (catalog, catalog_output_dir) used for each catalog comparison
+
+        validation_kwargs : dict
+            keyword arguments used in the validation
+        """
+
+        config = self.output_config
+        colors = matplotlib.cm.get_cmap('nipy_spectral')(np.linspace(0, 1, len(catalog_list)+1)[:-1])
+
+        with OnePointFunctionPlot(output_file, title=config['plot_title'], xlabel=config['xaxis_label'], ylabel=config['yaxis_label']) as plot:
+            for color, (catalog_name, catalog_dir) in zip(colors, catalog_list):
+                d = load_file(os.path.join(catalog_dir, config['catalog_output_file']))
+                plot.add_line(d, catalog_name, color=color)
+
+            d = load_file(os.path.join(catalog_dir, config['validation_output_file']))
+            if config['plot_validation_as_line']:
+                plot.add_line(d, label=validation_kwargs['observation'], color='k')
+            else:
+                plot.add_points(d, validation_kwargs['observation'], color='k', marker='o')
+
+
+plot_summary = BinnedStellarMassFunctionTest.plot_summary
 
 
 def write_file(result, filename, comment=''):
@@ -439,30 +480,4 @@ class OnePointFunctionPlot():
         plt.fill_between([x0, x1], [ymin, ymin], [ymax, ymax], alpha=0.15, **kwargs)
 
 
-def plot_summary(output_file, catalog_list, validation_kwargs):
-    """
-    make summary plot for validation test
-
-    Parameters
-    ----------
-    output_file: string
-        filename for summary plot
-
-    catalog_list: list of tuple
-        list of (catalog, catalog_output_dir) used for each catalog comparison
-
-    validation_kwargs : dict
-        keyword arguments used in the validation
-    """
-
-    config = BinnedStellarMassFunctionTest.output_config
-    colors= matplotlib.cm.get_cmap('nipy_spectral')(np.linspace(0, 1, len(catalog_list)+1)[:-1])
-
-    with OnePointFunctionPlot(output_file, title=config['plot_title'], xlabel=config['xaxis_label'], ylabel=config['yaxis_label']) as plot:
-        for color, (catalog_name, catalog_dir) in zip(colors, catalog_list):
-            d = load_file(os.path.join(catalog_dir, config['catalog_output_file']))
-            plot.add_line(d, catalog_name, color=color)
-
-        d = load_file(os.path.join(catalog_dir, config['validation_output_file']))
-        plot.add_points(d, validation_kwargs['observation'], color='k', marker='o')
 
