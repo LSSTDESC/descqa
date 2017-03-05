@@ -42,18 +42,18 @@ class WprpTest(ValidationTest):
         ----------
         galaxy_catalog : galaxy catalog reader object
             instance of a galaxy catalog reader
-        
+
         galaxy_catalog_name : string
             name of mock galaxy catalog
-        
+
         output_dir : string
             dictionary of output informaton
-        
+
         Returns
         -------
         test_result : TestResult object
         """
-        
+
         #make sure galaxy catalog has appropriate quantities
         required_quantities = ('stellar_mass', 'positionX', 'positionY', 'positionZ', 'velocityZ')
 
@@ -89,7 +89,7 @@ class WprpTest(ValidationTest):
         y = gc.get_quantities("positionY", gc_filter)[flag]
         z = gc.get_quantities("positionZ", gc_filter)[flag]
         vz = gc.get_quantities("velocityZ", gc_filter)[flag]
-    
+
         vz /= (100.0*h)
         z += vz
         del vz
@@ -107,11 +107,11 @@ class WprpTest(ValidationTest):
         with WprpPlot(os.path.join(output_dir, 'wprp.png'), sm_cut=sm_cut) as plot:
             plot.add_line(rp, wp, wp_err, galaxy_catalog_name)
             plot.add_points(rp_data, wp_data, wp_err_data, self._dataname, color='r', marker='s')
-        
-        chisq_value = chisq(wp, wp_data, wp_cov + wp_cov_data)
+
+        chisq_value = chisq(wp - wp_data, wp_cov + wp_cov_data)
         chisq_thres_value = chisq_threshold(len(wp))
         success = (chisq_value < chisq_thres_value)
-        summary = 'chi2 = {} {} {}'.format(chisq_value, '<' if success else '>=', chisq_thres_value)
+        summary = 'chi^2 = {} {} {}'.format(chisq_value, '<' if success else '>=', chisq_thres_value)
 
         return TestResult(chisq_value, summary, success)
 
@@ -166,15 +166,15 @@ def load_wprp_data(filename):
 def plot_summary(output_file, catalog_list, validation_kwargs):
     """
     make summary plot for validation test
-    
+
     Parameters
     ----------
     output_file: string
         filename for summary plot
-    
+
     catalog_list: list of tuple
         list of (catalog, catalog_output_dir) used for each catalog comparison
-    
+
     validation_kwargs : dict
         keyword arguments used in the validation
     """
@@ -185,7 +185,7 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
         for color, (catalog, catalog_output_dir) in zip(colors, catalog_list):
             rp, wp, wp_err = load_wprp(os.path.join(catalog_output_dir, catalog_output))
             plot.add_line(rp, wp, wp_err, catalog, color=color)
-        
+
         rp, wp, wp_cov, wp_err = load_wprp_data(os.path.join(validation_kwargs['base_data_dir'], validation_kwargs['datafile']))
         plot.add_points(rp, wp, wp_err, validation_kwargs['dataname'], color='r', marker='s')
 

@@ -2,7 +2,6 @@
 
 # ---- DO NOT change this section ----
 import os as _os
-import numpy as _np
 
 class _ValidationConfig():
     def __init__(self, module, **kwargs):
@@ -21,25 +20,24 @@ class _ValidationConfig():
 
 smf_LiWhite = _ValidationConfig('BinnedStellarMassFunctionTest',
          observation='LiWhite2009',
-         bins=_np.linspace(7.0,12.0,26),
+         bins=[7.,7.3,7.6,7.9,8.2,8.5,8.8,9.1,9.4,9.7,10.,10.3,10.6,10.9,11.2,11.5,11.8,12.1],
          zlo=0.045,
          zhi=0.065,
-         summary='L2Diff',
-         summary_details=True,
-         validation_range=(7.0,12.0),
-         Njackknife_samples=5,
+         summary_statistic='chisq',
+         validation_range=(9.1,11.8),
+         jackknife_nside=5,
          description='We calculate the stellar-mass density as a function of the total stellar mass for each galaxy. Stellar masses are defined as the mass locked up in long-lived stars and stellar remnants (the most common definition).  For the SAM models, the total stellar mass is the sum of the disk and spheroid components. The densities are derived from the number counts of galaxies in each stellar mass bin, divided by the simulation volume. These densities are compared with the data from Li and White 2009.'
 )
 
 
 smf_MB2 = _ValidationConfig('BinnedStellarMassFunctionTest',
          observation='MassiveBlackII',
-         bins=_np.linspace(7.0,12.0,26),
+         bins=[7.,7.3,7.6,7.9,8.2,8.5,8.8,9.1,9.4,9.7,10.,10.3,10.6,10.9,11.2,11.5,11.8,12.1],
          zlo=0.045,
          zhi=0.065,
-         summary='L2Diff',
-         summary_details=True,
-         validation_range=(9.0,12.0),
+         summary_statistic='chisq',
+         validation_range=(9.1,11.8),
+         jackknife_nside=5,
          description='We calculate the stellar-mass density as a function of the total stellar mass for each galaxy. Stellar masses are defined as the mass locked up in long-lived stars and stellar remnants (the most common definition).  For the SAM models, the total stellar mass is the sum of the disk and spheroid components. The densities are derived from the number counts of galaxies in each stellar mass bin, divided by the simulation volume. These densities are compared with the data from the MassiveBlackII simulation.'
 )
 
@@ -108,7 +106,6 @@ wprp_SDSS_m98 = _ValidationConfig('WprpTest',
          zmax=40.0,
          rbins=(-1.0,1.3,12),
          njack=10,
-         summary='L2Diff',
          description='For each of the mock catalogs, we calculate the projected two-point correlation function, w<sub>p</sub>(r<sub>p</sub>), in the thin-plane approximation.  We use the catalog at one single epoch and then add redshift space distortion along one spatial axis (z-axis).  We then calculate the projected pair counts, with a projection depth of 80 Mpc/h. We assume periodic boundary conditions for all three spatial axes. We estimate the sample variance of w<sub>p</sub>(r<sub>p</sub>) using the jackknife technique.'
 )
 
@@ -120,7 +117,6 @@ wprp_MB2_m98 = _ValidationConfig('WprpTest',
          zmax=40.0,
          rbins=(-1.0,1.3,12),
          njack=10,
-         summary='L2Diff',
          description='For each of the mock catalogs, we calculate the projected two-point correlation function, w_p(r_p), in the thin-plane approximation.  We use the catalog at one single epoch and then add redshift space distortion along one spatial axis (z-axis).  We then calculate the projected pair counts, with a projection depth of 80 Mpc/h. We assume periodic boundary conditions for all three spatial axes. We estimate the sample variance of w_p(r_p) using the jackknife technique.'
 )
 
