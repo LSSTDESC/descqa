@@ -421,7 +421,7 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
     plt.ylabel(yaxis_label)
     
     #setup colors from colormap
-    colors= matplotlib.cm.get_cmap(summary_colormap)(np.linspace(0.,1.,len(catalog_list)))
+    colors= matplotlib.cm.get_cmap('nipy_spectral')(np.linspace(0, 1, len(catalog_list)+1)[:-1])
     
     #loop over catalogs and plot
     for color, (catalog_name, catalog_dir) in zip(colors, catalog_list):

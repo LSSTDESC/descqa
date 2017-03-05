@@ -178,7 +178,7 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
     validation_kwargs : dict
         keyword arguments used in the validation
     """
-    colors= matplotlib.cm.get_cmap('nipy_spectral')(np.linspace(0.,1.,len(catalog_list)))
+    colors= matplotlib.cm.get_cmap('nipy_spectral')(np.linspace(0, 1, len(catalog_list)+1)[:-1])
 
     sm_cut = validation_kwargs['sm_cut']/(0.702**2.0)
     with WprpPlot(output_file, sm_cut=sm_cut) as plot:
