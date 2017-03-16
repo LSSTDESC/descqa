@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from astropy import units as u
 from ValidationTest import ValidationTest, TestResult
 from CalcStats import L2Diff, L1Diff, KS_test
-from ComputeColorDistribution import load_DEEP2, load_SDSS
+from ComputeColorDistribution import load_SDSS
 from scipy.ndimage.filters import uniform_filter1d
 
 catalog_output_file = 'catalog_quantiles.txt'
@@ -89,11 +89,16 @@ class ColorDistributionTest(ValidationTest):
             self.limiting_band = kwargs['limiting_band']
         else:
             raise ValueError('`limiting_band` not found!')
-        # limiting magnitude
-        if 'limiting_mag' in list(kwargs.keys()):
-            self.limiting_mag = kwargs['limiting_mag']
+        # # limiting magnitude
+        # if 'limiting_mag' in list(kwargs.keys()):
+        #     self.limiting_mag = kwargs['limiting_mag']
+        # else:
+        #     raise ValueError('`limiting_mag` not found!')
+        # limiting k-corrected absolute magnitude
+        if 'limiting_abs_mag' in list(kwargs.keys()):
+            self.limiting_abs_mag = kwargs['limiting_abs_mag']
         else:
-            raise ValueError('`limiting_mag` not found!')
+            raise ValueError('`limiting_abs_mag` not found!')
 
         # Redshift range
         # minimum redshift
@@ -141,11 +146,24 @@ class ColorDistributionTest(ValidationTest):
         pass_q = True   # False if any color fails
         pass_count = 0   # Number of colors that pass the test
 
+        if not self._data_name in ['SDSS']:
+            raise ValueError('Validation data '+self._data_name+'  not found!')
+
+        if hasattr(galaxy_catalog, "SDSS_kcorrection_z"):
+            self.SDSS_kcorrection_z = galaxy_catalog.quantities('SDSS_kcorrection_z')
+        else:
+            msg = ('galaxy catalog does not have SDSS_kcorrection_z; using default SDSS_kcorrection_z = 0.06')
+            warn(msg)
+            self.SDSS_kcorrection_z = 0.06
+
+        # Cosmololy for distance modulus for absolute magnitudes
+        self.cosmology = galaxy_catalog.cosmology
+
         if self.load_validation_catalog_q:
-            if self._data_name=='DEEP2':
-                vsummary = load_DEEP2(self._raw_data_fname, self.colors, self.zlo_obs, self.zhi_obs, self.limiting_band, self.limiting_mag)
-            elif self._data_name=='SDSS':
-                vsummary = load_SDSS(self._raw_data_fname, self.colors, self.zlo_obs, self.zhi_obs, self.limiting_band, self.limiting_mag)
+            # if self._data_name=='DEEP2':
+            #     vsummary = load_DEEP2(self._raw_data_fname, self.colors, self.zlo_obs, self.zhi_obs, self.limiting_band, self.limiting_mag)
+            if self._data_name=='SDSS':
+                vsummary = load_SDSS(self._raw_data_fname, self.colors, self.SDSS_kcorrection_z)
 
         filename = os.path.join(base_output_dir, summary_output_file)
         with open(filename, 'a') as f:
@@ -353,7 +371,8 @@ class ColorDistributionTest(ValidationTest):
         #apply magnitude limit and remove nonsensical magnitude values
         limiting_band_name = self.translate[self.limiting_band]
         mag_lim = galaxy_catalog.get_quantities(limiting_band_name, {'zlo': self.zlo_mock, 'zhi': self.zhi_mock})
-        mask = (mag_lim<self.limiting_mag) & (mag1>0) & (mag1<50) & (mag2>0) & (mag2<50)
+        # mask = (mag_lim<self.limiting_mag) & (mag1>0) & (mag1<50) & (mag2>0) & (mag2<50)
+        mask = (mag_lim<self.limiting_abs_mag)
         mag1 = mag1[mask]
         mag2 = mag2[mask]
 

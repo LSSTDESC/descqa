@@ -2,6 +2,8 @@ from __future__ import division, print_function
 import matplotlib.pyplot as plt
 import numpy as np
 from astropy.io import fits
+import os
+import kcorrect
 
 def load_DEEP2(filename, colors, zlo, zhi, limiting_band, limiting_mag):
     """
@@ -60,7 +62,7 @@ def load_DEEP2(filename, colors, zlo, zhi, limiting_band, limiting_mag):
 
     return vsummary
 
-def load_SDSS(filename, colors, zlo, zhi, limiting_band, limiting_mag):
+def load_SDSS(filename, colors, SDSS_kcorrection_z):
     """
     Compute the CDF of SDSS colors for some redshift range. 
 
@@ -77,23 +79,72 @@ def load_SDSS(filename, colors, zlo, zhi, limiting_band, limiting_mag):
             maximum redshift of the validation catalog
     """
     
-    cat = fits.getdata(filename)
+    translate = {'u':'M_u', 'g':'M_g', 'r':'M_r', 'i':'M_i', 'z':'M_z'}
+    
+    # limiting_band_name = translate[limiting_band]
+    # mask_all = (cat['z']>zlo) & (cat['z']<zhi) & (cat[limiting_band_name]<limiting_mag)
 
-    translate = {'u':'modelMag_u', 'g':'modelMag_g', 'r':'modelMag_r', 'i':'modelMag_i', 'z':'modelMag_z'}
-        
-    limiting_band_name = translate[limiting_band]
-    mask_all = (cat['z']>zlo) & (cat['z']<zhi) & (cat[limiting_band_name]<limiting_mag)
+    data_dir = os.path.dirname(filename)
+    kcorrect_final = os.path.join(data_dir, 'sdss_k_corrected_absolute_magnitudes_z_{:.3f}_volume_limited.fits'.format(SDSS_kcorrection_z))
+
+    if not os.path.exists(kcorrect_final):
+
+        kcorrect_maggies_path = os.path.join(data_dir, 'sdss_k_corrected_maggies_z_{:.3f}.dat'.format(SDSS_kcorrection_z))
+        kcorrect_abs_magnitude_path = os.path.join(data_dir, 'sdss_k_corrected_absolute_magnitudes_z_{:.3f}.fits'.format(SDSS_kcorrection_z))
+
+        # Load kcorrect templates and filters
+        kcorrect.load_templates()
+        kcorrect.load_filters()
+
+        kcorrect.reconstruct_maggies_from_file(filename, redshift=SDSS_kcorrection_z, outfile=kcorrect_maggies_path)
+
+        #----------Convert kcorrected maggies to magnitudes----------------
+        cat = Table.read(os.path.join(data_dir, kcorrect_maggies_path), format='ascii.no_header', names=('redshift', 'maggies_u', 'maggies_g', 'maggies_r', 'maggies_i', 'maggies_z'))
+
+        cat0 = Table.read(filename, format='ascii.no_header')
+
+        redshifts = cat0['col1']
+        u = -2.5*np.log10(cat['maggies_u'])
+        g = -2.5*np.log10(cat['maggies_g'])
+        r = -2.5*np.log10(cat['maggies_r'])
+        i = -2.5*np.log10(cat['maggies_i'])
+        z = -2.5*np.log10(cat['maggies_z'])
+
+        cosmo = FlatLambdaCDM(H0=70.2, Om0=0.275)
+
+        # distance modulus
+        dm = np.array(cosmo.distmod(redshifts))
+        cat1 = Table()
+        cat1['redshift'] = redshifts
+        cat1['M_u'] = u - dm
+        cat1['M_g'] = g - dm
+        cat1['M_r'] = r - dm
+        cat1['M_i'] = i - dm
+        cat1['M_z'] = z - dm
+
+        cat1.write(kcorrect_abs_magnitude_path)
+
+        # Apply r-band absolute magnitude and redshift cuts
+        mask = (cat1['M_r'] < -20.4) & (cat1['redshift'] > 0.06) & (cat1['redshift'] < 0.09)
+        cat1 = cat1[mask]
+
+        cat1.write(kcorrect_final)
+        cat = cat1.copy()
+
+    else:
+        cat = Table.read(kcorrect_final)
 
     vsummary = []
+
     # PDF with small bins for calculating CDF
     for index in range(len(colors)):
         color = colors[index]
         band1 = translate[color[0]]
         band2 = translate[color[2]]
 
-        mask = mask_all & (np.abs(cat[band1])>0) & (np.abs(cat[band1])<50) & (np.abs(cat[band2])>0) & (np.abs(cat[band2])<50)
+        # mask = mask_all & (np.abs(cat[band1])>0) & (np.abs(cat[band1])<50) & (np.abs(cat[band2])>0) & (np.abs(cat[band2])<50)
         bins = np.linspace(-1, 4, 2000)
-        hist, bin_edges = np.histogram((cat[band1]-cat[band2])[mask], bins=bins)
+        hist, bin_edges = np.histogram((cat[band1]-cat[band2]), bins=bins)
         hist = hist/np.sum(hist)
         binctr = (bin_edges[1:] + bin_edges[:-1])/2.
 
