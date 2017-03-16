@@ -150,11 +150,15 @@ class ColorDistributionTest(ValidationTest):
             raise ValueError('Validation data '+self._data_name+'  not found!')
 
         if hasattr(galaxy_catalog, "SDSS_kcorrection_z"):
-            self.SDSS_kcorrection_z = galaxy_catalog.quantities('SDSS_kcorrection_z')
+            self.SDSS_kcorrection_z = galaxy_catalog.SDSS_kcorrection_z
         else:
-            msg = ('galaxy catalog does not have SDSS_kcorrection_z; using default SDSS_kcorrection_z = 0.06')
+            msg = ('galaxy catalog does not have SDSS_kcorrection_z; using default SDSS_kcorrection_z = 0.06\n')
             warn(msg)
             self.SDSS_kcorrection_z = 0.06
+            # write to log file
+            fn = os.path.join(base_output_dir, log_file)
+            with open(fn, 'a') as f:
+                f.write(msg)
 
         # Cosmololy for distance modulus for absolute magnitudes
         self.cosmology = galaxy_catalog.cosmology

@@ -5,6 +5,7 @@ from astropy.io import fits
 from astropy.table import Table
 import os
 import kcorrect
+from astropy.cosmology import FlatLambdaCDM
 
 def load_DEEP2(filename, colors, zlo, zhi, limiting_band, limiting_mag):
     """
