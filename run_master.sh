@@ -10,6 +10,7 @@ set -e
 DESCQAROOTDIR="/global/projecta/projectdirs/lsst/descqa"
 
 # load python module and set PYTHONPATH
+module unload python
 export PYTHONPATH=""
 module load python/2.7.9
 module load numpy/1.9.2
