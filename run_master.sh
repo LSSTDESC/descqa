@@ -13,9 +13,6 @@ DESCQAROOTDIR="/global/projecta/projectdirs/lsst/descqa"
 module unload python
 export PYTHONPATH=""
 module load python/2.7.9
-module load numpy/1.9.2
-module load scipy/0.15.1
-module load matplotlib/1.4.3
 module load h5py/2.5.0
 export PYTHONPATH="$DESCQAROOTDIR/lib/python2.7/site-packages:$PYTHONPATH"
 
