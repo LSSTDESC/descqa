@@ -87,12 +87,11 @@ def load_SDSS(filename, colors, SDSS_kcorrection_z):
     # mask_all = (cat['z']>zlo) & (cat['z']<zhi) & (cat[limiting_band_name]<limiting_mag)
 
     data_dir = os.path.dirname(filename)
-    kcorrect_final = os.path.join(data_dir, 'sdss_k_corrected_absolute_magnitudes_z_{:.3f}_volume_limited.fits'.format(SDSS_kcorrection_z))
+    kcorrect_magnitudes_path = os.path.join(data_dir, 'sdss_k_corrected_magnitudes_z_0.06_0.09_z_{:.3f}.fits'.format(SDSS_kcorrection_z))
 
-    if not os.path.exists(kcorrect_final):
+    if not os.path.exists(kcorrect_magnitudes_path):
 
-        kcorrect_maggies_path = os.path.join(data_dir, 'sdss_k_corrected_maggies_z_{:.3f}.dat'.format(SDSS_kcorrection_z))
-        kcorrect_abs_magnitude_path = os.path.join(data_dir, 'sdss_k_corrected_absolute_magnitudes_z_{:.3f}.fits'.format(SDSS_kcorrection_z))
+        kcorrect_maggies_path = os.path.join(data_dir, 'sdss_k_corrected_maggies_z_0.06_0.09_z_{:.3f}.dat'.format(SDSS_kcorrection_z))
 
         # Load kcorrect templates and filters
         kcorrect.load_templates()
@@ -112,29 +111,38 @@ def load_SDSS(filename, colors, SDSS_kcorrection_z):
         i = -2.5*np.log10(cat['maggies_i'])
         z = -2.5*np.log10(cat['maggies_z'])
 
-        cosmo = FlatLambdaCDM(H0=70.2, Om0=0.275)
-
-        # distance modulus
-        dm = np.array(cosmo.distmod(redshifts))
         cat1 = Table()
         cat1['redshift'] = redshifts
-        cat1['M_u'] = u - dm
-        cat1['M_g'] = g - dm
-        cat1['M_r'] = r - dm
-        cat1['M_i'] = i - dm
-        cat1['M_z'] = z - dm
-
-        cat1.write(kcorrect_abs_magnitude_path)
-
-        # Apply r-band absolute magnitude and redshift cuts
-        mask = (cat1['M_r'] < -20.4) & (cat1['redshift'] > 0.06) & (cat1['redshift'] < 0.09)
-        cat1 = cat1[mask]
-
-        cat1.write(kcorrect_final)
+        cat1['u'] = u
+        cat1['g'] = g
+        cat1['r'] = r
+        cat1['i'] = i
+        cat1['z'] = z
+        cat1.write(kcorrect_magnitudes_path)
         cat = cat1.copy()
-
     else:
-        cat = Table.read(kcorrect_final)
+        cat = Table.read(kcorrect_magnitudes_path)
+
+    # distance modulus
+    ##########################################
+    cosmo = FlatLambdaCDM(H0=70.2, Om0=0.275)
+    ##########################################
+    dm = np.array(cosmo.distmod(cat['redshift']))
+    cat['M_u'] = cat['u'] - dm
+    cat['M_g'] = cat['g'] - dm
+    cat['M_r'] = cat['r'] - dm
+    cat['M_i'] = cat['i'] - dm
+    cat['M_z'] = cat['z'] - dm
+
+    # Calculate the aboluste magnitude cut
+    mask = (cat['redshift']>0.089) & (cat['redshift']<0.090)
+    mr = cat['M_r'][mask]
+    mr_sort = np.sort(mr)
+    mrmax = mr_sort[int(len(mr)*0.85)]
+
+    # Apply r-band absolute magnitude
+    mask = (cat['M_r'] < mrmax)
+    cat = cat[mask]
 
     vsummary = []
 
@@ -144,7 +152,6 @@ def load_SDSS(filename, colors, SDSS_kcorrection_z):
         band1 = translate[color[0]]
         band2 = translate[color[2]]
 
-        # mask = mask_all & (np.abs(cat[band1])>0) & (np.abs(cat[band1])<50) & (np.abs(cat[band2])>0) & (np.abs(cat[band2])<50)
         bins = np.linspace(-1, 4, 2000)
         hist, bin_edges = np.histogram((cat[band1]-cat[band2]), bins=bins)
         hist = hist/np.sum(hist)
