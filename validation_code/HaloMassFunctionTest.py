@@ -66,37 +66,46 @@ class HaloMassFunctionTest(BinnedStellarMassFunctionTest):
         #get path to exe
         exe = os.path.join(self.base_data_dir, 'ANALYTIC/amf/amf.exe')
         fn = os.path.join(base_output_dir, 'analytic.dat')
-        inputpars = os.path.join(self.base_data_dir, 'ANALYTIC/amf/input.par')
+        input_par_fn = os.path.join(base_output_dir, 'input.par')
 
-        #get cosmology from galaxy_catalog
+        h = galaxy_catalog.cosmology.H(self.ztest).value/100.
         om = galaxy_catalog.cosmology.Om0
-        ob = 0.046 # assume ob is included in om
-        h  = galaxy_catalog.cosmology.H(self.ztest).value/100.
-        s8 = 0.816# from paper
-        ns = 0.96 # from paper
-        #Delta = 700.0 # default from original halo_mf.py
-        delta_c = 1.686
-        fitting_f = halo_mass_par[self.observation]
-
-        args = map(str, [exe, "-omega_0", om, "-omega_bar", ob, "-h", h, "-sigma_8", s8, \
-                    "-n_s", ns, "-tf", "EH", "-delta_c", delta_c, "-M_min", 1.0e7, "-M_max", 1.0e15, \
-                    "-z", 0.0, "-f", fitting_f])
-
-        if getattr(self, '_amf_args', None) != args:
-            subprocess.check_call(["cp", inputpars, base_output_dir])
+        
+        #input.par file contains (in this order!):
+        input_par = (
+                '{:.6g}'.format(om), #omega_0           -- total matter fraction
+                '0.046',             #omega_bar         -- baryon fraction
+                '{:.6g}'.format(h),  #h                 -- hubble constant in 100 km/s/Mpc
+                '0.816',             #sigma_8           -- variance of the linear density field
+                '0.96',              #n_s               -- power spectrum index
+                '-1',                #w_0               -- dark energy equation of state parameter
+                '0',                 #w_a               -- ... (see the above, w = w_0 + w_a*(1-a)) 
+                '1.686',             #delta_c           -- linear overdensity at virialization
+                'EH',                #transfer function -- options: CMB, BBKS, EBW, PD, HS, KH or EH
+                halo_mass_par[self.observation], #fitting function -- options: PS, ST, JEN, LANL, DELP, REED, REED06 or TINK
+                '0.0625',            #redshift          -- z >= 0
+                '{:.6g}'.format(97.7/om),        #Delta            -- overdensity of SO halos; used only for Tinker MF
+                '1.0E7',             #minimal mass      -- range of masses which output will cover
+                '1.0E15',            #maximal mass      -- ... (see the above)
+                '50',                #k_max             -- maximum k for calculating sigma(k) integration
+        )
+        
+        if getattr(self, '_amf_args', None) != input_par:
+            with open(input_par_fn, 'w') as f:
+                f.write('\n'.join(input_par))
+                f.write('\n')
             if os.path.exists(fn):
                 os.remove(fn)
             CWD = os.getcwd()
             os.chdir(base_output_dir)
             try:
-                with open(os.devnull, 'w') as FNULL:
-                    p = subprocess.check_call(args, stdout=FNULL, stderr=FNULL)
+                subprocess.check_call([exe])
             finally:
                 os.chdir(CWD)
 
             MassFunc = np.loadtxt(fn).T
             self.validation_data = {'x':np.log10(MassFunc[2]/h), 'y':MassFunc[3]*h*h*h}
-            self._amf_args = args
+            self._amf_args = tuple(input_par)
 
 
     def get_quantities_from_catalog(self, galaxy_catalog):
