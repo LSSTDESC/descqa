@@ -258,8 +258,8 @@ class ColorDistributionTest(ValidationTest):
             d2 = {'x':obinctr, 'y':ocdf}
             d1_shifted = {'x':mbinctr-(mmedian-omedian), 'y':mcdf}
             # calculate L2diff
-            L2, L2_success = L2Diff(d1, d2)
-            L2_shifted, L2_shifted_success = L2Diff(d1_shifted, d2)
+            L2, L2_success = L2Diff(d1, d2, threshold=0.02)
+            L2_shifted, L2_shifted_success = L2Diff(d1_shifted, d2, threshold=0.02)
             # calculate L1Diff
             L1, L1_success = L1Diff(d1, d2)
             L1_shifted, L1_shifted_success = L1Diff(d1_shifted, d2)
@@ -276,9 +276,9 @@ class ColorDistributionTest(ValidationTest):
             ax_cdf.step(mbinctr-(mmedian-omedian), mcdf, where="mid", label=catalog_name+' shifted', linestyle='--', color='blue')
             ax_cdf.set_xlabel(color, fontsize=12)
             ax_cdf.set_title('')
-            xlim = np.min([mbinctr[np.argmax(mcdf>0.005)], obinctr[np.argmax(ocdf>0.005)]])
+            xmin = np.min([mbinctr[np.argmax(mcdf>0.005)], obinctr[np.argmax(ocdf>0.005)]])
             xmax = np.max([mbinctr[np.argmax(mcdf>0.995)], obinctr[np.argmax(ocdf>0.995)]])
-            ax_cdf.set_xlim(xlim, xmax)
+            ax_cdf.set_xlim(xmin, xmax)
             ax_cdf.set_ylim(0, 1)
             ax_cdf.legend(loc='best', frameon=False)
 
@@ -292,7 +292,7 @@ class ColorDistributionTest(ValidationTest):
             # color distribution after constant shift
             ax_pdf.step(mbinctr-(mmedian-omedian), mhist_smooth, where="mid", label=catalog_name+' shifted', linestyle='--', color='blue')
             ax_pdf.set_xlabel(color, fontsize=12)
-            ax_pdf.set_xlim(xlim, xmax)
+            ax_pdf.set_xlim(xmin, xmax)
             ax_pdf.set_ylim(ymin=0.)
             ax_pdf.set_title('')
             ax_pdf.legend(loc='best', frameon=False)
@@ -301,19 +301,18 @@ class ColorDistributionTest(ValidationTest):
             filename = os.path.join(base_output_dir, summary_output_file)
             with open(filename, 'a') as f:
                 f.write("Median "+color+" difference (obs - mock) = %2.3f\n"%(omedian-mmedian))
-                f.write(color+"{}: {} = {}\n".format(' SUCCESS: ' if L2_success else 'FAILED: ', 'L2Diff', L2))
-                f.write(color+"{}: {} = {}\n".format(' SUCCESS: ' if L2_shifted_success else 'FAILED: ', 'L2Diff (shifted)', L2_shifted))
-                f.write(color+"{}: {} = {}\n".format(' SUCCESS: ' if L1_success else 'FAILED: ', 'L1Diff', L1))
-                f.write(color+"{}: {} = {}\n".format(' SUCCESS: ' if L1_shifted_success else 'FAILED: ', 'L1Diff (shifted)', L1_shifted))
-                f.write(color+"{}: {} = {}\n".format(' SUCCESS: ' if KS_success else 'FAILED: ', 'K-S', KS))
-                f.write(color+"{}: {} = {}\n".format(' SUCCESS: ' if KS_shifted_success else 'FAILED: ', 'K-S (shifted)', KS_shifted))
+                f.write(color+" {}: {} = {}\n".format('SUCCESS' if L2_success else 'FAILED', 'L2Diff', L2))
+                f.write(color+" (shifted) {}: {} = {}\n".format('SUCCESS' if L2_shifted_success else 'FAILED', 'L2Diff', L2_shifted))
+                f.write(color+" {}: {} = {}\n".format('SUCCESS' if L1_success else 'FAILED', 'L1Diff', L1))
+                f.write(color+" (shifted) {}: {} = {}\n".format('SUCCESS' if L1_shifted_success else 'FAILED', 'L1Diff', L1_shifted))
+                f.write(color+" {}: {} = {}\n".format('SUCCESS' if KS_success else 'FAILED', 'K-S', KS))
+                f.write(color+" (shifted) {}: {} = {}\n".format('SUCCESS' if KS_shifted_success else 'FAILED', 'K-S', KS_shifted))
 
-            # The test is considered pass if the 68% quantiles of the mock catalog
-            # is within the 95% quantiles of the observed catalog
-            if m68min<o95min or m68max>o95max:
-                pass_q = False
-            else:
+            # The test is considered pass if the all colors pass L2Diff
+            if L2_success:
                 pass_count+=1
+            else:
+                pass_q = False
 
         if not skip_q:
             # save plots
@@ -335,10 +334,10 @@ class ColorDistributionTest(ValidationTest):
             return TestResult(summary='No available colors for comparison. ', skipped=True)
         elif pass_q:
             return TestResult(score=pass_count/float(len(self.colors)), 
-                summary='{}/{} - All colors pass the test. '.format(pass_count, len(self.colors)), passed=True)
+                summary='{}/{} success - All colors pass the test. '.format(pass_count, len(self.colors)), passed=True)
         else:
             return TestResult(score=pass_count/float(len(self.colors)), 
-                summary='{}/{} - Not all colors pass the test. '.format(pass_count, len(self.colors)), passed=False)
+                summary='{}/{} success - Not all colors pass the test. '.format(pass_count, len(self.colors)), passed=False)
 
     def color_distribution(self, galaxy_catalog, bin_args, base_output_dir):
         """
