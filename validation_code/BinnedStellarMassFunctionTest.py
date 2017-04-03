@@ -390,7 +390,7 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         """
 
         config = self.output_config
-        colors = matplotlib.cm.get_cmap('nipy_spectral')(np.linspace(0, 1, len(catalog_list)+1)[:-1])
+        colors = matplotlib.cm.get_cmap('nipy_spectral')(np.linspace(0, 1, len(catalog_list)+2)[1:-1])
 
         with OnePointFunctionPlot(output_file, title=config['plot_title'], xlabel=config['xaxis_label'], ylabel=config['yaxis_label']) as plot:
             for color, (catalog_name, catalog_dir) in zip(colors, catalog_list):

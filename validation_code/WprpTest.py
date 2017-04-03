@@ -178,7 +178,7 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
     validation_kwargs : dict
         keyword arguments used in the validation
     """
-    colors= matplotlib.cm.get_cmap('nipy_spectral')(np.linspace(0, 1, len(catalog_list)+1)[:-1])
+    colors= matplotlib.cm.get_cmap('nipy_spectral')(np.linspace(0, 1, len(catalog_list)+2)[1:-1])
 
     sm_cut = validation_kwargs['sm_cut']/(0.702**2.0)
     with WprpPlot(output_file, sm_cut=sm_cut) as plot:
@@ -187,6 +187,6 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
             plot.add_line(rp, wp, wp_err, catalog, color=color)
 
         rp, wp, wp_cov, wp_err = load_wprp_data(os.path.join(validation_kwargs['base_data_dir'], validation_kwargs['datafile']))
-        plot.add_points(rp, wp, wp_err, validation_kwargs['dataname'], color='r', marker='s')
+        plot.add_points(rp, wp, wp_err, validation_kwargs['dataname'], color='k', marker='s')
 
 
