@@ -457,17 +457,18 @@ class OnePointFunctionPlot():
 
     def __exit__(self, *exc_args):
         self.ax.set_xlabel(self.kwargs['xlabel'])
-        self.ax.set_ylabel(self.kwargs['xlabel'])
+        self.ax.set_ylabel(self.kwargs['ylabel'])
         self.ax.set_title(self.kwargs['title'])
-        self.ax.legend(loc='upper left', frameon=False, fontsize='small', ncol=2)
+        self.ax.legend(loc='best', frameon=False, fontsize='small', ncol=2)
         self.fig.tight_layout()
         self.fig.savefig(self.savefig)
         plt.close(self.fig)
 
     def add_line(self, d, label, **kwargs):
-        l = self.ax.plot(d['x'], d['y'], label=label, lw=1.5, **kwargs)[0]
+        mask = (d['y'] > 0)
+        l = self.ax.plot(d['x'][mask], d['y'][mask], label=label, lw=1.5, **kwargs)[0]
         if 'y-' in d and 'y+' in d:
-            self.ax.fill_between(d['x'], d['y-'], d['y+'], alpha=0.2, color=l.get_color(), lw=0)
+            self.ax.fill_between(d['x'][mask], d['y-'][mask], d['y+'][mask], alpha=0.2, color=l.get_color(), lw=0)
 
     def add_points(self, d, label, **kwargs):
         if 'y-' in d and 'y+' in d:
