@@ -51,7 +51,7 @@ hmf_T = _ValidationConfig('HaloMassFunctionTest',
 
 smhm_MB2 = _ValidationConfig('StellarMassHaloMassTest',
          observation='MassiveBlackII',
-         bins=(7.5, 15.0, 26),
+         bins=(7.4997, 14.9335, 26),
          validation_range=(11.4, 14.4),
          zlo=0.045,
          zhi=0.065,
