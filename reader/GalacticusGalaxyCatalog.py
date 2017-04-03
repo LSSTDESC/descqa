@@ -299,6 +299,7 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
 
         if (len(outkeys)>0):
             self.redshift=zvalues
+            self.SDSS_kcorrection_z=self.redshift
             for outkey in outkeys:
                 outdict = self.catalog[outkey]
                 if self._check_halo(outdict, filters):
