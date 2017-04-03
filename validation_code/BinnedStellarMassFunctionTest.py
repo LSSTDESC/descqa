@@ -402,6 +402,7 @@ class BinnedStellarMassFunctionTest(ValidationTest):
                 plot.add_line(d, label=validation_kwargs['observation'], color='k')
             else:
                 plot.add_points(d, validation_kwargs['observation'], color='k', marker='o')
+            plot.add_vband(*validation_kwargs['validation_range'], color='r', label='Test Region')
 
 
 plot_summary = BinnedStellarMassFunctionTest.plot_summary
@@ -478,7 +479,7 @@ class OnePointFunctionPlot():
 
     def add_vband(self, x0, x1, **kwargs):
         ymin, ymax = self.ax.get_ylim()
-        plt.fill_between([x0, x1], [ymin, ymin], [ymax, ymax], alpha=0.15, **kwargs)
+        plt.fill_between([x0, x1], [ymin, ymin], [ymax, ymax], alpha=0.1, **kwargs)
 
 
 

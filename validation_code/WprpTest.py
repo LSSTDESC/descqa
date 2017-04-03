@@ -143,7 +143,7 @@ class WprpPlot():
         self.ax.fill_between(rp, rp*(wp+wp_err), rp*(wp-wp_err), alpha=0.15, color=l.get_color(), lw=0)
 
     def add_points(self, rp, wp, wp_err, label, **kwargs):
-        self.ax.errorbar(rp, rp*wp, rp*wp_err, label=label, ls='', **kwargs)[0]
+        self.ax.errorbar(rp, rp*wp, rp*wp_err, label=label, ls='', **kwargs)
 
 
 def save_wprp(output_file, rp, wp, wp_err):
