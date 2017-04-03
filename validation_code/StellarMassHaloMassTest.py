@@ -27,8 +27,8 @@ class StellarMassHaloMassTest(BinnedStellarMassFunctionTest):
             log_file='log_smhm.txt',
             plot_file='plot_smhm.png',
             plot_title='Stellar mass - halo mass relation',
-            xaxis_label=r'$\log \, M_{halo} \; (M_\odot)$',
-            yaxis_label=r'$\langle M^{*} \rangle (M_\odot)$',
+            xaxis_label=r'$\log \, M_{\rm halo} / M_\odot$',
+            yaxis_label=r'$\langle M^{*} \rangle / M_\odot$',
             plot_validation_as_line=False,
     )
 

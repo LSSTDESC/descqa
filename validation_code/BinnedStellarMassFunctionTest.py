@@ -26,7 +26,7 @@ class BinnedStellarMassFunctionTest(ValidationTest):
             log_file='log_smf.txt',
             plot_file='plot_smf.png',
             plot_title='Stellar Mass Function',
-            xaxis_label=r'$\log (M^*/(M_\odot)$',
+            xaxis_label=r'$\log \, M^*/M_\odot$',
             yaxis_label=r'$dn/dV\,d\log M ({\rm Mpc}^{-3}\,{\rm dex}^{-1})$',
             plot_validation_as_line=False,
     )

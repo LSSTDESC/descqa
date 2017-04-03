@@ -27,7 +27,7 @@ class HaloMassFunctionTest(BinnedStellarMassFunctionTest):
             log_file='log_hmf.txt',
             plot_file='plot_hmf.png',
             plot_title='Halo Mass Function',
-            xaxis_label=r'$\log \, M_{halo}\ (M_\odot)$',
+            xaxis_label=r'$\log \, M_{\rm halo} / M_\odot$',
             yaxis_label=r'$dn/dV\, d\logM\ ({\rm Mpc}^{-3})$',
             plot_validation_as_line=True,
     )
