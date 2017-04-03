@@ -145,4 +145,3 @@ def mean_y_in_x_bins(y, x, bins, sorter=None):
             s_this = slice(i, j) if sorter is None else sorter[i:j]
             res.append(y[s_this].mean())
     return np.array(res)
-
