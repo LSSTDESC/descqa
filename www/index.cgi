@@ -390,22 +390,16 @@ def find_last_run():
 
     names = os.listdir(pathToOutputDir)
     names.sort(reverse=True)
-    try:
-        for name in names:
-            statusfile=os.path.join(pathToOutputDir,name,'STATUS.json')
-            if os.path.exists(statusfile):
-                status = json.load(file(statusfile))
-                if status.get('comment') == 'full run':
-                    targetDir_base = name
-                    targetDir = os.path.abspath(os.path.join(pathToOutputDir, name))
-                    break
-    except Exception,e:
-        # import traceback
-        # print "<pre>"
-        # traceback.print_exc(file=sys.stdout)
-        # print "</pre>"
-        targetDir_base = names[0]
-        targetDir = os.path.abspath(os.path.join(pathToOutputDir, names[0]))
+    targetDir_base = names[0]
+    targetDir = os.path.abspath(os.path.join(pathToOutputDir, names[0]))
+    for name in names:
+        statusfile=os.path.join(pathToOutputDir,name,'STATUS.json')
+        if os.path.exists(statusfile):
+            status = json.load(file(statusfile))
+            if status.get('comment') == 'full run':
+                targetDir_base = name
+                targetDir = os.path.abspath(os.path.join(pathToOutputDir, name))
+                break
 
     return targetDir_base
 

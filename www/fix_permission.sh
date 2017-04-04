@@ -2,6 +2,8 @@
 
 python -m py_compile utils/*.py descqa/*.py
 
+mkdir -p cache
+chmod o+rx   ../www
 chmod o+r    config .htaccess
 chmod o+rx   *.cgi
 chmod o+rx   style utils viewer descqa descqa/templates
