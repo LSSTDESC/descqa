@@ -180,6 +180,8 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
 
         self.redshift = []  #empty until values requested by test
         self.catalog = {}   #init empty catalog
+        #kluge for color test on snapshot
+        self.SDSS_kcorrection_z=.05
 
         # TODO: how to get sky area?
         hdfFile.close()
@@ -299,7 +301,6 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
 
         if (len(outkeys)>0):
             self.redshift=zvalues
-            self.SDSS_kcorrection_z=self.redshift
             for outkey in outkeys:
                 outdict = self.catalog[outkey]
                 if self._check_halo(outdict, filters):
