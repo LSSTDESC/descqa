@@ -303,10 +303,10 @@ class ColorDistributionTest(ValidationTest):
                 f.write("Median "+color+" difference (obs - mock) = %2.3f\n"%(omedian-mmedian))
                 f.write(color+" {}: {} = {}\n".format('SUCCESS' if L2_success else 'FAILED', 'L2Diff', L2))
                 f.write(color+" (shifted) {}: {} = {}\n".format('SUCCESS' if L2_shifted_success else 'FAILED', 'L2Diff', L2_shifted))
-                f.write(color+" {}: {} = {}\n".format('SUCCESS' if L1_success else 'FAILED', 'L1Diff', L1))
-                f.write(color+" (shifted) {}: {} = {}\n".format('SUCCESS' if L1_shifted_success else 'FAILED', 'L1Diff', L1_shifted))
-                f.write(color+" {}: {} = {}\n".format('SUCCESS' if KS_success else 'FAILED', 'K-S', KS))
-                f.write(color+" (shifted) {}: {} = {}\n".format('SUCCESS' if KS_shifted_success else 'FAILED', 'K-S', KS_shifted))
+                # f.write(color+" {}: {} = {}\n".format('SUCCESS' if L1_success else 'FAILED', 'L1Diff', L1))
+                # f.write(color+" (shifted) {}: {} = {}\n".format('SUCCESS' if L1_shifted_success else 'FAILED', 'L1Diff', L1_shifted))
+                # f.write(color+" {}: {} = {}\n".format('SUCCESS' if KS_success else 'FAILED', 'K-S', KS))
+                # f.write(color+" (shifted) {}: {} = {}\n".format('SUCCESS' if KS_shifted_success else 'FAILED', 'K-S', KS_shifted))
 
             # The test is considered pass if the all colors pass L2Diff
             if L2_success:
