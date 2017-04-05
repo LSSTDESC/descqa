@@ -40,6 +40,11 @@ class MB2GalaxyCatalog(GalaxyCatalog):
                              'SDSS_r:observed:':      self._get_derived_property,
                              'SDSS_i:observed:':      self._get_derived_property,
                              'SDSS_z:observed:':      self._get_derived_property,
+                             'SDSS_u:rest:':          self._get_derived_property,
+                             'SDSS_g:rest:':          self._get_derived_property,
+                             'SDSS_r:rest:':          self._get_derived_property,
+                             'SDSS_i:rest:':          self._get_derived_property,
+                             'SDSS_z:rest:':          self._get_derived_property,
                            }
 
         self.derived      = {
@@ -48,6 +53,11 @@ class MB2GalaxyCatalog(GalaxyCatalog):
                              'positionX':       (('x',), (1.e-3 / self.h,), self._multiply), # Position stored in kpc/h
                              'positionY':       (('y',), (1.e-3 / self.h,), self._multiply),
                              'positionZ':       (('z',), (1.e-3 / self.h,), self._multiply),
+                             'SDSS_u:rest:':    (('SDSS_u:rest:',), (), self._luminosity_to_magnitude),
+                             'SDSS_g:rest:':    (('SDSS_g:rest:',), (), self._luminosity_to_magnitude),
+                             'SDSS_r:rest:':    (('SDSS_r:rest:',), (), self._luminosity_to_magnitude),
+                             'SDSS_i:rest:':    (('SDSS_i:rest:',), (), self._luminosity_to_magnitude),
+                             'SDSS_z:rest:':    (('SDSS_z:rest:',), (), self._luminosity_to_magnitude),
                              'SDSS_u:observed:': (('SDSS_u:rest:', 'redshift'), (), self._add_distance_modulus),
                              'SDSS_g:observed:': (('SDSS_g:rest:', 'redshift'), (), self._add_distance_modulus),
                              'SDSS_r:observed:': (('SDSS_r:rest:', 'redshift'), (), self._add_distance_modulus),
@@ -131,5 +141,9 @@ class MB2GalaxyCatalog(GalaxyCatalog):
 
 
     def _add_distance_modulus(self, array_tuple, scalar_tuple):
-        return array_tuple[0] + self.cosmology.distmod(array_tuple[1]).value
+        return self._luminosity_to_magnitude(array_tuple,scalar_tuple) + self.cosmology.distmod(array_tuple[1]).value
 
+    def _luminosity_to_magnitude(self,array_tuple,scalar_tuple):
+        bandlum = array_tuple[0]*1.0e28
+        bandflux = bandlum/(4*(np.pi)*(1.0e38)*(3.08567758**2))
+        return -2.5*(np.log10(bandflux)) - 48.6 
