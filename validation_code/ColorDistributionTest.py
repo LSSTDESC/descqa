@@ -8,7 +8,7 @@ matplotlib.use('Agg') # Must be before importing matplotlib.pyplot
 import matplotlib.pyplot as plt
 from astropy import units as u
 from ValidationTest import ValidationTest, TestResult
-from CalcStats import L2Diff, L1Diff, KS_test
+from CalcStats import L2Diff, L1Diff, KS_test, AD_statistic
 from ComputeColorDistribution import load_SDSS
 from scipy.ndimage.filters import uniform_filter1d
 
@@ -74,6 +74,7 @@ class ColorDistributionTest(ValidationTest):
         self._data_dir = kwargs['data_dir']
         self._data_name = kwargs['data_name']
         self._raw_data_fname = kwargs['raw_data_fname']
+        self._threshold = kwargs['threshold']
         
         # set parameters of test
         # colors
@@ -145,6 +146,7 @@ class ColorDistributionTest(ValidationTest):
         skip_q = True   # False if any color exists in the catalog
         pass_q = True   # False if any color fails
         pass_count = 0   # Number of colors that pass the test
+        AD_sum = 0.
 
         if not self._data_name in ['SDSS']:
             raise ValueError('Validation data '+self._data_name+'  not found!')
@@ -254,18 +256,21 @@ class ColorDistributionTest(ValidationTest):
             catalog_quantiles[index] = np.array([m95min, m68min, mmedian, m68max, m95max])
             validation_quantiles[index] = np.array([o95min, o68min, omedian, o68max, o95max])
 
-            d1 = {'x':mbinctr, 'y':mcdf}
-            d2 = {'x':obinctr, 'y':ocdf}
-            d1_shifted = {'x':mbinctr-(mmedian-omedian), 'y':mcdf}
-            # calculate L2diff
-            L2, L2_success = L2Diff(d1, d2, threshold=0.02)
-            L2_shifted, L2_shifted_success = L2Diff(d1_shifted, d2, threshold=0.02)
-            # calculate L1Diff
-            L1, L1_success = L1Diff(d1, d2)
-            L1_shifted, L1_shifted_success = L1Diff(d1_shifted, d2)
-            # calculate K-S statistic
-            KS, KS_success = KS_test(d1, d2)
-            KS_shifted, KS_shifted_success = KS_test(d1_shifted, d2)
+            # d1 = {'x':mbinctr, 'y':mcdf}
+            # d2 = {'x':obinctr, 'y':ocdf}
+            # d1_shifted = {'x':mbinctr-(mmedian-omedian), 'y':mcdf}
+            
+            # calculate Anderson-Darling statistic
+            AD, AD_success = AD_statistic(mcdf, ocdf, threshold=self._threshold)
+            # # calculate L2diff
+            # L2, L2_success = L2Diff(d1, d2, threshold=0.02)
+            # L2_shifted, L2_shifted_success = L2Diff(d1_shifted, d2, threshold=0.02)
+            # # calculate L1Diff
+            # L1, L1_success = L1Diff(d1, d2)
+            # L1_shifted, L1_shifted_success = L1Diff(d1_shifted, d2)
+            # # calculate K-S statistic
+            # KS, KS_success = KS_test(d1, d2)
+            # KS_shifted, KS_shifted_success = KS_test(d1_shifted, d2)
 
             # plot CDF
             # validation distribution
@@ -301,18 +306,21 @@ class ColorDistributionTest(ValidationTest):
             filename = os.path.join(base_output_dir, summary_output_file)
             with open(filename, 'a') as f:
                 f.write("Median "+color+" difference (obs - mock) = %2.3f\n"%(omedian-mmedian))
-                f.write(color+" {}: {} = {}\n".format('SUCCESS' if L2_success else 'FAILED', 'L2Diff', L2))
-                f.write(color+" (shifted) {}: {} = {}\n".format('SUCCESS' if L2_shifted_success else 'FAILED', 'L2Diff', L2_shifted))
+                f.write(color+" {}: {} = {}\n".format('SUCCESS' if AD_success else 'FAILED', 'A-D statistic', AD))
+                # f.write(color+" {}: {} = {}\n".format('SUCCESS' if L2_success else 'FAILED', 'L2Diff', L2))
+                # f.write(color+" (shifted) {}: {} = {}\n".format('SUCCESS' if L2_shifted_success else 'FAILED', 'L2Diff', L2_shifted))
                 # f.write(color+" {}: {} = {}\n".format('SUCCESS' if L1_success else 'FAILED', 'L1Diff', L1))
                 # f.write(color+" (shifted) {}: {} = {}\n".format('SUCCESS' if L1_shifted_success else 'FAILED', 'L1Diff', L1_shifted))
-                # f.write(color+" {}: {} = {}\n".format('SUCCESS' if KS_success else 'FAILED', 'K-S', KS))
-                # f.write(color+" (shifted) {}: {} = {}\n".format('SUCCESS' if KS_shifted_success else 'FAILED', 'K-S', KS_shifted))
+                # f.write(color+" {}: {} = {}\n".format('SUCCESS' if KS_success else 'FAILED', 'K-S statistic', KS))
+                # f.write(color+" (shifted) {}: {} = {}\n".format('SUCCESS' if KS_shifted_success else 'FAILED', 'K-S statistic', KS_shifted))
 
             # The test is considered pass if the all colors pass L2Diff
-            if L2_success:
+            if AD_success:
                 pass_count+=1
             else:
                 pass_q = False
+                
+            AD_sum += AD
 
         if not skip_q:
             # save plots
@@ -330,14 +338,15 @@ class ColorDistributionTest(ValidationTest):
         np.savetxt(fn, validation_quantiles)
 
         #--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--
+        AD_average = AD_sum/float(len(self.colors))
         if skip_q:
             return TestResult(summary='No available colors for comparison. ', skipped=True)
         elif pass_q:
-            return TestResult(score=pass_count/float(len(self.colors)), 
-                summary='{}/{} success - All colors pass the test. '.format(pass_count, len(self.colors)), passed=True)
+            return TestResult(score=AD_sum/AD_average, 
+                              summary='{}/{} success - All colors pass the test; average A-D statistic = {:.3f}'.format(pass_count, len(self.colors), AD_average), passed=True)
         else:
-            return TestResult(score=pass_count/float(len(self.colors)), 
-                summary='{}/{} success - Not all colors pass the test. '.format(pass_count, len(self.colors)), passed=False)
+            return TestResult(score=pass_count/AD_average, 
+                summary='{}/{} success - Not all colors pass the test; average A-D statistic = {:.3f}'.format(pass_count, len(self.colors), AD_average), passed=False)
 
     def color_distribution(self, galaxy_catalog, bin_args, base_output_dir):
         """
