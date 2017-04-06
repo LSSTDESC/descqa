@@ -89,7 +89,7 @@ color_SDSS = _ValidationConfig('ColorDistributionTest',
          zlo=0.045,
          zhi=0.065,
          load_validation_catalog_q=True,
-         threshold=0.04,
+         threshold=1,
          description='For each of the mock catalogs, we calculate the distributions of <i>M_u-M_g</i>, <i>M_g-M_r</i>, <i>M_r-M_i</i> and <i>M_i-M_z</i> colors, where the magnitudes are k-corrected absolute magnitudes, and compare with SDSS colors. The SDSS dataset includes <i>ugriz</i> photometry and spectroscopic redshifts from the SDSS main galaxy sample (Gunn98, York2000). SDSS galaxies in the redshift range of 0.06<z<0.09 are used for this comparison.',
 )
 

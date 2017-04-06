@@ -43,22 +43,19 @@ def Lp_norm(difference, p=2.0):
     d **= p
     return d.sum() ** (1.0/p)
 
-def AD_statistic(y1, y2, threshold):
+def AD_statistic(n1, n2, y1, y2, threshold):
     '''
-    Calculate Anderson-Darling statistic from two CDFs;
-    y1, y2: CDF y-values of the two distribution; they should have the 
-    same x-axis.
+    Calculate the two-sample Anderson-Darling statistic from two CDFs;
+    n1, n2: number of objects in the two samples; 
+    y1, y2: CDF y-values of the two distribution, and they should have 
+    the same x-axis.
     '''
-    # compute CvM statistic
-    inv_weight = (y2*(1-y2))[:-1]
+    n = n1+n2
+    h = (n1*y1+n2*y2)/n
+    # compute Anderson-Darling statistic
+    inv_weight = (h*(1-h))[:-1]
     # remove infinities in the weight function
-    mask = inv_weight==0
+    mask = (inv_weight<1e-5)
     inv_weight[mask] = 1
-    ads = np.sum(((y2 - y1)[:-1])**2*(y2[1:]-y2[:-1])/inv_weight)
-
-    if ads<threshold:
-        success = True
-    else:
-        success = False
-    
-    return ads, success
+    ads = n1*n2/n * np.sum(((y2 - y1)[:-1])**2*(h[1:]-h[:-1])/inv_weight)
+    return ads

@@ -165,11 +165,11 @@ class ColorDistributionTest(ValidationTest):
         # Cosmololy for distance modulus for absolute magnitudes
         self.cosmology = galaxy_catalog.cosmology
 
-        if self.load_validation_catalog_q:
+        # if self.load_validation_catalog_q:
             # if self._data_name=='DEEP2':
             #     vsummary = load_DEEP2(self._raw_data_fname, self.colors, self.zlo_obs, self.zhi_obs, self.limiting_band, self.limiting_mag)
-            if self._data_name=='SDSS':
-                vsummary = load_SDSS(self._raw_data_fname, self.colors, self.SDSS_kcorrection_z)
+            # if self._data_name=='SDSS':
+        vsummary = load_SDSS(self._raw_data_fname, self.colors, self.SDSS_kcorrection_z)
 
         filename = os.path.join(base_output_dir, summary_output_file)
         with open(filename, 'a') as f:
@@ -187,20 +187,20 @@ class ColorDistributionTest(ValidationTest):
             self.band1 = band1
             self.band2 = band2
 
-            if self.load_validation_catalog_q:
-                obinctr, ohist = vsummary[index]
-                ocdf = np.zeros(len(ohist))
-                ocdf[0] = ohist[0]
-                for cdf_index in range(1, len(ohist)):
-                    ocdf[cdf_index] = ocdf[cdf_index-1]+ohist[cdf_index]
-            else:
-                #load validation summary data
-                filename = self._data_name+'_'+color+'_z_%1.3f_%1.3f_pdf.txt'%(self.zlo_obs, self.zhi_obs)
-                obinctr, ohist = self.load_validation_data(filename)
-                ocdf = np.zeros(len(ohist))
-                ocdf[0] = ohist[0]
-                for cdf_index in range(1, len(ohist)):
-                    ocdf[cdf_index] = ocdf[cdf_index-1]+ohist[cdf_index]
+            # if self.load_validation_catalog_q:
+            nobs, obinctr, ohist = vsummary[index]
+            ocdf = np.zeros(len(ohist))
+            ocdf[0] = ohist[0]
+            for cdf_index in range(1, len(ohist)):
+                ocdf[cdf_index] = ocdf[cdf_index-1]+ohist[cdf_index]
+            # else:
+            #     #load validation summary data
+            #     filename = self._data_name+'_'+color+'_z_%1.3f_%1.3f_pdf.txt'%(self.zlo_obs, self.zhi_obs)
+            #     obinctr, ohist = self.load_validation_data(filename)
+            #     ocdf = np.zeros(len(ohist))
+            #     ocdf[0] = ohist[0]
+            #     for cdf_index in range(1, len(ohist)):
+            #         ocdf[cdf_index] = ocdf[cdf_index-1]+ohist[cdf_index]
 
             # #----------------------------------------------------------------------------------------
             # if index==0:
@@ -222,7 +222,7 @@ class ColorDistributionTest(ValidationTest):
                 continue
 
             # calculate color distribution in galaxy catalog
-            mbinctr, mhist = self.color_distribution(galaxy_catalog, (-1, 4, 2000), base_output_dir)
+            nmock, mbinctr, mhist = self.color_distribution(galaxy_catalog, (-1, 4, 2000), base_output_dir)
             if mbinctr is None:
                 # raise an informative warning
                 msg = ('The `{}` and/or `{}` quantities don\'t have the correct range or format.\n'.format(band1, band2))
@@ -261,7 +261,7 @@ class ColorDistributionTest(ValidationTest):
             # d1_shifted = {'x':mbinctr-(mmedian-omedian), 'y':mcdf}
             
             # calculate Anderson-Darling statistic
-            AD, AD_success = AD_statistic(mcdf, ocdf, threshold=self._threshold)
+            AD, AD_success = AD_statistic(nmock, nobs, mcdf, ocdf, threshold=self._threshold)
             # # calculate L2diff
             # L2, L2_success = L2Diff(d1, d2, threshold=0.02)
             # L2_shifted, L2_shifted_success = L2Diff(d1_shifted, d2, threshold=0.02)
@@ -342,11 +342,11 @@ class ColorDistributionTest(ValidationTest):
         if skip_q:
             return TestResult(summary='No available colors for comparison. ', skipped=True)
         elif pass_q:
-            return TestResult(score=AD_sum/AD_average, 
-                              summary='{}/{} success - All colors pass the test; average A-D statistic = {:.3f}'.format(pass_count, len(self.colors), AD_average), passed=True)
+            return TestResult(score=AD_average, 
+                              summary='{}/{} success - all colors pass the test; average A-D statistic = {:.3f}'.format(pass_count, len(self.colors), AD_average), passed=True)
         else:
-            return TestResult(score=pass_count/AD_average, 
-                summary='{}/{} success - Not all colors pass the test; average A-D statistic = {:.3f}'.format(pass_count, len(self.colors), AD_average), passed=False)
+            return TestResult(score=AD_average, 
+                summary='{}/{} success - not all colors pass the test; average A-D statistic = {:.3f}'.format(pass_count, len(self.colors), AD_average), passed=False)
 
     def color_distribution(self, galaxy_catalog, bin_args, base_output_dir):
         """
@@ -404,7 +404,7 @@ class ColorDistributionTest(ValidationTest):
         hist = hist/np.sum(hist)
         binctr = (bins[1:] + bins[:-1])/2.
         
-        return binctr, hist
+        return len(mag1), binctr, hist
 
     def load_validation_data(self, filename):
         """
