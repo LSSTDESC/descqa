@@ -343,7 +343,7 @@ class ColorDistributionTest(ValidationTest):
             return TestResult(summary='No available colors for comparison. ', skipped=True)
         elif pass_q:
             return TestResult(score=AD_average, 
-                              summary='{}/{} success - all colors pass the test; average A-D statistic = {:.3f}'.format(pass_count, len(self.colors), AD_average), passed=True)
+                              summary='{}/{} success - all colors pass the test; average Anderson-Darling statistic = {:.3f}'.format(pass_count, len(self.colors), AD_average), passed=True)
         else:
             return TestResult(score=AD_average, 
                 summary='{}/{} success - not all colors pass the test; average A-D statistic = {:.3f}'.format(pass_count, len(self.colors), AD_average), passed=False)

@@ -58,4 +58,10 @@ def AD_statistic(n1, n2, y1, y2, threshold):
     mask = (inv_weight<1e-5)
     inv_weight[mask] = 1
     ads = n1*n2/n * np.sum(((y2 - y1)[:-1])**2*(h[1:]-h[:-1])/inv_weight)
-    return ads
+
+    if ads<threshold:
+        success = True
+    else:
+        success = False
+    
+    return ads, success
