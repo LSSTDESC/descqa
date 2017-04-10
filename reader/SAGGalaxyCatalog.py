@@ -57,6 +57,11 @@ class SAGGalaxyCatalog(GalaxyCatalog):
                             'LSST_i:observed:'     : self._stored_property_wrapper('SED/Magnitudes/Mag_id227_AB_tot_o'),
                             'LSST_z:observed:'     : self._stored_property_wrapper('SED/Magnitudes/Mag_id228_AB_tot_o'),
                             'LSST_y:observed:'     : self._stored_property_wrapper('SED/Magnitudes/Mag_id229_AB_tot_o'),
+                            'SDSS_u:rest:'         : self._quantity_alias('LSST_u:rest:'),
+                            'SDSS_g:rest:'         : self._quantity_alias('LSST_g:rest:'),
+                            'SDSS_r:rest:'         : self._quantity_alias('LSST_r:rest:'),
+                            'SDSS_i:rest:'         : self._quantity_alias('LSST_i:rest:'),
+                            'SDSS_z:rest:'         : self._quantity_alias('LSST_z:rest:'),
                             'SDSS_u:observed:'     : self._quantity_alias('LSST_u:observed:'),
                             'SDSS_g:observed:'     : self._quantity_alias('LSST_g:observed:'),
                             'SDSS_r:observed:'     : self._quantity_alias('LSST_r:observed:'),
@@ -64,6 +69,7 @@ class SAGGalaxyCatalog(GalaxyCatalog):
                             'SDSS_z:observed:'     : self._quantity_alias('LSST_z:observed:'),
                           }
 
+        self.SDSS_kcorrection_z = 0.0
         self.derived    = {
                             'positionX'      : (('X',), lambda x: x*1.0e-3, -1.0),
                             'positionY'      : (('Y',), lambda x: x*1.0e-3, -1.0),
