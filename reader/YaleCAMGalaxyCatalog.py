@@ -45,7 +45,7 @@ class YaleCAMGalaxyCatalog(GalaxyCatalog):
         self.box_size = 100.0 / self.cosmology.h
         self.volume = self.box_size**3.0
         
-        #self.SDSS_kcorrection_z = 0.1
+        self.SDSS_kcorrection_z = 0
         
         # translates between desc keywords to those used in the stored mock
         # note: all appropriate quantities are in h=1 units.
