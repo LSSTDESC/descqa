@@ -90,3 +90,8 @@ a.celllink{
               color: black;
               padding: 1px 3px;}
 
+
+.catalogList a {
+    white-space: nowrap;
+    display: inline-block;
+    width: 120px;}
