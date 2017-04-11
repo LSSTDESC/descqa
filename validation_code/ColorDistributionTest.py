@@ -8,7 +8,7 @@ matplotlib.use('Agg') # Must be before importing matplotlib.pyplot
 import matplotlib.pyplot as plt
 from astropy import units as u
 from ValidationTest import ValidationTest, TestResult
-from CalcStats import L2Diff, L1Diff, KS_test, AD_statistic
+from CalcStats import L2Diff, L1Diff, KS_test, CvM_statistic
 from ComputeColorDistribution import load_SDSS
 from scipy.ndimage.filters import uniform_filter1d
 
@@ -146,7 +146,7 @@ class ColorDistributionTest(ValidationTest):
         skip_q = True   # False if any color exists in the catalog
         pass_q = True   # False if any color fails
         pass_count = 0   # Number of colors that pass the test
-        AD_sum = 0.
+        cvm_sum = 0.
 
         if not self._data_name in ['SDSS']:
             raise ValueError('Validation data '+self._data_name+'  not found!')
@@ -260,8 +260,8 @@ class ColorDistributionTest(ValidationTest):
             # d2 = {'x':obinctr, 'y':ocdf}
             # d1_shifted = {'x':mbinctr-(mmedian-omedian), 'y':mcdf}
             
-            # calculate Anderson-Darling statistic
-            AD, AD_success = AD_statistic(nmock, nobs, mcdf, ocdf, threshold=self._threshold)
+            # calculate Cramer-von Mises statistic
+            cvm_omega, cvm_success = CvM_statistic(nmock, nobs, mcdf, ocdf, threshold=self._threshold)
             # # calculate L2diff
             # L2, L2_success = L2Diff(d1, d2, threshold=0.02)
             # L2_shifted, L2_shifted_success = L2Diff(d1_shifted, d2, threshold=0.02)
@@ -306,7 +306,7 @@ class ColorDistributionTest(ValidationTest):
             filename = os.path.join(base_output_dir, summary_output_file)
             with open(filename, 'a') as f:
                 f.write("Median "+color+" difference (obs - mock) = %2.3f\n"%(omedian-mmedian))
-                f.write(color+" {}: {} = {}\n".format('SUCCESS' if AD_success else 'FAILED', 'A-D statistic', AD))
+                f.write(color+" {}: {} = {}\n".format('SUCCESS' if cvm_success else 'FAILED', 'CvM statistic', cvm_omega))
                 # f.write(color+" {}: {} = {}\n".format('SUCCESS' if L2_success else 'FAILED', 'L2Diff', L2))
                 # f.write(color+" (shifted) {}: {} = {}\n".format('SUCCESS' if L2_shifted_success else 'FAILED', 'L2Diff', L2_shifted))
                 # f.write(color+" {}: {} = {}\n".format('SUCCESS' if L1_success else 'FAILED', 'L1Diff', L1))
@@ -315,12 +315,12 @@ class ColorDistributionTest(ValidationTest):
                 # f.write(color+" (shifted) {}: {} = {}\n".format('SUCCESS' if KS_shifted_success else 'FAILED', 'K-S statistic', KS_shifted))
 
             # The test is considered pass if the all colors pass L2Diff
-            if AD_success:
+            if cvm_success:
                 pass_count+=1
             else:
                 pass_q = False
                 
-            AD_sum += AD
+            cvm_sum += cvm_omega
 
         if not skip_q:
             # save plots
@@ -338,15 +338,15 @@ class ColorDistributionTest(ValidationTest):
         np.savetxt(fn, validation_quantiles)
 
         #--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--
-        AD_average = AD_sum/float(len(self.colors))
+        cvm_omega_average = cvm_sum/float(len(self.colors))
         if skip_q:
             return TestResult(summary='No available colors for comparison. ', skipped=True)
         elif pass_q:
-            return TestResult(score=AD_average, 
-                              summary='{}/{} success - all colors pass the test; average Anderson-Darling statistic = {:.3f}'.format(pass_count, len(self.colors), AD_average), passed=True)
+            return TestResult(score=cvm_omega_average, 
+                              summary='{}/{} success - all colors pass the test; average Cramer-von Mises statistic = {:.3f}'.format(pass_count, len(self.colors), cvm_omega_average), passed=True)
         else:
-            return TestResult(score=AD_average, 
-                summary='{}/{} success - not all colors pass the test; average A-D statistic = {:.3f}'.format(pass_count, len(self.colors), AD_average), passed=False)
+            return TestResult(score=cvm_omega_average, 
+                summary='{}/{} success - not all colors pass the test; average CvM statistic = {:.3f}'.format(pass_count, len(self.colors), cvm_omega_average), passed=False)
 
     def color_distribution(self, galaxy_catalog, bin_args, base_output_dir):
         """

@@ -65,3 +65,22 @@ def AD_statistic(n1, n2, y1, y2, threshold):
         success = False
     
     return ads, success
+
+
+def CvM_statistic(n1, n2, y1, y2, threshold):
+    '''
+    Calculate the two-sample Cramer-von Mises statistic from two CDFs;
+    n1, n2: number of objects in the two samples; 
+    y1, y2: CDF y-values of the two distribution, and they should have 
+    the same x-axis.
+    '''
+    n = n1+n2
+    h = (n1*y1+n2*y2)/n
+    cvm_omega = np.sqrt(np.trapz((y2-y1)**2, h))
+    
+    if cvm_omega<threshold:
+        success = True
+    else:
+        success = False
+    
+    return cvm_omega, success
