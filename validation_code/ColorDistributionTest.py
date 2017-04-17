@@ -204,8 +204,8 @@ class ColorDistributionTest(ValidationTest):
             oq1 = obinctr[np.argmax(ocdf>0.25)]
             oq3 = obinctr[np.argmax(ocdf>0.75)]
             oiqr = oq3 - oq1
-            oboxmin = np.max([oq1-1.5*oiqr], obinctr[np.argmax(ocdf>0)])
-            oboxmax = np.min([oq3+1.5*oiqr], obinctr[np.argmax(ocdf<ocdf[-1])])
+            oboxmin = max(oq1-1.5*oiqr, obinctr[np.argmax(ocdf>0)])
+            oboxmax = min(oq3+1.5*oiqr, obinctr[np.argmax(ocdf<ocdf[-1])])
             mq1 = mbinctr[np.argmax(mcdf>0.25)]
             mq3 = mbinctr[np.argmax(mcdf>0.75)]
             miqr = mq3 - mq1
