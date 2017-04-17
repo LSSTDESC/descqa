@@ -12,9 +12,8 @@ DESCQAROOTDIR="/global/projecta/projectdirs/lsst/descqa"
 # load python module and set PYTHONPATH
 module unload python
 export PYTHONPATH=""
-module load python/2.7.9
-module load h5py/2.5.0
-export PYTHONPATH="$DESCQAROOTDIR/lib/python2.7/site-packages:$PYTHONPATH"
+module load python/2.7-anaconda
+source activate "$DESCQAROOTDIR/lib/descqa-conda"
 
 # for kcorrect 
 export KCORRECT_DIR="$DESCQAROOTDIR/lib/kcorrect"

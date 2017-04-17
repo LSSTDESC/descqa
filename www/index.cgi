@@ -408,7 +408,7 @@ try:
     from utils.invocations_simple import Invocation, BigBoard
     from utils import littleParser
 
-    sys.path.insert(0,'../../lib/python2.7/site-packages')
+    sys.path.insert(0, '../../lib/python-cgi')
     from jinja2 import Template
     from jinja2 import Environment, PackageLoader#, select_autoescape
     env = Environment(
