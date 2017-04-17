@@ -195,9 +195,7 @@ def run_summary(run):
                 status = status.rpartition('_')[-1]
                 color = color_dict.get(status, 'darkred')
                 
-                # self.html = '<td style="background-color:{}"><a class="celllink" href="viewer/viewBuild.cgi?target_dir={}&target_item={}">{}</a></td>'.format(\
-                #         color, os.path.dirname(self.path), self.name, cgi.escape(status))
-                self.html = '<td style="background-color:{}"><a class="celllink" href="index.cgi?run={}&test={}&catalog={}">{}{}</a></td>'.format(\
+                self.html = '<td class="{}"><a class="celllink" href="index.cgi?run={}&test={}&catalog={}">{}{}</a></td>'.format(\
                         color, os.path.basename(os.path.dirname(os.path.dirname(self.path))), self.groupname, self.name, cgi.escape(status), score)
             
             return self.html

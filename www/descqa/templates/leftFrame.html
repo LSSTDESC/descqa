@@ -26,7 +26,7 @@
     </td>
     <td>
     {% for run in runs %}
-       <font color="{{ run.statusColor }}">{{ run.status }}</font>
+       <span class="{{ run.statusColor }}">{{ run.status }}</span>
        <br>
     {% endfor %}
     </td>
@@ -40,7 +40,7 @@
     <td>
     Summary plot:
     {% if not templateData.summaryPlot %}
-        &nbsp;<font color="red">cannot find summary plot</font>
+        &nbsp;<span class="darkred">cannot find summary plot</span>
     {% endif %}
     {% if templateData.summaryPlotLog %}
         &nbsp;&nbsp;&nbsp;<a href="viewer/viewFile.cgi?target_file={{ templateData.summaryPlotLog.path }}">{{ templateData.summaryPlotLog.filename }}</a><br>
@@ -68,7 +68,7 @@
         <h2>{{ run.name }}&nbsp;&nbsp;&nbsp;</h2>
     </td>
     <td>
-        <font color="{{ run.statusColor }}">{{ run.status }}</font>
+        <span class="{{ run.statusColor }}">{{ run.status }}</span>
         <br>{{ run.summary }}
     </td>
     </tr>
@@ -118,7 +118,7 @@
   {% endfor %}
 
 {% else %}
-  <font color="red"><i><b>No tests were made</b></i></font>
+  <span class="darkred"><i><b>No tests were made</b></i></span>
 {% endif %}
 </body>
 </html>

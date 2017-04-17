@@ -17,10 +17,10 @@ h2           {font-size: 120%;}
 
 .bigboard td {padding: 2px 2px 4px 2px;}
 .bigboard td:first-child {width:170px;}
-.bigboard td:nth-child(2){width:25px;}
-.bigboard tr{vertical-align: text-top;}
-.bigboard tr:nth-child(odd){background-color: #bbf;}
-.bigboard a{text-decoration: none;}
+.bigboard td:nth-child(2) {width:25px;}
+.bigboard tr {vertical-align: text-top;}
+.bigboard tr:nth-child(odd) {background-color: #bbf;}
+.bigboard a {text-decoration: none;}
 
 .runinfo {font-size: 110%;
           margin: 12px 4px;
@@ -50,10 +50,9 @@ h2           {font-size: 120%;}
     width: 100%;
     table-layout: fixed;
     font-size: 110%;
-    font-family: verdana, helvetica;
     margin-top:20px;
 }
-.matrix td{
+.matrix td {
     padding: 0;
     height: 35px;
 }
@@ -63,11 +62,34 @@ h2           {font-size: 120%;}
     font-weight: bold;
     padding-right: 0.4em;
 }
-.matrix tr:first-child{
-    font-weight: bold;
+
+.matrix td.darkred {
+    background-color:#7D1302;
+}
+.matrix td.orangered {
+    background-color:#DA5F4C;
+}
+.matrix td.gold {
+    background-color:#DADA4C;
+}
+.matrix td.green {
+    background-color:#3B5D90;
 }
 
-a.celllink{
+span.darkred {
+    color:#7D1302;
+}
+span.orangered {
+    color:#DA5F4C;
+}
+span.gold {
+    color:#DADA4C;
+}
+span.green {
+    color:#3B5D90;
+}
+
+a.celllink {
     width:100%;
     color:black;
     display:block;
