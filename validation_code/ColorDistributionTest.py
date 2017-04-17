@@ -8,7 +8,7 @@ matplotlib.use('Agg') # Must be before importing matplotlib.pyplot
 import matplotlib.pyplot as plt
 from astropy import units as u
 from ValidationTest import ValidationTest, TestResult
-from CalcStats import L2Diff, L1Diff, KS_test, CvM_statistic
+from CalcStats import CvM_statistic
 from ComputeColorDistribution import load_SDSS
 from scipy.ndimage.filters import uniform_filter1d
 
@@ -210,8 +210,8 @@ class ColorDistributionTest(ValidationTest):
             mq3 = mbinctr[np.argmax(mcdf>0.75)]
             miqr = mq3 - mq1
             mmedian = mbinctr[np.argmax(mcdf>0.5)]
-            mboxmin = np.max([mq1-1.5*miqr], mbinctr[np.argmax(mcdf>0)])
-            mboxmax = np.min([mq3+1.5*miqr], mbinctr[np.argmax(mcdf<mcdf[-1])])
+            mboxmin = max(mq1-1.5*miqr, mbinctr[np.argmax(mcdf>0)])
+            mboxmax = min(mq3+1.5*miqr, mbinctr[np.argmax(mcdf<mcdf[-1])])
 
             validation_quantiles[index] = np.array([oboxmin, oq1, omedian, oq3, oboxmax])
             catalog_quantiles[index] = np.array([mboxmin, mq1, mmedian, mq3, mboxmax])

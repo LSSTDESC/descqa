@@ -1,7 +1,6 @@
 from __future__ import division, print_function
 import numpy as np
 from scipy.stats import chi2
-from past import L2Diff, L1Diff, KS_test, write_summary_details
 
 
 def get_subvolume_indices(x, y, z, box_size, n_side):
