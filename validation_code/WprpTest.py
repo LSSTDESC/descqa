@@ -3,11 +3,8 @@ from __future__ import (division, print_function, absolute_import)
 import os
 import numpy as np
 from warnings import warn
-import matplotlib
-matplotlib.use('Agg') # Must be before importing matplotlib.pyplot
-import matplotlib.pyplot as plt
 
-from ValidationTest import ValidationTest, TestResult
+from ValidationTest import ValidationTest, TestResult, plt, mpl
 
 from CalcStats import chisq, chisq_threshold
 from helpers.CorrelationFunction import projected_correlation
@@ -178,7 +175,7 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
     validation_kwargs : dict
         keyword arguments used in the validation
     """
-    colors= matplotlib.cm.get_cmap('nipy_spectral')(np.linspace(0, 1, len(catalog_list)+2)[1:-1])
+    colors= mpl.cm.get_cmap('nipy_spectral')(np.linspace(0, 1, len(catalog_list)+2)[1:-1])
 
     sm_cut = validation_kwargs['sm_cut']/(0.702**2.0)
     with WprpPlot(output_file, sm_cut=sm_cut) as plot:

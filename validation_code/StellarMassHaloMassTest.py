@@ -4,12 +4,7 @@ import subprocess
 from warnings import warn
 import numpy as np
 
-import matplotlib
-matplotlib.use('Agg') # Must be before importing matplotlib.pyplot
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-
-from ValidationTest import ValidationTest, TestResult
+from ValidationTest import ValidationTest, TestResult, plt
 import CalcStats
 from BinnedStellarMassFunctionTest import *
 

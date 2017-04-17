@@ -3,11 +3,9 @@ from __future__ import (division, print_function, absolute_import)
 import os
 import numpy as np
 from warnings import warn
-import matplotlib
-matplotlib.use('Agg') # Must be before importing matplotlib.pyplot
-import matplotlib.pyplot as plt
+
 from astropy import units as u
-from ValidationTest import ValidationTest, TestResult
+from ValidationTest import ValidationTest, TestResult, plt
 from CalcStats import CvM_statistic
 from ComputeColorDistribution import load_SDSS
 from scipy.ndimage.filters import uniform_filter1d
@@ -130,8 +128,8 @@ class ColorDistributionTest(ValidationTest):
         """
         
         nsubplots = int(np.ceil(len(self.colors)/2.))
-        fig_cdf, axes_cdf = plt.subplots(nsubplots, 2, figsize=(11, 4*nsubplots))
-        fig_pdf, axes_pdf = plt.subplots(nsubplots, 2, figsize=(11, 4*nsubplots))
+        fig_cdf, axes_cdf = plt.subplots(nsubplots, 2, figsize=(11, 6*nsubplots))
+        fig_pdf, axes_pdf = plt.subplots(nsubplots, 2, figsize=(11, 6*nsubplots))
         skip_q = True   # False if any color exists in the catalog
         pass_q = True   # False if any color fails
         pass_count = 0   # Number of colors that pass the test
@@ -204,14 +202,14 @@ class ColorDistributionTest(ValidationTest):
             oq1 = obinctr[np.argmax(ocdf>0.25)]
             oq3 = obinctr[np.argmax(ocdf>0.75)]
             oiqr = oq3 - oq1
-            oboxmin = max(oq1-1.5*oiqr, obinctr[np.argmax(ocdf>0)])
-            oboxmax = min(oq3+1.5*oiqr, obinctr[np.argmax(ocdf<ocdf[-1])])
+            oboxmin = max(oq1-1.5*oiqr, obinctr[np.where(ocdf>0)[0][0]])
+            oboxmax = min(oq3+1.5*oiqr, obinctr[np.where(ocdf<ocdf[-1])[0][-1]])
             mq1 = mbinctr[np.argmax(mcdf>0.25)]
             mq3 = mbinctr[np.argmax(mcdf>0.75)]
             miqr = mq3 - mq1
             mmedian = mbinctr[np.argmax(mcdf>0.5)]
-            mboxmin = max(mq1-1.5*miqr, mbinctr[np.argmax(mcdf>0)])
-            mboxmax = min(mq3+1.5*miqr, mbinctr[np.argmax(mcdf<mcdf[-1])])
+            mboxmin = max(mq1-1.5*miqr, mbinctr[np.where(mcdf>0)[0][0]])
+            mboxmax = min(mq3+1.5*miqr, mbinctr[np.where(mcdf<mcdf[-1])[0][-1]])
 
             validation_quantiles[index] = np.array([oboxmin, oq1, omedian, oq3, oboxmax])
             catalog_quantiles[index] = np.array([mboxmin, mq1, mmedian, mq3, mboxmax])
@@ -222,15 +220,15 @@ class ColorDistributionTest(ValidationTest):
 
             # plot CDF
             # validation distribution
-            ax_cdf.step(obinctr, ocdf, label=data_name,color='red')
+            ax_cdf.step(obinctr, ocdf, label=data_name,color='C1')
             # catalog distribution
-            ax_cdf.step(mbinctr, mcdf, where="mid", label=catalog_name+'\n'+r'$\omega={:.3}$'.format(cvm_omega), color='blue')
+            ax_cdf.step(mbinctr, mcdf, where="mid", label=catalog_name+'\n'+r'$\omega={:.3}$'.format(cvm_omega), color='C0')
             # color distribution after constant shift
-            ax_cdf.step(mbinctr, mcdf_shift, where="mid", label=catalog_name+' shifted\n'+r'$\omega={:.3}$'.format(cvm_omega_shift), linestyle='--', color='blue')
+            ax_cdf.step(mbinctr, mcdf_shift, where="mid", label=catalog_name+' shifted\n'+r'$\omega={:.3}$'.format(cvm_omega_shift), linestyle='--', color='C0')
             ax_cdf.set_xlabel(color, fontsize=12)
             ax_cdf.set_title('')
-            xmin = np.min([mbinctr[np.argmax(mcdf>0.005)], obinctr[np.argmax(ocdf>0.005)]])
-            xmax = np.max([mbinctr[np.argmax(mcdf>0.995)], obinctr[np.argmax(ocdf>0.995)]])
+            xmin = min(mbinctr[np.argmax(mcdf>0.005)], obinctr[np.argmax(ocdf>0.005)])
+            xmax = max(mbinctr[np.argmax(mcdf>0.995)], obinctr[np.argmax(ocdf>0.995)])
             ax_cdf.set_xlim(xmin, xmax)
             ax_cdf.set_ylim(0, 1)
             ax_cdf.legend(loc='upper left', frameon=False, fontsize=12)
@@ -240,11 +238,11 @@ class ColorDistributionTest(ValidationTest):
             mhist_smooth = uniform_filter1d(mhist, 20)
             mhist_shift_smooth = uniform_filter1d(mhist_shift, 20)
             # validation data
-            ax_pdf.step(obinctr, ohist_smooth, label=data_name,color='red')
+            ax_pdf.step(obinctr, ohist_smooth, label=data_name,color='C1')
             # catalog distribution
-            ax_pdf.step(mbinctr, mhist_smooth, where="mid", label=catalog_name+'\n'+r'$\omega={:.3}$'.format(cvm_omega), color='blue')
+            ax_pdf.step(mbinctr, mhist_smooth, where="mid", label=catalog_name+'\n'+r'$\omega={:.3}$'.format(cvm_omega), color='C0')
             # color distribution after constant shift
-            ax_pdf.step(mbinctr, mhist_shift_smooth, where="mid", label=catalog_name+' shifted\n'+r'$\omega={:.3}$'.format(cvm_omega_shift), linestyle='--', color='blue')
+            ax_pdf.step(mbinctr, mhist_shift_smooth, where="mid", label=catalog_name+' shifted\n'+r'$\omega={:.3}$'.format(cvm_omega_shift), linestyle='--', color='C0')
             ax_pdf.set_xlabel(color, fontsize=12)
             ax_pdf.set_xlim(xmin, xmax)
             ax_pdf.set_ylim(ymin=0.)
@@ -269,8 +267,10 @@ class ColorDistributionTest(ValidationTest):
 
         if not skip_q:
             # save plots
+            fig_cdf.tight_layout()
             fn = os.path.join(base_output_dir, plot_cdf_file)
             fig_cdf.savefig(fn)
+            fig_pdf.tight_layout()
             fn = os.path.join(base_output_dir, plot_pdf_file)
             fig_pdf.savefig(fn)
         
@@ -373,47 +373,30 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
     nsubplots = int(np.ceil(len(colors)/2.))
     fig, axes = plt.subplots(nsubplots, 2, figsize=(11, 6*nsubplots))
 
-    temp = (100*np.ones([len(catalog_list), 5])).tolist()
+    data = []
+    for _, catalog_dir in catalog_list:
+        fn = os.path.join(catalog_dir, catalog_output_file)
+        data.append(np.loadtxt(fn))
+    data = np.array(data)
+
     # loop over colors
-    for ax, index in zip(axes.flat, range(len(colors))):
+    for index, ax in enumerate(axes.flat):
+        if index >= len(colors):
+            ax.axis('off')
+            continue
 
         # Validation results
         _, catalog_dir = catalog_list[0]
         fn = os.path.join(catalog_dir, validation_output_file)
         vquantiles = np.loadtxt(fn)[index]
-
-        xx = np.linspace(0, len(catalog_list)+1)
-        ax.axhline(vquantiles[2], lw=2, color='r', label=data_name+' median')
-        ax.axhline(0,xmin=0, xmax=0, lw=7, color='red', alpha=0.3, label=data_name+' '+r'$[Q_1, Q_3]$')
-        ax.axhline(0,xmin=0, xmax=0, lw=7, color='grey', alpha=0.2, label=data_name+' '+r'$[Q_1-1.5\mathrm{IQR}, Q_3+1.5\mathrm{IQR}]$')
-        ax.fill_between(xx, vquantiles[1], vquantiles[3],facecolor='red', alpha=0.3)
-        ax.fill_between(xx, vquantiles[0], vquantiles[1], facecolor='grey', alpha=0.2)
-        ax.fill_between(xx, vquantiles[3], vquantiles[4], facecolor='grey', alpha=0.2)
-
-        ymin = vquantiles[0]
-        ymax = vquantiles[4]
+        ax.axhline(vquantiles[2], lw=2, color='r', label='median')
+        ax.axhspan(vquantiles[1], vquantiles[3], facecolor='r', alpha=0.3, lw=0, label='$[Q_1, Q_3]$')
+        ax.axhspan(vquantiles[0], vquantiles[1], facecolor='grey', alpha=0.2, lw=0, label=r'$[Q_1-1.5\mathrm{IQR}, Q_3+1.5\mathrm{IQR}]$')
+        ax.axhspan(vquantiles[3], vquantiles[4], facecolor='grey', alpha=0.2, lw=0)
 
         # Mock catalog results
-        color = colors[index]
-        medianprops = dict(color='b')
-        D = ax.boxplot(temp, medianprops=medianprops)
-        catalog_quantiles = []
-        # loop over catalogs and plot
-        for catalog_index, (catalog_name, catalog_dir) in zip(range(len(catalog_list)),catalog_list):
-            fn = os.path.join(catalog_dir, catalog_output_file)
-            quantiles = np.loadtxt(fn)[index]
-            if not np.all(quantiles==0):
-                D['medians'][catalog_index].set_ydata(quantiles[2])
-                D['boxes'][catalog_index]._xy[[0,1,4], 1]=quantiles[1]
-                D['boxes'][catalog_index]._xy[[2,3],1]=quantiles[3]
-                D['whiskers'][2*catalog_index].set_ydata(np.array([quantiles[1], quantiles[0]]))
-                D['whiskers'][2*catalog_index+1].set_ydata(np.array([quantiles[3], quantiles[4]]))
-                D['caps'][2*catalog_index].set_ydata(np.array([quantiles[0], quantiles[0]]))
-                D['caps'][2*catalog_index+1].set_ydata(np.array([quantiles[4], quantiles[4]]))
-                ymin = np.min([ymin, quantiles[0]])
-                ymax = np.max([ymax, quantiles[4]])
-        ax.set_xlabel('mock catalog')
-        ax.set_ylabel(color)
+        ax.boxplot(data[:,index].T, whis='range')
+        ax.set_ylabel(colors[index])
 
         x = np.arange(1, len(catalog_list)+1)
         labels = [catalog_name for catalog_name, _ in catalog_list]
@@ -421,10 +404,13 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
         ax.set_xticklabels(labels, rotation='vertical')
 
         ax.yaxis.grid(True)
+        ymin = min(vquantiles[0], data[:,index,0].min())
+        ymax = max(vquantiles[4], data[:,index,4].max())
         yrange = ymax - ymin
-        ax.set_ylim(ymin-0.1*yrange, ymax+0.1*yrange)
-        ax.legend(fontsize='small', framealpha=0.4)
+        ax.set_ylim(ymin-0.05*yrange, ymax+0.05*yrange)
+        ax.legend(fontsize='small', framealpha=0.4, title=data_name)
 
     plt.tight_layout()
     plt.savefig(output_file)
     plt.close()
+    

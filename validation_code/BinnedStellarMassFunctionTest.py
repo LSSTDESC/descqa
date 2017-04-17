@@ -3,12 +3,7 @@ import os
 from warnings import warn
 import numpy as np
 
-import matplotlib
-matplotlib.use('Agg') # Must be before importing matplotlib.pyplot
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-
-from ValidationTest import ValidationTest, TestResult
+from ValidationTest import ValidationTest, TestResult, plt, mpl
 import CalcStats
 
 __all__ = ['BinnedStellarMassFunctionTest', 'write_file', 'load_file', 'OnePointFunctionPlot', 'plot_summary']
@@ -390,7 +385,7 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         """
 
         config = self.output_config
-        colors = matplotlib.cm.get_cmap('nipy_spectral')(np.linspace(0, 1, len(catalog_list)+2)[1:-1])
+        colors = mpl.cm.get_cmap('nipy_spectral')(np.linspace(0, 1, len(catalog_list)+2)[1:-1])
 
         with OnePointFunctionPlot(output_file, title=config['plot_title'], xlabel=config['xaxis_label'], ylabel=config['yaxis_label']) as plot:
             for color, (catalog_name, catalog_dir) in zip(colors, catalog_list):
@@ -452,11 +447,12 @@ class OnePointFunctionPlot():
 
     def __enter__(self):
         self.fig, self.ax = plt.subplots()
-        self.ax.set_xscale('linear')
-        self.ax.set_yscale('log')
+        #self.fig, (self.ax, self.ax_lower) = plt.subplots(nrows=2, sharex=True, gridspec_kw={'height_ratios': (1, 0.3), 'hspace':0})
         return self
 
     def __exit__(self, *exc_args):
+        self.ax.set_xscale('linear')
+        self.ax.set_yscale('log')
         self.ax.set_xlabel(self.kwargs['xlabel'])
         self.ax.set_ylabel(self.kwargs['ylabel'])
         self.ax.set_title(self.kwargs['title'])
@@ -475,11 +471,8 @@ class OnePointFunctionPlot():
         if 'y-' in d and 'y+' in d:
             self.ax.errorbar(d['x'], d['y'], [d['y']-d['y-'], d['y+']-d['y']], label=label, ls='', **kwargs)
         else:
-            self.ax.plot(d['x'], d['y'], 'o', label=label, **kwargs)
+            self.ax.plot(d['x'], d['y'], label=label, **kwargs)
 
     def add_vband(self, x0, x1, **kwargs):
-        ymin, ymax = self.ax.get_ylim()
-        plt.fill_between([x0, x1], [ymin, ymin], [ymax, ymax], alpha=0.1, **kwargs)
-
-
+        self.ax.axvspan(x0, x1, alpha=0.1, lw=0, **kwargs)
 
