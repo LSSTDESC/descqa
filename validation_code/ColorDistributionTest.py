@@ -18,13 +18,16 @@ summary_output_file = 'summary.txt'
 log_file = 'log.txt'
 plot_pdf_file = 'plot_pdf.png'
 plot_cdf_file = 'plot_cdf.png'
+data_dir = '/global/projecta/projectdirs/lsst/descqa/data/rongpu/'
+data_name = 'SDSS'
 
 class ColorDistributionTest(ValidationTest):
     """
-    validaton test class object to compute galaxy color distribution
+    validaton test class object to compute galaxy color distribution 
+    and compare with SDSS
     """
     
-    def __init__(self, load_validation_catalog_q=True, **kwargs):
+    def __init__(self, **kwargs):
         """
         Initialize a color distribution validation test.
         
@@ -47,36 +50,27 @@ class ColorDistributionTest(ValidationTest):
         limiting_band: string, required
             band of the magnitude limit in the validation catalog
 
-        limiting_mag: float, required
-            the magnitude limit
+        limiting_abs_mag: float, required
+            the upper limit of the absolute magnitude
 
         zlo : float, requred
             minimum redshift of the validation catalog
         
         zhi : float, requred
             maximum redshift of the validation catalog
-                
-        data_dir : string, required
-            path to the validation data directory
-
-        data_name : string, required
-            name of the validation data
         
-        load_validation_catalog_q: boolean, optional
-            if True, load the full validation catalog and calculate the color distribution
-            default: True
-
+        threshold : float, required
+            threshold value for passing the test
         """
         
         super(self.__class__, self).__init__(**kwargs)
-        
-        # set validation data information
-        self._data_dir = kwargs['data_dir']
-        self._data_name = kwargs['data_name']
-        self._raw_data_fname = kwargs['raw_data_fname']
-        self._threshold = kwargs['threshold']
-        
-        # set parameters of test
+                
+        # set parameters of test:
+        # filename of SDSS data
+        if 'sdss_fname' in list(kwargs.keys()):
+            self.sdss_fname = kwargs['sdss_fname']
+        else:
+            raise ValueError('`sdss_fname` not found!')
         # colors
         if 'colors' in kwargs:
             self.colors = kwargs['colors']
@@ -85,23 +79,16 @@ class ColorDistributionTest(ValidationTest):
         for color in self.colors:
             if len(color)!=3 or color[1]!='-':
                 raise ValueError('`colors` is not in the correct format!')
-        # band of limiting magnitude
-        if 'limiting_band' in list(kwargs.keys()):
-            self.limiting_band = kwargs['limiting_band']
-        else:
-            raise ValueError('`limiting_band` not found!')
-        # # limiting magnitude
-        # if 'limiting_mag' in list(kwargs.keys()):
-        #     self.limiting_mag = kwargs['limiting_mag']
-        # else:
-        #     raise ValueError('`limiting_mag` not found!')
         # limiting k-corrected absolute magnitude
         if 'limiting_abs_mag' in list(kwargs.keys()):
             self.limiting_abs_mag = kwargs['limiting_abs_mag']
         else:
             raise ValueError('`limiting_abs_mag` not found!')
-
-        # Redshift range
+        # band of limiting magnitude
+        if 'limiting_band' in list(kwargs.keys()):
+            self.limiting_band = kwargs['limiting_band']
+        else:
+            raise ValueError('`limiting_band` not found!')
         # minimum redshift
         if 'zlo' in list(kwargs.keys()):
             self.zlo_obs = self.zlo_mock = kwargs['zlo']
@@ -112,15 +99,17 @@ class ColorDistributionTest(ValidationTest):
             self.zhi_obs = self.zhi_mock = kwargs['zhi']
         else:
             raise ValueError('`zhi` not found!')
-
+        # threshold value
+        if 'threshold' in list(kwargs.keys()):
+            self.threshold = kwargs['threshold']
+        else:
+            raise ValueError('`threshold` not found!')
         # translation rules from bands to catalog specific names
         if 'translate' in list(kwargs.keys()):
             translate = kwargs['translate']
             self.translate = translate
         else:
             raise ValueError('translate not found!')
-
-        self.load_validation_catalog_q = load_validation_catalog_q
 
     def run_validation_test(self, galaxy_catalog, catalog_name, base_output_dir):
         """
@@ -148,9 +137,6 @@ class ColorDistributionTest(ValidationTest):
         pass_count = 0   # Number of colors that pass the test
         cvm_sum = 0.
 
-        if not self._data_name in ['SDSS']:
-            raise ValueError('Validation data '+self._data_name+'  not found!')
-
         if hasattr(galaxy_catalog, "SDSS_kcorrection_z"):
             self.SDSS_kcorrection_z = galaxy_catalog.SDSS_kcorrection_z
         else:
@@ -165,20 +151,18 @@ class ColorDistributionTest(ValidationTest):
         # Cosmololy for distance modulus for absolute magnitudes
         self.cosmology = galaxy_catalog.cosmology
 
-        # if self.load_validation_catalog_q:
-            # if self._data_name=='DEEP2':
-            #     vsummary = load_DEEP2(self._raw_data_fname, self.colors, self.zlo_obs, self.zhi_obs, self.limiting_band, self.limiting_mag)
-            # if self._data_name=='SDSS':
-        vsummary = load_SDSS(self._raw_data_fname, self.colors, self.SDSS_kcorrection_z)
+        # Values of the SDSS color distribution histogram
+        vsummary = load_SDSS(os.path.join(data_dir, self.sdss_fname), self.colors, self.SDSS_kcorrection_z)
 
+        # Write to summary file
         filename = os.path.join(base_output_dir, summary_output_file)
         with open(filename, 'a') as f:
-            f.write('%2.3f < z < %2.3f\n'%(self.zlo_obs, self.zhi_obs))
+            f.write('%2.3f < z < %2.3f\n\n'%(self.zlo_obs, self.zhi_obs))
 
-        # initialize array for quantiles
+        # Initialize array for quantiles
         catalog_quantiles = np.zeros([len(self.colors), 5])
         validation_quantiles = np.zeros([len(self.colors), 5])
-        # loop through colors
+        # Loop through colors
         for ax_cdf, ax_pdf, index in zip(axes_cdf.flat, axes_pdf.flat, range(len(self.colors))):
 
             color = self.colors[index]
@@ -187,30 +171,10 @@ class ColorDistributionTest(ValidationTest):
             self.band1 = band1
             self.band2 = band2
 
-            # if self.load_validation_catalog_q:
-            nobs, obinctr, ohist = vsummary[index]
-            ocdf = np.zeros(len(ohist))
-            ocdf[0] = ohist[0]
-            for cdf_index in range(1, len(ohist)):
-                ocdf[cdf_index] = ocdf[cdf_index-1]+ohist[cdf_index]
-            # else:
-            #     #load validation summary data
-            #     filename = self._data_name+'_'+color+'_z_%1.3f_%1.3f_pdf.txt'%(self.zlo_obs, self.zhi_obs)
-            #     obinctr, ohist = self.load_validation_data(filename)
-            #     ocdf = np.zeros(len(ohist))
-            #     ocdf[0] = ohist[0]
-            #     for cdf_index in range(1, len(ohist)):
-            #         ocdf[cdf_index] = ocdf[cdf_index-1]+ohist[cdf_index]
+            nobs, obinctr, ohist, ocdf = vsummary[index]
+            omedian = obinctr[np.argmax(ocdf>0.5)]
 
-            # #----------------------------------------------------------------------------------------
-            # if index==0:
-            #    self.validation_data = [(obinctr, ohist)]
-            # else:
-            #    self.validation_data = self.validation_data + [(obinctr, ohist)]
-            # #----------------------------------------------------------------------------------------
-            self.validation_data = (obinctr, ocdf)
-
-            # make sure galaxy catalog has appropiate quantities
+            # Make sure galaxy catalog has appropiate quantities
             if not all(k in galaxy_catalog.quantities for k in (self.band1, self.band2)):
                 # raise an informative warning
                 msg = ('galaxy catalog does not have `{}` and/or `{}` quantities.\n'.format(band1, band2))
@@ -221,8 +185,8 @@ class ColorDistributionTest(ValidationTest):
                     f.write(msg)
                 continue
 
-            # calculate color distribution in galaxy catalog
-            nmock, mbinctr, mhist = self.color_distribution(galaxy_catalog, (-1, 4, 2000), base_output_dir)
+            # Calculate color distribution in mock catalog
+            nmock, mbinctr, mhist, mcdf, mhist_shift, mcdf_shift, median_diff = self.color_distribution(galaxy_catalog, (-1, 4, 2000), base_output_dir, omedian)
             if mbinctr is None:
                 # raise an informative warning
                 msg = ('The `{}` and/or `{}` quantities don\'t have the correct range or format.\n'.format(band1, band2))
@@ -236,91 +200,72 @@ class ColorDistributionTest(ValidationTest):
             # At least one color exists
             skip_q = False
 
-            mcdf = np.zeros(len(mhist))
-            mcdf[0] = mhist[0]
-            for cdf_index in range(1, len(mhist)):
-                mcdf[cdf_index] = mcdf[cdf_index-1]+mhist[cdf_index]
-            catalog_result = (mbinctr, mhist)
-
-            # 95% and 68% quantiles
-            m95min = mbinctr[np.argmax(mcdf>0.025)]
-            m95max = mbinctr[np.argmax(mcdf>0.975)]
-            o95min = obinctr[np.argmax(ocdf>0.025)]
-            o95max = obinctr[np.argmax(ocdf>0.975)]
-            m68min = mbinctr[np.argmax(mcdf>0.16)]
-            m68max = mbinctr[np.argmax(mcdf>0.84)]
-            o68min = obinctr[np.argmax(ocdf>0.16)]
-            o68max = obinctr[np.argmax(ocdf>0.84)]
+            # Calculate median, quartiles, and 1.5*IQR beyond Q1 and Q3
+            oq1 = obinctr[np.argmax(ocdf>0.25)]
+            oq3 = obinctr[np.argmax(ocdf>0.75)]
+            oiqr = oq3 - oq1
+            oboxmin = np.max([oq1-1.5*oiqr], obinctr[np.argmax(ocdf>0)])
+            oboxmax = np.min([oq3+1.5*oiqr], obinctr[np.argmax(ocdf<ocdf[-1])])
+            mq1 = mbinctr[np.argmax(mcdf>0.25)]
+            mq3 = mbinctr[np.argmax(mcdf>0.75)]
+            miqr = mq3 - mq1
             mmedian = mbinctr[np.argmax(mcdf>0.5)]
-            omedian = obinctr[np.argmax(ocdf>0.5)]
-            catalog_quantiles[index] = np.array([m95min, m68min, mmedian, m68max, m95max])
-            validation_quantiles[index] = np.array([o95min, o68min, omedian, o68max, o95max])
+            mboxmin = np.max([mq1-1.5*miqr], mbinctr[np.argmax(mcdf>0)])
+            mboxmax = np.min([mq3+1.5*miqr], mbinctr[np.argmax(mcdf<mcdf[-1])])
 
-            # d1 = {'x':mbinctr, 'y':mcdf}
-            # d2 = {'x':obinctr, 'y':ocdf}
-            # d1_shifted = {'x':mbinctr-(mmedian-omedian), 'y':mcdf}
-            
+            validation_quantiles[index] = np.array([oboxmin, oq1, omedian, oq3, oboxmax])
+            catalog_quantiles[index] = np.array([mboxmin, mq1, mmedian, mq3, mboxmax])
+
             # calculate Cramer-von Mises statistic
-            cvm_omega, cvm_success = CvM_statistic(nmock, nobs, mcdf, ocdf, threshold=self._threshold)
-            # # calculate L2diff
-            # L2, L2_success = L2Diff(d1, d2, threshold=0.02)
-            # L2_shifted, L2_shifted_success = L2Diff(d1_shifted, d2, threshold=0.02)
-            # # calculate L1Diff
-            # L1, L1_success = L1Diff(d1, d2)
-            # L1_shifted, L1_shifted_success = L1Diff(d1_shifted, d2)
-            # # calculate K-S statistic
-            # KS, KS_success = KS_test(d1, d2)
-            # KS_shifted, KS_shifted_success = KS_test(d1_shifted, d2)
+            cvm_omega, cvm_success = CvM_statistic(nmock, nobs, mcdf, ocdf, threshold=self.threshold)
+            cvm_omega_shift, cvm_success_shift = CvM_statistic(nmock, nobs, mcdf_shift, ocdf, threshold=self.threshold)
 
             # plot CDF
             # validation distribution
-            ax_cdf.step(obinctr, ocdf, label=self._data_name,color='red')
+            ax_cdf.step(obinctr, ocdf, label=data_name,color='red')
             # catalog distribution
-            ax_cdf.step(mbinctr, mcdf, where="mid", label=catalog_name, color='blue')
+            ax_cdf.step(mbinctr, mcdf, where="mid", label=catalog_name+'\n'+r'$\omega={:.3}$'.format(cvm_omega), color='blue')
             # color distribution after constant shift
-            ax_cdf.step(mbinctr-(mmedian-omedian), mcdf, where="mid", label=catalog_name+' shifted', linestyle='--', color='blue')
+            ax_cdf.step(mbinctr, mcdf_shift, where="mid", label=catalog_name+' shifted\n'+r'$\omega={:.3}$'.format(cvm_omega_shift), linestyle='--', color='blue')
             ax_cdf.set_xlabel(color, fontsize=12)
             ax_cdf.set_title('')
             xmin = np.min([mbinctr[np.argmax(mcdf>0.005)], obinctr[np.argmax(ocdf>0.005)]])
             xmax = np.max([mbinctr[np.argmax(mcdf>0.995)], obinctr[np.argmax(ocdf>0.995)]])
             ax_cdf.set_xlim(xmin, xmax)
             ax_cdf.set_ylim(0, 1)
-            ax_cdf.legend(loc='best', frameon=False)
+            ax_cdf.legend(loc='upper left', frameon=False, fontsize=12)
 
             # plot PDF
-            mhist_smooth = uniform_filter1d(mhist, 20)
             ohist_smooth = uniform_filter1d(ohist, 20)
+            mhist_smooth = uniform_filter1d(mhist, 20)
+            mhist_shift_smooth = uniform_filter1d(mhist_shift, 20)
             # validation data
-            ax_pdf.step(obinctr, ohist_smooth, label=self._data_name,color='red')
+            ax_pdf.step(obinctr, ohist_smooth, label=data_name,color='red')
             # catalog distribution
-            ax_pdf.step(mbinctr, mhist_smooth, where="mid", label=catalog_name, color='blue')
+            ax_pdf.step(mbinctr, mhist_smooth, where="mid", label=catalog_name+'\n'+r'$\omega={:.3}$'.format(cvm_omega), color='blue')
             # color distribution after constant shift
-            ax_pdf.step(mbinctr-(mmedian-omedian), mhist_smooth, where="mid", label=catalog_name+' shifted', linestyle='--', color='blue')
+            ax_pdf.step(mbinctr, mhist_shift_smooth, where="mid", label=catalog_name+' shifted\n'+r'$\omega={:.3}$'.format(cvm_omega_shift), linestyle='--', color='blue')
             ax_pdf.set_xlabel(color, fontsize=12)
             ax_pdf.set_xlim(xmin, xmax)
             ax_pdf.set_ylim(ymin=0.)
             ax_pdf.set_title('')
-            ax_pdf.legend(loc='best', frameon=False)
+            ax_pdf.legend(loc='upper left', frameon=False, fontsize=12)
 
             # save result to file
             filename = os.path.join(base_output_dir, summary_output_file)
             with open(filename, 'a') as f:
-                f.write("Median "+color+" difference (obs - mock) = %2.3f\n"%(omedian-mmedian))
+                f.write("Median "+color+" difference (mock - obs) = %2.3f\n"%(median_diff))
                 f.write(color+" {}: {} = {}\n".format('SUCCESS' if cvm_success else 'FAILED', 'CvM statistic', cvm_omega))
-                # f.write(color+" {}: {} = {}\n".format('SUCCESS' if L2_success else 'FAILED', 'L2Diff', L2))
-                # f.write(color+" (shifted) {}: {} = {}\n".format('SUCCESS' if L2_shifted_success else 'FAILED', 'L2Diff', L2_shifted))
-                # f.write(color+" {}: {} = {}\n".format('SUCCESS' if L1_success else 'FAILED', 'L1Diff', L1))
-                # f.write(color+" (shifted) {}: {} = {}\n".format('SUCCESS' if L1_shifted_success else 'FAILED', 'L1Diff', L1_shifted))
-                # f.write(color+" {}: {} = {}\n".format('SUCCESS' if KS_success else 'FAILED', 'K-S statistic', KS))
-                # f.write(color+" (shifted) {}: {} = {}\n".format('SUCCESS' if KS_shifted_success else 'FAILED', 'K-S statistic', KS_shifted))
+                f.write(color+" (shifted) {}: {} = {}\n".format('SUCCESS' if cvm_success_shift else 'FAILED', 'CvM statistic', cvm_omega_shift))
+                f.write("\n")
 
             # The test is considered pass if the all colors pass L2Diff
-            if cvm_success:
+            if cvm_success_shift:
                 pass_count+=1
             else:
                 pass_q = False
                 
-            cvm_sum += cvm_omega
+            cvm_sum += cvm_omega_shift
 
         if not skip_q:
             # save plots
@@ -348,13 +293,13 @@ class ColorDistributionTest(ValidationTest):
             return TestResult(score=cvm_omega_average, 
                 summary='{}/{} success - not all colors pass the test; average CvM statistic = {:.3f}'.format(pass_count, len(self.colors), cvm_omega_average), passed=False)
 
-    def color_distribution(self, galaxy_catalog, bin_args, base_output_dir):
+    def color_distribution(self, galaxy_catalog, bin_args, base_output_dir, omedian):
         """
-        Calculate the color distribution.
+        Calculate the color distribution of mock catalog.
         
         Parameters
         ----------
-        galaxy_catalog : galaxy catalog reader object
+        galaxy_catalog : (mock) galaxy catalog reader object
         """
         
         # get magnitudes from galaxy catalog
@@ -370,20 +315,9 @@ class ColorDistributionTest(ValidationTest):
                 f.write(msg)
             return None, None
 
-        # ############ DEBUG ############
-        # limiting_band_name = self.translate[self.limiting_band]        
-        # mag_lim = galaxy_catalog.get_quantities(limiting_band_name, {'zlo': self.zlo_mock, 'zhi': self.zhi_mock})
-        # print('mag_lim')
-        # print(len(mag_lim))
-        # print(np.max(mag_lim))
-        # print(np.min(mag_lim))
-        # print()
-        # ############ DEBUG ############
-
         #apply magnitude limit and remove nonsensical magnitude values
         limiting_band_name = self.translate[self.limiting_band]
         mag_lim = galaxy_catalog.get_quantities(limiting_band_name, {'zlo': self.zlo_mock, 'zhi': self.zhi_mock})
-        # mask = (mag_lim<self.limiting_mag) & (mag1>0) & (mag1<50) & (mag2>0) & (mag2<50)
         mask = (mag_lim<self.limiting_abs_mag)
         mag1 = mag1[mask]
         mag2 = mag2[mask]
@@ -397,32 +331,28 @@ class ColorDistributionTest(ValidationTest):
                 f.write(msg)
             return None, None
 
-        
-        # count galaxies
+        mmedian = np.median(mag1-mag2)
+        median_diff = mmedian - omedian
+
+        # Histrogram
         hist, bins = np.histogram(mag1-mag2, bins=np.linspace(*bin_args))
+        hist_shift, _ = np.histogram(mag1-mag2-median_diff, bins=np.linspace(*bin_args))
         # normalize the histogram so that the sum of hist is 1
         hist = hist/np.sum(hist)
+        hist_shift = hist_shift/np.sum(hist_shift)
         binctr = (bins[1:] + bins[:-1])/2.
-        
-        return len(mag1), binctr, hist
+        # Convert PDF to CDF
+        cdf = np.zeros(len(hist))
+        cdf[0] = hist[0]
+        for cdf_index in range(1, len(hist)):
+            cdf[cdf_index] = cdf[cdf_index-1]+hist[cdf_index]
+        cdf_shift = np.zeros(len(hist_shift))
+        cdf_shift[0] = hist_shift[0]
+        for cdf_index in range(1, len(hist_shift)):
+            cdf_shift[cdf_index] = cdf_shift[cdf_index-1]+hist_shift[cdf_index]
 
-    def load_validation_data(self, filename):
-        """
-        Open comparsion validation data, i.e. observational comparison data.
-        """
-        
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        path = os.path.join(self.base_data_dir, self._data_dir, filename)
-        
-        binctr, hist = np.loadtxt(path)
-        
-        return binctr, hist
+        return len(mag1), binctr, hist, cdf, hist_shift, cdf_shift, median_diff
     
-    def write_summary_file(self, result, test_passed, filename, comment=None):
-        """
-        """
-        pass
-
 def plot_summary(output_file, catalog_list, validation_kwargs):
     """
     make summary plot for validation test
@@ -453,9 +383,9 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
         vquantiles = np.loadtxt(fn)[index]
 
         xx = np.linspace(0, len(catalog_list)+1)
-        ax.axhline(vquantiles[2], lw=2, color='r', label=validation_kwargs['data_name']+' median')
-        ax.axhline(0,xmin=0, xmax=0, lw=7, color='red', alpha=0.3, label=validation_kwargs['data_name']+r' 68%')
-        ax.axhline(0,xmin=0, xmax=0, lw=7, color='grey', alpha=0.2, label=validation_kwargs['data_name']+r' 95%')
+        ax.axhline(vquantiles[2], lw=2, color='r', label=data_name+' median')
+        ax.axhline(0,xmin=0, xmax=0, lw=7, color='red', alpha=0.3, label=data_name+' '+r'$[Q_1, Q_3]$')
+        ax.axhline(0,xmin=0, xmax=0, lw=7, color='grey', alpha=0.2, label=data_name+' '+r'$[Q_1-1.5\mathrm{IQR}, Q_3+1.5\mathrm{IQR}]$')
         ax.fill_between(xx, vquantiles[1], vquantiles[3],facecolor='red', alpha=0.3)
         ax.fill_between(xx, vquantiles[0], vquantiles[1], facecolor='grey', alpha=0.2)
         ax.fill_between(xx, vquantiles[3], vquantiles[4], facecolor='grey', alpha=0.2)

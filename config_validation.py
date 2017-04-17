@@ -58,29 +58,10 @@ smhm_MB2 = _ValidationConfig('StellarMassHaloMassTest',
          description='Mean stellar mass as a function of halo mass for host halos.'
 )
 
-
-"""
-color_DEEP2 = _ValidationConfig('ColorDistributionTest',
-         data_dir='DEEP2',
-         data_name='DEEP2',
-         raw_data_fname='/global/projecta/projectdirs/lsst/descqa/data/rongpu/DEEP2_uniq_Terapix_Subaru.fits',
-         colors=['u-g','g-r','r-i','i-z'],
-         translate={'u':'SDSS_u:observed:','g':'SDSS_g:observed:','r':'SDSS_r:observed:','i':'SDSS_i:observed:','z':'SDSS_z:observed:'},
-         limiting_band='r',
-         limiting_mag=24.1,
-         zlo=0.65,
-         zhi=0.75,
-         load_validation_catalog_q = True,
-         summary='L2Diff',
-         description='For each of the mock catalogs, we calculate the distributions of <i>u-g</i>, <i>g-r</i>, <i>r-i</i>, and <i>i-z</i> colors, and compare with observations.  The SDSS dataset includes <i>ugriz</i> photometry and spectroscopic redshifts from the SDSS main galaxy sample Gunn98, York2000. The SDSS dataset is most complete in 0.07<z<0.09. The comparison of color distributions are done in these redshift ranges. This DEEP dataset (compiled by Zhou et al. 2017 in prep.) includes CFHT MegaCam <i>ugriz</i> photometry from CFHTLS Hudelot12 and Subaru Y-band photometry, and cross-matched with DEEP2 Newman13 and DEEP3 Cooper11,Cooper12 redshifts. The CFHTLS+Subaru+DEEP2/3 dataset is most complete in 0.6<z<0.85. The comparison of color distributions are done in these redshift ranges.',
-)
-"""
-
 color_SDSS = _ValidationConfig('ColorDistributionTest',
-         data_dir='SDSS',
-         data_name='SDSS',
-         # raw_data_fname='/global/projecta/projectdirs/lsst/descqa/data/rongpu/SpecPhoto_sdss_extinction_corrected_trimmed.fits',
-         raw_data_fname='/global/projecta/projectdirs/lsst/descqa/data/rongpu/sdss_output_coeffs_z_0.06_0.09.dat',
+         # data_dir='SDSS',
+         # data_name='SDSS',
+         sdss_fname='sdss_output_coeffs_z_0.06_0.09.dat',
          colors=['u-g','g-r','r-i','i-z'],
          translate={'u':'SDSS_u:rest:','g':'SDSS_g:rest:','r':'SDSS_r:rest:','i':'SDSS_i:rest:','z':'SDSS_z:rest:'},
          limiting_band='r',
@@ -88,8 +69,7 @@ color_SDSS = _ValidationConfig('ColorDistributionTest',
          limiting_abs_mag=-20.4,
          zlo=0.045,
          zhi=0.065,
-         load_validation_catalog_q=True,
-         threshold=0.02,
+         threshold=0.03,
          description='For each of the mock catalogs, we calculate the distributions of <i>M_u-M_g</i>, <i>M_g-M_r</i>, <i>M_r-M_i</i> and <i>M_i-M_z</i> colors, where the magnitudes are k-corrected absolute magnitudes, and compare with SDSS colors. The SDSS dataset includes <i>ugriz</i> photometry and spectroscopic redshifts from the SDSS main galaxy sample (Gunn98, York2000). SDSS galaxies in the redshift range of 0.06<z<0.09 are used for this comparison.',
 )
 
