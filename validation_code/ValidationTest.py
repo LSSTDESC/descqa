@@ -283,6 +283,8 @@ class SimpleComparisonPlot():
 
 
     def __exit__(self, *exc_args):
+        self.ax_lower.axhline(0.0, c='k', lw=0.5)
+        self.ax_lower.minorticks_on()
         for t in self.ax_lower.yaxis.get_major_ticks()[-1:]:
             t.label1.set_visible(False)
         self.fig.tight_layout()
@@ -310,8 +312,6 @@ class SimpleComparisonPlot():
         add_ref = self.add_line if ref_as_line else self.add_points
         add_ref(self.mask_data(ref_data), ref_label, ref_color)
         add_ref(self.compare_data(ref_data, ref_data), ref_label, ref_color, lower=True)
-
-        self.ax_lower.axhline(int(self.logy), c='k', lw=0.5)
 
 
     def compare_data(self, ref_data, this_data, interp=False):
@@ -393,7 +393,7 @@ class SimpleComparisonPlot():
         if ylim:
             self.ax.set_ylim(ylim)
         if ylim_lower is None:
-            ylim_lower = (-0.8, 0.8)
+            ylim_lower = (-0.7, 0.7)
         self.ax_lower.set_ylim(ylim_lower)
 
 

@@ -129,8 +129,8 @@ class ColorDistributionTest(object):
         """
 
         nrows = int(np.ceil(len(self.colors)/2.))
-        fig_cdf, axes_cdf = plt.subplots(nrows, 2, figsize=(11, 5*nrows))
-        fig_pdf, axes_pdf = plt.subplots(nrows, 2, figsize=(11, 5*nrows))
+        fig_cdf, axes_cdf = plt.subplots(nrows, 2, figsize=(8, 4*nrows))
+        fig_pdf, axes_pdf = plt.subplots(nrows, 2, figsize=(8, 4*nrows))
         skip_q = True   # False if any color exists in the catalog
         pass_q = True   # False if any color fails
         pass_count = 0   # Number of colors that pass the test
@@ -230,13 +230,13 @@ class ColorDistributionTest(object):
             ax_cdf.step(mbinctr, mcdf, where="mid", label=catalog_name+'\n'+r'$\omega={:.3}$'.format(cvm_omega), color='C0')
             # color distribution after constant shift
             ax_cdf.step(mbinctr, mcdf_shift, where="mid", label=catalog_name+' shifted\n'+r'$\omega={:.3}$'.format(cvm_omega_shift), linestyle='--', color='C0')
-            ax_cdf.set_xlabel(color, fontsize=12)
+            ax_cdf.set_xlabel('${}$'.format(color))
             ax_cdf.set_title('')
             xmin = np.min([mbinctr[find_first_true(mcdf>0.001)], mbinctr[find_first_true(mcdf_shift>0.001)], obinctr[find_first_true(ocdf>0.001)]])
             xmax = np.max([mbinctr[find_first_true(mcdf>0.999)], mbinctr[find_first_true(mcdf_shift>0.999)], obinctr[find_first_true(ocdf>0.999)]])
             ax_cdf.set_xlim(xmin, xmax)
             ax_cdf.set_ylim(0, 1)
-            ax_cdf.legend(loc='upper left', frameon=False, fontsize=12)
+            ax_cdf.legend(loc='upper left', frameon=False)
 
             # plot PDF
             ohist_smooth = uniform_filter1d(ohist, 20)
@@ -248,29 +248,29 @@ class ColorDistributionTest(object):
             ax_pdf.step(mbinctr, mhist_smooth, where="mid", label=catalog_name+'\n'+r'$\omega={:.3}$'.format(cvm_omega), color='C0')
             # color distribution after constant shift
             ax_pdf.step(mbinctr, mhist_shift_smooth, where="mid", label=catalog_name+' shifted\n'+r'$\omega={:.3}$'.format(cvm_omega_shift), linestyle='--', color='C0')
-            ax_pdf.set_xlabel(color, fontsize=12)
+            ax_pdf.set_xlabel('${}$'.format(color))
             ax_pdf.set_xlim(xmin, xmax)
             ax_pdf.set_ylim(ymin=0.)
             ax_pdf.set_title('')
-            ax_pdf.legend(loc='upper left', frameon=False, fontsize=12)
+            ax_pdf.legend(loc='upper left', frameon=False)
 
             # PDF+CDF plot for the paper
             if index==1:    # g-r color
-                fig_pdf_cdf, axes_pdf_cdf = plt.subplots(1, 2, figsize=(11, 5))
+                fig_pdf_cdf, axes_pdf_cdf = plt.subplots(1, 2, figsize=(8, 4))
                 axes_pdf_cdf[0].step(obinctr, ohist_smooth, label=data_name,color='C1')
                 axes_pdf_cdf[0].step(mbinctr, mhist_smooth, where="mid", label=catalog_name+'\n'+r'$\omega={:.3}$'.format(cvm_omega), color='C0')
                 axes_pdf_cdf[0].step(mbinctr, mhist_shift_smooth, where="mid", label=catalog_name+' shifted\n'+r'$\omega={:.3}$'.format(cvm_omega_shift), linestyle='--', color='C0')
-                axes_pdf_cdf[0].set_xlabel('${}$'.format(color), fontsize=12)
+                axes_pdf_cdf[0].set_xlabel('${}$'.format(color))
                 axes_pdf_cdf[0].set_xlim(xmin, xmax)
                 axes_pdf_cdf[0].set_ylim(ymin=0.)
-                axes_pdf_cdf[0].legend(loc='upper left', frameon=False, fontsize=12)
+                axes_pdf_cdf[0].legend(loc='upper left', frameon=False)
                 axes_pdf_cdf[1].step(obinctr, ocdf, label=data_name,color='C1')
                 axes_pdf_cdf[1].step(mbinctr, mcdf, where="mid", label=catalog_name+'\n'+r'$\omega={:.3}$'.format(cvm_omega), color='C0')
                 axes_pdf_cdf[1].step(mbinctr, mcdf_shift, where="mid", label=catalog_name+' shifted\n'+r'$\omega={:.3}$'.format(cvm_omega_shift), linestyle='--', color='C0')
-                axes_pdf_cdf[1].set_xlabel('${}$'.format(color), fontsize=12)
+                axes_pdf_cdf[1].set_xlabel('${}$'.format(color))
                 axes_pdf_cdf[1].set_xlim(xmin, xmax)
                 axes_pdf_cdf[1].set_ylim(0, 1)
-                axes_pdf_cdf[1].legend(loc='upper left', frameon=False, fontsize=12)
+                axes_pdf_cdf[1].legend(loc='upper left', frameon=False)
                 fn = os.path.join(base_output_dir, plot_pdf_cdf_file)
                 fig_pdf_cdf.tight_layout()
                 fig_pdf_cdf.savefig(fn)
@@ -396,7 +396,7 @@ class ColorDistributionTest(object):
 
         colors = self.colors
         nrows = int(np.ceil(len(colors)/2.))
-        fig, axes = plt.subplots(nrows, 2, figsize=(11, 6*nrows))
+        fig, axes = plt.subplots(nrows, 2, figsize=(8, 5*nrows), sharex=True)
 
         data = []
         for _, catalog_dir in catalog_list:
@@ -426,14 +426,19 @@ class ColorDistributionTest(object):
             x = np.arange(1, len(catalog_list)+1)
             labels = [catalog_name for catalog_name, _ in catalog_list]
             ax.set_xticks(x)
-            ax.set_xticklabels(labels, rotation='vertical')
+            ax.set_xticks([], True)
+            if index >= (axes.size - 2):
+                ax.set_xticklabels(labels, rotation='vertical')
+            else:
+                ax.set_xticklabels(['' for _ in x])
 
             ax.yaxis.grid(True)
             ymin = min(vquantiles[0], data[:,index,0].min())
             ymax = max(vquantiles[4], data[:,index,4].max())
             yrange = ymax - ymin
             ax.set_ylim(ymin-0.15*yrange, ymax+0.15*yrange)
-            ax.legend(fontsize='small', framealpha=0.4, loc='lower right')
+            if index==0:
+                ax.legend(fontsize='small', framealpha=0.4, loc='lower right')
 
         plt.tight_layout()
         plt.savefig(output_file)
