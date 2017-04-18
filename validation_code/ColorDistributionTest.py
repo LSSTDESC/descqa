@@ -396,7 +396,7 @@ class ColorDistributionTest(object):
 
         colors = self.colors
         nrows = int(np.ceil(len(colors)/2.))
-        fig, axes = plt.subplots(nrows, 2, figsize=(8, 5*nrows), sharex=True)
+        fig, axes = plt.subplots(nrows, 2, figsize=(8, 4.5*nrows), sharex=True)
 
         data = []
         for _, catalog_dir in catalog_list:
