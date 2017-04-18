@@ -1,47 +1,49 @@
-from __future__ import (division, print_function, absolute_import)
+from __future__ import division, print_function
+
 import os
 import subprocess
-from warnings import warn
+
 import numpy as np
 
-from ValidationTest import ValidationTest, TestResult, plt
-import CalcStats
-from BinnedStellarMassFunctionTest import *
-
-__all__ = ['StellarMassHaloMassTest', 'plot_summary']
+from ValidationTest import *
 
 
-class StellarMassHaloMassTest(BinnedStellarMassFunctionTest):
+def mean_y_in_x_bins(y, x, bins, sorter=None):
+    y = np.asanyarray(y)
+    k = np.searchsorted(x, bins, sorter=sorter)
+    res = []
+    for i, j in zip(k[:-1], k[1:]):
+        if j == i:
+            res.append(np.nan)
+        else:
+            s_this = slice(i, j) if sorter is None else sorter[i:j]
+            res.append(y[s_this].mean())
+    return np.array(res)
+
+
+class StellarMassHaloMassTest(ValidationTest):
     """
     validation test class object to compute stellar mass halo mass relation
     """
-    output_config = dict(\
-            catalog_output_file='catalog_smhm.txt',
-            validation_output_file='validation_smhm.txt',
-            covariance_matrix_file='covariance_smhm.txt',
-            log_file='log_smhm.txt',
-            plot_file='plot_smhm.png',
-            plot_title='Stellar mass - halo mass relation',
-            xaxis_label=r'$\log \, M_{\rm halo} / M_\odot$',
-            yaxis_label=r'$\langle M^{*} \rangle / M_\odot$',
-            plot_validation_as_line=False,
+    _plot_config = dict(\
+        xlabel=r'$M_{\rm halo} \;  [{\rm M}_\odot]$',
+        ylabel=r'$\langle M^{*} \rangle \; [{\rm M}_\odot]$',
+        xlim=(1.0e8, 1.0e15),
+        ylim=(1.0e7, 2.0e12),
+        ylim_lower=(0.1, 10.0),
     )
 
-    required_quantities = ('mass', 'stellar_mass', 'parent_halo_id', 'positionX', 'positionY', 'positionZ')
+    _required_quantities = {'mass', 'stellar_mass', 'parent_halo_id', 'positionX', 'positionY', 'positionZ'}
 
-    available_observations = ('MassiveBlackII',)
+    _available_observations = {'MassiveBlackII'}
 
-    default_kwargs = {
-            'zlo': 0,
-            'zhi': 1000.0,
-            'summary_statistic': 'chisq',
-            'jackknife_nside': 5,
+    _default_kwargs = {
+        'zlo': 0,
+        'zhi': 1000.0,
+        'jackknife_nside': 5,
     }
 
-    enable_interp_validation = False
-
-
-    def load_validation_data(self):
+    def _subclass_init(self, **kwargs):
         """
         load tabulated stellar mass halo mass function data
         """
@@ -55,13 +57,13 @@ class StellarMassHaloMassTest(BinnedStellarMassFunctionTest):
         #column 8: 1-sigma error
         #column 9: 16th percentile
         #column 11: 84th percentile
-        fn = os.path.join(self.base_data_dir, 'MASSIVEBLACKII/StellarMass_HaloMass/tab_new.txt')
-        self.validation_data = dict(zip(('x', 'y', 'y-', 'y+'), np.loadtxt(fn, unpack=True, usecols=(0,1,3,4))))
-        self.validation_data['x'] = np.log10(self.validation_data['x'])
-        return self.validation_data
+        fn = os.path.join(self._base_data_dir, 'MASSIVEBLACKII/StellarMass_HaloMass/tab_new.txt')
+        self._validation_data = dict(zip(('x', 'y', 'y-', 'y+'), np.loadtxt(fn, unpack=True, usecols=(0,1,3,4))))
+        self._validation_data['cov'] = np.diag(((self._validation_data['y+']-self._validation_data['y-'])*0.5)**2.0)
+        self._validation_name = 'MBII (validation)'
 
 
-    def get_quantities_from_catalog(self, galaxy_catalog):
+    def _get_quantities_from_catalog(self, galaxy_catalog):
         """
         obtain the masses and mask fom the galaxy catalog
 
@@ -90,7 +92,7 @@ class StellarMassHaloMassTest(BinnedStellarMassFunctionTest):
         return dict(hm=hm[mask], sm=sm[mask], x=x[mask], y=y[mask], z=z[mask])
 
 
-    def calc_catalog_result(self, galaxy_catalog):
+    def _calc_catalog_result(self, galaxy_catalog):
         """
         calculate the stellar mass - halo mass relation in bins
 
@@ -100,7 +102,7 @@ class StellarMassHaloMassTest(BinnedStellarMassFunctionTest):
         """
 
         #get quantities from galaxy catalog
-        quantities = self.get_quantities_from_catalog(galaxy_catalog)
+        quantities = self._get_quantities_from_catalog(galaxy_catalog)
 
         #sort halo mass
         s = quantities['hm'].argsort()
@@ -108,35 +110,21 @@ class StellarMassHaloMassTest(BinnedStellarMassFunctionTest):
             quantities[k] = quantities[k][s]
         del s
 
-        res = {'x':(self.bins[1:] + self.bins[:-1])*0.5}
+        res = {'x': np.sqrt(self._bins[1:]*self._bins[:-1])}
 
         #get errors from jackknife samples if requested
-        if self.jackknife_nside > 0:
-            masses = np.vstack((np.log10(quantities['hm']), quantities['sm'])).T
+        if self._jackknife_nside > 0:
+            masses = np.vstack((quantities['hm'], quantities['sm'])).T
             jack_indices = CalcStats.get_subvolume_indices(quantities['x'], quantities['y'], quantities['z'], \
-                    galaxy_catalog.box_size, self.jackknife_nside)
-            njack = self.jackknife_nside**3
+                    galaxy_catalog.box_size, self._jackknife_nside)
+            njack = self._jackknife_nside**3
             res['y'], _, covariance = CalcStats.jackknife(masses, jack_indices, njack, \
-                    lambda arr: mean_y_in_x_bins(arr[:,1], arr[:,0], self.bins))
+                    lambda arr: mean_y_in_x_bins(arr[:,1], arr[:,0], self._bins))
             yerr = np.sqrt(np.diag(covariance))
             res.update({'y-':res['y']-yerr, 'y+':res['y']+yerr, 'cov':covariance})
         else:
-            res['y'] = mean_y_in_x_bins(quantities['sm'], np.log10(quantities['hm']), self.bins)
+            res['y'] = mean_y_in_x_bins(quantities['sm'], quantities['hm'], self._bins)
 
         return res
 
 
-plot_summary = StellarMassHaloMassTest.plot_summary
-
-
-def mean_y_in_x_bins(y, x, bins, sorter=None):
-    y = np.asanyarray(y)
-    k = np.searchsorted(x, bins, sorter=sorter)
-    res = []
-    for i, j in zip(k[:-1], k[1:]):
-        if j == i:
-            res.append(np.nan)
-        else:
-            s_this = slice(i, j) if sorter is None else sorter[i:j]
-            res.append(y[s_this].mean())
-    return np.array(res)

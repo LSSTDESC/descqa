@@ -25,16 +25,13 @@ def jackknife(data, jack_indices, n_jack, func, full_args=(), full_kwargs={}, ja
     return full-bias, bias, np.cov(jack, rowvar=False, bias=True)*float(n_jack-1)
 
 
-def chisq(difference, covariance):
+def chisq(difference, covariance, dof):
     d = np.asarray(difference)
     cov = np.asarray(covariance)
     if cov.ndim == 1:
         cov = np.diag(cov)
-    return np.dot(d, np.dot(np.linalg.inv(cov), d))
-
-
-def chisq_threshold(dof, conf_level=0.95):
-    return chi2.isf(1.0-conf_level, dof)
+    chisq_value = np.dot(d, np.dot(np.linalg.inv(cov), d))
+    return chisq_value, chi2.cdf(chisq_value, dof)
 
 
 def Lp_norm(difference, p=2.0):
@@ -42,11 +39,12 @@ def Lp_norm(difference, p=2.0):
     d **= p
     return d.sum() ** (1.0/p)
 
+
 def AD_statistic(n1, n2, y1, y2, threshold):
     '''
     Calculate the two-sample Anderson-Darling statistic from two CDFs;
-    n1, n2: number of objects in the two samples; 
-    y1, y2: CDF y-values of the two distribution, and they should have 
+    n1, n2: number of objects in the two samples;
+    y1, y2: CDF y-values of the two distribution, and they should have
     the same x-axis.
     '''
     n = n1+n2
@@ -62,24 +60,24 @@ def AD_statistic(n1, n2, y1, y2, threshold):
         success = True
     else:
         success = False
-    
+
     return ads, success
 
 
 def CvM_statistic(n1, n2, y1, y2, threshold):
     '''
     Calculate the two-sample Cramer-von Mises statistic from two CDFs;
-    n1, n2: number of objects in the two samples; 
-    y1, y2: CDF y-values of the two distribution, and they should have 
+    n1, n2: number of objects in the two samples;
+    y1, y2: CDF y-values of the two distribution, and they should have
     the same x-axis.
     '''
     n = n1+n2
     h = (n1*y1+n2*y2)/n
     cvm_omega = np.sqrt(np.trapz((y2-y1)**2, h))
-    
+
     if cvm_omega<threshold:
         success = True
     else:
         success = False
-    
+
     return cvm_omega, success

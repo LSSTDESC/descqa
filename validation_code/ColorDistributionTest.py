@@ -1,12 +1,13 @@
 from __future__ import division, print_function
 import os
-import numpy as np
 from warnings import warn
+
+import numpy as np
+from scipy.ndimage.filters import uniform_filter1d
 
 from ValidationTest import TestResult, plt
 from CalcStats import CvM_statistic
 from ComputeColorDistribution import load_SDSS
-from scipy.ndimage.filters import uniform_filter1d
 
 catalog_output_file = 'catalog_quantiles.txt'
 validation_output_file = 'validation_quantiles.txt'
@@ -23,20 +24,20 @@ find_first_true = np.argmax
 
 class ColorDistributionTest(object):
     """
-    validaton test class object to compute galaxy color distribution 
+    validaton test class object to compute galaxy color distribution
     and compare with SDSS
     """
-    
+
     def __init__(self, **kwargs):
         """
         Initialize a color distribution validation test.
-        
+
         Parameters
         ----------
 
         base_data_dir : string
             base directory that contains validation data
-        
+
         base_output_dir : string
             base directory to store test data, e.g. plots
 
@@ -55,14 +56,14 @@ class ColorDistributionTest(object):
 
         zlo : float, requred
             minimum redshift of the validation catalog
-        
+
         zhi : float, requred
             maximum redshift of the validation catalog
-        
+
         threshold : float, required
             threshold value for passing the test
         """
-        
+
         # set parameters of test:
         # filename of SDSS data
         if 'sdss_fname' in list(kwargs.keys()):
@@ -112,21 +113,21 @@ class ColorDistributionTest(object):
     def run_validation_test(self, galaxy_catalog, catalog_name, base_output_dir):
         """
         run the validation test
-        
+
         Parameters
         ----------
         galaxy_catalog : galaxy catalog reader object
             instance of a galaxy catalog reader
-        
+
         catalog_name : string
             name of mock galaxy catalog
-        
+
         Returns
         -------
         test_passed : boolean
             True if the test is 'passed', False otherwise
         """
-        
+
         nrows = int(np.ceil(len(self.colors)/2.))
         fig_cdf, axes_cdf = plt.subplots(nrows, 2, figsize=(11, 5*nrows))
         fig_pdf, axes_pdf = plt.subplots(nrows, 2, figsize=(11, 5*nrows))
@@ -259,14 +260,14 @@ class ColorDistributionTest(object):
                 axes_pdf_cdf[0].step(obinctr, ohist_smooth, label=data_name,color='C1')
                 axes_pdf_cdf[0].step(mbinctr, mhist_smooth, where="mid", label=catalog_name+'\n'+r'$\omega={:.3}$'.format(cvm_omega), color='C0')
                 axes_pdf_cdf[0].step(mbinctr, mhist_shift_smooth, where="mid", label=catalog_name+' shifted\n'+r'$\omega={:.3}$'.format(cvm_omega_shift), linestyle='--', color='C0')
-                axes_pdf_cdf[0].set_xlabel(color, fontsize=12)
+                axes_pdf_cdf[0].set_xlabel('${}$'.format(color), fontsize=12)
                 axes_pdf_cdf[0].set_xlim(xmin, xmax)
                 axes_pdf_cdf[0].set_ylim(ymin=0.)
                 axes_pdf_cdf[0].legend(loc='upper left', frameon=False, fontsize=12)
                 axes_pdf_cdf[1].step(obinctr, ocdf, label=data_name,color='C1')
                 axes_pdf_cdf[1].step(mbinctr, mcdf, where="mid", label=catalog_name+'\n'+r'$\omega={:.3}$'.format(cvm_omega), color='C0')
                 axes_pdf_cdf[1].step(mbinctr, mcdf_shift, where="mid", label=catalog_name+' shifted\n'+r'$\omega={:.3}$'.format(cvm_omega_shift), linestyle='--', color='C0')
-                axes_pdf_cdf[1].set_xlabel(color, fontsize=12)
+                axes_pdf_cdf[1].set_xlabel('${}$'.format(color), fontsize=12)
                 axes_pdf_cdf[1].set_xlim(xmin, xmax)
                 axes_pdf_cdf[1].set_ylim(0, 1)
                 axes_pdf_cdf[1].legend(loc='upper left', frameon=False, fontsize=12)
@@ -286,7 +287,7 @@ class ColorDistributionTest(object):
                 pass_count+=1
             else:
                 pass_q = False
-                
+
             cvm_sum += cvm_omega_shift
 
         if not skip_q:
@@ -297,7 +298,7 @@ class ColorDistributionTest(object):
             fig_pdf.tight_layout()
             fn = os.path.join(base_output_dir, plot_pdf_file)
             fig_pdf.savefig(fn)
-        
+
         plt.close()
 
         # save quantiles
@@ -311,21 +312,21 @@ class ColorDistributionTest(object):
         if skip_q:
             return TestResult(summary='No available colors for comparison. ', skipped=True)
         elif pass_q:
-            return TestResult(score=cvm_omega_average, 
+            return TestResult(score=cvm_omega_average,
                               summary='{}/{} success - all colors pass the test; average Cramer-von Mises statistic = {:.3f}'.format(pass_count, len(self.colors), cvm_omega_average), passed=True)
         else:
-            return TestResult(score=cvm_omega_average, 
+            return TestResult(score=cvm_omega_average,
                 summary='{}/{} success - not all colors pass the test; average CvM statistic = {:.3f}'.format(pass_count, len(self.colors), cvm_omega_average), passed=False)
 
     def color_distribution(self, galaxy_catalog, bin_args, base_output_dir, omedian):
         """
         Calculate the color distribution of mock catalog.
-        
+
         Parameters
         ----------
         galaxy_catalog : (mock) galaxy catalog reader object
         """
-        
+
         # get magnitudes from galaxy catalog
         mag1 = galaxy_catalog.get_quantities(self.band1, {'zlo': self.zlo_mock, 'zhi': self.zhi_mock})
         mag2 = galaxy_catalog.get_quantities(self.band2, {'zlo': self.zlo_mock, 'zhi': self.zhi_mock})
@@ -376,7 +377,7 @@ class ColorDistributionTest(object):
             cdf_shift[cdf_index] = cdf_shift[cdf_index-1]+hist_shift[cdf_index]
 
         return len(mag1), binctr, hist, cdf, hist_shift, cdf_shift, median_diff
-    
+
     def plot_summary(self, output_file, catalog_list):
         """
         make summary plot for validation test
@@ -385,11 +386,11 @@ class ColorDistributionTest(object):
         ----------
         output_file: string
             filename for summary plot
-        
+
         catalog_list: list of tuple
             list of (catalog, catalog_output_dir) used for each catalog comparison
         """
-        
+
         colors = self.colors
         nrows = int(np.ceil(len(colors)/2.))
         fig, axes = plt.subplots(nrows, 2, figsize=(11, 6*nrows))
@@ -417,7 +418,7 @@ class ColorDistributionTest(object):
 
             # Mock catalog results
             ax.boxplot(data[:,index].T, whis='range')
-            ax.set_ylabel(colors[index])
+            ax.set_ylabel('${}$'.format(colors[index]))
 
             x = np.arange(1, len(catalog_list)+1)
             labels = [catalog_name for catalog_name, _ in catalog_list]
@@ -434,4 +435,4 @@ class ColorDistributionTest(object):
         plt.tight_layout()
         plt.savefig(output_file)
         plt.close()
-        
+
