@@ -63,6 +63,10 @@ h2           {font-size: 120%;}
     padding-right: 0.4em;
 }
 
+.matrix tr:first-child {
+    font-weight: bold;
+}
+
 .matrix td.darkred {
     background-color:#7D1302;
 }
