@@ -30,7 +30,6 @@ class StellarMassHaloMassTest(ValidationTest):
         ylabel=r'$\langle M_* \rangle \; [{\rm M}_\odot]$',
         xlim=(1.0e8, 1.0e15),
         ylim=(1.0e7, 1.0e13),
-        ylim_lower=(0.1, 10.0),
     )
 
     _required_quantities = {'mass', 'stellar_mass', 'parent_halo_id', 'positionX', 'positionY', 'positionZ'}

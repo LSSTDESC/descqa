@@ -278,12 +278,12 @@ class SimpleComparisonPlot():
         self.ax.set_xscale('log' if self.logx else 'linear')
         self.ax_lower.set_xscale('log' if self.logx else 'linear')
         self.ax.set_yscale('log' if self.logy else 'linear')
-        self.ax_lower.set_yscale('log' if self.logy else 'linear')
+        self.ax_lower.set_yscale('linear')
         return self
 
 
     def __exit__(self, *exc_args):
-        for t in self.ax_lower.yaxis.get_major_ticks()[-2:]:
+        for t in self.ax_lower.yaxis.get_major_ticks()[-1:]:
             t.label1.set_visible(False)
         self.fig.tight_layout()
         if self.savefig_path:
@@ -333,8 +333,13 @@ class SimpleComparisonPlot():
                 ref_y = np.exp(ref_y)
         for k in ('y', 'y+', 'y-'):
             if k in this_data:
-                d[k] = (this_data[k]/ref_y) if self.logy else (this_data[k]-ref_y)
-        return self.mask_data(d)
+                d[k] = this_data[k]/ref_y if self.logy else (this_data[k]-ref_y)
+        d = self.mask_data(d)
+        if self.logy:
+            for k in ('y', 'y+', 'y-'):
+                if k in this_data:
+                    d[k] = np.log(d[k])
+        return d
 
 
     def mask_data(self, data):
@@ -387,8 +392,9 @@ class SimpleComparisonPlot():
             self.ax_lower.set_xlim(xlim)
         if ylim:
             self.ax.set_ylim(ylim)
-        if ylim_lower:
-            self.ax_lower.set_ylim(ylim_lower)
+        if ylim_lower is None:
+            ylim_lower = (-0.8, 0.8)
+        self.ax_lower.set_ylim(ylim_lower)
 
 
     def set_labels(self, xlabel=None, ylabel=None, ylabel_lower=None, title=None):
@@ -396,7 +402,9 @@ class SimpleComparisonPlot():
             self.ax_lower.set_xlabel(xlabel)
         if ylabel:
             self.ax.set_ylabel(ylabel)
-        if ylabel_lower:
-            self.ax_lower.set_ylabel(ylabel_lower)
+        if ylabel_lower is None:
+            ylabel_lower = 'ln(ratio)' if self.logy else 'diff.'
+        self.ax_lower.set_ylabel(ylabel_lower)
         if title:
             self.ax.set_title(title)
+

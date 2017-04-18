@@ -16,7 +16,6 @@ class WprpTest(ValidationTest):
         ylabel=r'$w_p(r_p) \; [{\rm Mpc}]$',
         xlim=(0.1, 30.0),
         ylim=(0.1, 2000.0),
-        ylim_lower=(0.1, 10.0),
     )
     _required_quantities = {'stellar_mass', 'positionX', 'positionY', 'positionZ', 'velocityZ'}
     _available_observations = {'SDSS', 'MBII'}

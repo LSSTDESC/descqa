@@ -11,13 +11,11 @@ class HaloMassFunctionTest(BinnedStellarMassFunctionTest):
     validation test class object to compute halo mass function bins
     """
     _plot_config = dict(\
-        title='Halo Mass Function',
-        xlabel=r'$M_{\rm halo} \; M_\odot$',
+        xlabel=r'$M_{\rm halo} \; [M_\odot]$',
         ylabel=r'$dn\,/\,d\log M \; [{\rm Mpc}^{-3}\,{\rm dex}^{-1}]$',
         plot_validation_as_line=True,
         xlim=(1.0e8, 1.0e15),
         ylim=(1.0e-7, 10.0),
-        ylim_lower=(0.1, 10.0),
     )
     _required_quantities = {'mass', 'parent_halo_id', 'positionX', 'positionY', 'positionZ'}
     _available_observations = {'Sheth-Tormen', 'Jenkins', 'Tinker'}
