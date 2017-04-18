@@ -215,9 +215,9 @@ class ValidationTest(object):
         return TestResult(pvalue, msg, passed)
 
 
-    def _plot_result(self, savepath, catalog_result, catalog_name):
+    def _plot_result(self, savepath, catalog_result, catalog_name, save_pdf=False):
         interp_validation = self._plot_config.get('plot_validation_as_line')
-        with SimpleComparisonPlot(savepath) as plot:
+        with SimpleComparisonPlot(savepath, save_pdf) as plot:
             plot.plot_data(self._validation_data, self._validation_name, catalog_result, catalog_name, interp_validation, interp_validation)
             if self._validation_range:
                 plot.add_vband(*self._validation_range)
@@ -239,7 +239,7 @@ class ValidationTest(object):
         return dict(zip(fields, raw))
 
 
-    def plot_summary(self, output_file, catalog_list):
+    def plot_summary(self, output_file, catalog_list, save_pdf=True):
         """
         make summary plot for validation test
 
@@ -259,7 +259,7 @@ class ValidationTest(object):
         for catalog_name, catalog_dir in catalog_list:
             labels.append(catalog_name)
             data.append(self._load_data(os.path.join(catalog_dir, self._output_filenames['catalog_data'])))
-        self._plot_result(output_file, data, labels)
+        self._plot_result(output_file, data, labels, save_pdf)
 
 
 class SimpleComparisonPlot():
@@ -351,7 +351,7 @@ class SimpleComparisonPlot():
         ax_this = self.ax_lower if lower else self.ax
         ax_this.plot(data['x'], data['y'], label=label, color=color)
         if 'y-' in data and 'y+' in data:
-            ax_this.fill_between(data['x'], data['y-'], data['y+'], alpha=0.2, color=color, lw=0)
+            ax_this.fill_between(data['x'], data['y-'], data['y+'], alpha=0.15, color=color, lw=0)
 
 
     def add_points(self, data, label, color, lower=False):

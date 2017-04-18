@@ -27,7 +27,7 @@ class StellarMassHaloMassTest(ValidationTest):
     """
     _plot_config = dict(\
         xlabel=r'$M_{\rm halo} \;  [{\rm M}_\odot]$',
-        ylabel=r'$\langle M^{*} \rangle \; [{\rm M}_\odot]$',
+        ylabel=r'$\langle M_* \rangle \; [{\rm M}_\odot]$',
         xlim=(1.0e8, 1.0e15),
         ylim=(1.0e7, 2.0e12),
         ylim_lower=(0.1, 10.0),

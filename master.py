@@ -249,6 +249,8 @@ def run(tasks, validations_to_run, catalogs_to_run, log):
         if not catalog_list:
             continue
 
+        catalog_list.sort(key=lambda x: x[0])
+
         vt = validation_instance_cache[validation]
         catcher = ExceptionAndStdStreamCatcher()
         with CatchExceptionAndStdStream(catcher):
