@@ -236,8 +236,11 @@ def run(tasks, validations_to_run, catalogs_to_run, log):
             log.info('{} "{}" test on "{}" catalog'.format('skipping' if result.skipped else 'finishing', validation_name, catalog_name))
 
 
-def call_summary_plot(tasks, validations_to_run, log):
+    log.debug('creating summary plots...')
     for validation in validations_to_run:
+        if validation not in validation_instance_cache:
+            continue
+
         catalog_list = []
         for catalog, status in tasks.get_status(validation).iteritems():
             if status.endswith('PASSED') or status.endswith('FAILED'):
@@ -246,12 +249,10 @@ def call_summary_plot(tasks, validations_to_run, log):
         if not catalog_list:
             continue
 
-        module_name = validations_to_run[validation].module
-
+        vt = validation_instance_cache[validation]
         catcher = ExceptionAndStdStreamCatcher()
         with CatchExceptionAndStdStream(catcher):
-            plot_summary_func = getattr(importlib.import_module(module_name), 'plot_summary')
-            plot_summary_func(pjoin(tasks.get_path(validation), 'summary_plot.png'), catalog_list, validations_to_run[validation].kwargs)
+            vt.plot_summary(pjoin(tasks.get_path(validation), 'summary_plot.png'), catalog_list)
 
         if catcher.has_exception:
             log.error('error occured when generating summary plot for "{}" test...'.format(validation))
@@ -379,9 +380,6 @@ def main(args):
         make_all_subdirs(tasks, validations_to_run, catalogs_to_run)
         run(tasks, validations_to_run, catalogs_to_run, log)
         
-        log.debug('creating summary plots...')
-        call_summary_plot(tasks, validations_to_run, log)
-
         log.debug('creating status report...')
         group_by_catalog(tasks, catalogs_to_run, validations_to_run, output_dir)
         write_master_status(master_status, tasks, output_dir)

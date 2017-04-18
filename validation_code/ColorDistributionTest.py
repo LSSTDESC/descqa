@@ -1,11 +1,9 @@
-from __future__ import (division, print_function, absolute_import)
-
+from __future__ import division, print_function
 import os
 import numpy as np
 from warnings import warn
 
-from astropy import units as u
-from ValidationTest import ValidationTest, TestResult, plt
+from ValidationTest import TestResult, plt
 from CalcStats import CvM_statistic
 from ComputeColorDistribution import load_SDSS
 from scipy.ndimage.filters import uniform_filter1d
@@ -22,7 +20,8 @@ data_name = 'SDSS'
 
 find_first_true = np.argmax
 
-class ColorDistributionTest(ValidationTest):
+
+class ColorDistributionTest(object):
     """
     validaton test class object to compute galaxy color distribution 
     and compare with SDSS
@@ -64,8 +63,6 @@ class ColorDistributionTest(ValidationTest):
             threshold value for passing the test
         """
         
-        super(self.__class__, self).__init__(**kwargs)
-                
         # set parameters of test:
         # filename of SDSS data
         if 'sdss_fname' in list(kwargs.keys()):
@@ -380,64 +377,61 @@ class ColorDistributionTest(ValidationTest):
 
         return len(mag1), binctr, hist, cdf, hist_shift, cdf_shift, median_diff
     
-def plot_summary(output_file, catalog_list, validation_kwargs):
-    """
-    make summary plot for validation test
+    def plot_summary(self, output_file, catalog_list):
+        """
+        make summary plot for validation test
 
-    Parameters
-    ----------
-    output_file: string
-        filename for summary plot
-    
-    catalog_list: list of tuple
-        list of (catalog, catalog_output_dir) used for each catalog comparison
-    
-    validation_kwargs : dict
-        keyword arguments used in the validation
-    """
-    
-    colors = validation_kwargs['colors']
-    nrows = int(np.ceil(len(colors)/2.))
-    fig, axes = plt.subplots(nrows, 2, figsize=(11, 6*nrows))
+        Parameters
+        ----------
+        output_file: string
+            filename for summary plot
+        
+        catalog_list: list of tuple
+            list of (catalog, catalog_output_dir) used for each catalog comparison
+        """
+        
+        colors = self.colors
+        nrows = int(np.ceil(len(colors)/2.))
+        fig, axes = plt.subplots(nrows, 2, figsize=(11, 6*nrows))
 
-    data = []
-    for _, catalog_dir in catalog_list:
-        fn = os.path.join(catalog_dir, catalog_output_file)
-        data.append(np.loadtxt(fn))
-    data = np.array(data)
+        data = []
+        for _, catalog_dir in catalog_list:
+            fn = os.path.join(catalog_dir, catalog_output_file)
+            data.append(np.loadtxt(fn))
+        data = np.array(data)
 
-    # loop over colors
-    for index, ax in enumerate(axes.flat):
-        if index >= len(colors):
-            ax.axis('off')
-            continue
+        # loop over colors
+        for index, ax in enumerate(axes.flat):
+            if index >= len(colors):
+                ax.axis('off')
+                continue
 
-        # Validation results
-        _, catalog_dir = catalog_list[0]
-        fn = os.path.join(catalog_dir, validation_output_file)
-        vquantiles = np.loadtxt(fn)[index]
-        ax.axhline(vquantiles[2], lw=2, color='r', label='median')
-        ax.axhspan(vquantiles[1], vquantiles[3], facecolor='r', alpha=0.3, lw=0, label='$[Q_1, Q_3]$')
-        ax.axhspan(vquantiles[0], vquantiles[1], facecolor='grey', alpha=0.2, lw=0, label='[2nd percentile, 98th percentile]')
-        ax.axhspan(vquantiles[3], vquantiles[4], facecolor='grey', alpha=0.2, lw=0)
+            # Validation results
+            _, catalog_dir = catalog_list[0]
+            fn = os.path.join(catalog_dir, validation_output_file)
+            vquantiles = np.loadtxt(fn)[index]
+            ax.axhline(vquantiles[2], lw=2, color='r', label='median')
+            ax.axhspan(vquantiles[1], vquantiles[3], facecolor='r', alpha=0.3, lw=0, label='$[Q_1, Q_3]$')
+            ax.axhspan(vquantiles[0], vquantiles[1], facecolor='grey', alpha=0.2, lw=0, label='[2nd percentile, 98th percentile]')
+            ax.axhspan(vquantiles[3], vquantiles[4], facecolor='grey', alpha=0.2, lw=0)
 
-        # Mock catalog results
-        ax.boxplot(data[:,index].T, whis='range')
-        ax.set_ylabel(colors[index])
+            # Mock catalog results
+            ax.boxplot(data[:,index].T, whis='range')
+            ax.set_ylabel(colors[index])
 
-        x = np.arange(1, len(catalog_list)+1)
-        labels = [catalog_name for catalog_name, _ in catalog_list]
-        ax.set_xticks(x)
-        ax.set_xticklabels(labels, rotation='vertical')
+            x = np.arange(1, len(catalog_list)+1)
+            labels = [catalog_name for catalog_name, _ in catalog_list]
+            ax.set_xticks(x)
+            ax.set_xticklabels(labels, rotation='vertical')
 
-        ax.yaxis.grid(True)
-        ymin = min(vquantiles[0], data[:,index,0].min())
-        ymax = max(vquantiles[4], data[:,index,4].max())
-        yrange = ymax - ymin
-        ax.set_ylim(ymin-0.05*yrange, ymax+0.05*yrange)
-        ax.legend(fontsize='small', framealpha=0.4, title=data_name)
+            ax.yaxis.grid(True)
+            ymin = min(vquantiles[0], data[:,index,0].min())
+            ymax = max(vquantiles[4], data[:,index,4].max())
+            yrange = ymax - ymin
+            ax.set_ylim(ymin-0.05*yrange, ymax+0.05*yrange)
+            ax.legend(fontsize='small', framealpha=0.4, title=data_name)
 
-    plt.tight_layout()
-    plt.savefig(output_file)
-    plt.close()
-    
+        plt.tight_layout()
+        plt.savefig(output_file)
+        plt.close()
+        
