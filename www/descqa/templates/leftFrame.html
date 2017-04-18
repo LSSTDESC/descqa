@@ -37,23 +37,23 @@
   {% else %}
     <table class="indenttable">
     <tr valign="top">
+    {% if templateData.summaryData %}
     <td>
-    Summary plot:
-    {% if not templateData.summaryPlot %}
-        &nbsp;<span class="darkred">cannot find summary plot</span>
-    {% endif %}
-    {% if templateData.summaryPlotLog %}
-        &nbsp;&nbsp;&nbsp;<a href="viewer/viewFile.cgi?target_file={{ templateData.summaryPlotLog.path }}">{{ templateData.summaryPlotLog.filename }}</a><br>
-    {% endif %}
+      <i>Summary outputs:</i><br>
+        {% for f in templateData.summaryData %}  
+        &nbsp;&nbsp;<a href="viewer/viewFile.cgi?target_file={{ f.path }}">{{ f.filename }}</a><br>
+        {% endfor %}
+      <br>
     </td>
-    </tr>
-    {% if templateData.summaryPlot %}
-      <tr valign="top">
-      <td>
-          <a href="viewer/viewFile.cgi?target_file={{ templateData.summaryPlot.path }}"><img src="data:image/png;base64,{{ templateData.summaryPlot.data }}" width="100%"></a>
-      </td>
-      </tr>
+    <td>
+      {% for f in templateData.summaryData %}
+        {% if f.data %}
+          <a href="viewer/viewFile.cgi?target_file={{ f.path }}"><img src="data:image/png;base64,{{ f.data }}" width="100%"></a><br>
+        {% endif %}  
+      {% endfor %}  
+    </td>
     {% endif %}
+    </tr>
     </table>
     <br>
   {% endif %}
@@ -78,36 +78,21 @@
     <tr valign="top">
     <td style="padding-top:20px">
 
-    {% if run.logfiles %}
-      <i>Log files:</i><br>
-        [for runs.logfiles] 
-        {% for f in run.logfiles %}  
-        &nbsp;&nbsp;<a href="viewer/viewFile.cgi?target_file={{ f.path }}">{{ f.filename }}</a><br>
-        {% endfor %}
-      <br>
-    {% endif %}
-
-    {% if run.datfiles %}
+    {% if run.outfiles %}
       <i>Outputs:</i><br>
-        {% for f in run.datfiles %}  
+        {% for f in run.outfiles %}  
         &nbsp;&nbsp;<a href="viewer/viewFile.cgi?target_file={{ f.path }}">{{ f.filename }}</a><br>
         {% endfor %}
-      <br>
-    {% endif %}
-
-    {% if run.imgfiles %}
-      <i>Figures:</i><br>
-        {% for f in run.imgfiles %}
-        &nbsp;&nbsp;<a href="viewer/viewFile.cgi?target_file={{ f.path }}">{{ f.filename }}</a><br>
-        {% endfor %}  
       <br>
     {% endif %}
 
     </td>
     <td>
-    {% for f in run.imgfiles %}
-        <a href="viewer/viewFile.cgi?target_file={{ f.path }}"><img src="data:image/png;base64,{{ f.data }}" width="100%"></a><br>
-    {% endfor %}  
+      {% for f in run.outfiles %}
+        {% if f.data %}
+          <a href="viewer/viewFile.cgi?target_file={{ f.path }}"><img src="data:image/png;base64,{{ f.data }}" width="100%"></a><br>
+        {% endif %}  
+      {% endfor %}  
     </td>
     </tr>
     </table>

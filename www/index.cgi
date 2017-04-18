@@ -80,11 +80,12 @@ def left_frame(selected_run,catalog,test):
     templateData['pathToInvocationDir'] = templateData['invocationDir']
 
     # search for summary plot:
-    filepath = os.path.join(targetDir, 'summary_plot.png')
-    templateData['summaryPlot'] = File(filepath) if os.path.isfile(filepath) else None
-    filepath = os.path.join(targetDir, 'summary_plot.log')
-    templateData['summaryPlotLog'] = File(filepath) if os.path.isfile(filepath) else None
-
+    templateData['summaryData'] = []
+    items = [item for item in sorted(os.listdir(targetDir)) if os.path.isfile(os.path.join(targetDir, item))]
+    for item in items:
+        item_lower = item.lower()
+        if any(item_lower.endswith(ext) for ext in ('.log', '.txt', '.dat', '.csv', '.png', '.pdf')):
+            templateData['summaryData'].append(File(targetDir, item))
 
     # we assume any directories in 'targetDir' to be the output
     # of a single *run* of Flash (i.e., the output resulting from
@@ -96,18 +97,12 @@ def left_frame(selected_run,catalog,test):
 
     for run in runs:
         run.fullPath = os.path.join(targetDir, run.name)
-        run.datfiles = []            
-        run.logfiles = []             
-        run.imgfiles = []
+        run.outfiles = []            
         items = sorted(os.listdir(run.fullPath))
         for item in items:
             item_lower = item.lower()
-            if item_lower.endswith('.log'):
-                run.logfiles.append(File(run.fullPath, item))
-            elif any(item_lower.endswith(ext) for ext in ('.txt', '.dat', '.csv')):
-                run.datfiles.append(File(run.fullPath, item))
-            elif item_lower.endswith('.png'):
-                run.imgfiles.append(File(run.fullPath, item))
+            if any(item_lower.endswith(ext) for ext in ('.txt', '.dat', '.csv', '.log', '.pdf', '.png')):
+                run.outfiles.append(File(run.fullPath, item))
 
         try:
             with open(os.path.join(run.fullPath, 'STATUS')) as f:
