@@ -16,8 +16,11 @@ summary_output_file = 'summary.txt'
 log_file = 'log.txt'
 plot_pdf_file = 'plot_pdf.png'
 plot_cdf_file = 'plot_cdf.png'
+plot_pdf_cdf_file = 'plot_g-r_pdf_cdf.pdf'
 data_dir = '/global/projecta/projectdirs/lsst/descqa/data/rongpu/'
 data_name = 'SDSS'
+
+find_first_true = np.argmax
 
 class ColorDistributionTest(ValidationTest):
     """
@@ -127,9 +130,9 @@ class ColorDistributionTest(ValidationTest):
             True if the test is 'passed', False otherwise
         """
         
-        nsubplots = int(np.ceil(len(self.colors)/2.))
-        fig_cdf, axes_cdf = plt.subplots(nsubplots, 2, figsize=(11, 6*nsubplots))
-        fig_pdf, axes_pdf = plt.subplots(nsubplots, 2, figsize=(11, 6*nsubplots))
+        nrows = int(np.ceil(len(self.colors)/2.))
+        fig_cdf, axes_cdf = plt.subplots(nrows, 2, figsize=(11, 5*nrows))
+        fig_pdf, axes_pdf = plt.subplots(nrows, 2, figsize=(11, 5*nrows))
         skip_q = True   # False if any color exists in the catalog
         pass_q = True   # False if any color fails
         pass_count = 0   # Number of colors that pass the test
@@ -170,7 +173,7 @@ class ColorDistributionTest(ValidationTest):
             self.band2 = band2
 
             nobs, obinctr, ohist, ocdf = vsummary[index]
-            omedian = obinctr[np.argmax(ocdf>0.5)]
+            omedian = obinctr[find_first_true(ocdf>0.5)]
 
             # Make sure galaxy catalog has appropiate quantities
             if not all(k in galaxy_catalog.quantities for k in (self.band1, self.band2)):
@@ -198,18 +201,22 @@ class ColorDistributionTest(ValidationTest):
             # At least one color exists
             skip_q = False
 
-            # Calculate median, quartiles, and 1.5*IQR beyond Q1 and Q3
-            oq1 = obinctr[np.argmax(ocdf>0.25)]
-            oq3 = obinctr[np.argmax(ocdf>0.75)]
+            # Calculate median, quartiles, and 2nd percentile and 98th percentile
+            oq1 = obinctr[find_first_true(ocdf>0.25)]
+            oq3 = obinctr[find_first_true(ocdf>0.75)]
             oiqr = oq3 - oq1
-            oboxmin = max(oq1-1.5*oiqr, obinctr[np.where(ocdf>0)[0][0]])
-            oboxmax = min(oq3+1.5*oiqr, obinctr[np.where(ocdf<ocdf[-1])[0][-1]])
-            mq1 = mbinctr[np.argmax(mcdf>0.25)]
-            mq3 = mbinctr[np.argmax(mcdf>0.75)]
+            # oboxmin = max(oq1-1.5*oiqr, obinctr[find_first_true(ocdf>0)])
+            # oboxmax = min(oq3+1.5*oiqr, obinctr[find_first_true(ocdf==ocdf[-1])])
+            oboxmin = obinctr[find_first_true(ocdf>0.02)]
+            oboxmax = obinctr[find_first_true(ocdf>0.98)]
+            mq1 = mbinctr[find_first_true(mcdf>0.25)]
+            mq3 = mbinctr[find_first_true(mcdf>0.75)]
             miqr = mq3 - mq1
-            mmedian = mbinctr[np.argmax(mcdf>0.5)]
-            mboxmin = max(mq1-1.5*miqr, mbinctr[np.where(mcdf>0)[0][0]])
-            mboxmax = min(mq3+1.5*miqr, mbinctr[np.where(mcdf<mcdf[-1])[0][-1]])
+            mmedian = mbinctr[find_first_true(mcdf>0.5)]
+            # mboxmin = max(mq1-1.5*miqr, mbinctr[find_first_true(mcdf>0)])
+            # mboxmax = min(mq3+1.5*miqr, mbinctr[find_first_true(mcdf==mcdf[-1])])
+            mboxmin = mbinctr[find_first_true(mcdf>0.02)]
+            mboxmax = mbinctr[find_first_true(mcdf>0.98)]
 
             validation_quantiles[index] = np.array([oboxmin, oq1, omedian, oq3, oboxmax])
             catalog_quantiles[index] = np.array([mboxmin, mq1, mmedian, mq3, mboxmax])
@@ -227,8 +234,8 @@ class ColorDistributionTest(ValidationTest):
             ax_cdf.step(mbinctr, mcdf_shift, where="mid", label=catalog_name+' shifted\n'+r'$\omega={:.3}$'.format(cvm_omega_shift), linestyle='--', color='C0')
             ax_cdf.set_xlabel(color, fontsize=12)
             ax_cdf.set_title('')
-            xmin = min(mbinctr[np.argmax(mcdf>0.005)], obinctr[np.argmax(ocdf>0.005)])
-            xmax = max(mbinctr[np.argmax(mcdf>0.995)], obinctr[np.argmax(ocdf>0.995)])
+            xmin = np.min([mbinctr[find_first_true(mcdf>0.001)], mbinctr[find_first_true(mcdf_shift>0.001)], obinctr[find_first_true(ocdf>0.001)]])
+            xmax = np.max([mbinctr[find_first_true(mcdf>0.999)], mbinctr[find_first_true(mcdf_shift>0.999)], obinctr[find_first_true(ocdf>0.999)]])
             ax_cdf.set_xlim(xmin, xmax)
             ax_cdf.set_ylim(0, 1)
             ax_cdf.legend(loc='upper left', frameon=False, fontsize=12)
@@ -248,6 +255,26 @@ class ColorDistributionTest(ValidationTest):
             ax_pdf.set_ylim(ymin=0.)
             ax_pdf.set_title('')
             ax_pdf.legend(loc='upper left', frameon=False, fontsize=12)
+
+            # PDF+CDF plot for the paper
+            if index==1:    # g-r color
+                fig_pdf_cdf, axes_pdf_cdf = plt.subplots(1, 2, figsize=(11, 5))
+                axes_pdf_cdf[0].step(obinctr, ohist_smooth, label=data_name,color='C1')
+                axes_pdf_cdf[0].step(mbinctr, mhist_smooth, where="mid", label=catalog_name+'\n'+r'$\omega={:.3}$'.format(cvm_omega), color='C0')
+                axes_pdf_cdf[0].step(mbinctr, mhist_shift_smooth, where="mid", label=catalog_name+' shifted\n'+r'$\omega={:.3}$'.format(cvm_omega_shift), linestyle='--', color='C0')
+                axes_pdf_cdf[0].set_xlabel(color, fontsize=12)
+                axes_pdf_cdf[0].set_xlim(xmin, xmax)
+                axes_pdf_cdf[0].set_ylim(ymin=0.)
+                axes_pdf_cdf[0].legend(loc='upper left', frameon=False, fontsize=12)
+                axes_pdf_cdf[1].step(obinctr, ocdf, label=data_name,color='C1')
+                axes_pdf_cdf[1].step(mbinctr, mcdf, where="mid", label=catalog_name+'\n'+r'$\omega={:.3}$'.format(cvm_omega), color='C0')
+                axes_pdf_cdf[1].step(mbinctr, mcdf_shift, where="mid", label=catalog_name+' shifted\n'+r'$\omega={:.3}$'.format(cvm_omega_shift), linestyle='--', color='C0')
+                axes_pdf_cdf[1].set_xlabel(color, fontsize=12)
+                axes_pdf_cdf[1].set_xlim(xmin, xmax)
+                axes_pdf_cdf[1].set_ylim(0, 1)
+                axes_pdf_cdf[1].legend(loc='upper left', frameon=False, fontsize=12)
+                fn = os.path.join(base_output_dir, plot_pdf_cdf_file)
+                fig_pdf_cdf.savefig(fn)
 
             # save result to file
             filename = os.path.join(base_output_dir, summary_output_file)
@@ -370,8 +397,8 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
     """
     
     colors = validation_kwargs['colors']
-    nsubplots = int(np.ceil(len(colors)/2.))
-    fig, axes = plt.subplots(nsubplots, 2, figsize=(11, 6*nsubplots))
+    nrows = int(np.ceil(len(colors)/2.))
+    fig, axes = plt.subplots(nrows, 2, figsize=(11, 6*nrows))
 
     data = []
     for _, catalog_dir in catalog_list:
@@ -391,7 +418,7 @@ def plot_summary(output_file, catalog_list, validation_kwargs):
         vquantiles = np.loadtxt(fn)[index]
         ax.axhline(vquantiles[2], lw=2, color='r', label='median')
         ax.axhspan(vquantiles[1], vquantiles[3], facecolor='r', alpha=0.3, lw=0, label='$[Q_1, Q_3]$')
-        ax.axhspan(vquantiles[0], vquantiles[1], facecolor='grey', alpha=0.2, lw=0, label=r'$[Q_1-1.5\mathrm{IQR}, Q_3+1.5\mathrm{IQR}]$')
+        ax.axhspan(vquantiles[0], vquantiles[1], facecolor='grey', alpha=0.2, lw=0, label='[2nd percentile, 98th percentile]')
         ax.axhspan(vquantiles[3], vquantiles[4], facecolor='grey', alpha=0.2, lw=0)
 
         # Mock catalog results
