@@ -17,8 +17,7 @@ class _ValidationConfig():
         self.kwargs['base_data_dir'] = dirpath
 # ---- End of DO NOT CHANGE ----
 
-
-smf_LiWhite = _ValidationConfig('BinnedStellarMassFunctionTest',
+SMF_LiWhite = _ValidationConfig('BinnedStellarMassFunctionTest',
          observation='LiWhite2009',
          bins=(7.0, 12.1, 18),
          validation_range=(10.0**9.1, 10.0**11.8),
@@ -28,7 +27,7 @@ smf_LiWhite = _ValidationConfig('BinnedStellarMassFunctionTest',
 )
 
 
-smf_MB2 = _ValidationConfig('BinnedStellarMassFunctionTest',
+SMF_MBII = _ValidationConfig('BinnedStellarMassFunctionTest',
          observation='MassiveBlackII',
          bins=(7.0, 12.1, 18),
          validation_range=(10.0**9.1, 10.0**11.8),
@@ -38,7 +37,7 @@ smf_MB2 = _ValidationConfig('BinnedStellarMassFunctionTest',
 )
 
 
-hmf_T = _ValidationConfig('HaloMassFunctionTest',
+HMF = _ValidationConfig('HaloMassFunctionTest',
          observation='Tinker',
          bins=(8.0, 15.0, 29),
          validation_range=(10.0**12.0, 10.0**14.5),
@@ -49,7 +48,7 @@ hmf_T = _ValidationConfig('HaloMassFunctionTest',
 )
 
 
-smhm_MB2 = _ValidationConfig('StellarMassHaloMassTest',
+SMHM = _ValidationConfig('StellarMassHaloMassTest',
          observation='MassiveBlackII',
          bins=(7.5, 15., 26),
          validation_range=(10.0**12.0, 10.0**14.4),
@@ -58,7 +57,7 @@ smhm_MB2 = _ValidationConfig('StellarMassHaloMassTest',
          description='Mean stellar mass as a function of halo mass for host halos.'
 )
 
-color_SDSS = _ValidationConfig('ColorDistributionTest',
+ColorDist = _ValidationConfig('ColorDistributionTest',
          # data_dir='SDSS',
          # data_name='SDSS',
          sdss_fname='sdss_output_coeffs_z_0.06_0.09.dat',
@@ -73,7 +72,7 @@ color_SDSS = _ValidationConfig('ColorDistributionTest',
          description='For each of the mock catalogs, we calculate the distributions of <i>M_u-M_g</i>, <i>M_g-M_r</i>, <i>M_r-M_i</i> and <i>M_i-M_z</i> colors, where the magnitudes are k-corrected absolute magnitudes, and compare with SDSS colors. The SDSS dataset includes <i>ugriz</i> photometry and spectroscopic redshifts from the SDSS main galaxy sample (Gunn98, York2000). SDSS galaxies in the redshift range of 0.06<z<0.09 are used for this comparison.',
 )
 
-wprp_SDSS_m98 = _ValidationConfig('WprpTest',
+WpRp_SDSS = _ValidationConfig('WprpTest',
          datafile='SDSS/wprp_Reddick-Tinker_sm-9.8.dat',
          observation='SDSS',
          bins=(-1.0,1.3,12),
@@ -81,7 +80,7 @@ wprp_SDSS_m98 = _ValidationConfig('WprpTest',
 )
 
 
-wprp_MB2_m98 = _ValidationConfig('WprpTest',
+WpRp_MBII = _ValidationConfig('WprpTest',
          datafile='MASSIVEBLACKII/wprp_sm-9.8.dat',
          observation='MBII',
          bins=(-1.0,1.3,12),

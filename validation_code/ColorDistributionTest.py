@@ -414,9 +414,9 @@ class ColorDistributionTest(object):
             _, catalog_dir = catalog_list[0]
             fn = os.path.join(catalog_dir, validation_output_file)
             vquantiles = np.loadtxt(fn)[index]
-            ax.axhline(vquantiles[2], lw=2, color='r', label='median')
-            ax.axhspan(vquantiles[1], vquantiles[3], facecolor='r', alpha=0.3, lw=0, label='$[Q_1, Q_3]$')
-            ax.axhspan(vquantiles[0], vquantiles[1], facecolor='grey', alpha=0.2, lw=0, label='[2nd percentile, 98th percentile]')
+            ax.axhline(vquantiles[2], lw=2, color='r', label='{} median'.format(data_name))
+            ax.axhspan(vquantiles[1], vquantiles[3], facecolor='r', alpha=0.3, lw=0, label='  $[Q_1, Q_3]$')
+            ax.axhspan(vquantiles[0], vquantiles[1], facecolor='grey', alpha=0.2, lw=0, label='  [2nd, 98th percentiles]')
             ax.axhspan(vquantiles[3], vquantiles[4], facecolor='grey', alpha=0.2, lw=0)
 
             # Mock catalog results
@@ -433,7 +433,7 @@ class ColorDistributionTest(object):
             ymax = max(vquantiles[4], data[:,index,4].max())
             yrange = ymax - ymin
             ax.set_ylim(ymin-0.15*yrange, ymax+0.15*yrange)
-            ax.legend(fontsize='small', framealpha=0.4, title=data_name)
+            ax.legend(fontsize='small', framealpha=0.4, loc='lower right')
 
         plt.tight_layout()
         plt.savefig(output_file)

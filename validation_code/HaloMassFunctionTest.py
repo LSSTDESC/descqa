@@ -121,3 +121,7 @@ class HaloMassFunctionTest(BinnedStellarMassFunctionTest):
 
         return dict(mass=hm[mask], x=x[mask], y=y[mask], z=z[mask])
 
+
+    def plot_summary(self, output_file, catalog_list, save_pdf=True):
+        super(BinnedStellarMassFunctionTest, self).plot_summary(output_file, catalog_list, save_pdf)
+

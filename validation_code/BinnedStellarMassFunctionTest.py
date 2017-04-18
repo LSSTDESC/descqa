@@ -105,3 +105,26 @@ class BinnedStellarMassFunctionTest(ValidationTest):
 
         return {'x':binctr, 'y':mhist, 'y-':mhist-merr, 'y+':mhist+merr, 'cov':covariance}
 
+
+    def plot_summary(self, output_file, catalog_list, save_pdf=True):
+        super(self.__class__, self).plot_summary(output_file, catalog_list, save_pdf)
+        if self._observation == 'LiWhite2009':
+            self._plot_smf_validation_comparison(os.path.join(os.path.dirname(output_file), 'smf_validation_comparison.pdf'))
+
+
+    def _plot_smf_validation_comparison(self, save_path):
+        d = np.loadtxt(os.path.join(self._base_data_dir, 'LIWHITE/StellarMassFunction/massfunc_dataerr.txt'), unpack=True)
+        fig, ax = plt.subplots()
+        for i, ls, label in zip((1,3,5), ('--', '-', ':'), ('MBII', 'LiWhite2009', 'LiWhite2009 (corrected)')):
+            ax.errorbar(d[0], d[i], d[i+1], ls=ls, label=label)
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+        ax.set_xlabel(self._plot_config.get('xlabel'))
+        ax.set_ylabel(self._plot_config.get('ylabel'))
+        ax.set_xlim(self._plot_config.get('xlim'))
+        ax.set_ylim(self._plot_config.get('ylim'))
+        ax.legend()
+        fig.tight_layout()
+        fig.savefig(save_path)
+        plt.close(fig)
+
