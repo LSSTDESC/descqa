@@ -283,8 +283,8 @@ class SimpleComparisonPlot():
 
 
     def __exit__(self, *exc_args):
-        self.ax_lower.yaxis.get_major_ticks()[-1].label1.set_visible(False)
-        self.ax_lower.yaxis.get_major_ticks()[0].label1.set_visible(False)
+        for t in self.ax_lower.yaxis.get_major_ticks()[-2:]:
+            t.label1.set_visible(False)
         self.fig.tight_layout()
         if self.savefig_path:
             self.fig.savefig(self.savefig_path)

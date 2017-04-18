@@ -272,7 +272,9 @@ class ColorDistributionTest(object):
                 axes_pdf_cdf[1].set_ylim(0, 1)
                 axes_pdf_cdf[1].legend(loc='upper left', frameon=False, fontsize=12)
                 fn = os.path.join(base_output_dir, plot_pdf_cdf_file)
+                fig_pdf_cdf.tight_layout()
                 fig_pdf_cdf.savefig(fn)
+                plt.close(fig_pdf_cdf)
 
             # save result to file
             filename = os.path.join(base_output_dir, summary_output_file)
@@ -299,7 +301,8 @@ class ColorDistributionTest(object):
             fn = os.path.join(base_output_dir, plot_pdf_file)
             fig_pdf.savefig(fn)
 
-        plt.close()
+        plt.close(fig_cdf)
+        plt.close(fig_pdf)
 
         # save quantiles
         fn = os.path.join(base_output_dir, catalog_output_file)
@@ -429,10 +432,11 @@ class ColorDistributionTest(object):
             ymin = min(vquantiles[0], data[:,index,0].min())
             ymax = max(vquantiles[4], data[:,index,4].max())
             yrange = ymax - ymin
-            ax.set_ylim(ymin-0.05*yrange, ymax+0.05*yrange)
+            ax.set_ylim(ymin-0.15*yrange, ymax+0.15*yrange)
             ax.legend(fontsize='small', framealpha=0.4, title=data_name)
 
         plt.tight_layout()
         plt.savefig(output_file)
+        plt.savefig(output_file+'.pdf')
         plt.close()
 

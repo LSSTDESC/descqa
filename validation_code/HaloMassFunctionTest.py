@@ -13,7 +13,7 @@ class HaloMassFunctionTest(BinnedStellarMassFunctionTest):
     _plot_config = dict(\
         title='Halo Mass Function',
         xlabel=r'$M_{\rm halo} \; M_\odot$',
-        ylabel=r'$dn\,/\,(dV\,d\log M) \; [{\rm Mpc}^{-3}]$',
+        ylabel=r'$dn\,/\,d\log M \; [{\rm Mpc}^{-3}\,{\rm dex}^{-1}]$',
         plot_validation_as_line=True,
         xlim=(1.0e8, 1.0e15),
         ylim=(1.0e-7, 10.0),

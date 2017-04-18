@@ -12,7 +12,7 @@ class BinnedStellarMassFunctionTest(ValidationTest):
 
     _plot_config = dict(\
         xlabel=r'$M_* \; [{\rm M}_\odot]$',
-        ylabel=r'$dn\,/\,(dV\,d\log M) \; [{\rm Mpc}^{-3}\,{\rm dex}^{-1}]$',
+        ylabel=r'$dn\,/\,d\log M \; [{\rm Mpc}^{-3}\,{\rm dex}^{-1}]$',
         xlim=(1.0e7, 2.0e12),
         ylim=(1.0e-7, 10.0),
         ylim_lower=(0.1, 10.0),
