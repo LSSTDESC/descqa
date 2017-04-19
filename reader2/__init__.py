@@ -1,0 +1,3 @@
+from .BaseGalaxyCatalog import BaseGalaxyCatalog
+from .GalacticusGalaxyCatalog import GalacticusGalaxyCatalog
+from .SHAMGalaxyCatalog import SHAMGalaxyCatalog
