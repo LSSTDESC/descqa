@@ -73,4 +73,3 @@ class SHAMGalaxyCatalog(BaseGalaxyCatalog):
     @staticmethod
     def _fetch_native_quantity(dataset, native_quantity):
         return dataset[native_quantity]
-
