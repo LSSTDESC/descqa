@@ -7,8 +7,8 @@ target_dir = form.getfirst('target_dir')
 target_file = form.getfirst('target_file')
 
 dirs = [
-    ('hlists', 'MBII DMO halo catalogs', '/project/projectdirs/lsst/yymao/MassiveBlack/hlists'), 
-    ('trees', 'MBII DMO merger trees', '/project/projectdirs/lsst/yymao/MassiveBlack/trees'),
+    ('hlists', 'MBII DMO halo catalogs', '/project/projectdirs/lsst/www/MassiveBlack/hlists'), 
+    ('trees', 'MBII DMO merger trees', '/project/projectdirs/lsst/www/MassiveBlack/trees'),
 ]
 
 if target_dir and target_file:
