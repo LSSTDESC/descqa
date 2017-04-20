@@ -19,6 +19,9 @@ plot_pdf_cdf_file = 'plot_g-r_pdf_cdf.pdf'
 data_dir = '/global/projecta/projectdirs/lsst/descqa/data/rongpu/'
 data_name = 'SDSS'
 
+limiting_band_name = 'SDSS_r:rest:'
+
+
 find_first_true = np.argmax
 
 
@@ -48,12 +51,6 @@ class ColorDistributionTest(object):
         translate : dictionary, optional
             translate the bands to catalog specific names
 
-        limiting_band: string, required
-            band of the magnitude limit in the validation catalog
-
-        limiting_abs_mag: float, required
-            the upper limit of the absolute magnitude
-
         zlo : float, requred
             minimum redshift of the validation catalog
 
@@ -78,16 +75,6 @@ class ColorDistributionTest(object):
         for color in self.colors:
             if len(color)!=3 or color[1]!='-':
                 raise ValueError('`colors` is not in the correct format!')
-        # limiting k-corrected absolute magnitude
-        if 'limiting_abs_mag' in list(kwargs.keys()):
-            self.limiting_abs_mag = kwargs['limiting_abs_mag']
-        else:
-            raise ValueError('`limiting_abs_mag` not found!')
-        # band of limiting magnitude
-        if 'limiting_band' in list(kwargs.keys()):
-            self.limiting_band = kwargs['limiting_band']
-        else:
-            raise ValueError('`limiting_band` not found!')
         # minimum redshift
         if 'zlo' in list(kwargs.keys()):
             self.zlo_obs = self.zlo_mock = kwargs['zlo']
@@ -150,7 +137,7 @@ class ColorDistributionTest(object):
         self.cosmology = galaxy_catalog.cosmology
 
         # Values of the SDSS color distribution histogram
-        vsummary = load_SDSS(os.path.join(data_dir, self.sdss_fname), self.colors, self.SDSS_kcorrection_z)
+        vsummary, mrmax = load_SDSS(os.path.join(data_dir, self.sdss_fname), self.colors, self.SDSS_kcorrection_z)
 
         # Write to summary file
         filename = os.path.join(base_output_dir, summary_output_file)
@@ -184,7 +171,7 @@ class ColorDistributionTest(object):
                 continue
 
             # Calculate color distribution in mock catalog
-            color_dist_output = self.color_distribution(galaxy_catalog, (-1, 4, 2000), base_output_dir, omedian)
+            color_dist_output = self.color_distribution(galaxy_catalog, (-1, 4, 2000), base_output_dir, omedian, mrmax)
             if color_dist_output is None:
                 # raise an informative warning
                 msg = ('The `{}` and/or `{}` quantities don\'t have the correct range or format.\n'.format(band1, band2))
@@ -323,7 +310,7 @@ class ColorDistributionTest(object):
             return TestResult(score=cvm_omega_average,
                 summary='{}/{} success - not all colors pass the test; average CvM statistic = {:.3f}'.format(pass_count, len(self.colors), cvm_omega_average), passed=False)
 
-    def color_distribution(self, galaxy_catalog, bin_args, base_output_dir, omedian):
+    def color_distribution(self, galaxy_catalog, bin_args, base_output_dir, omedian, mrmax):
         """
         Calculate the color distribution of mock catalog.
 
@@ -346,11 +333,16 @@ class ColorDistributionTest(object):
             return
 
         #apply magnitude limit and remove nonsensical magnitude values
-        limiting_band_name = self.translate[self.limiting_band]
         mag_lim = galaxy_catalog.get_quantities(limiting_band_name, {'zlo': self.zlo_mock, 'zhi': self.zhi_mock})
-        mask = (mag_lim<self.limiting_abs_mag)
+        mask = (mag_lim<mrmax)
+
+        # # r-band apparent magnitude cut
+        # r_band_mag = galaxy_catalog.get_quantities('SDSS_r:observed:', {'zlo': self.zlo_mock, 'zhi': self.zhi_mock})
+        # mask = mask & (r_band_mag<17.77)
+
         mag1 = mag1[mask]
         mag2 = mag2[mask]
+
 
         if np.sum(mask)==0:
             msg = 'No object in the magnitude range!\n'

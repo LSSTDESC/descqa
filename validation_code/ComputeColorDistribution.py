@@ -25,9 +25,6 @@ def load_SDSS(filename, colors, SDSS_kcorrection_z):
     
     translate = {'u':'M_u', 'g':'M_g', 'r':'M_r', 'i':'M_i', 'z':'M_z'}
     
-    # limiting_band_name = translate[limiting_band]
-    # mask_all = (cat['z']>zlo) & (cat['z']<zhi) & (cat[limiting_band_name]<limiting_mag)
-
     data_dir = os.path.dirname(filename)
     kcorrect_magnitudes_path = os.path.join(data_dir, 'sdss_k_corrected_magnitudes_z_0.06_0.09_z_{:.3f}.fits'.format(SDSS_kcorrection_z))
 
@@ -107,4 +104,4 @@ def load_SDSS(filename, colors, SDSS_kcorrection_z):
 
         vsummary.append((len(cat), binctr, hist, cdf))
 
-    return vsummary
+    return vsummary, mrmax
