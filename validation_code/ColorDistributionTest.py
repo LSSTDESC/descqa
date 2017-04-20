@@ -313,7 +313,7 @@ class ColorDistributionTest(object):
 
         #--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--
         if color_count>0:
-        cvm_omega_average = cvm_sum/color_count
+            cvm_omega_average = cvm_sum/color_count
         if color_count==0:
             return TestResult(summary='No available colors for comparison. ', skipped=True)
         elif pass_q:
