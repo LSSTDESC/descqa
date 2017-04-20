@@ -185,8 +185,8 @@ class ColorDistributionTest(object):
                 continue
 
             # Calculate color distribution in mock catalog
-            nmock, mbinctr, mhist, mcdf, mhist_shift, mcdf_shift, median_diff = self.color_distribution(galaxy_catalog, (-1, 4, 2000), base_output_dir, omedian)
-            if mbinctr is None:
+            color_dist_output = self.color_distribution(galaxy_catalog, (-1, 4, 2000), base_output_dir, omedian)
+            if color_dist_output is None:
                 # raise an informative warning
                 msg = ('The `{}` and/or `{}` quantities don\'t have the correct range or format.\n'.format(band1, band2))
                 warn(msg)
@@ -195,6 +195,7 @@ class ColorDistributionTest(object):
                 with open(fn, 'a') as f:
                     f.write(msg)
                 continue
+            nmock, mbinctr, mhist, mcdf, mhist_shift, mcdf_shift, median_diff = color_dist_output
 
             # At least one color exists
             skip_q = False
@@ -341,7 +342,7 @@ class ColorDistributionTest(object):
             fn = os.path.join(base_output_dir, log_file)
             with open(fn, 'a') as f:
                 f.write(msg)
-            return None, None
+            return
 
         #apply magnitude limit and remove nonsensical magnitude values
         limiting_band_name = self.translate[self.limiting_band]
@@ -357,7 +358,7 @@ class ColorDistributionTest(object):
             fn = os.path.join(base_output_dir, log_file)
             with open(fn, 'a') as f:
                 f.write(msg)
-            return None, None
+            return
 
         mmedian = np.median(mag1-mag2)
         median_diff = mmedian - omedian
