@@ -127,12 +127,11 @@ class ColorDistributionTest(object):
         test_passed : boolean
             True if the test is 'passed', False otherwise
         """
-
         nrows = int(np.ceil(len(self.colors)/2.))
         fig_cdf, axes_cdf = plt.subplots(nrows, 2, figsize=(8, 4*nrows))
         fig_pdf, axes_pdf = plt.subplots(nrows, 2, figsize=(8, 4*nrows))
-        skip_q = True   # False if any color exists in the catalog
         pass_q = True   # False if any color fails
+        color_count = 0 # Number of available colors
         pass_count = 0   # Number of colors that pass the test
         cvm_sum = 0.
 
@@ -198,7 +197,7 @@ class ColorDistributionTest(object):
             nmock, mbinctr, mhist, mcdf, mhist_shift, mcdf_shift, median_diff = color_dist_output
 
             # At least one color exists
-            skip_q = False
+            color_count += 1
 
             # Calculate median, quartiles, and 2nd percentile and 98th percentile
             oq1 = obinctr[find_first_true(ocdf>0.25)]
@@ -292,8 +291,9 @@ class ColorDistributionTest(object):
                 pass_q = False
 
             cvm_sum += cvm_omega_shift
+            color_count += 1
 
-        if not skip_q:
+        if color_count>0:
             # save plots
             fig_cdf.tight_layout()
             fn = os.path.join(base_output_dir, plot_cdf_file)
@@ -312,8 +312,9 @@ class ColorDistributionTest(object):
         np.savetxt(fn, validation_quantiles)
 
         #--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--#--
-        cvm_omega_average = cvm_sum/float(len(self.colors))
-        if skip_q:
+        if color_count>0:
+        cvm_omega_average = cvm_sum/color_count
+        if color_count==0:
             return TestResult(summary='No available colors for comparison. ', skipped=True)
         elif pass_q:
             return TestResult(score=cvm_omega_average,
@@ -445,4 +446,3 @@ class ColorDistributionTest(object):
         plt.savefig(output_file)
         plt.savefig(output_file+'.pdf')
         plt.close()
-
