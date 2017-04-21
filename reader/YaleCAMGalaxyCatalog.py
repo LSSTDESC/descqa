@@ -40,7 +40,7 @@ class YaleCAMGalaxyCatalog(GalaxyCatalog):
         
         # set fixed properties
         self.lightcone = False
-        self.cosmology = FlatLambdaCDM(H0=70.1, Om0 = 0.275)
+        self.cosmology = FlatLambdaCDM(H0=70.2, Om0 = 0.275)
         self.simulation = 'Massive Black'
         self.box_size = 100.0 / self.cosmology.h
         self.volume = self.box_size**3.0

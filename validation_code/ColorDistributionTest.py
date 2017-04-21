@@ -397,6 +397,7 @@ class ColorDistributionTest(object):
             fn = os.path.join(catalog_dir, catalog_output_file)
             data.append(np.loadtxt(fn))
         data = np.array(data)
+        data[~data.any(axis=-1)] = np.nan # to hide catalogs that do not have all colors
 
         # loop over colors
         for index, ax in enumerate(axes.flat):
@@ -409,12 +410,12 @@ class ColorDistributionTest(object):
             fn = os.path.join(catalog_dir, validation_output_file)
             vquantiles = np.loadtxt(fn)[index]
             ax.axhline(vquantiles[2], lw=2, color='r', label='{} median'.format(data_name))
-            ax.axhspan(vquantiles[1], vquantiles[3], facecolor='r', alpha=0.3, lw=0, label='  $[Q_1, Q_3]$')
-            ax.axhspan(vquantiles[0], vquantiles[1], facecolor='grey', alpha=0.2, lw=0, label='  [2nd, 98th percentiles]')
+            ax.axhspan(vquantiles[1], vquantiles[3], facecolor='r', alpha=0.3, lw=0, label=' [$Q_1$, $Q_3$]')
+            ax.axhspan(vquantiles[0], vquantiles[1], facecolor='grey', alpha=0.2, lw=0, label=' [2nd, 98th]')
             ax.axhspan(vquantiles[3], vquantiles[4], facecolor='grey', alpha=0.2, lw=0)
 
             # Mock catalog results
-            ax.boxplot(data[:,index].T, whis='range')
+            ax.boxplot(data[:,index].T, whis='range', medianprops=dict(color='k'))
             ax.set_ylabel('${}$'.format(colors[index]))
 
             x = np.arange(1, len(catalog_list)+1)
@@ -427,14 +428,15 @@ class ColorDistributionTest(object):
                 ax.set_xticklabels(['' for _ in x])
 
             ax.yaxis.grid(True)
-            ymin = min(vquantiles[0], data[:,index,0].min())
-            ymax = max(vquantiles[4], data[:,index,4].max())
-            yrange = ymax - ymin
-            ax.set_ylim(ymin-0.15*yrange, ymax+0.15*yrange)
-            if index==0:
+            #ymin = min(vquantiles[0], data[:,index,0].min())
+            #ymax = max(vquantiles[4], data[:,index,4].max())
+            #yrange = ymax - ymin
+            #ax.set_ylim(ymin-0.15*yrange, ymax+0.15*yrange)
+            if index==3:
                 ax.legend(fontsize='small', framealpha=0.4, loc='lower right')
 
         plt.tight_layout()
         plt.savefig(output_file)
         plt.savefig(output_file+'.pdf')
         plt.close()
+

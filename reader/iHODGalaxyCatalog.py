@@ -35,9 +35,11 @@ class iHODGalaxyCatalog(GalaxyCatalog):
 
         self.Ngals        = 0
         self.sky_area     = 4.*np.pi*u.sr   # all sky by default
-        self.cosmology    = None
         self.lightcone    = False
-        self.box_size     = 100.0 / 0.701
+        self.redshift     = (1.0 / 0.941176) - 1.0
+        self.cosmology    = astropy.cosmology.FlatLambdaCDM(H0=70.2, Om0=0.275, Ob0=0.046)
+        self.box_size     = 100.0 / self.cosmology.h
+        self.SDSS_kcorrection_z = 0.1
         return GalaxyCatalog.__init__(self, fn)
 
     def load(self, fn):
@@ -46,12 +48,6 @@ class iHODGalaxyCatalog(GalaxyCatalog):
         internal data structures.
         """
         self.catalog = self._read_rec_from_hdf5(fn, group='galaxy')   
-        # turam: Add placeholder redshift; confirm correctness (YZ: good)
-        self.redshift = (1.0 / 0.941176) - 1.0
-        self.SDSS_kcorrection_z = 0.1
-        # turam: Confirm cosmology is correct (YZ: good)
-        self.cosmology = astropy.cosmology.FlatLambdaCDM(H0=70.1, Om0=0.275, Ob0=0.046)
-
         self.Ngals = len(self.catalog)
         return self
 
