@@ -396,7 +396,7 @@ class ColorDistributionTest(object):
 
         colors = self.colors
         nrows = int(np.ceil(len(colors)/2.))
-        fig, axes = plt.subplots(nrows, 2, figsize=(8, 4.5*nrows), sharex=True)
+        fig, axes = plt.subplots(nrows, 2, figsize=(8, 4.*nrows), sharex=True)
 
         # Sort catalogs by kcorrect_z and names
         catalog_names = [catalog_name for catalog_name, _ in catalog_list]
@@ -425,7 +425,7 @@ class ColorDistributionTest(object):
 
             # Mock catalog results
             ax.boxplot(data[:,index].T, whis='range', medianprops=dict(color='k'))
-            ax.set_ylabel('${}$'.format(colors[index]))
+            ax.set_ylabel('${}$'.format(colors[index]), fontsize=16)
 
             # Validation results
             first_plot = True
