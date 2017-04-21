@@ -48,6 +48,7 @@ class iHODGalaxyCatalog(GalaxyCatalog):
         self.catalog = self._read_rec_from_hdf5(fn, group='galaxy')   
         # turam: Add placeholder redshift; confirm correctness (YZ: good)
         self.redshift = (1.0 / 0.941176) - 1.0
+        self.SDSS_kcorrection_z = 0.1
         # turam: Confirm cosmology is correct (YZ: good)
         self.cosmology = astropy.cosmology.FlatLambdaCDM(H0=70.1, Om0=0.275, Ob0=0.046)
 
