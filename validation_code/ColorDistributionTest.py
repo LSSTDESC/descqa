@@ -428,22 +428,25 @@ class ColorDistributionTest(object):
             ax.set_ylabel('${}$'.format(colors[index]))
 
             # Validation results
+            first_plot = True
             for cat_index in range(len(catalog_list)):
                 _, catalog_dir = catalog_list[cat_index]
                 fn = os.path.join(catalog_dir, validation_output_file)
                 vquantiles = np.loadtxt(fn)[index]
-                # xmin and xmax are relative coordinates in range of 0-1.
-                xmin, xmax = [cat_index/len(catalog_list), (cat_index+1)/len(catalog_list)]
-                if cat_index==0:
-                    ax.axhline(vquantiles[2], xmin=xmin, xmax=xmax, lw=2, color='r', label='{} median'.format(data_name))
-                    ax.axhspan(vquantiles[1], vquantiles[3], xmin=xmin, xmax=xmax, facecolor='r', alpha=0.3, lw=0, label=' [$Q_1$, $Q_3$]')
-                    ax.axhspan(vquantiles[0], vquantiles[1], xmin=xmin, xmax=xmax, facecolor='grey', alpha=0.2, lw=0, label=' [2nd, 98th]')
-                    ax.axhspan(vquantiles[3], vquantiles[4], xmin=xmin, xmax=xmax, facecolor='grey', alpha=0.2, lw=0)
-                else:
-                    ax.axhline(vquantiles[2], xmin=xmin, xmax=xmax, lw=2, color='r')
-                    ax.axhspan(vquantiles[1], vquantiles[3], xmin=xmin, xmax=xmax, facecolor='r', alpha=0.3, lw=0)
-                    ax.axhspan(vquantiles[0], vquantiles[1], xmin=xmin, xmax=xmax, facecolor='grey', alpha=0.2, lw=0)
-                    ax.axhspan(vquantiles[3], vquantiles[4], xmin=xmin, xmax=xmax, facecolor='grey', alpha=0.2, lw=0)
+                if not np.all(vquantiles==0):
+                    # xmin and xmax are relative coordinates in range of 0-1.
+                    xmin, xmax = [cat_index/len(catalog_list), (cat_index+1)/len(catalog_list)]
+                    if first_plot:
+                        ax.axhline(vquantiles[2], xmin=xmin, xmax=xmax, lw=2, color='r', label='{} median'.format(data_name))
+                        ax.axhspan(vquantiles[1], vquantiles[3], xmin=xmin, xmax=xmax, facecolor='r', alpha=0.3, lw=0, label=' [$Q_1$, $Q_3$]')
+                        ax.axhspan(vquantiles[0], vquantiles[1], xmin=xmin, xmax=xmax, facecolor='grey', alpha=0.2, lw=0, label=' [2nd, 98th]')
+                        ax.axhspan(vquantiles[3], vquantiles[4], xmin=xmin, xmax=xmax, facecolor='grey', alpha=0.2, lw=0)
+                        first_plot = False
+                    else:
+                        ax.axhline(vquantiles[2], xmin=xmin, xmax=xmax, lw=2, color='r')
+                        ax.axhspan(vquantiles[1], vquantiles[3], xmin=xmin, xmax=xmax, facecolor='r', alpha=0.3, lw=0)
+                        ax.axhspan(vquantiles[0], vquantiles[1], xmin=xmin, xmax=xmax, facecolor='grey', alpha=0.2, lw=0)
+                        ax.axhspan(vquantiles[3], vquantiles[4], xmin=xmin, xmax=xmax, facecolor='grey', alpha=0.2, lw=0)
 
             x = np.arange(1, len(catalog_list)+1)
             labels = [catalog_name for catalog_name, _ in catalog_list]
