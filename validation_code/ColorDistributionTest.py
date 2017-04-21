@@ -12,6 +12,7 @@ from ComputeColorDistribution import load_SDSS
 catalog_output_file = 'catalog_quantiles.txt'
 validation_output_file = 'validation_quantiles.txt'
 summary_output_file = 'summary.txt'
+kcorrection_z_file = 'kcorrection_z.txt'
 log_file = 'log.txt'
 plot_pdf_file = 'plot_pdf.png'
 plot_cdf_file = 'plot_cdf.png'
@@ -142,7 +143,12 @@ class ColorDistributionTest(object):
         # Write to summary file
         filename = os.path.join(base_output_dir, summary_output_file)
         with open(filename, 'a') as f:
+            f.write('K corrected to z = %1.3f\n'%self.SDSS_kcorrection_z)
             f.write('%2.3f < z < %2.3f\n\n'%(self.zlo_obs, self.zhi_obs))
+        # Write K correction redshift to file
+        filename = os.path.join(base_output_dir, kcorrection_z_file)
+        with open(filename, 'a') as f:
+            f.write(str(self.SDSS_kcorrection_z))
 
         # Initialize array for quantiles
         catalog_quantiles = np.zeros([len(self.colors), 5])
@@ -392,6 +398,18 @@ class ColorDistributionTest(object):
         nrows = int(np.ceil(len(colors)/2.))
         fig, axes = plt.subplots(nrows, 2, figsize=(8, 4.5*nrows), sharex=True)
 
+        # Sort catalogs by kcorrect_z and names
+        catalog_names = [catalog_name for catalog_name, _ in catalog_list]
+        argsort = np.argsort(catalog_names, kind='mergesort')
+        catalog_list = [catalog_list[i] for i in argsort]
+        kcorrection_z_list = []
+        for catalog_name, catalog_dir in catalog_list:
+            fn = os.path.join(catalog_dir, kcorrection_z_file)
+            kcorrection_z_list.append(float(np.loadtxt(fn)))
+        argsort = np.argsort(kcorrection_z_list, kind='mergesort')
+        catalog_list = [catalog_list[i] for i in argsort]
+
+        # Load summary quantiles data
         data = []
         for _, catalog_dir in catalog_list:
             fn = os.path.join(catalog_dir, catalog_output_file)
@@ -405,18 +423,27 @@ class ColorDistributionTest(object):
                 ax.axis('off')
                 continue
 
-            # Validation results
-            _, catalog_dir = catalog_list[0]
-            fn = os.path.join(catalog_dir, validation_output_file)
-            vquantiles = np.loadtxt(fn)[index]
-            ax.axhline(vquantiles[2], lw=2, color='r', label='{} median'.format(data_name))
-            ax.axhspan(vquantiles[1], vquantiles[3], facecolor='r', alpha=0.3, lw=0, label=' [$Q_1$, $Q_3$]')
-            ax.axhspan(vquantiles[0], vquantiles[1], facecolor='grey', alpha=0.2, lw=0, label=' [2nd, 98th]')
-            ax.axhspan(vquantiles[3], vquantiles[4], facecolor='grey', alpha=0.2, lw=0)
-
             # Mock catalog results
             ax.boxplot(data[:,index].T, whis='range', medianprops=dict(color='k'))
             ax.set_ylabel('${}$'.format(colors[index]))
+
+            # Validation results
+            for cat_index in range(len(catalog_list)):
+                _, catalog_dir = catalog_list[cat_index]
+                fn = os.path.join(catalog_dir, validation_output_file)
+                vquantiles = np.loadtxt(fn)[index]
+                # xmin and xmax are relative coordinates in range of 0-1.
+                xmin, xmax = [cat_index/len(catalog_list), (cat_index+1)/len(catalog_list)]
+                if cat_index==0:
+                    ax.axhline(vquantiles[2], xmin=xmin, xmax=xmax, lw=2, color='r', label='{} median'.format(data_name))
+                    ax.axhspan(vquantiles[1], vquantiles[3], xmin=xmin, xmax=xmax, facecolor='r', alpha=0.3, lw=0, label=' [$Q_1$, $Q_3$]')
+                    ax.axhspan(vquantiles[0], vquantiles[1], xmin=xmin, xmax=xmax, facecolor='grey', alpha=0.2, lw=0, label=' [2nd, 98th]')
+                    ax.axhspan(vquantiles[3], vquantiles[4], xmin=xmin, xmax=xmax, facecolor='grey', alpha=0.2, lw=0)
+                else:
+                    ax.axhline(vquantiles[2], xmin=xmin, xmax=xmax, lw=2, color='r')
+                    ax.axhspan(vquantiles[1], vquantiles[3], xmin=xmin, xmax=xmax, facecolor='r', alpha=0.3, lw=0)
+                    ax.axhspan(vquantiles[0], vquantiles[1], xmin=xmin, xmax=xmax, facecolor='grey', alpha=0.2, lw=0)
+                    ax.axhspan(vquantiles[3], vquantiles[4], xmin=xmin, xmax=xmax, facecolor='grey', alpha=0.2, lw=0)
 
             x = np.arange(1, len(catalog_list)+1)
             labels = [catalog_name for catalog_name, _ in catalog_list]
