@@ -29,11 +29,8 @@ class iHODGalaxyCatalog(GalaxyCatalog):
                              'mass':                      self._get_stored_property,
                              'halo_id':                   self._get_stored_property,
                              'parent_halo_id':            self._get_stored_property,
-                             'SDSS_u:observed:':          self._get_stored_property,
-                             'SDSS_g:observed:':          self._get_stored_property,
-                             'SDSS_r:observed:':          self._get_stored_property,
-                             'SDSS_i:observed:':          self._get_stored_property,
-                             'SDSS_z:observed:':          self._get_stored_property,
+                             'SDSS_g:rest:':          self._get_stored_property,
+                             'SDSS_r:rest:':          self._get_stored_property,
                            }
 
         self.Ngals        = 0
@@ -117,7 +114,6 @@ class iHODGalaxyCatalog(GalaxyCatalog):
                 dtype = (str(key), dtypename)
                 datasets.append(dset)
                 dtypes.append(dtype)
-            print dtypes
             recdict[str(grp)] = np.rec.fromarrays(tuple(datasets), dtype=dtypes)
         f.close()
         return(recdict)
