@@ -37,7 +37,7 @@ SMF_MBII = _ValidationConfig('BinnedStellarMassFunctionTest',
 )
 
 
-HMF = _ValidationConfig('HaloMassFunctionTest',
+HMF_Tinker = _ValidationConfig('HaloMassFunctionTest',
          observation='Tinker',
          bins=(8.0, 15.0, 29),
          validation_range=(10.0**12.0, 10.0**14.5),
@@ -48,7 +48,7 @@ HMF = _ValidationConfig('HaloMassFunctionTest',
 )
 
 
-SMHM = _ValidationConfig('StellarMassHaloMassTest',
+SMHM_MBII = _ValidationConfig('StellarMassHaloMassTest',
          observation='MassiveBlackII',
          bins=(7.5, 15., 26),
          validation_range=(10.0**12.0, 10.0**14.4),
@@ -57,7 +57,7 @@ SMHM = _ValidationConfig('StellarMassHaloMassTest',
          description='Mean stellar mass as a function of halo mass for host halos.'
 )
 
-ColorDist = _ValidationConfig('ColorDistributionTest',
+Color_SDSS = _ValidationConfig('ColorDistributionTest',
          # data_dir='SDSS',
          # data_name='SDSS',
          sdss_fname='sdss_output_coeffs_z_0.06_0.09.dat',
@@ -86,3 +86,4 @@ WpRp_MBII = _ValidationConfig('WprpTest',
          bins=(-1.0,1.3,12),
          description='For each of the mock catalogs, we calculate the projected two-point correlation function, w_p(r_p), in the thin-plane approximation.  We use the catalog at one single epoch and then add redshift space distortion along one spatial axis (z-axis).  We then calculate the projected pair counts, with a projection depth of 80 Mpc/h. We assume periodic boundary conditions for all three spatial axes. We estimate the sample variance of w_p(r_p) using the jackknife technique.'
 )
+
