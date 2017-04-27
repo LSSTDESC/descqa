@@ -1,6 +1,9 @@
 from __future__ import division, print_function
 import os
 from warnings import warn
+import itertools
+zip = itertools.izip
+
 import numpy as np
 
 import matplotlib
@@ -262,6 +265,9 @@ class ValidationTest(object):
         self._plot_result(output_file, data, labels, save_pdf)
 
 
+_colors = ('#009292', '#ff6db6', '#490092', '#6db6ff', '#924900', '#24ff24')
+_linestyles = ('-', '--', '-.', ':')
+
 class SimpleComparisonPlot():
     def __init__(self, savefig_path=None, save_pdf=False, logx=True, logy=True):
         self.savefig_path = savefig_path
@@ -298,16 +304,18 @@ class SimpleComparisonPlot():
     def plot_data(self, ref_data, ref_label, other_data, other_labels, ref_as_line=False, interp=False):
         if isinstance(other_labels, basestring):
             ref_color = 'C1'
-            other_colors = ['C0']
+            other_format = [('-', 'C0')]
             other_data = [other_data]
             other_labels = [other_labels]
         else:
             ref_color = 'k'
-            other_colors = mpl.cm.get_cmap('viridis')(np.linspace(0, 1, len(other_data)))
+            other_format = itertools.cycle(itertools.product(_linestyles, _colors))
+            #other_colors = mpl.cm.get_cmap('viridis')(np.linspace(0, 1, len(other_data)))
+            #other_linestyles = ['--', '-']*((len(other_data)+1)//2)
 
-        for data, label, color in zip(other_data, other_labels, other_colors):
-            self.add_line(self.mask_data(data), label, color)
-            self.add_line(self.compare_data(ref_data, data, interp), label, color, lower=True)
+        for data, label, (ls, color) in zip(other_data, other_labels, other_format):
+            self.add_line(self.mask_data(data), label, color, ls)
+            self.add_line(self.compare_data(ref_data, data, interp), label, color, ls, lower=True)
 
         add_ref = self.add_line if ref_as_line else self.add_points
         add_ref(self.mask_data(ref_data), ref_label, ref_color)
@@ -352,9 +360,9 @@ class SimpleComparisonPlot():
         return data
 
 
-    def add_line(self, data, label, color, lower=False):
+    def add_line(self, data, label, color, linestyle='-', lower=False):
         ax_this = self.ax_lower if lower else self.ax
-        ax_this.plot(data['x'], data['y'], label=label, color=color)
+        ax_this.plot(data['x'], data['y'], label=label, color=color, ls=linestyle)
         if 'y-' in data and 'y+' in data:
             ax_this.fill_between(data['x'], data['y-'], data['y+'], alpha=0.15, color=color, lw=0)
 
