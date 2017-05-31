@@ -14,7 +14,7 @@ class BaseGalaxyCatalog(object):
     Abstract base class for all galaxy catalog classes.
     """
     _required_attributes = ('cosmology',)
-    _required_quantities = ('redshift', 'stellar_mass')
+    _required_quantities = ('redshift',)
 
     _quantity_modifiers = dict()
     _native_quantities = set()
@@ -39,18 +39,22 @@ class BaseGalaxyCatalog(object):
         except TypeError:
             raise ValueError('modifier for {} is not set correctly'.format(q))
 
+        if not all(q in self._native_quantities for q in self._translate_quantities(self.list_all_quantities(True))):
+            raise ValueError('the reader specifies quantities that are not in the catalog')
+
         # This is only for backward compatibility (TODO: to be removed)
-        self.quantities = set(self.get_all_quantities())
+        self.quantities = set(self.list_all_quantities(True))
 
 
-    def get_all_quantities(self):
+    def list_all_quantities(self, include_native=False):
         """
         Return a set of all available quantities in this catalog
         """
         output = list(self._quantity_modifiers)
-        for q in self._native_quantities:
-            if q not in output:
-                output.append(q)
+        if include_native:
+            for q in self._native_quantities:
+                if q not in output:
+                    output.append(q)
         return output
 
 
@@ -113,7 +117,7 @@ class BaseGalaxyCatalog(object):
                 mask = f[0](*(data[_] for _ in f[1:]))
             else:
                 mask &= f[0](*(data[_] for _ in f[1:]))
-        return slice(None) if mask is None else mask
+        return mask
 
 
     @staticmethod
@@ -126,7 +130,77 @@ class BaseGalaxyCatalog(object):
         return {q: self._assemble_quantity(q, native_data) for q in quantities}
 
 
-    def get_quantities(self, quantities, filters=None, as_hdf5=None):
+    def _preprocess_requested_quantities(self, quantities):
+        if quantities is None:
+            quantities = self.list_all_quantities()
+
+        if isinstance(quantities, basestring):
+            quantities = {quantities}
+
+        quantities = set(quantities)
+        if not quantities or not all(isinstance(q, basestring) for q in quantities):
+            raise ValueError('`quantities` not set correctly. Must be a tuple/list of str.')
+
+        if not all(q in self._native_quantities for q in self._translate_quantities(quantities)):
+            raise ValueError('Some quantities are not available in this catalog')
+
+        return quantities
+
+
+    def _preprocess_requested_filters(self, filters):
+
+        if isinstance(filters, dict) and ('zlo' in filters or 'zhi' in filters): # This is only for backward compatibility (TODO: to be removed)
+            _zlo = float(filters.get('zlo', -np.inf))
+            _zhi = float(filters.get('zhi', np.inf))
+            filters = [(lambda z: (z >= _zlo) & (z <= _zhi), 'redshift')]
+
+        if filters is None:
+            filters = tuple()
+
+        if not all(isinstance(f, (tuple, list)) and len(f) > 1 and callable(f[0]) and all(isinstance(q, basestring) for q in f[1:]) for f in filters):
+            raise ValueError('`filters is not set correctly. Must be None or [(callable, str, str, ...), ...]')
+
+        if not all(q in self._native_quantities for q in self._translate_quantities(self._get_quantities_from_filters(filters))):
+            raise ValueError('Some filters are not available in this catalog')
+
+        pre_filters = list()
+        post_filters = list()
+        for f in filters:
+            if set(f[1:]).issubset(self._pre_filter_quantities):
+                pre_filters.append(f)
+            else:
+                post_filters.append(f)
+
+        return pre_filters, post_filters
+
+
+    def _get_quantities_iter(self, quantities, pre_filters, post_filters):
+        for dataset in self._iter_native_dataset(pre_filters):
+            mask = self._get_mask_from_filter(pre_filters, self._load_quantities(self._get_quantities_from_filters(pre_filters), dataset))
+            if mask is not None:
+                if not mask.any():
+                    continue
+                if mask.all():
+                    mask = None
+            data = self._load_quantities(quantities.union(self._get_quantities_from_filters(post_filters)), dataset)
+            mask = self._get_mask_from_filter(post_filters, data, mask)
+            if mask is not None:
+                for q in data:
+                    data[q] = data[q][mask]
+            del mask
+            yield data
+            del data
+
+
+    def _concatenate_quantities(self, quantities, pre_filters, post_filters):
+        requested_data = defaultdict(list)
+        for data in self._get_quantities_iter(quantities, pre_filters, post_filters):
+            for q in quantities:
+                requested_data[q].append(data[q])
+        return {q: np.concatenate(requested_data[q]) if requested_data[q] else np.array([]) for q in quantities}
+
+
+    def get_quantities(self, quantities=None, filters=None, return_hdf5=None, return_iterator=False):
         """
         Fetch quantities from this galaxy catalog.
 
@@ -138,64 +212,31 @@ class BaseGalaxyCatalog(object):
         filters : list of tuple, optional
             filters to apply. Each filter should be in the format of (callable, str, str, ...)
 
-        as_hdf5 : None or str, optional
-            filename to a hdf5 file to store the return data
+        return_hdf5 : None or str, optional
+            filename to a hdf5 file to store the return data.
+            If `return_hdf5` is set, `return_iterator` is set to False.
+
+        return_iterator : bool, optional
+            if True, return an iterator that iterates over the native format, default is False
 
         Returns
         -------
-        quantities : dict or h5py.File
+        quantities : dict or h5py.File (when `return_hdf5` is set) or iterator (when `return_iterator` is True)
         """
-        if isinstance(quantities, basestring):
-            quantities = {quantities}
 
-        quantities = set(quantities)
-        if not quantities or not all(isinstance(q, basestring) for q in quantities):
-            raise ValueError('`quantities` not set correctly. Must be a tuple/list of str.')
+        quantities = self._preprocess_requested_quantities(quantities)
+        pre_filters, post_filters = self._preprocess_requested_filters(filters)
 
-        # This is only for backward compatibility (TODO: to be removed)
-        if isinstance(filters, dict) and ('zlo' in filters or 'zhi' in filters):
-            _zlo = float(filters.get('zlo', -np.inf))
-            _zhi = float(filters.get('zhi', np.inf))
-            filters = [(lambda z: (z >= _zlo) & (z <= _zhi), 'redshift')]
-
-        if filters is None:
-            filters = tuple()
-
-        if not all(isinstance(f, (tuple, list)) and len(f) > 1 and callable(f[0]) and all(isinstance(q, basestring) for q in f[1:]) for f in filters):
-            raise ValueError('`filters is not set correctly. Must be None or (callable, str, str, ...)')
-
-        if not all(q in self._native_quantities for q in self._translate_quantities(quantities.union(self._get_quantities_from_filters(filters)))):
-            raise ValueError('Some quantities/filters are not available in this catalog')
-
-        if as_hdf5:
-            with h5py.File(as_hdf5, 'w') as f:
+        if return_hdf5:
+            with h5py.File(return_hdf5, 'w') as f:
                 for q in quantities:
-                    f.create_dataset(q, data=self.get_quantities(q, filters)[q], chunks=True, compression="gzip", shuffle=True, fletcher32=True)
-            return h5py.File(as_hdf5, 'r')
+                    f.create_dataset(q, data=self._concatenate_quantities(q, pre_filters, post_filters)[q], chunks=True, compression="gzip", shuffle=True, fletcher32=True)
+            return h5py.File(return_hdf5, 'r')
 
-        else:
-            pre_filters = list()
-            post_filters = list()
-            for f in filters:
-                if set(f[1:]).issubset(self._pre_filter_quantities):
-                    pre_filters.append(f)
-                else:
-                    post_filters.append(f)
+        if return_iterator:
+            return self._get_quantities_iter(quantities, pre_filters, post_filters)
 
-            requested_data = defaultdict(list)
-            data = mask = dataset = None
-            for dataset in self._iter_native_dataset(pre_filters):
-                mask = self._get_mask_from_filter(pre_filters, self._load_quantities(self._get_quantities_from_filters(pre_filters), dataset))
-                if not mask.any():
-                    continue
-                if mask.all():
-                    mask = None
-                data = self._load_quantities(quantities.union(self._get_quantities_from_filters(post_filters)), dataset)
-                mask = self._get_mask_from_filter(post_filters, data, mask)
-                for q in quantities:
-                    requested_data[q].append(data[q][mask])
-            del data, mask, dataset
-            return {q: np.concatenate(requested_data[q]) if requested_data[q] else np.array([]) for q in quantities}
+        return self._concatenate_quantities(quantities, pre_filters, post_filters)
 
 
     def _subclass_init(self, **kwargs):

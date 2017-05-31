@@ -18,10 +18,9 @@ class GalacticusGalaxyCatalog(BaseGalaxyCatalog):
 
     def _subclass_init(self, filename, base_catalog_dir=os.curdir, **kwargs):
 
-        self._pre_filter_quantities = {'redshift'}
+        self._pre_filter_quantities = {'cosmological_redshift'}
 
         self._quantity_modifiers = {
-            'mass':         (lambda x: x**10.0, 'log_halomass'),
             'stellar_mass': (lambda x: x**10.0, 'log_stellarmass'),
         }
 
@@ -38,21 +37,24 @@ class GalacticusGalaxyCatalog(BaseGalaxyCatalog):
                     self._native_quantities = set(fh[k].keys())
                     break
 
+        self._native_quantities.add('cosmological_redshift')
+
 
     def _iter_native_dataset(self, pre_filters=None):
-        zfliters = [f[0] for f in pre_filters if len(f) == 2 and f[1] == 'redshift'] if pre_filters else None
-
-        maxdz = 0.01345
         with h5py.File(self._file, 'r') as fh:
             for key in fh:
                 if key == 'cosmology':
                     continue
                 d = fh[key]
-                z_test = np.linspace(d.attrs['z']-maxdz, d.attrs['z']+maxdz, 100)
-                if all(zfliter(z_test).any() for zfliter in zfliters):
+                z = d.attrs['z']
+                if pre_filters is None or all(f[0](*([z]*(len(f)-1))) for f in pre_filters):
                     yield d
 
 
     @staticmethod
     def _fetch_native_quantity(dataset, native_quantity):
+        if native_quantity == 'cosmological_redshift':
+            data = np.empty(dataset['redshift'].shape)
+            data.fill(dataset.attrs['z'])
+            return data
         return dataset[native_quantity].value
