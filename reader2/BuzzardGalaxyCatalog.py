@@ -22,13 +22,19 @@ class BuzzardGalaxyCatalog(BaseGalaxyCatalog):
         self._pre_filter_quantities = {'original_healpixel'}
 
         self._quantity_modifiers = {
-            'redshift': 'Z',
+            'redshift': ('truth', 'Z'),
         }
 
         self._catalog_dir = os.path.join(base_catalog_dir, catalog_dir)
+        self._catalog_subdirs = ('truth',)
         self.cosmology = None
-        self._native_quantities = set(next(self._iter_native_dataset())[1].names)
-        self._native_quantities.add('original_healpixel')
+
+        self._native_quantities = {'original_healpixel'}
+        for i, dataset in self._iter_native_dataset():
+            for k, v in dataset.iteritems():
+                for name in v[1].data.names:
+                    self._native_quantities.add((k, name))
+            break
 
 
     def _iter_native_dataset(self, pre_filters=None):
@@ -36,20 +42,25 @@ class BuzzardGalaxyCatalog(BaseGalaxyCatalog):
             if pre_filters and not all(f[0](*([i]*(len(f)-1))) for f in pre_filters):
                 continue
 
-            fname = os.path.join(self._catalog_dir, 'Chinchilla-0_lensed.{}.fits'.format(i))
-            if not os.path.isfile(fname):
-                continue
-            f = fits.open(fname)
-            yield i, f[1].data
-            f.close()
+            fp = dict()
+            for subdir in self._catalog_subdirs:
+                fname = os.path.join(self._catalog_dir, subdir, 'Chinchilla-0_lensed.{}.fits'.format(i))
+                try:
+                    fp[subdir] = fits.open(fname)
+                except (IOError, OSError):
+                    pass
+            if all(subdir in fp for subdir in self._catalog_subdirs):
+                yield i, fp
+            for f in fp.itervalues():
+                f.close()
 
 
     @staticmethod
     def _fetch_native_quantity(dataset, native_quantity):
         healpix, fits_data = dataset
         if native_quantity == 'original_healpixel':
-            data = np.empty(fits_data.shape, np.int)
+            data = np.empty(fits_data.values()[0][1].data.shape, np.int)
             data.fill(healpix)
             return data
-        return fits_data[native_quantity]
+        return fits_data[native_quantity[0]][1].data[native_quantity[1]]
 

@@ -138,8 +138,8 @@ class BaseGalaxyCatalog(object):
             quantities = {quantities}
 
         quantities = set(quantities)
-        if not quantities or not all(isinstance(q, basestring) for q in quantities):
-            raise ValueError('`quantities` not set correctly. Must be a tuple/list of str.')
+        if not quantities:
+            raise ValueError('You must set `quantities`.')
 
         if not all(q in self._native_quantities for q in self._translate_quantities(quantities)):
             raise ValueError('Some quantities are not available in this catalog')
