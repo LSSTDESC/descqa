@@ -11,6 +11,10 @@ from .BaseGalaxyCatalog import BaseGalaxyCatalog
 __all__ = ['BuzzardGalaxyCatalog']
 
 
+def _get_fits_data(fits_file):
+    return fits_file[1].data
+
+
 class BuzzardGalaxyCatalog(BaseGalaxyCatalog):
     """
     Argonne galaxy catalog class. Uses generic quantity and filter mechanisms
@@ -27,40 +31,47 @@ class BuzzardGalaxyCatalog(BaseGalaxyCatalog):
 
         self._catalog_dir = os.path.join(base_catalog_dir, catalog_dir)
         self._catalog_subdirs = ('truth',)
-        self.cosmology = None
+        self.cosmology = FlatLambdaCDM(H0=0.7, Om0=0.286)
+        self._npix = 768
+        self._filename_template = 'Chinchilla-0_lensed.{}.fits'
 
-        self._native_quantities = {'original_healpixel'}
-        for i, dataset in self._iter_native_dataset():
+
+    def _generate_native_quantity_list(self):
+        native_quantities = {'original_healpixel'}
+        for _, dataset in self._iter_native_dataset():
             for k, v in dataset.iteritems():
-                for name in v[1].data.names:
-                    self._native_quantities.add((k, name))
+                for name in _get_fits_data(v).names:
+                    native_quantities.add((k, name))
             break
+        return native_quantities
 
 
     def _iter_native_dataset(self, pre_filters=None):
-        for i in xrange(768):
+        for i in xrange(self._npix):
             if pre_filters and not all(f[0](*([i]*(len(f)-1))) for f in pre_filters):
                 continue
 
             fp = dict()
             for subdir in self._catalog_subdirs:
-                fname = os.path.join(self._catalog_dir, subdir, 'Chinchilla-0_lensed.{}.fits'.format(i))
+                fname = os.path.join(self._catalog_dir, subdir, self._filename_template.format(i))
                 try:
                     fp[subdir] = fits.open(fname)
                 except (IOError, OSError):
                     pass
-            if all(subdir in fp for subdir in self._catalog_subdirs):
-                yield i, fp
-            for f in fp.itervalues():
-                f.close()
+            try:
+                if all(subdir in fp for subdir in self._catalog_subdirs):
+                    yield i, fp
+            finally:
+                for f in fp.itervalues():
+                    f.close()
 
 
     @staticmethod
     def _fetch_native_quantity(dataset, native_quantity):
         healpix, fits_data = dataset
         if native_quantity == 'original_healpixel':
-            data = np.empty(fits_data.values()[0][1].data.shape, np.int)
+            data = np.empty(_get_fits_data(fits_data.values()[0]).shape, np.int)
             data.fill(healpix)
             return data
-        return fits_data[native_quantity[0]][1].data[native_quantity[1]]
+        return _get_fits_data(fits_data[native_quantity[0]])[native_quantity[1]]
 

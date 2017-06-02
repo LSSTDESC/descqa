@@ -6,7 +6,12 @@ __all__ = ['BaseGalaxyCatalog']
 
 from collections import defaultdict
 import numpy as np
+from numpy.core.records import fromarrays
 import h5py
+
+
+def _dict_to_ndarray(d):
+    return fromarrays(d.values(), np.dtype([(str(k), v.dtype) for k, v in d.iteritems()]))
 
 
 class BaseGalaxyCatalog(object):
@@ -16,39 +21,35 @@ class BaseGalaxyCatalog(object):
     _required_attributes = ('cosmology',)
     _required_quantities = ('redshift',)
 
+    _default_quantity_modifier = None
     _quantity_modifiers = dict()
-    _native_quantities = set()
     _pre_filter_quantities = set()
 
 
     def __init__(self, **kwargs):
         self._subclass_init(**kwargs)
+        self._native_quantities = set(self._generate_native_quantity_list())
 
         # enforce the existence of required attributes
         if not all(hasattr(self, attr) for attr in self._required_attributes):
             raise ValueError("Any subclass of GalaxyCatalog must implement following attributes: {0}".format(', '.join(self._required_attributes)))
 
         # enforce the minimal set of quantities
-        if not all(self.has_quantity(q) for q in self._required_quantities):
+        if not self.has_quantities(self._required_quantities):
             raise ValueError("GalaxyCatalog must have the following quantities: {0}".format(self._required_quantities))
-
-        # make sure all quantity modifiers are set correctly
-        try:
-            for q in self._quantity_modifiers:
-                self._translate_quantity(q)
-        except TypeError:
-            raise ValueError('modifier for {} is not set correctly'.format(q))
 
         if not all(q in self._native_quantities for q in self._translate_quantities(self.list_all_quantities(True))):
             raise ValueError('the reader specifies quantities that are not in the catalog')
 
-        # This is only for backward compatibility (TODO: to be removed)
-        self.quantities = set(self.list_all_quantities(True))
+
+    def _generate_native_quantity_list(self):
+        """ To be implemented by subclass. Must return an iterator"""
+        raise NotImplementedError
 
 
     def list_all_quantities(self, include_native=False):
         """
-        Return a set of all available quantities in this catalog
+        Return a list of all available quantities in this catalog
         """
         output = list(self._quantity_modifiers)
         if include_native:
@@ -58,25 +59,64 @@ class BaseGalaxyCatalog(object):
         return output
 
 
-    def has_quantity(self, quantity):
+    def list_all_native_quantities(self):
         """
-        Check if a specific quantity is available in this galaxy catalog
+        Return a list of all available native quantities in this catalog
+        """
+        return list(self._native_quantities)
+
+
+    def add_quantity_modifier(self, quantity, modifier, overwrite=False):
+        """
+        Add a quantify modifier.
 
         Parameters
         ----------
         quantity : str
-            quantity name to check
+            name of the derived quantity to add
+
+        modifier : None or str or tuple
+            If the quantity modifier is a tuple of length >=2 and the first element is a callable,
+            it should be in the formate of `(callable, native quantity 1,  native quantity 2, ...)`.
+            And the modifier would work as callable(native quantity 1,  native quantity 2, ...)
+            If the quantity modifier is None, the quantity will be used as the native quantity name
+            Otherwise, the modifier would be use directly as a native quantity name
+
+        overwrite : bool, optional
+            If False and quantity are already specified in _quantity_modifiers, raise an ValueError
+        """
+        if quantity in self._quantity_modifiers and not overwrite:
+            raise ValueError('quantity `{}` already exists'.format(quantity))
+        self._quantity_modifiers[quantity] = modifier
+
+
+    def has_quantities(self, quantities, include_native=True):
+        """
+        Check if all quantities specified are available in this galaxy catalog
+
+        Parameters
+        ----------
+        quantities : iterable
+            a list of quantity names to check
+
+        include_native : bool, optional
+            whether or not to include native quantity names when checking
 
         Returns
         -------
-        has_quantity : bool
-            True if the quantity is available; otherwise False
+        has_quantities : bool
+            True if the quantities are all available; otherwise False
         """
-        return all(q in self._native_quantities for q in self._translate_quantity(quantity))
+        quantities = {quantities} if isinstance(quantities, basestring) else set(quantities)
+
+        if include_native:
+            return all(q in self._native_quantities for q in self._translate_quantities(quantities))
+        else:
+            return all(q in self._quantity_modifiers for q in quantities)
 
 
     def _translate_quantity(self, quantity_requested):
-        modifier = self._quantity_modifiers.get(quantity_requested)
+        modifier = self._quantity_modifiers.get(quantity_requested, self._default_quantity_modifier)
 
         if modifier is None or callable(modifier):
             return {quantity_requested}
@@ -95,7 +135,7 @@ class BaseGalaxyCatalog(object):
 
 
     def _assemble_quantity(self, quantity_requested, native_quantities_loaded):
-        modifier = self._quantity_modifiers.get(quantity_requested)
+        modifier = self._quantity_modifiers.get(quantity_requested, self._default_quantity_modifier)
 
         if modifier is None:
             return native_quantities_loaded[quantity_requested]
@@ -112,11 +152,12 @@ class BaseGalaxyCatalog(object):
     @staticmethod
     def _get_mask_from_filter(filters, data, premask=None):
         mask = premask
-        for f in filters:
-            if mask is None:
-                mask = f[0](*(data[_] for _ in f[1:]))
-            else:
-                mask &= f[0](*(data[_] for _ in f[1:]))
+        if filters:
+            for f in filters:
+                if mask is None:
+                    mask = f[0](*(data[_] for _ in f[1:]))
+                else:
+                    mask &= f[0](*(data[_] for _ in f[1:]))
         return mask
 
 
@@ -131,9 +172,6 @@ class BaseGalaxyCatalog(object):
 
 
     def _preprocess_requested_quantities(self, quantities):
-        if quantities is None:
-            quantities = self.list_all_quantities()
-
         if isinstance(quantities, basestring):
             quantities = {quantities}
 
@@ -148,12 +186,6 @@ class BaseGalaxyCatalog(object):
 
 
     def _preprocess_requested_filters(self, filters):
-
-        if isinstance(filters, dict) and ('zlo' in filters or 'zhi' in filters): # This is only for backward compatibility (TODO: to be removed)
-            _zlo = float(filters.get('zlo', -np.inf))
-            _zhi = float(filters.get('zhi', np.inf))
-            filters = [(lambda z: (z >= _zlo) & (z <= _zhi), 'redshift')]
-
         if filters is None:
             filters = tuple()
 
@@ -171,24 +203,36 @@ class BaseGalaxyCatalog(object):
             else:
                 post_filters.append(f)
 
-        return pre_filters, post_filters
+        return pre_filters if pre_filters else None, post_filters
 
 
-    def _get_quantities_iter(self, quantities, pre_filters, post_filters):
+    def _get_quantities_iter(self, quantities, pre_filters, post_filters, return_ndarray=False):
         for dataset in self._iter_native_dataset(pre_filters):
-            mask = self._get_mask_from_filter(pre_filters, self._load_quantities(self._get_quantities_from_filters(pre_filters), dataset))
-            if mask is not None:
-                if not mask.any():
-                    continue
-                if mask.all():
-                    mask = None
-            data = self._load_quantities(quantities.union(self._get_quantities_from_filters(post_filters)), dataset)
+
+            if pre_filters:
+                data = self._load_quantities(self._get_quantities_from_filters(pre_filters), dataset)
+                mask = self._get_mask_from_filter(pre_filters, data)
+                if mask is not None:
+                    if not mask.any():
+                        continue
+                    if mask.all():
+                        mask = None
+            else:
+                data = dict()
+                mask = None
+
+            rest_quantities = quantities.union(self._get_quantities_from_filters(post_filters))
+            for q in set(data).difference(rest_quantities):
+                del data[q]
+            data.update(self._load_quantities(rest_quantities.difference(set(data)), dataset))
             mask = self._get_mask_from_filter(post_filters, data, mask)
-            if mask is not None:
+            for q in set(data).difference(quantities):
+                del data[q]
+            if mask is not None and not mask.all():
                 for q in data:
                     data[q] = data[q][mask]
             del mask
-            yield data
+            yield _dict_to_ndarray(data) if return_ndarray else data
             del data
 
 
@@ -200,7 +244,7 @@ class BaseGalaxyCatalog(object):
         return {q: np.concatenate(requested_data[q]) if requested_data[q] else np.array([]) for q in quantities}
 
 
-    def get_quantities(self, quantities=None, filters=None, return_hdf5=None, return_iterator=False):
+    def get_quantities(self, quantities, filters=None, return_ndarray=False, return_hdf5=None, return_iterator=False):
         """
         Fetch quantities from this galaxy catalog.
 
@@ -211,6 +255,10 @@ class BaseGalaxyCatalog(object):
 
         filters : list of tuple, optional
             filters to apply. Each filter should be in the format of (callable, str, str, ...)
+
+        return_ndarray : bool, optional
+            return an structured ndarray if True. default is False, return a dict object
+            this option is ignored if `return_hdf5` is True
 
         return_hdf5 : None or str, optional
             filename to a hdf5 file to store the return data.
@@ -234,9 +282,10 @@ class BaseGalaxyCatalog(object):
             return h5py.File(return_hdf5, 'r')
 
         if return_iterator:
-            return self._get_quantities_iter(quantities, pre_filters, post_filters)
+            return self._get_quantities_iter(quantities, pre_filters, post_filters, return_ndarray)
 
-        return self._concatenate_quantities(quantities, pre_filters, post_filters)
+        d = self._concatenate_quantities(quantities, pre_filters, post_filters)
+        return _dict_to_ndarray(d) if return_ndarray else d
 
 
     def _subclass_init(self, **kwargs):

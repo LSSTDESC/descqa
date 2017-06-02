@@ -32,12 +32,15 @@ class GalacticusGalaxyCatalog(BaseGalaxyCatalog):
                 Om0=fh['cosmology'].attrs['Omega_Matter'],
             )
 
+
+    def _generate_native_quantity_list(self):
+        with h5py.File(self._file, 'r') as fh:
             for k in fh:
                 if k != 'cosmology':
-                    self._native_quantities = set(fh[k].keys())
+                    native_quantities = fh[k].keys()
                     break
-
-        self._native_quantities.add('cosmological_redshift')
+        native_quantities.append('cosmological_redshift')
+        return native_quantities
 
 
     def _iter_native_dataset(self, pre_filters=None):
@@ -47,7 +50,7 @@ class GalacticusGalaxyCatalog(BaseGalaxyCatalog):
                     continue
                 d = fh[key]
                 z = d.attrs['z']
-                if pre_filters is None or all(f[0](*([z]*(len(f)-1))) for f in pre_filters):
+                if (not pre_filters) or all(f[0](*([z]*(len(f)-1))) for f in pre_filters):
                     yield d
 
 
