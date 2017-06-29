@@ -1,3 +1,3 @@
 ## descqa.reader2
 
-This directory contains the second-generation reader interface "reader2". This interface is still under active development and is not used (and should not be used) in the current framework.
+`descqa.reader2` has been pulled out of `descqa` and moved to https://github.com/yymao/generic-catalog-reader
