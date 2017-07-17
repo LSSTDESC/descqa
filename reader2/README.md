@@ -1,3 +1,3 @@
 ## descqa.reader2
 
-`descqa.reader2` has been pulled out of `descqa` and moved to https://github.com/LSSTDESC/generic-catalog-reader (forked from https://github.com/yymao/generic-catalog-reader)
+`descqa.reader2` has been moved to https://github.com/LSSTDESC/generic-catalog-reader
