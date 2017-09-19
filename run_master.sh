@@ -7,13 +7,13 @@
 set -e
 
 # set DESCQA root directory
-DESCQAROOTDIR="/global/projecta/projectdirs/lsst/descqa"
+DESCQAROOTDIR="/global/projecta/projectdirs/lsst/groups/coSim/descqa"
 
 # load python module and set PYTHONPATH
 module unload python
 export PYTHONPATH=""
-module load python/2.7-anaconda
-source activate "$DESCQAROOTDIR/lib/descqa-conda"
+source /global/common/cori/contrib/lsst/apps/anaconda/4.4.0-py2/bin/activate
+source activate DESCQA
 
 # for kcorrect 
 export KCORRECT_DIR="$DESCQAROOTDIR/lib/kcorrect"
@@ -34,3 +34,4 @@ python master.py "$OUTPUTDIR" --catalog-dir "$CATALOGDIR" "$@"
 
 # end subshell
 )
+
