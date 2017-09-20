@@ -26,9 +26,9 @@ mpl.rcParams['ytick.minor.size'] = 3.0
 import matplotlib.pyplot
 plt = matplotlib.pyplot
 
-import CalcStats
+import utils
 
-__all__ = ['ValidationTest', 'TestResult', 'mpl', 'plt', 'SimpleComparisonPlot', 'CalcStats']
+__all__ = ['ValidationTest', 'TestResult', 'mpl', 'plt', 'SimpleComparisonPlot', 'utils']
 
 
 class TestResult(object):
@@ -120,11 +120,11 @@ class ValidationTest(object):
         self._validation_name = self._observation
 
         self._import_kwargs(kwargs, 'bins', func=lambda b: np.logspace(*b), required=True)
-        self._import_kwargs(kwargs, 'validation_range', always_set=True)
+        self._import_kwargs(kwargs, 'validation_range', func=lambda x: list(map(float, x)), always_set=True)
         self._import_kwargs(kwargs, 'jackknife_nside', func=int, required=True)
         self._import_kwargs(kwargs, 'zlo', func=float, required=True)
         self._import_kwargs(kwargs, 'zhi', func=float, required=True)
-        self._zfilter = {'zlo': self._zlo, 'zhi': self._zhi}
+        self._zfilter = (lambda z: (z >= self._zlo) & (z < self._zhi), 'redshift_true')
 
         self._subclass_init(**kwargs)
 
@@ -159,7 +159,7 @@ class ValidationTest(object):
         output_filenames = {k: os.path.join(base_output_dir, v) for k, v in self._output_filenames.iteritems()}
 
         #make sure galaxy catalog has appropriate quantities
-        if not all(k in galaxy_catalog.quantities for k in self._required_quantities):
+        if not galaxy_catalog.has_quantities(self._required_quantities):
             #raise an informative warning
             msg = 'galaxy catalog {} does not have all the required quantities: {}, skipping the rest of the validation test.'.format(\
                     catalog_name, ', '.join(self._required_quantities))
@@ -212,7 +212,7 @@ class ValidationTest(object):
         if not cov.any():
             raise ValueError('empty covariance')
 
-        score, pvalue = CalcStats.chisq(d, cov, nbin)
+        score, pvalue = utils.chisq(d, cov, nbin)
         passed = (pvalue < passing_pvalue)
         msg = 'chi^2/dof = {:g}/{}; p-value = {:g} {} {:g}'.format(score, nbin, pvalue, '<' if passed else '>=', passing_pvalue)
         return TestResult(pvalue, msg, passed)

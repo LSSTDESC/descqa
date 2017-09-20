@@ -16,7 +16,7 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         xlim=(1.0e7, 2.0e12),
         ylim=(1.0e-7, 10.0),
     )
-    _required_quantities = {'stellar_mass', 'positionX', 'positionY', 'positionZ'}
+    _required_quantities = {'stellar_mass'}
     _available_observations = {'LiWhite2009', 'MassiveBlackII'}
     _default_kwargs = {
         'observation': 'LiWhite2009',
@@ -48,19 +48,19 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         galaxy_catalog : galaxy catalog reader object
         """
         #get stellar masses from galaxy catalog
-        sm = galaxy_catalog.get_quantities("stellar_mass", self._zfilter)
-        x = galaxy_catalog.get_quantities("positionX", self._zfilter)
-        y = galaxy_catalog.get_quantities("positionY", self._zfilter)
-        z = galaxy_catalog.get_quantities("positionZ", self._zfilter)
+        sm = galaxy_catalog.get_quantities("stellar_mass", [self._zfilter])["stellar_mass"]
+        #x = galaxy_catalog.get_quantities("positionX", [self._zfilter])
+        #y = galaxy_catalog.get_quantities("positionY", [self._zfilter])
+        #z = galaxy_catalog.get_quantities("positionZ", [self._zfilter])
 
         #remove non-finite or negative numbers
         mask = np.isfinite(sm)
         mask &= (sm > 0)
-        mask &= np.isfinite(x)
-        mask &= np.isfinite(y)
-        mask &= np.isfinite(z)
+        #mask &= np.isfinite(x)
+        #mask &= np.isfinite(y)
+        #mask &= np.isfinite(z)
 
-        return dict(mass=sm[mask], x=x[mask], y=y[mask], z=z[mask])
+        return dict(mass=sm[mask])
 
 
     def _calc_catalog_result(self, galaxy_catalog):
@@ -86,17 +86,17 @@ class BinnedStellarMassFunctionTest(ValidationTest):
         #count galaxies in log bins
         #get errors from jackknife samples if requested
         if self._jackknife_nside > 0:
-            jack_indices = CalcStats.get_subvolume_indices(quantities['x'], quantities['y'], quantities['z'], \
+            jack_indices = utils.get_subvolume_indices(quantities['x'], quantities['y'], quantities['z'], \
                     galaxy_catalog.box_size, self._jackknife_nside)
             njack = self._jackknife_nside**3
-            mhist, _, covariance = CalcStats.jackknife(quantities['mass'], jack_indices, njack, \
+            mhist, _, covariance = utils.jackknife(quantities['mass'], jack_indices, njack, \
                     lambda m, scale: np.histogram(m, bins=self._bins)[0]*scale, \
                     full_args=(1.0,), jack_args=(njack/(njack-1.0),))
         else:
             covariance = np.diag(mhist)
 
         #calculate number differential density
-        vol = galaxy_catalog.box_size**3.0
+        vol = 1.0 #galaxy_catalog.box_size**3.0
         mhist /= (binwid * vol)
         covariance /= (vol*vol)
         covariance /= np.outer(binwid, binwid)

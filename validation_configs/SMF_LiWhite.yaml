@@ -1,0 +1,10 @@
+subclass_name: BinnedStellarMassFunctionTest
+
+observation: LiWhite2009
+bins: [7.0, 12.1, 18]
+validation_range: [1.2589254e9, 6.3095734e11]
+zlo: 0.045
+zhi: 0.065
+jackknife_nside: 0
+description: "We calculate the stellar-mass density as a function of the total stellar mass for each galaxy. Stellar masses are defined as the mass locked up in long-lived stars and stellar remnants (the most common definition).  For the SAM models, the total stellar mass is the sum of the disk and spheroid components. The densities are derived from the number counts of galaxies in each stellar mass bin, divided by the simulation volume. These densities are compared with the data from Li and White 2009."
+

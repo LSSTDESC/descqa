@@ -20,7 +20,7 @@ export KCORRECT_DIR="$DESCQAROOTDIR/lib/kcorrect"
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$KCORRECT_DIR/lib"
 
 # set other necessary paths
-OUTPUTDIR="$DESCQAROOTDIR/run/edison"
+OUTPUTDIR="/global/project/projectdirs/lsst/descqa/run"
 CATALOGDIR="$DESCQAROOTDIR/catalog"
 
 # ensure permission of output is readable by the web interface
@@ -30,7 +30,7 @@ umask 0002
 set -o noglob
 
 # run master.py
-python master.py "$OUTPUTDIR" --catalog-dir "$CATALOGDIR" "$@"
+python master.py "$OUTPUTDIR" "$@"
 
 # end subshell
 )
