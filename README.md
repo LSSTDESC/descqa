@@ -24,13 +24,6 @@ Or, if you have already cloned the repo, then run:
     cd your/own/directory/descqa-local
     git pull
 
-_Note: If you have been using the `hackweek16` branch, please rename it to `master` by running:_
-
-    cd your/own/directory/descqa-local
-    git branch -m hackweek16 master
-    git pull origin master
-    git config --local branch.master.merge refs/heads/master    
-
 
 ### Step 2: Develop
 
@@ -49,21 +42,16 @@ And simply run:
 
 The `-v` argument allows the error messages to be printed out, which is useful for debugging. 
 
-If you want to run only a subset of catalogs or tests, you can specify `--catalogs-to-run` (or `--rc` for short) and `--validations-to-run` (or `--rv` for short) 
+If you want to run only a subset of catalogs or tests, you can specify `--catalogs-to-run` (or `-c` for short) and `--validations-to-run` (or `-t` for short) 
     
-    ./run_master.sh -v --rc CATALOG1 CATALOG2 --rv TEST1 TEST2
-
-
-_Note: If you see error message about conflicting modules, please unload the module in conflict and then try again. To unload a module, run:_
-
-    module unload <module_name>
+    ./run_master.sh -v -c CATALOG1 CATALOG2 -t TEST1 TEST2
 
 
 ### Step 4: Check results
 
 As the master script is running, all the error messages will be printed out in real time if you have set `-v`. You can also go to the web interface to check you result:
 
-https://portal.nersc.gov/project/lsst/descqa/index.cgi?run=all
+https://portal.nersc.gov/project/lsst/descqa/v2/index.cgi?run=all
 
 
 ### Step 5: Iterate
@@ -113,10 +101,8 @@ And fix permissions:
 
 - `master.py`: the master script to start a test run
 - `run_master.sh`: a convenient shell script to set enviornment variables/paths before running `master.py`
-- `config_catalog.py`: config file to set up catalogs (to specify catalog files and readers)
-- `config_validation.py`: config file to set up validation tests (to specify test classes and arguments)
 - `archiver.py`: to clean up (archive) the output directory
-- `reader/`: directory that hosts all the reader classes
+- `validation_configs/`: directory that hosts all validation test config YAML files
 - `validation_code/`: directory that hosts all the validation test classes and relevent utilities
 - `validation_data/`: directory that hosts small data files that validation tests need
 - `www/`: directory that hosts the web interface
