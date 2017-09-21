@@ -11,6 +11,13 @@ This repository contains the DESCQA simulation validation framework derived from
 
 _Note: You can do Steps 1 through 6 under one of your own directory on a NERSC machine._
 
+### Step 0: Activate DESCQA python enviornment
+
+On NERSC machine, run:
+
+    source /global/common/cori/contrib/lsst/apps/anaconda/4.4.0-py2/bin/activate
+    source activate DESCQA
+
 
 ### Step 1: Clone or pull the git repo
 
