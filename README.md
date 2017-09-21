@@ -1,15 +1,15 @@
 # DESCQA
 
+This repository contains the DESCQA simulation validation framework derived from FlashTest/FlashTestView. It will be used initially to do automated testing of simulated galaxy catalogs but may also expand later to encompass other types of simulation validation.
+
 **The master branch now hosts DESCQA2 (which is still under development). If you are looking for DESCQA1, go to [v1 branch](https://github.com/LSSTDESC/descqa/tree/v1)**
 
-Starting from DESCQA2, the access of catalogs (including the readers) are moved to [GCRCatalogs](https://github.com/LSSTDESC/gcr-catalogs)
-
-This repository contains the descqa simulation validation framework derived from FlashTest/FlashTestView. It will be used initially to do automated testing of simulated galaxy catalogs but may also expand later to encompass other types of simulation validation.
+**Starting from DESCQA2, the configurations and readers of catalogs are separated from DESCQA and are now hosted in [GCRCatalogs](https://github.com/LSSTDESC/gcr-catalogs).**
 
 
 ## Instruction for DESCQA developers
 
-_Note: Do Steps 1 through 6 under one of your own directory on a NERSC machine. Do **not** go to the main descqa directory (unless you made changes to the web interface, in which case, see Step 7)._
+_Note: You can do Steps 1 through 6 under one of your own directory on a NERSC machine._
 
 
 ### Step 1: Clone or pull the git repo
@@ -17,24 +17,34 @@ _Note: Do Steps 1 through 6 under one of your own directory on a NERSC machine. 
 If you have never cloned the repo before, run:
 
     cd your/own/directory
-    git clone https://github.com/LSSTDESC/descqa.git descqa-local
+    git clone git@github.com:LSSTDESC/descqa.git
+
+If you don't have GitHub ssh key set up, you can do
+    
+    git clone https://github.com/LSSTDESC/descqa.git
 
 Or, if you have already cloned the repo, then run:
 
-    cd your/own/directory/descqa-local
+    cd your/own/directory/descqa
     git pull
 
 
-### Step 2: Develop
+### Step 2: Create a new branch
 
-Hack on! Make changes inside your local descqa clone. 
+    cd your/own/directory/descqa
+    git checkout -b newBranchName
 
 
-### Step 3: Test
+### Step 3: Develop
+
+Hack on! Make changes inside your local descqa clone. See [here](https://github.com/LSSTDESC/descqa/blob/master/validation_code/README.md) for more detailed instruction on how to create a new test.
+
+
+### Step 4: Test
 
 Make sure you are in your local descqa clone:
 
-    cd your/own/directory/descqa-local
+    cd your/own/directory/descqa
 
 And simply run:
 
@@ -47,23 +57,18 @@ If you want to run only a subset of catalogs or tests, you can specify `--catalo
     ./run_master.sh -v -c CATALOG1 CATALOG2 -t TEST1 TEST2
 
 
-### Step 4: Check results
+### Step 5: Check results
 
 As the master script is running, all the error messages will be printed out in real time if you have set `-v`. You can also go to the web interface to check you result:
 
-https://portal.nersc.gov/project/lsst/descqa/v2/index.cgi?run=all
+https://portal.nersc.gov/project/lsst/descqa/v2/www/index.cgi?run=all
 
 
-### Step 5: Iterate
+### Step 6: Commit your change
 
-Repeat steps 2, 3, 4 as necessary.
+Whenyou are happy about your changes, you can commit them. First, make sure you are in your local descqa clone:
 
-
-### Step 6: Commit and push your changes (only if you are a DESCQA member)
-
-Now that you are happy about your changes, you can commit them. First, make sure you are in your local descqa clone:
-
-    cd your/own/directory/descqa-local
+    cd your/own/directory/descqa
 
 and check current status of change:
 
@@ -71,19 +76,25 @@ and check current status of change:
 
 "Stage" everything you want to commit and then commit: 
 
-    git add <files to stage> 
+    git add <files changed>
     git commit -m <short but meaningful message>
-    
-For now we do *not* use pull requests for changes, so unless you have made significant changes (in which case, contact the QA team frist), do a pull rebase first (do **not** skip this step!):
 
-    git pull -r
-    
-Hopefullly there's no conflict. If there are, resolve them, and commit again. Once you're done, push your changes back:
 
-    git push
+### Step 7: Iterate
+
+Repeat steps 3, 4, 5, 6 as necessary.
+
+
+### Step 8: Push your changes and create a pull request
+
+First, push your changes to GitHub
+    
+    git push origin newBranchName
+    
+Then go to https://github.com/LSSTDESC/descqa/ to create a pull request. 
     
     
-### Step 7: update main descqa direcotory (ONLY IF you made changes to the web interface)
+### Step 99: update main descqa direcotory (ONLY IF you made changes to the web interface)
 
 _Note: you don't need to do this step **unless** you made changes to the web interface._
 
@@ -108,4 +119,5 @@ And fix permissions:
 - `www/`: directory that hosts the web interface
 
 _Note: actual catalog files are not in this repo as they are generally much bigger._
+
 
