@@ -1,9 +1,12 @@
 #!/bin/bash
+set -e
 
 python -m py_compile utils/*.py descqa/*.py
 
 mkdir -p cache
 chmod o+rx   ../www
+chmod o+rx   ..
+chmod o+r    ../index.html
 chmod o+r    config .htaccess
 chmod o+rx   *.cgi
 chmod o+rx   style utils viewer descqa descqa/templates

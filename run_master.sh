@@ -7,7 +7,7 @@
 set -e
 
 # set DESCQA root directory
-DESCQAROOTDIR="/global/projecta/projectdirs/lsst/groups/coSim/descqa"
+DESCQAROOTDIR="/global/projecta/projectdirs/lsst/groups/CS/descqa"
 
 # load python module and set PYTHONPATH
 module unload python
