@@ -13,5 +13,3 @@ chmod o+rx   viewer/*.cgi
 chmod o+r    style/*
 chmod o+r    utils/*
 chmod -R o+r descqa/*
-chmod o+r    ../config_*.py
-ln -sf ../config_*.py ./
