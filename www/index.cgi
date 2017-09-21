@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/global/common/cori/contrib/lsst/apps/anaconda/py2-envs/DESCQA/bin/python
 import cgi, cgitb
 cgitb.enable()
 print "Content-type: text/html\n"
