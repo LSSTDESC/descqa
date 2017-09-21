@@ -13,7 +13,7 @@ _Note: You can do Steps 1 through 6 under one of your own directory on a NERSC m
 
 ### Step 0: Activate DESCQA python enviornment
 
-On NERSC machine, run:
+On NERSC machine, change to bash or zsh and run :
 
     source /global/common/cori/contrib/lsst/apps/anaconda/4.4.0-py2/bin/activate
     source activate DESCQA
