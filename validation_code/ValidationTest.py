@@ -28,7 +28,7 @@ plt = matplotlib.pyplot
 
 import utils
 
-__all__ = ['ValidationTest', 'TestResult', 'mpl', 'plt', 'SimpleComparisonPlot', 'utils']
+__all__ = ['BaseValidationTest', 'ValidationTest', 'TestResult', 'mpl', 'plt', 'SimpleComparisonPlot', 'utils']
 
 
 class TestResult(object):
@@ -75,7 +75,34 @@ class TestResult(object):
                     raise ValueError('Must set a float value for `score`')
 
 
-class ValidationTest(object):
+class BaseValidationTest(object):
+    """
+    very abstract class for validation test class
+    """
+    def _import_kwargs(self, kwargs, key, attr_name=None, func=None, required=False, always_set=False):
+        if attr_name is None:
+            attr_name = '_{}'.format(key)
+        val = kwargs.get(key, self._default_kwargs.get(key))
+        if required and val is None:
+            raise ValueError('Must specify test option `{}`'.format(key))
+        if callable(func):
+            val = func(val)
+        if always_set or val is not None:
+            setattr(self, attr_name, val)
+        return val
+
+    def __init__(self, **kwargs):
+        pass
+
+    def run_validation_test(self, galaxy_catalog, catalog_name, base_output_dir):
+        raise NotImplementedError
+
+    def plot_summary(self, output_file, catalog_list, save_pdf=True):
+        pass
+
+
+
+class ValidationTest(BaseValidationTest):
     """
     abstract class for validation test class
     """
@@ -96,19 +123,6 @@ class ValidationTest(object):
         logfile='logfile.txt',
         figure='figure.png',
     )
-
-    def _import_kwargs(self, kwargs, key, attr_name=None, func=None, required=False, always_set=False):
-        if attr_name is None:
-            attr_name = '_{}'.format(key)
-        val = kwargs.get(key, self._default_kwargs.get(key))
-        if required and val is None:
-            raise ValueError('Must specify test option `{}`'.format(key))
-        if callable(func):
-            val = func(val)
-        if always_set or val is not None:
-            setattr(self, attr_name, val)
-        return val
-
 
     def __init__(self, **kwargs):
         self._import_kwargs(kwargs, 'base_data_dir', required=True)
