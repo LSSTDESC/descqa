@@ -13,16 +13,6 @@ class SkyArea(BaseValidationTest):
         assert hp.isnsideok(nside), '`nside` value {} not correct'.format(nside)
         self._nside = nside
 
-    @staticmethod
-    def _save_quantities(catalog_name, quantities, filename):
-        quantities = list(quantities)
-        quantities.sort()
-        with open(filename, 'w') as f:
-            f.write('# ' + catalog_name + '\n')
-            for q in quantities:
-                f.write(str(q))
-                f.write('\n')
-
     def run_validation_test(self, galaxy_catalog, catalog_name, base_output_dir):
         if not galaxy_catalog.has_quantities(['ra_true', 'dec_true']):
             return TestResult(skipped=True)
@@ -39,4 +29,3 @@ class SkyArea(BaseValidationTest):
         plt.savefig(os.path.join(base_output_dir, 'skymap.png'))
         plt.close()
         return TestResult(0, passed=True)
-
