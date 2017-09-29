@@ -2,9 +2,13 @@
 
 This repository contains the DESCQA simulation validation framework derived from FlashTest/FlashTestView. It will be used initially to do automated testing of simulated galaxy catalogs but may also expand later to encompass other types of simulation validation.
 
-**The master branch now hosts DESCQA2 (which is still under development). If you are looking for DESCQA1, go to [v1 branch](https://github.com/LSSTDESC/descqa/tree/v1)**
+A companion paper can be found [here](https://arxiv.org/abs/1709.09665). The web interface can be accessed [here](https://portal.nersc.gov/project/lsst/descqa/). If you would like to use the DESCQA framework outside LSST DESC, please contact the developers. 
+
+
+**The master branch now hosts DESCQA2 (which is still under development). If you are looking for DESCQA1 (as presented in the companion paper), please go to [v1 branch](https://github.com/LSSTDESC/descqa/tree/v1)**
 
 **Starting from DESCQA2, the configurations and readers of catalogs are separated from DESCQA and are now hosted in [GCRCatalogs](https://github.com/LSSTDESC/gcr-catalogs).**
+
 
 
 ## Instruction for DESCQA developers
