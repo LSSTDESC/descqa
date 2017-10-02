@@ -11,33 +11,28 @@ A companion paper can be found [here](https://arxiv.org/abs/1709.09665). The web
 
 
 
-## Instruction for DESCQA developers
+## Contribute to DESCQA
 
 _Note: You can do Steps 1 through 6 under one of your own directory on a NERSC machine._
 
-### Step 0: Activate DESCQA python enviornment
+### Step 0: Fork the DESCQA GitHub repo, and clone it on NERSC
+
+1. On GitHub [Fork](https://guides.github.com/activities/forking/) the DESCQA GitHub repo.
+2. On NERSC
+        cd your/own/directory
+        git clone git@github.com:YourGitHubUsername/descqa.git
+
+   Note: If you don't have GitHub ssh key set up, you can do
+    
+        git clone https://github.com/YourGitHubUsername/descqa.git
+
+
+### Step 1: Activate DESCQA python enviornment
 
 On NERSC machine, change to bash or zsh and run :
 
     source /global/common/cori/contrib/lsst/apps/anaconda/4.4.0-py2/bin/activate
     source activate DESCQA
-
-
-### Step 1: Clone or pull the git repo
-
-If you have never cloned the repo before, run:
-
-    cd your/own/directory
-    git clone git@github.com:LSSTDESC/descqa.git
-
-If you don't have GitHub ssh key set up, you can do
-    
-    git clone https://github.com/LSSTDESC/descqa.git
-
-Or, if you have already cloned the repo, then run:
-
-    cd your/own/directory/descqa
-    git pull
 
 
 ### Step 2: Create a new branch
