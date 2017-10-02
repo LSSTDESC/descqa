@@ -19,6 +19,7 @@ _Note: You can do Steps 1 through 6 under one of your own directory on a NERSC m
 
 1. On GitHub [Fork](https://guides.github.com/activities/forking/) the DESCQA GitHub repo.
 2. On NERSC
+
         cd your/own/directory
         git clone git@github.com:YourGitHubUsername/descqa.git
 
