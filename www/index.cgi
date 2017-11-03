@@ -84,7 +84,7 @@ def left_frame(selected_run,catalog,test):
     items = [item for item in sorted(os.listdir(targetDir)) if os.path.isfile(os.path.join(targetDir, item))]
     for item in items:
         item_lower = item.lower()
-        if any(item_lower.endswith(ext) for ext in ('.log', '.txt', '.dat', '.csv', '.png', '.pdf')):
+        if any(item_lower.endswith(ext) for ext in ('.txt', '.dat', '.csv', '.log', '.yaml', '.pdf', '.png')):
             templateData['summaryData'].append(File(targetDir, item))
 
     # we assume any directories in 'targetDir' to be the output
@@ -101,7 +101,7 @@ def left_frame(selected_run,catalog,test):
         items = sorted(os.listdir(run.fullPath))
         for item in items:
             item_lower = item.lower()
-            if any(item_lower.endswith(ext) for ext in ('.txt', '.dat', '.csv', '.log', '.pdf', '.png')):
+            if any(item_lower.endswith(ext) for ext in ('.txt', '.dat', '.csv', '.log', '.yaml', '.pdf', '.png')):
                 run.outfiles.append(File(run.fullPath, item))
 
         try:
