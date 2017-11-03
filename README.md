@@ -2,7 +2,7 @@
 
 This repository contains the DESCQA simulation validation framework derived from FlashTest/FlashTestView. It will be used initially to do automated testing of simulated galaxy catalogs but may also expand later to encompass other types of simulation validation.
 
-A companion paper can be found [here](https://arxiv.org/abs/1709.09665). The web interface can be accessed [here](https://portal.nersc.gov/project/lsst/descqa/). If you would like to use the DESCQA framework outside LSST DESC, please contact the developers. 
+A companion paper can be found [here](https://arxiv.org/abs/1709.09665). The web interface can be accessed [here](https://portal.nersc.gov/project/lsst/descqa/). If you would like to use the DESCQA framework outside LSST DESC, please contact the developers.
 
 
 **The master branch now hosts DESCQA2 (which is still under development). If you are looking for DESCQA1 (as presented in the companion paper), please go to [v1 branch](https://github.com/LSSTDESC/descqa/tree/v1)**
@@ -24,7 +24,7 @@ _Note: You can do Steps 1 through 6 under one of your own directory on a NERSC m
         git clone git@github.com:YourGitHubUsername/descqa.git
 
    Note: If you don't have GitHub ssh key set up, you can do
-    
+
         git clone https://github.com/YourGitHubUsername/descqa.git
 
 
@@ -57,11 +57,37 @@ And simply run:
 
     ./run_master.sh -v
 
-The `-v` argument allows the error messages to be printed out, which is useful for debugging. 
+The `-v` argument allows the error messages to be printed out, which is useful for debugging.
 
-If you want to run only a subset of catalogs or tests, you can specify `--catalogs-to-run` (or `-c` for short) and `--validations-to-run` (or `-t` for short) 
-    
-    ./run_master.sh -v -c CATALOG1 CATALOG2 -t TEST1 TEST2
+### Step 4.1: Tricks you want to know:
+
+-  If you want to run only a subset of catalogs or tests, you can specify `--catalogs-to-run` (or `-c` for short) and `--validations-to-run` (or `-t` for short)
+
+       ./run_master.sh -v -c CATALOG1 CATALOG2 -t TEST1 TEST2
+
+
+-  You can also use wildcard, for example:
+
+       ./run_master.sh -v -c *_test catalog3
+
+   will run all available tests on all catalogs whose name ends in "_test" and also "catalog3", in verbose mode.
+
+-  If you just want to see what catalogs are available, you can run:
+
+       ./run_master.sh -l
+
+   which will print the names of all available catalogs in `GCRCatalogs`.
+
+-  If you want to see all available tests, just run
+
+       ls -1 validation_configs/*.yaml
+
+
+-  If you are also working on `GCRCatalogs` and want to test our local version of `GCRCatalogs`, you can do:
+
+       ./run_master.sh -p /path/to/dir/that/contains/GCRCatalogs
+
+   Note the path here should be the directory that **contains** `GCRCatalogs`, *not* the `GCRCatalogs` directory itself.
 
 
 ### Step 5: Check results
@@ -81,7 +107,7 @@ and check current status of change:
 
     git status
 
-"Stage" everything you want to commit and then commit: 
+"Stage" everything you want to commit and then commit:
 
     git add <files changed>
     git commit -m <short but meaningful message>
@@ -95,12 +121,12 @@ Repeat steps 3, 4, 5, 6 as necessary.
 ### Step 8: Push your changes and create a pull request
 
 First, push your changes to GitHub
-    
+
     git push origin newBranchName
-    
-Then go to https://github.com/LSSTDESC/descqa/ to create a pull request. 
-    
-    
+
+Then go to https://github.com/LSSTDESC/descqa/ to create a pull request.
+
+
 ### Step 99: update main descqa direcotory (ONLY IF you made changes to the web interface)
 
 _Note: you don't need to do this step **unless** you made changes to the web interface._
@@ -108,12 +134,12 @@ _Note: you don't need to do this step **unless** you made changes to the web int
 Go to the main descqa direcotory on NERSC and pull changes from github:
 
     git pull
-    
+
 And fix permissions:
 
     cd www
     ./fix_permission
-   
+
 
 ## Code structure
 
