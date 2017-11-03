@@ -349,7 +349,8 @@ def get_username():
 def make_argpath_absolute(args):
     args.root_output_dir = os.path.abspath(os.path.expanduser(args.root_output_dir))
     args.source_dir = os.path.abspath(os.path.expanduser(args.source_dir))
-    args.gcr_catalogs_path_overwrite = os.path.abspath(os.path.expanduser(args.gcr_catalogs_path_overwrite))
+    if args.gcr_catalogs_path_overwrite:
+        args.gcr_catalogs_path_overwrite = os.path.abspath(os.path.expanduser(args.gcr_catalogs_path_overwrite))
     args.validation_config_dir = pjoin(args.source_dir, os.path.expanduser(args.validation_config_dir))
     args.validation_code_dir = pjoin(args.source_dir, os.path.expanduser(args.validation_code_dir))
     args.validation_data_dir = pjoin(args.source_dir, os.path.expanduser(args.validation_data_dir))
