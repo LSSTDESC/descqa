@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import sys
 import shutil
@@ -11,7 +12,6 @@ import argparse
 import collections
 import fnmatch
 import yaml
-import GCRCatalogs
 
 pjoin = os.path.join
 
@@ -349,25 +349,42 @@ def get_username():
 def make_argpath_absolute(args):
     args.root_output_dir = os.path.abspath(os.path.expanduser(args.root_output_dir))
     args.source_dir = os.path.abspath(os.path.expanduser(args.source_dir))
+    args.gcr_catalogs_path_overwrite = os.path.abspath(os.path.expanduser(args.gcr_catalogs_path_overwrite))
     args.validation_config_dir = pjoin(args.source_dir, os.path.expanduser(args.validation_config_dir))
     args.validation_code_dir = pjoin(args.source_dir, os.path.expanduser(args.validation_code_dir))
     args.validation_data_dir = pjoin(args.source_dir, os.path.expanduser(args.validation_data_dir))
 
 
 def main(args):
+    log = create_logger(verbose=args.verbose)
+
     master_status = {}
     master_status['user'] = get_username()
     master_status['start_time'] = time.time()
     if args.comment:
         master_status['comment'] = args.comment
 
-    log = create_logger(verbose=args.verbose)
+    log.debug('Importing GCR Catalogs...')
+    if args.gcr_catalogs_path_overwrite:
+        sys.path.insert(0, args.gcr_catalogs_path_overwrite)
+    global GCRCatalogs
+    GCRCatalogs = importlib.import_module('GCRCatalogs')
+    if args.gcr_catalogs_path_overwrite:
+        del sys.path[0]
+
+    if args.list_catalogs:
+        print()
+        for c in GCRCatalogs.get_available_catalogs():
+            print(c)
+        print()
+        sys.exit(0)
 
     log.debug('creating output directory...')
     make_argpath_absolute(args)
     output_dir = make_output_dir(args.root_output_dir, args.subdir)
     open(pjoin(output_dir, '.lock'), 'w').close()
     try: # we want to remove ".lock" file even if anything went wrong
+
         snapshot_dir = pjoin(output_dir, '_snapshot')
         os.mkdir(snapshot_dir)
         log.info('output of this run is stored in {}'.format(output_dir))
@@ -412,6 +429,9 @@ if __name__ == '__main__':
     parser.add_argument('-m', '--comment',
             help='attach a comment to this run')
 
+    parser.add_argument('--lc', '--list-catalogs', dest='list_catalogs', action='store_true',
+            help='Just list available catalogs. Runs nothing!')
+
     parser.add_argument('-t', '--rv', '--validations-to-run', dest='validations_to_run', metavar='VALIDATION', nargs='+',
             help='run only a subset of validations')
     parser.add_argument('-c', '--rc', '--catalogs-to-run', dest='catalogs_to_run', metavar='CATALOG', nargs='+',
@@ -424,11 +444,10 @@ if __name__ == '__main__':
     parser.add_argument('--validation-data-dir', default='validation_data',
             help='validation data directory (default: validation_data)')
 
-    parser.add_argument('--catalog-config-overwrite',
-            help='a yaml file specifying catalog configs to overwrite GCRCatalogs') #TODO: to implement
+    parser.add_argument('-p', '--gcr-catalogs-path-overwrite',
+            help='a path from which Python can import the module `GCRCatalogs`')
 
     parser.add_argument('--source-dir', default='.',
             help='source directory (default: current working directory)')
     args = parser.parse_args()
     main(args)
-
