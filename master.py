@@ -364,6 +364,8 @@ def main(args):
     if args.comment:
         master_status['comment'] = args.comment
 
+    make_argpath_absolute(args)
+
     log.debug('Importing GCR Catalogs...')
     if args.gcr_catalogs_path_overwrite:
         sys.path.insert(0, args.gcr_catalogs_path_overwrite)
@@ -373,16 +375,16 @@ def main(args):
         del sys.path[0]
 
     if args.list_catalogs:
-        print()
-        for c in GCRCatalogs.get_available_catalogs():
+        print('-'*50)
+        for c in sorted(GCRCatalogs.get_available_catalogs()):
             print(c)
-        print()
+        print('-'*50)
         sys.exit(0)
 
     log.debug('creating output directory...')
-    make_argpath_absolute(args)
     output_dir = make_output_dir(args.root_output_dir, args.subdir)
     open(pjoin(output_dir, '.lock'), 'w').close()
+
     try: # we want to remove ".lock" file even if anything went wrong
 
         snapshot_dir = pjoin(output_dir, '_snapshot')
@@ -429,7 +431,7 @@ if __name__ == '__main__':
     parser.add_argument('-m', '--comment',
             help='attach a comment to this run')
 
-    parser.add_argument('--lc', '--list-catalogs', dest='list_catalogs', action='store_true',
+    parser.add_argument('-l', '--lc', '--list-catalogs', dest='list_catalogs', action='store_true',
             help='Just list available catalogs. Runs nothing!')
 
     parser.add_argument('-t', '--rv', '--validations-to-run', dest='validations_to_run', metavar='VALIDATION', nargs='+',
