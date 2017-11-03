@@ -11,55 +11,30 @@ A companion paper can be found [here](https://arxiv.org/abs/1709.09665). The web
 
 
 
-## Contribute to DESCQA
+## How to run DESCQA?
 
-_Note: You can do Steps 1 through 6 under one of your own directory on a NERSC machine._
+_Note: You need to run DESCQA on a NERSC machine._
 
-### Step 0: Fork the DESCQA GitHub repo, and clone it on NERSC
+### Step 1: Clone DESCQA on NERSC
 
-1. On GitHub [Fork](https://guides.github.com/activities/forking/) the DESCQA GitHub repo.
-2. On NERSC
+On NERSC,
 
-        cd your/own/directory
-        git clone git@github.com:YourGitHubUsername/descqa.git
-
-   Note: If you don't have GitHub ssh key set up, you can do
-
-        git clone https://github.com/YourGitHubUsername/descqa.git
+    cd your/own/directory
+    git clone https://github.com/LSSTDESC/descqa.git
 
 
-### Step 1: Activate DESCQA python enviornment
+### Step 2: Run the master script
 
-On NERSC machine, change to bash or zsh and run :
-
-    source /global/common/cori/contrib/lsst/apps/anaconda/4.4.0-py2/bin/activate
-    source activate DESCQA
-
-
-### Step 2: Create a new branch
-
-    cd your/own/directory/descqa
-    git checkout -b newBranchName
-
-
-### Step 3: Develop
-
-Hack on! Make changes inside your local descqa clone. See [here](https://github.com/LSSTDESC/descqa/blob/master/validation_code/README.md) for more detailed instruction on how to create a new test.
-
-
-### Step 4: Test
-
-Make sure you are in your local descqa clone:
+Make sure you are in your local descqa clone on NERSC:
 
     cd your/own/directory/descqa
 
-And simply run:
+Then you can simply run `./run_master.sh`; however, there are many useful options to be aware of. 
 
-    ./run_master.sh -v
 
-The `-v` argument allows the error messages to be printed out, which is useful for debugging.
-
-### Step 4.1: Tricks you want to know:
+#### master script options
+    
+-  You can add `-v` to  allow the error messages to be printed out, which is useful for debugging.
 
 -  If you want to run only a subset of catalogs or tests, you can specify `--catalogs-to-run` (or `-c` for short) and `--validations-to-run` (or `-t` for short)
 
@@ -90,11 +65,52 @@ The `-v` argument allows the error messages to be printed out, which is useful f
    Note the path here should be the directory that **contains** `GCRCatalogs`, *not* the `GCRCatalogs` directory itself.
 
 
-### Step 5: Check results
+### Step 3: Check results
 
 As the master script is running, all the error messages will be printed out in real time if you have set `-v`. You can also go to the web interface to check you result:
 
 https://portal.nersc.gov/project/lsst/descqa/v2/www/index.cgi?run=all
+
+
+
+## How to contribute to DESCQA?
+
+### Step 1: Fork the DESCQA GitHub repo 
+
+Go to GitHub and [fork](https://guides.github.com/activities/forking/) the DESCQA GitHub repo.
+
+If you have already forked before, but want to sync your fork repo to the most up-to-date version, you can do
+
+    cd your/own/directory
+    git remote add upstream https://github.com/LSSTDESC/descqa.git
+    git fetch upstream
+    git merge upstream
+
+
+### Step 2: Clone DESCQA on NERSC
+
+    cd your/own/directory
+    git clone git@github.com:YourGitHubUsername/descqa.git
+
+Note: If you don't have GitHub ssh key set up, you can do
+
+    git clone https://github.com/YourGitHubUsername/descqa.git
+
+
+### Step 3: Create a new branch
+
+    cd your/own/directory/descqa
+    git checkout -b newBranchName
+
+
+### Step 4: Develop
+
+Hack on! Make changes inside your local descqa clone. See [here](https://github.com/LSSTDESC/descqa/blob/master/validation_code/README.md) for more detailed instruction on how to create a new test.
+
+
+### Step 5: Test
+
+See "How to run DESCQA" above for how to run DESCQA. 
 
 
 ### Step 6: Commit your change
@@ -126,19 +142,6 @@ First, push your changes to GitHub
 
 Then go to https://github.com/LSSTDESC/descqa/ to create a pull request.
 
-
-### Step 99: update main descqa direcotory (ONLY IF you made changes to the web interface)
-
-_Note: you don't need to do this step **unless** you made changes to the web interface._
-
-Go to the main descqa direcotory on NERSC and pull changes from github:
-
-    git pull
-
-And fix permissions:
-
-    cd www
-    ./fix_permission
 
 
 ## Code structure
