@@ -83,9 +83,9 @@ The `-v` argument allows the error messages to be printed out, which is useful f
        ls -1 validation_configs/*.yaml
 
 
--  If you are also working on `GCRCatalogs` and want to test our local version of `GCRCatalogs`, you can do:
+-  If you are working on `GCRCatalogs` and want to use DESCQA to test your own local version of `GCRCatalogs`, you can do:
 
-       ./run_master.sh -p /path/to/dir/that/contains/GCRCatalogs
+       ./run_master.sh -p /path/to/dir/that/contains/GCRCatalogs <and other options as needed>
 
    Note the path here should be the directory that **contains** `GCRCatalogs`, *not* the `GCRCatalogs` directory itself.
 
