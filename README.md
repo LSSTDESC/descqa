@@ -157,3 +157,17 @@ Then go to https://github.com/LSSTDESC/descqa/ to create a pull request.
 _Note: actual catalog files are not in this repo as they are generally much bigger._
 
 
+## Dependencies
+
+- numpy
+- scipy
+- matplotlib >= 2.0.0
+- astropy
+- pyyaml
+- future
+- jinja2
+- markupsafe
+- healpy
+- fast3tree
+- https://bitbucket.org/yymao/helpers
+- https://github.com/LSSTDESC/gcr-catalogs
