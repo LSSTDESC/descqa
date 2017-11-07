@@ -374,6 +374,7 @@ def main(args):
     GCRCatalogs = importlib.import_module('GCRCatalogs')
     if args.gcr_catalogs_path_overwrite:
         del sys.path[0]
+    log.info('Using GCRCatalogs v{}.'.format(GCRCatalogs.__version__))
 
     if args.list_catalogs:
         print('-'*50)
