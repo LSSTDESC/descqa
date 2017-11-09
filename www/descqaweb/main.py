@@ -54,4 +54,4 @@ def run():
 
     else:
         run = view_bigboard.find_last_run()
-        print(view_matrix.render(env.get_template('matrix.html'), run, **prefix))
+        print(view_matrix.render(env.get_template('matrix.html'), run))
