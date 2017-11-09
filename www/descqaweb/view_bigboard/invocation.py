@@ -1,23 +1,17 @@
-__all__ = ['Invocation', 'BigBoard']
+from __future__ import unicode_literals
 import os
-import time
 import re
+import time
 import cgi
 import json
-import bisect
-import itertools
-import cPickle as pickle
+from ..utils import cmp
 
-def format_status_count(status_count):
-    output = []
-    try:
-        for name, d in status_count.iteritems():
-            total = sum(d.itervalues())
-            output.append(name + ' - ' + '; '.join(('{}/{} {}'.format(d[k], total, cgi.escape(k)) for k in d)))
-    except:
-        if isinstance(status_count, basestring):
-            output = [cgi.escape(l) for l in status_count.splitlines()]
-    return '<br>'.join(output)
+try:
+    unicode
+except NameError:
+    unicode = str
+
+__all__ = ['Invocation']
 
 class Invocation:
     """
@@ -42,10 +36,22 @@ class Invocation:
     def __cmp__(self, other):
         return cmp(other.date, self.date) or cmp(other.sameday_index, self.sameday_index)
 
-    def gen_invocation_html(self,new_style):
+    @staticmethod
+    def format_status_count(status_count):
+        output = []
+        try:
+            for name, d in status_count.items():
+                total = sum(d.values())
+                output.append(name + ' - ' + '; '.join(('{}/{} {}'.format(d[k], total, cgi.escape(k)) for k in d)))
+        except AttributeError:
+            if isinstance(status_count, unicode):
+                output = [cgi.escape(l) for l in status_count.splitlines()]
+        return '<br>'.join(output)
+
+    def gen_invocation_html(self, new_style):
         tests = [d for d in os.listdir(self.path) if os.path.isdir(os.path.join(self.path, d)) and not d.startswith('_')]
         tests.sort()
-        
+
         catalogs = []
         if os.path.isdir(os.path.join(self.path, '_group_by_catalog')):
             catalogs = [d for d in os.listdir(os.path.join(self.path, '_group_by_catalog'))]
@@ -54,19 +60,19 @@ class Invocation:
         try:
             with open(os.path.join(self.path, 'STATUS.json')) as f:
                 master_status = json.load(f)
-        except:
+        except (IOError, OSError):
             master_status = {}
-        
+
         user = master_status.get('user', '')
         user = '&nbsp;({})'.format(user) if user else ''
-        
+
         comment = master_status.get('comment', '')
         if len(comment) > 20:
             comment = comment[:20] + '...'
         if comment:
             comment = '<br>&nbsp;&nbsp;<i>{}</i>'.format(comment)
 
-        test_status = format_status_count(master_status.get('status_count', {}))
+        test_status = self.format_status_count(master_status.get('status_count', {}))
         light = 'green'
         if not test_status:
             light = 'red'
@@ -74,8 +80,7 @@ class Invocation:
         elif '_ERROR' in test_status:
             light = 'yellow'
 
-        catalog_status = format_status_count(master_status.get('status_count_group_by_catalog', {}))
-
+        catalog_status = self.format_status_count(master_status.get('status_count_group_by_catalog', {}))
 
         output = []
         if new_style:
@@ -95,86 +100,3 @@ class Invocation:
         output.append('<td>TESTS:&nbsp;{}<br>{}{}&nbsp;</td>'.format(test_links, 'CATALOGS:&nbsp;' if catalog_links else '',  catalog_links))
 
         self.html = '\n'.join(output)
-
-
-class BigBoard:
-    """
-    Encapsulates all data related to a top-level visualization of a
-    FlashTest output directory, that is, the big board with the red
-    and green lights.    The path to the directory whose contents are
-    thus represented is contained in the 'dir_path' member.
-    """
-
-    def __init__(self, dir_path, cache_file=None):
-        assert os.path.isdir(dir_path)
-        self.dir_path = dir_path
-        self.invocationList = []
-        if cache_file:
-            loaded = self.load(cache_file)
-            if not loaded:
-                self.invocationList = []
-
-
-    def generate(self, days_to_show=None, cache_file=None, new_style=False):
-        newInvocationList = []
-
-        for item in os.listdir(self.dir_path):
-            try:
-                invocation = Invocation(item, self.dir_path, days_to_show)
-            except AssertionError:
-                continue
-
-            # assume self.invocationList is sorted
-            i = bisect.bisect_left(self.invocationList, invocation)
-            if i < len(self.invocationList) and self.invocationList[i] == invocation:
-                invocation.html = self.invocationList[i].html
-
-            if not invocation.html:
-                invocation.gen_invocation_html(new_style)
-
-            newInvocationList.append(invocation)
-        
-        self.invocationList = sorted(newInvocationList)
-        
-        if cache_file:
-            return self.dump(cache_file)
-
-
-    def dump(self, path):
-        try:
-            with open(path, 'w') as f:
-                pickle.dump(self.invocationList, f, pickle.HIGHEST_PROTOCOL)
-        except:
-            return False
-        else:
-            return True
-
-
-    def load(self, path):
-        try:
-            with open(path, 'r') as f:
-                self.invocationList = pickle.load(f)
-        except:
-            return False
-        else:
-            return True
-
-
-    def get_html(self, skiprows=0, nrows=50):
-        """
-        Generate html corresponding to this big board instance
-        """
-        output = []
-        output.append('<table class="bigboard" border="0" width="100%" cellspacing="0">')
-
-        for invocation in itertools.islice(self.invocationList, skiprows, skiprows+nrows):
-            output.append('<tr>{}</tr>'.format(invocation.html))
-
-        output.append('</table>')
-        return '\n'.join(output)
-
-
-    def get_count(self):
-        return len(self.invocationList)
-
-

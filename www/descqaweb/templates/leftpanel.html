@@ -10,7 +10,7 @@
 <a class="everblue" href="index.cgi" target="_top">&lt; Back to home</a><br>
 <a class="everblue" href="index.cgi?run=all" name="top" target="_top">&lt; Back to "big table" (list of all runs)</a><br>
 <a class="everblue" href="index.cgi?run={{ selected_run }}&test_prefix={{ test_prefix }}&catalog_prefix={{ catalog_prefix }}" target="_top">&lt; Back to "matrix" (for this run)</a>
-<div class="title"><h1><a class="everblue" href="index.cgi?run={{ selected_run }}&test_prefix={{ test_prefix }}&catalog_prefix={{ catalog_prefix }}" target="_top">{{ selected_run }}</a> :: 
+<div class="title"><h1><a class="everblue" href="index.cgi?run={{ selected_run }}&test_prefix={{ test_prefix }}&catalog_prefix={{ catalog_prefix }}" target="_top">{{ selected_run }}</a> ::
 
 {% if test %}{{ test }}{% else %}{% if catalog %}{{ catalog }} :: (Group by catalog){% endif %}{% endif %}</h1></div>
 <br>
@@ -40,17 +40,17 @@
     {% if templateData.summaryData %}
     <td>
       <i>Summary outputs:</i><br>
-        {% for f in templateData.summaryData %}  
-        &nbsp;&nbsp;<a href="viewer/viewFile.cgi?target_file={{ f.path }}">{{ f.filename }}</a><br>
+        {% for f in templateData.summaryData %}
+        &nbsp;&nbsp;<a href="index.cgi?file={{ f.path }}">{{ f.filename }}</a><br>
         {% endfor %}
       <br>
     </td>
     <td>
       {% for f in templateData.summaryData %}
         {% if f.data %}
-          <a href="viewer/viewFile.cgi?target_file={{ f.path }}"><img src="data:image/png;base64,{{ f.data }}" width="100%"></a><br>
-        {% endif %}  
-      {% endfor %}  
+          <a href="index.cgi?file={{ f.path }}"><img src="data:image/png;base64,{{ f.data }}" width="100%"></a><br>
+        {% endif %}
+      {% endfor %}
     </td>
     {% endif %}
     </tr>
@@ -80,8 +80,8 @@
 
     {% if run.outfiles %}
       <i>Outputs:</i><br>
-        {% for f in run.outfiles %}  
-        &nbsp;&nbsp;<a href="viewer/viewFile.cgi?target_file={{ f.path }}">{{ f.filename }}</a><br>
+        {% for f in run.outfiles %}
+        &nbsp;&nbsp;<a href="index.cgi?file={{ f.path }}">{{ f.filename }}</a><br>
         {% endfor %}
       <br>
     {% endif %}
@@ -90,9 +90,9 @@
     <td>
       {% for f in run.outfiles %}
         {% if f.data %}
-          <a href="viewer/viewFile.cgi?target_file={{ f.path }}"><img src="data:image/png;base64,{{ f.data }}" width="100%"></a><br>
-        {% endif %}  
-      {% endfor %}  
+          <a href="index.cgi?file={{ f.path }}"><img src="data:image/png;base64,{{ f.data }}" width="100%"></a><br>
+        {% endif %}
+      {% endfor %}
     </td>
     </tr>
     </table>

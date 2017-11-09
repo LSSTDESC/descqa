@@ -1,18 +1,11 @@
 #!/bin/bash
 set -e
 
-python -m py_compile utils/*.py descqa/*.py
+python -c "import descqaweb"
 
 mkdir -p cache
-chmod o+rx   ../www
-chmod o+rx   ..
-chmod o+r    ../index.html
-chmod o+r    config .htaccess
+chmod o+r    ../index.html .htaccess
 chmod o+rx   *.cgi
-chmod o+rx   style utils viewer descqa descqa/templates
 chmod o+rwx  cache
-chmod o+r    viewer/*
-chmod o+rx   viewer/*.cgi
-chmod o+r    style/*
-chmod o+r    utils/*
-chmod -R o+r descqa/*
+chmod o+rx   descqaweb style . ..
+chmod -R o+r descqaweb style
