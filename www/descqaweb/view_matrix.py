@@ -11,12 +11,10 @@ __all__ = ['render']
 color_dict = {'PASSED': 'green', 'SKIPPED': 'gold', 'FAILED': 'orangered', 'ERROR': 'darkred'}
 
 class TestDir(object):
-    def __init__(self, name, parent_dir, test_prefix, catalog_prefix):
+    def __init__(self, name, parent_dir):
         assert not name.startswith('_')
         self.name = name
         self.path = os.path.join(parent_dir, name)
-        self.test_prefix = test_prefix
-        self.catalog_prefix = catalog_prefix
         assert os.path.isdir(self.path)
         self.prefix = name.partition('_')[0]
 
@@ -26,8 +24,8 @@ class TestDir(object):
 
 class TestMember(TestDir):
     html = None
-    def __init__(self, name, parent_dir, test_prefix, catalog_prefix, groupname):
-        super(TestMember,self).__init__(name,parent_dir, test_prefix, catalog_prefix)
+    def __init__(self, name, parent_dir, groupname):
+        super(TestMember,self).__init__(name, parent_dir)
         self.groupname = groupname
 
 
@@ -63,7 +61,7 @@ class TestGroup(TestDir):
 
             for name in os.listdir(self.path):
                 try:
-                    member = TestMember(name, self.path, self.test_prefix, self.catalog_prefix, self.name )
+                    member = TestMember(name, self.path, self.name)
                 except AssertionError:
                     continue
                 self.members[name] = member
@@ -86,7 +84,7 @@ def get_filter_link(targetDir, istest, new_test_prefix, new_catalog_prefix, curr
     return '<a href="index.cgi?run={}&test_prefix={}&catalog_prefix={}">{}</a>'.format(targetDir, new_test_prefix, new_catalog_prefix, text)
 
 
-def render(template, run, catalog_prefix, test_prefix):
+def render(template, run, catalog_prefix=None, test_prefix=None):
 
     targetDir_base = run
     targetDir = os.path.abspath(os.path.join(pathToOutputDir, run))
@@ -94,7 +92,7 @@ def render(template, run, catalog_prefix, test_prefix):
     all_groups = []
     for name in os.listdir(targetDir):
         try:
-            group = TestGroup(name, targetDir, test_prefix, catalog_prefix)
+            group = TestGroup(name, targetDir)
         except AssertionError:
             continue
         all_groups.append(group)
