@@ -70,7 +70,7 @@ class TestGroup(TestDir):
     def get_html(self, sorted_member_names, target_dir_base=None):
         target_dir_base = target_dir_base or self.path
         members = self.get_members()
-        html = ['<td><a href="index.cgi?run={0}&test={1}&test_prefix={2}&catalog_prefix={3}">{1}</a></td>'.format(target_dir_base, self.name, self.test_prefix, self.catalog_prefix)]
+        html = ['<td><a href="index.cgi?run={0}&test={1}">{1}</a></td>'.format(target_dir_base, self.name)]
         for member_name in sorted_member_names:
             member = members.get(member_name)
             html.append(member.get_html() if member else '<td>&nbsp;</td>')
@@ -148,7 +148,9 @@ def render(template, run, catalog_prefix=None, test_prefix=None):
     header_row = ['<td><a href="index.cgi?run={1}&catalog={0}&test_prefix={2}&catalog_prefix={3}">{0}</a></td>'.format(name, targetDir_base, test_prefix, catalog_prefix) for name in catalog_list]
     header_row_str = '<tr><td>&nbsp;</td>{}</tr>'.format('\n'.join(header_row))
 
-    return template.render(comment=comment,user=user,start_time=start_time,time_used=time_used,
-        test_links=test_links_str,catalog_links=catalog_links_str,table_width=table_width,
-        header_row=header_row_str,all_groups=all_groups, catalog_list=catalog_list,
-        targetDir=targetDir_base,test_prefix=test_prefix,catalog_prefix=catalog_prefix)
+    return template.render(comment=comment, user=user, start_time=start_time,
+                           time_used=time_used, test_links=test_links_str,
+                           catalog_links=catalog_links_str, table_width=table_width,
+                           header_row=header_row_str, all_groups=all_groups,
+                           catalog_list=catalog_list, targetDir=targetDir_base,
+                           test_prefix=test_prefix, catalog_prefix=catalog_prefix)

@@ -10,12 +10,6 @@ __all__ = ['run']
 
 env = Environment(loader=PackageLoader('descqaweb', 'templates'))
 
-
-def print_html_header():
-    print('Content-type: text/html')
-    print()
-
-
 def run():
     form = cgi.FieldStorage()
 
@@ -23,7 +17,8 @@ def run():
         view_twopanels.print_file(form.getfirst('file'))
         return
 
-    print_html_header()
+    print('Content-type: text/html')
+    print()
 
     if form.getfirst('header'):
         print(env.get_template('header.html').render())
