@@ -1,4 +1,4 @@
-from __future__ import print_function
+from __future__ import print_function, unicode_literals
 import cgi
 from jinja2 import Environment, PackageLoader
 
