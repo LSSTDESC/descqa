@@ -1,9 +1,25 @@
 import os
 import stat
+import json
 from ..config import *
 from .bigboard import BigBoard
 
 __all__ = ['render', 'find_last_run']
+
+def find_last_run():
+    names = os.listdir(pathToOutputDir)
+    names.sort(reverse=True)
+    targetDir_base = names[0]
+    for name in names:
+        statusfile = os.path.join(pathToOutputDir, name, 'STATUS.json')
+        if os.path.exists(statusfile):
+            status = json.load(open(statusfile))
+            if status.get('comment') == 'full run':
+                targetDir_base = name
+                break
+
+    return targetDir_base
+
 
 def render(template, page):
     bigboard = BigBoard(pathToOutputDir, bigboard_cache)
