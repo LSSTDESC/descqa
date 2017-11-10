@@ -9,46 +9,45 @@
 <base target="rightframe">
 <a class="everblue" href="index.cgi" target="_top">&lt; Back to home</a><br>
 <a class="everblue" href="index.cgi?run=all" name="top" target="_top">&lt; Back to "big table" (list of all runs)</a><br>
-<a class="everblue" href="index.cgi?run={{ selected_run }}&test_prefix={{ test_prefix }}&catalog_prefix={{ catalog_prefix }}" target="_top">&lt; Back to "matrix" (for this run)</a>
-<div class="title"><h1><a class="everblue" href="index.cgi?run={{ selected_run }}&test_prefix={{ test_prefix }}&catalog_prefix={{ catalog_prefix }}" target="_top">{{ selected_run }}</a> ::
-
-{% if test %}{{ test }}{% else %}{% if catalog %}{{ catalog }} :: (Group by catalog){% endif %}{% endif %}</h1></div>
+<a class="everblue" href="index.cgi?run={{ run }}" target="_top">&lt; Back to "matrix" (for this run)</a>
+<div class="title"><h1><a class="everblue" href="index.cgi?run={{ run }}" target="_top">{{ run }}</a> ::
+{{ title }}{% if is_group_by_catalog %} :: (Group by catalog){% endif %}</h1></div>
 <br>
-{% if runs %}
+{% if group %}
   <table class="indenttable">
   <tr valign="top">
     <td>Tests completed:&nbsp;&nbsp;</td>
     <td>
-    {% for run in runs %}
-      <a href="#{{ run.name }}" target="_self">{{ run.name }}</a>
+    {% for item in group %}
+      <a href="#{{ item.name }}" target="_self">{{ item.name }}</a>
       &nbsp;&nbsp;<br>
     {% endfor %}
     </td>
     <td>
-    {% for run in runs %}
-       <span class="{{ run.statusColor }}">{{ run.status }}</span>
+    {% for item in group %}
+       <span class="{{ item.status_color }}">{{ item.status }}</span>
        <br>
     {% endfor %}
     </td>
   </tr>
   </table>
   <br>
-  {% if templateData.isGroupByCatalog %}
+  {% if is_group_by_catalog %}
   {% else %}
     <table class="indenttable">
     <tr valign="top">
-    {% if templateData.summaryData %}
+    {% if summary.files %}
     <td>
       <i>Summary outputs:</i><br>
-        {% for f in templateData.summaryData %}
-        &nbsp;&nbsp;<a href="index.cgi?file={{ f.path }}">{{ f.filename }}</a><br>
+        {% for f in summary.files %}
+        &nbsp;&nbsp;<a href="index.cgi?file={{ f.relpath }}">{{ f.filename }}</a><br>
         {% endfor %}
       <br>
     </td>
     <td>
-      {% for f in templateData.summaryData %}
+      {% for f in summary.files %}
         {% if f.data %}
-          <a href="index.cgi?file={{ f.path }}"><img src="data:image/png;base64,{{ f.data }}" width="100%"></a><br>
+          <a href="index.cgi?file={{ f.relpath }}"><img src="data:image/png;base64,{{ f.data }}" width="100%"></a><br>
         {% endif %}
       {% endfor %}
     </td>
@@ -58,18 +57,18 @@
     <br>
   {% endif %}
 
-  {% for run in runs %}
+  {% for item in group %}
 
     <hr>
-    <a name="{{ run.name }}"> </a>
+    <a name="{{ item.name }}"> </a>
     <table class="indenttable">
     <tr valign="top">
     <td>
-        <h2>{{ run.name }}&nbsp;&nbsp;&nbsp;</h2>
+        <h2>{{ item.name }}&nbsp;&nbsp;&nbsp;</h2>
     </td>
     <td>
-        <span class="{{ run.statusColor }}">{{ run.status }}</span>
-        <br>{{ run.summary }}
+        <span class="{{ item.status_color }}">{{ item.status }}</span>
+        <br>{{ item.summary }}
     </td>
     </tr>
     </table>
@@ -78,19 +77,19 @@
     <tr valign="top">
     <td style="padding-top:20px">
 
-    {% if run.outfiles %}
+    {% if item.files %}
       <i>Outputs:</i><br>
-        {% for f in run.outfiles %}
-        &nbsp;&nbsp;<a href="index.cgi?file={{ f.path }}">{{ f.filename }}</a><br>
+        {% for f in item.files %}
+        &nbsp;&nbsp;<a href="index.cgi?file={{ f.relpath }}">{{ f.filename }}</a><br>
         {% endfor %}
       <br>
     {% endif %}
 
     </td>
     <td>
-      {% for f in run.outfiles %}
+      {% for f in item.files %}
         {% if f.data %}
-          <a href="index.cgi?file={{ f.path }}"><img src="data:image/png;base64,{{ f.data }}" width="100%"></a><br>
+          <a href="index.cgi?file={{ f.relpath }}"><img src="data:image/png;base64,{{ f.data }}" width="100%"></a><br>
         {% endif %}
       {% endfor %}
     </td>

@@ -2,9 +2,9 @@ from __future__ import print_function, unicode_literals
 import cgi
 from jinja2 import Environment, PackageLoader
 
-from . import view_bigboard
-from . import view_twopanels
-from . import view_matrix
+from .bigtable import *
+from .twopanels import *
+from .matrix import *
 
 __all__ = ['run']
 
@@ -14,7 +14,7 @@ def run():
     form = cgi.FieldStorage()
 
     if form.getfirst('file'):
-        view_twopanels.print_file(form.getfirst('file'))
+        print_file(form.getfirst('file'))
         return
 
     print('Content-type: text/html')
@@ -31,7 +31,7 @@ def run():
             page = int(form.getfirst('page', 1))
         except (ValueError, TypeError):
             page = 1
-        print(view_bigboard.render(env.get_template('bigboard.html'), page))
+        print(env.get_template('bigtable.html').render(**prepare_bigtable(page)))
 
     elif run:
         catalog = form.getfirst('catalog')
@@ -41,12 +41,11 @@ def run():
 
         if catalog or test:
             if form.getfirst('left'):
-                print(view_twopanels.render_left(env.get_template('leftpanel.html'), run, catalog, test, **prefix))
+                print(env.get_template('leftpanel.html').render(**prepare_leftpanel(run, test, catalog)))
             else:
-                print(view_twopanels.render(env.get_template('twopanels.html'), run, catalog, test, **prefix))
+                print(env.get_template('twopanels.html').render(run=run, catalog=catalog, test=test, **prefix))
         else:
-            print(view_matrix.render(env.get_template('matrix.html'), run, **prefix))
+            print(env.get_template('matrix.html').render(run=run, **prefix))
 
     else:
-        run = view_bigboard.find_last_run()
-        print(view_matrix.render(env.get_template('matrix.html'), run))
+        print(env.get_template('matrix.html').render(run=find_last_run()))
