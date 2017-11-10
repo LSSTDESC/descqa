@@ -51,13 +51,13 @@ def prepare_matrix(run, catalog_prefix=None, test_prefix=None):
 
     matrix = list()
     matrix.append('<tr><td>&nbsp;</td>')
-    for catalog in descqa_run.get_catalog(catalog_prefix, True):
+    for catalog in descqa_run.get_catalogs(catalog_prefix, True):
         matrix.append('<td><a href="index.cgi?run={1}&catalog={0}">{0}</a></td>'.format(catalog, descqa_run.name))
     matrix.append('</tr>')
     for test in descqa_run.get_tests(test_prefix, True):
         matrix.append('<tr>')
         matrix.append('<td><a href="index.cgi?run={0}&test={1}">{1}</a></td>'.format(descqa_run.name, test))
-        for catalog in descqa_run.get_catalog(catalog_prefix, True):
+        for catalog in descqa_run.get_catalogs(catalog_prefix, True):
             item = descqa_run[test, catalog]
             matrix.append('<td class="{}"><a class="celllink" href="index.cgi?run={}&test={}&catalog={}">{}<br>{}</a></td>'.format(\
                     item.status_color, descqa_run.name, test, catalog, item.status.rpartition('_')[-1], item.score))
