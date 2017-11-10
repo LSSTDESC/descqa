@@ -1,7 +1,7 @@
 from __future__ import unicode_literals, print_function
 import os
 from . import config
-from .interface import DescqaRun
+from .interface import DescqaRun, encode_png
 
 __all__ = ['prepare_leftpanel', 'print_file']
 
@@ -60,16 +60,16 @@ def print_file(target_file, root_dir=config.root_dir):
             print()
             print('<!DOCTYPE html>')
             print('<html><body>')
-            print('<img src="data:image/png;base64,{}" width="100%">'.format(file_content.encode('base64').replace('\n', '')))
+            print('<img src="data:image/png;base64,{}" width="100%">'.format(encode_png(file_content)))
             print('</body></html>')
         elif target_file.lower().endswith('.pdf'):
             print('Content-type: application/pdf')
             print('Content-Length: {}'.format(len(file_content)))
             print('Content-Disposition: inline; filename="{}"'.format(os.path.basename(target_file)))
             print()
-            print(file_content)
+            print(file_content.decode())
         else:
             print('Content-type: text/plain')
             print('Content-Length: {}'.format(len(file_content)))
             print()
-            print(file_content)
+            print(file_content.decode())

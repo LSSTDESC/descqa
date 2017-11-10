@@ -3,11 +3,17 @@ import os
 import re
 import json
 import datetime
+import base64
 
-__all__ = ['get_all_runs', 'DescqaRun']
+__all__ = ['encode_png', 'get_all_runs', 'DescqaRun']
 
 ALLOWED_EXT = {'txt', 'dat', 'csv', 'log', 'json', 'yaml', 'pdf', 'png'}
 STATUS_COLORS = {'PASSED': 'green', 'SKIPPED': 'gold', 'FAILED': 'orangered', 'ERROR': 'darkred'}
+
+
+def encode_png(png_content):
+    return base64.b64encode(png_content).decode().replace('\n', '')
+
 
 class File(object):
     '''
@@ -28,7 +34,7 @@ class File(object):
     @property
     def data(self):
         if self.is_png and self._data is None:
-            self._data = open(self.path, 'rb').read().encode('base64').replace('\n', '')
+            self._data = encode_png(open(self.path, 'rb').read())
         return self._data
 
 
