@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 import os
 import re
 import json
+import datetime
 
 __all__ = ['get_all_runs', 'DescqaRun']
 
@@ -122,7 +123,7 @@ class DescqaRun(object):
         m = re.match(r'(20\d{2}-[01]\d-[0123]\d)(?:_(\d+))?', self.name)
         assert m is not None
         m = m.groups()
-        self.sort_key = datetime.datetime(*(int(i) for i in m[0].split('-')), 2, 3, microsecond=int(m[1] or 0))
+        self.sort_key = datetime.datetime(*(int(i) for i in m[0].split('-')), microsecond=int(m[1] or 0))
 
         self._tests = None
         self._catalogs = None
