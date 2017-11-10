@@ -45,7 +45,7 @@ def run():
         else:
             print(env.get_template('matrix.html').render(**prepare_matrix(run=run,
                     catalog_prefix=form.getfirst('catalog_prefix'),
-                    test_prefix=form.getfirst('test_prefix')))
+                    test_prefix=form.getfirst('test_prefix'))))
 
     else:
         print(env.get_template('matrix.html').render(run=find_last_run()))
