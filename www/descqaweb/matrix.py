@@ -12,7 +12,9 @@ def format_filter_link(targetDir, istest, new_test_prefix, new_catalog_prefix, c
     text = (new_test_prefix if istest else new_catalog_prefix) or 'CLEAR'
     if new_test_prefix == current_test_prefix and new_catalog_prefix == current_catalog_prefix:
         return '<span style="color:gray">{}</span>'.format(text)
-    return '<a href="index.cgi?run={}&test_prefix={}&catalog_prefix={}">{}</a>'.format(targetDir, new_test_prefix, new_catalog_prefix, text)
+    new_test_prefix_str = '&test_prefix={}'.format(new_test_prefix) if new_test_prefix else ''
+    new_catalog_prefix_str = '&test_prefix={}'.format(new_catalog_prefix) if new_catalog_prefix else ''
+    return '<a href="index.cgi?run={}{}{}">{}</a>'.format(targetDir, new_test_prefix_str, new_catalog_prefix_str, text)
 
 
 def prepare_matrix(run, catalog_prefix=None, test_prefix=None):
