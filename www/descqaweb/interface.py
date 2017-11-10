@@ -209,11 +209,6 @@ class DescqaRun(object):
         return self._status
 
 
-
-def descqa_run_cmp(self, other):
-        return other.date.__cmp__(self.date) or other.sameday_index.__cmp__(self.sameday_index)
-
-
 def get_all_runs(base_dir, run_filter=None):
     all_runs = list()
     for run_name in os.listdir(base_dir):
@@ -223,5 +218,5 @@ def get_all_runs(base_dir, run_filter=None):
             continue
         if run_filter is None or run_filter(run):
             all_runs.append(run)
-    all_runs.sort(lambda r: r.sort_key, True)
+    all_runs.sort(key=lambda r: r.sort_key, reverse=True)
     return all_runs
