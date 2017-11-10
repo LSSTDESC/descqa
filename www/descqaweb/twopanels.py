@@ -68,9 +68,12 @@ def print_file(target_file, root_dir=config.root_dir):
             print('Content-Length: {}'.format(len(file_content)))
             print('Content-Disposition: inline; filename="{}"'.format(os.path.basename(target_file)))
             print()
-            print(file_content.decode('ascii'))
+            sys.stdout.buffer.write(file_content.decode)
+            print()
         else:
             print('Content-type: text/plain')
             print('Content-Length: {}'.format(len(file_content)))
             print()
             print(file_content.decode('ascii'))
+
+    sys.stdout.flush()
