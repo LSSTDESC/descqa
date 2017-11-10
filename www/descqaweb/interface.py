@@ -122,8 +122,7 @@ class DescqaRun(object):
         m = re.match(r'(20\d{2}-[01]\d-[0123]\d)(?:_(\d+))?', self.name)
         assert m is not None
         m = m.groups()
-        self.date = m[0]
-        self.sameday_index = int(m[1] or 0)
+        self.sort_key = datetime.datetime(*(int(i) for i in m[0].split('-')), 2, 3, microsecond=int(m[1] or 0))
 
         self._tests = None
         self._catalogs = None
@@ -131,9 +130,6 @@ class DescqaRun(object):
         self._catalog_prefixes = None
         self._status = None
         self._data = dict()
-
-    def __cmp__(self, other):
-        return other.date.__cmp__(self.date) or other.sameday_index.__cmp__(self.sameday_index)
 
     @staticmethod
     def _find_subdirs(path):
@@ -212,6 +208,11 @@ class DescqaRun(object):
         return self._status
 
 
+
+def descqa_run_cmp(self, other):
+        return other.date.__cmp__(self.date) or other.sameday_index.__cmp__(self.sameday_index)
+
+
 def get_all_runs(base_dir, run_filter=None):
     all_runs = list()
     for run_name in os.listdir(base_dir):
@@ -221,5 +222,5 @@ def get_all_runs(base_dir, run_filter=None):
             continue
         if run_filter is None or run_filter(run):
             all_runs.append(run)
-    all_runs.sort()
+    all_runs.sort(lambda r: r.sort_key, True)
     return all_runs
