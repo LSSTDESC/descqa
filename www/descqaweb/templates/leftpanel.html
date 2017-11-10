@@ -46,7 +46,7 @@
     </td>
     <td>
       {% for f in summary.files %}
-        {% if f.data %}
+        {% if f.is_png %}
           <a href="index.cgi?file={{ f.relpath }}"><img src="data:image/png;base64,{{ f.data }}" width="100%"></a><br>
         {% endif %}
       {% endfor %}
@@ -88,7 +88,7 @@
     </td>
     <td>
       {% for f in item.files %}
-        {% if f.data %}
+        {% if f.is_png %}
           <a href="index.cgi?file={{ f.relpath }}"><img src="data:image/png;base64,{{ f.data }}" width="100%"></a><br>
         {% endif %}
       {% endfor %}

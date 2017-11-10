@@ -23,10 +23,11 @@ class File(object):
         if rel_dir_path is not None:
             self.relpath = os.path.join(rel_dir_path, filename)
         self._data = None
+        self.is_png = self.filename.lower().endswith('.png')
 
         @property
         def data(self):
-            if self.filename.lower().endswith('.png') and self._data is None:
+            if self.is_png and self._data is None:
                 self._data = open(self.path, 'rb').read().encode('base64').replace('\n', '')
             return self._data
 
