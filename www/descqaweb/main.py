@@ -48,4 +48,4 @@ def run():
                     test_prefix=form.getfirst('test_prefix'))))
 
     else:
-        print(env.get_template('matrix.html').render(run=find_last_run()))
+        print(env.get_template('matrix.html').render(**prepare_matrix(run=find_last_run())))

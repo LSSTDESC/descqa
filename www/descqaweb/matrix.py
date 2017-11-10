@@ -13,7 +13,7 @@ def format_filter_link(targetDir, istest, new_test_prefix, new_catalog_prefix, c
     if new_test_prefix == current_test_prefix and new_catalog_prefix == current_catalog_prefix:
         return '<span style="color:gray">{}</span>'.format(text)
     new_test_prefix_str = '&test_prefix={}'.format(new_test_prefix) if new_test_prefix else ''
-    new_catalog_prefix_str = '&test_prefix={}'.format(new_catalog_prefix) if new_catalog_prefix else ''
+    new_catalog_prefix_str = '&catalog_prefix={}'.format(new_catalog_prefix) if new_catalog_prefix else ''
     return '<a href="index.cgi?run={}{}{}">{}</a>'.format(targetDir, new_test_prefix_str, new_catalog_prefix_str, text)
 
 
