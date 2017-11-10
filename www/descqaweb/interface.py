@@ -25,11 +25,11 @@ class File(object):
         self._data = None
         self.is_png = self.filename.lower().endswith('.png')
 
-        @property
-        def data(self):
-            if self.is_png and self._data is None:
-                self._data = open(self.path, 'rb').read().encode('base64').replace('\n', '')
-            return self._data
+    @property
+    def data(self):
+        if self.is_png and self._data is None:
+            self._data = open(self.path, 'rb').read().encode('base64').replace('\n', '')
+        return self._data
 
 
 class DescqaItem(object):
