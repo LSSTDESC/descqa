@@ -3,7 +3,7 @@ import cgi
 from .interface import get_all_runs
 from . import config
 
-__all__ = ['prepare_bigtable', 'find_last_run']
+__all__ = ['prepare_bigtable']
 
 try:
     unicode
@@ -54,16 +54,6 @@ def format_bigtable_row(descqa_run):
     output.append('<td>TESTS:&nbsp;{}<br>{}{}&nbsp;</td>'.format(test_links, 'CATALOGS:&nbsp;' if catalog_links else '', catalog_links))
 
     return '\n'.join(output)
-
-
-def find_last_run():
-    all_runs = get_all_runs(config.root_dir)
-    last_run = all_runs[0]
-    for run in all_runs:
-        if run.status.get('comment', '').strip().lower() == 'full run':
-            last_run = run
-            break
-    return last_run.name
 
 
 def prepare_bigtable(page=0):

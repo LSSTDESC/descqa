@@ -3,9 +3,19 @@ import os
 import time
 import cgi
 from . import config
-from .interface import DescqaRun
+from .interface import get_all_runs, DescqaRun
 
-__all__ = ['prepare_matrix']
+__all__ = ['prepare_matrix', 'find_last_run']
+
+
+def find_last_run():
+    all_runs = get_all_runs(config.root_dir)
+    last_run = all_runs[0]
+    for run in all_runs:
+        if run.status.get('comment', '').strip().lower() == 'full run':
+            last_run = run
+            break
+    return last_run.name
 
 
 def format_filter_link(targetDir, istest, new_test_prefix, new_catalog_prefix, current_test_prefix, current_catalog_prefix):
