@@ -43,7 +43,7 @@ def run():
             else:
                 print(env.get_template('twopanels.html').render(run=run, catalog=catalog, test=test))
         else:
-            print(env.get_template('matrix.html').render(run=run,
+            print(env.get_template('matrix.html').render(**prepare_matrix(run=run,
                     catalog_prefix=form.getfirst('catalog_prefix'),
                     test_prefix=form.getfirst('test_prefix')))
 
