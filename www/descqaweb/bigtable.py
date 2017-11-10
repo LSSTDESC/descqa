@@ -63,7 +63,7 @@ def find_last_run():
         if run.status.get('comment', '').strip().lower() == 'full run':
             last_run = run
             break
-    return last_run
+    return last_run.name
 
 
 def prepare_bigtable(page=0):

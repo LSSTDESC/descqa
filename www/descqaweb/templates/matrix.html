@@ -10,15 +10,13 @@ The tests and catalogs have been contributed by LSST-DESC collaborators. Full de
 <div class="title"><h1>{{ run }}</h1></div>
 <div class="runinfo">
 {{ comment }}<br>
-{% if user %}
 Run initiated by {{ user }}
 {% if start_time %}
    at {{ start_time }}
 {% endif %} <br>
-{% endif %}
 
 {% if time_used and time_used > 0 %}
-This run took {{ time_used|round(1) }} minute(s).
+This run took {{ time_used|round(1) }} minute(s). <br>
 {% endif %}
 
 </div>
