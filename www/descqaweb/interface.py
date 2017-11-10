@@ -12,7 +12,7 @@ STATUS_COLORS = {'PASSED': 'green', 'SKIPPED': 'gold', 'FAILED': 'orangered', 'E
 
 
 def encode_png(png_content):
-    return base64.b64encode(png_content).decode().replace('\n', '')
+    return base64.b64encode(png_content).decode('ascii').replace('\n', '')
 
 
 class File(object):
