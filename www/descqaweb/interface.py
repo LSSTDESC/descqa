@@ -175,7 +175,7 @@ class DescqaRun(object):
 
     @staticmethod
     def _get_things(things, prefix=None, return_iter=False):
-        it = (t for t in things if t.startswith(prefix) or prefix is None)
+        it = (t for t in things if prefix is None or t.startswith(prefix))
         return it if return_iter else tuple(it)
 
     def get_tests(self, prefix=None, return_iter=False):
