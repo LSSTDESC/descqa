@@ -1,5 +1,6 @@
 from __future__ import unicode_literals, print_function
 import os
+import sys
 from . import config
 from .interface import DescqaRun, encode_png
 
@@ -67,9 +68,9 @@ def print_file(target_file, root_dir=config.root_dir):
             print('Content-Length: {}'.format(len(file_content)))
             print('Content-Disposition: inline; filename="{}"'.format(os.path.basename(target_file)))
             print()
-            print(file_content.decode())
+            sys.stdout.buffer.write(file_content)
         else:
             print('Content-type: text/plain')
             print('Content-Length: {}'.format(len(file_content)))
             print()
-            print(file_content.decode())
+            sys.stdout.buffer.write(file_content)
