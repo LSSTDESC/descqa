@@ -36,16 +36,16 @@ def run():
     elif run:
         catalog = form.getfirst('catalog')
         test = form.getfirst('test')
-        prefix = dict(catalog_prefix=form.getfirst('catalog_prefix'),
-                      test_prefix=form.getfirst('test_prefix'))
 
         if catalog or test:
             if form.getfirst('left'):
                 print(env.get_template('leftpanel.html').render(**prepare_leftpanel(run, test, catalog)))
             else:
-                print(env.get_template('twopanels.html').render(run=run, catalog=catalog, test=test, **prefix))
+                print(env.get_template('twopanels.html').render(run=run, catalog=catalog, test=test))
         else:
-            print(env.get_template('matrix.html').render(run=run, **prefix))
+            print(env.get_template('matrix.html').render(run=run,
+                    catalog_prefix=form.getfirst('catalog_prefix'),
+                    test_prefix=form.getfirst('test_prefix')))
 
     else:
         print(env.get_template('matrix.html').render(run=find_last_run()))

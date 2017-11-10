@@ -10,9 +10,9 @@
    </frame>
    <frameset cols="50%,*">
       {% if test %}
-      <frame src="index.cgi?left=1&run={{ run }}&test={{ test }}&test_prefix={{ test_prefix }}&catalog_prefix={{ catalog_prefix }}{% if catalog %}#{{ catalog }}{% endif %}" name="leftframe">
+      <frame src="index.cgi?left=1&run={{ run }}&test={{ test }}{% if catalog %}#{{ catalog }}{% endif %}" name="leftframe">
       {% elif catalog %}
-      <frame src="index.cgi?left=1&run={{ run }}&catalog={{ catalog }}&test_prefix={{ test_prefix }}&catalog_prefix={{ catalog_prefix }}" name="leftframe">
+      <frame src="index.cgi?left=1&run={{ run }}&catalog={{ catalog }}{% if test %}#{{ test }}{% endif %}" name="leftframe">
       {% endif %}
       <frame src="javascript:parent.blank()" name="rightframe">
    </frameset>
