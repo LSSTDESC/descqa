@@ -1,4 +1,5 @@
-from __future__ import division, print_function
+from __future__ import division
+from builtins import range
 import numpy as np
 from scipy.stats import chi2
 
@@ -17,7 +18,7 @@ def jackknife(data, jack_indices, n_jack, func, full_args=(), full_kwargs={}, ja
     full = np.array(func(data, *full_args, **full_kwargs), dtype=np.float)
 
     jack = []
-    for i in xrange(n_jack):
+    for i in range(n_jack):
         jack.append(func(data[jack_indices != i], *jack_args, **jack_kwargs))
     jack = np.array(jack, dtype=np.float)
 

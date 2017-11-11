@@ -1,4 +1,4 @@
-from __future__ import print_function
+from __future__ import print_function, unicode_literals, absolute_import
 import os
 import sys
 import shutil
@@ -6,20 +6,15 @@ import time
 import json
 import logging
 import traceback
-import StringIO
+from io import StringIO
 import importlib
 import argparse
 import collections
 import fnmatch
 import yaml
+from builtins import str
 
 pjoin = os.path.join
-
-
-try:
-    basestring
-except NameError:
-    basestring = str
 
 
 class ExceptionAndStdStreamCatcher():
@@ -31,7 +26,7 @@ class ExceptionAndStdStreamCatcher():
 class CatchExceptionAndStdStream():
     def __init__(self, catcher):
         self._catcher = catcher
-        self._stream = StringIO.StringIO()
+        self._stream = StringIO()
 
     def __enter__(self):
         self._stdout = sys.stdout
@@ -54,7 +49,7 @@ class CatchExceptionAndStdStream():
 
 
 def quick_import(module_name):
-    return getattr(importlib.import_module(module_name), module_name)
+    return getattr(importlib.import_module('validation_code.'+module_name), module_name)
 
 
 def process_config(config_dir, set_data_dir=None):
@@ -86,7 +81,8 @@ def select_subset(d, keys_wanted=None):
         keys = fnmatch.filter(keys_available, k)
         if not keys:
             raise ValueError("{} does not present in config ({})...".format(k, ', '.join(keys_available)))
-        map(keys_to_return.add, keys)
+        for k in keys:
+            keys_to_return.add(k)
 
     return {k: d[k] for k in d if k in keys_to_return}
 
@@ -147,7 +143,7 @@ class TaskDirectory():
         return 'VALIDATION_TEST_' + t
 
     def set_status(self, validation_name, catalog_name, test_result):
-        status = test_result.upper() if isinstance(test_result, basestring) else self.result_to_text(test_result)
+        status = test_result.upper() if isinstance(test_result, str) else self.result_to_text(test_result)
         self._status[validation_name][catalog_name] = status
         with open(pjoin(self.get_path(validation_name, catalog_name), 'STATUS'), 'w') as f:
             f.write(status + '\n')
@@ -182,7 +178,7 @@ def run(tasks, validations_to_run, catalogs_to_run, log):
     # loading catalog usually takes longer, so we put catalogs_to_run in outer loop
     for catalog_name in catalogs_to_run:
         # check if there's still valid validations to run
-        if all(isinstance(validation_instance_cache.get(v), basestring) for v in validations_to_run):
+        if all(isinstance(validation_instance_cache.get(v), str) for v in validations_to_run):
             log.debug('skipping "{}" catalog as there are errors in all validations'.format(catalog_name))
             continue
 
@@ -199,13 +195,13 @@ def run(tasks, validations_to_run, catalogs_to_run, log):
             log.debug('stdout/stderr while loading "{}" catalog:\n'.format(catalog_name) + catcher.output)
 
         # loop over validations_to_run
-        for validation_name, validation in validations_to_run.iteritems():
+        for validation_name, validation in validations_to_run.items():
             # get the final output path, set test name
             final_output_dir = tasks.get_path(validation_name, catalog_name)
             validation['test_name'] = validation_name
 
             # if gc is an error message, log it and abort
-            if isinstance(gc, basestring):
+            if isinstance(gc, str):
                 write_to_traceback(gc)
                 tasks.set_status(validation_name, catalog_name, 'LOAD_CATALOG_ERROR')
                 continue
@@ -230,7 +226,7 @@ def run(tasks, validations_to_run, catalogs_to_run, log):
                 vt = validation_instance_cache[validation_name]
 
             # if vt is an error message, log it and abort
-            if isinstance(vt, basestring):
+            if isinstance(vt, str):
                 write_to_traceback(vt)
                 tasks.set_status(validation_name, catalog_name, 'VALIDATION_TEST_MODULE_ERROR')
                 continue
@@ -260,7 +256,7 @@ def run(tasks, validations_to_run, catalogs_to_run, log):
             continue
 
         catalog_list = []
-        for catalog, status in tasks.get_status(validation).iteritems():
+        for catalog, status in tasks.get_status(validation).items():
             if status.endswith('PASSED') or status.endswith('FAILED'):
                 catalog_list.append((catalog, tasks.get_path(validation, catalog)))
 
@@ -287,7 +283,7 @@ def run(tasks, validations_to_run, catalogs_to_run, log):
 
 def get_status_report(tasks):
 
-    report = StringIO.StringIO()
+    report = StringIO()
     status = tasks.get_status()
 
     for validation in status:
@@ -326,16 +322,6 @@ def write_master_status(master_status, tasks, output_dir):
 
     with open(pjoin(output_dir, 'STATUS.json'), 'w') as f:
         json.dump(master_status, f, indent=True)
-
-
-def group_by_catalog(tasks, catalogs_to_run, validations_to_run, output_dir):
-    catalog_group_dir = os.path.join(output_dir, '_group_by_catalog')
-    os.mkdir(catalog_group_dir)
-    for catalog in catalogs_to_run:
-        this_catalog_dir = os.path.join(catalog_group_dir, catalog)
-        os.mkdir(this_catalog_dir)
-        for validation in validations_to_run:
-            os.symlink(tasks.get_path(validation, catalog), os.path.join(this_catalog_dir, validation))
 
 
 def get_username():
@@ -403,7 +389,8 @@ def main(args):
             raise ValueError('not thing to run...')
 
         log.debug('creating code snapshot and adding to sys.path...')
-        sys.path.insert(0, check_copy(args.validation_code_dir, pjoin(snapshot_dir, 'validation_code')))
+        check_copy(args.validation_code_dir, pjoin(snapshot_dir, 'validation_code'))
+        sys.path.insert(0, snapshot_dir)
 
         log.debug('starting to run all validations...')
         tasks = TaskDirectory(output_dir)
@@ -411,7 +398,6 @@ def main(args):
         run(tasks, validations_to_run, catalogs_to_run, log)
 
         log.debug('creating status report...')
-        group_by_catalog(tasks, catalogs_to_run, validations_to_run, output_dir)
         write_master_status(master_status, tasks, output_dir)
         report = get_status_report(tasks)
         log.info('All done! Status report:\n' + report)
