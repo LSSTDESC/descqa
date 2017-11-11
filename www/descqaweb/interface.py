@@ -218,7 +218,7 @@ class DescqaRun(object):
             try:
                 with open(os.path.join(self.path, 'STATUS.json')) as f:
                     self._status = json.load(f)
-            except (IOError, OSError):
+            except (IOError, OSError, ValueError):
                 self._status = dict()
         return self._status
 

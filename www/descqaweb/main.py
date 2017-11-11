@@ -32,6 +32,7 @@ def run():
         except (ValueError, TypeError):
             page = 1
         print(env.get_template('bigtable.html').render(**prepare_bigtable(page)))
+        return
 
     elif _run:
         catalog = form.getfirst('catalog')
