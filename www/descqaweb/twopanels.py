@@ -1,7 +1,8 @@
 from __future__ import unicode_literals, print_function
 import os
+import sys
 from . import config
-from .interface import DescqaRun, encode_png
+from .interface import DescqaRun, b64encode
 
 __all__ = ['prepare_leftpanel', 'print_file']
 
@@ -50,27 +51,34 @@ def print_file(target_file, root_dir=config.root_dir):
             file_content = f.read()
 
     except (OSError, IOError, AssertionError):
-        print('Content-type: text/plain')
+        print('Content-Type: text/plain; charset=utf-8')
         print()
         print('[Error] Cannot open/read file {}'.format(target_file))
 
     else:
         if target_file.lower().endswith('.png'):
-            print('Content-type: text/html')
+            print('Content-Type: text/html; charset=utf-8')
             print()
             print('<!DOCTYPE html>')
             print('<html><body>')
-            print('<img src="data:image/png;base64,{}" width="100%">'.format(encode_png(file_content)))
+            print('<img src="data:image/png;base64,{}" width="100%">'.format(b64encode(file_content)))
             print('</body></html>')
+
         elif target_file.lower().endswith('.pdf'):
-            print('Content-type: application/pdf')
+            print('Content-Type: application/pdf')
+            print('Content-Length: {}'.format(len(file_content)))
+            print('Content-Disposition: inline; filename="{}"'.format(os.path.basename(target_file)))
+            print()
+            sys.stdout.flush()
+            try:
+                sys.stdout.buffer.write(file_content)
+            except AttributeError:
+                print(file_content)
+
+        else:
+            print('Content-Type: text/plain; charset=utf-8')
+            file_content = file_content.decode('utf-8')
             print('Content-Length: {}'.format(len(file_content)))
             print('Content-Disposition: inline; filename="{}"'.format(os.path.basename(target_file)))
             print()
             print(file_content)
-        else:
-            print('Content-type: text/plain')
-            print('Content-Length: {}'.format(len(file_content)))
-            print()
-            print(file_content)
-
