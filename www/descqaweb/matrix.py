@@ -3,19 +3,21 @@ import os
 import time
 import cgi
 from . import config
-from .interface import get_all_runs, DescqaRun
+from .interface import iter_all_runs, DescqaRun
 
-__all__ = ['prepare_matrix', 'find_last_run']
+__all__ = ['prepare_matrix']
 
 
-def find_last_run():
-    all_runs = get_all_runs(config.root_dir)
-    last_run = all_runs[0]
-    for run in all_runs:
-        if run.status.get('comment', '').strip().lower() == 'full run':
-            last_run = run
+def find_last_descqa_run():
+    last_run = None
+    for run in iter_all_runs(config.root_dir):
+        descqa_run = DescqaRun(run, config.root_dir, validated=True)
+        if last_run is None:
+            last_run = descqa_run
+        if descqa_run.status.get('comment', '').strip().lower() == 'full run':
+            last_run = descqa_run
             break
-    return last_run.name
+    return last_run
 
 
 def format_filter_link(targetDir, istest, new_test_prefix, new_catalog_prefix, current_test_prefix, current_catalog_prefix):
@@ -27,12 +29,15 @@ def format_filter_link(targetDir, istest, new_test_prefix, new_catalog_prefix, c
     return '<a href="index.cgi?run={}{}{}">{}</a>'.format(targetDir, new_test_prefix_str, new_catalog_prefix_str, text)
 
 
-def prepare_matrix(run, catalog_prefix=None, test_prefix=None):
+def prepare_matrix(run=None, catalog_prefix=None, test_prefix=None):
 
-    try:
-        descqa_run = DescqaRun(run, config.root_dir)
-    except AssertionError:
-        raise ValueError('Invalid run "{}"'.format(run))
+    if run:
+        try:
+            descqa_run = DescqaRun(run, config.root_dir)
+        except AssertionError:
+            raise ValueError('Invalid run "{}"'.format(run))
+    else:
+        descqa_run = find_last_descqa_run()
 
     data = dict()
 
