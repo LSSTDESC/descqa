@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 import cgi
-from .interface import get_all_runs
+from .interface import iter_all_runs, DescqaRun
 from . import config
 
 __all__ = ['prepare_bigtable']
@@ -23,7 +23,9 @@ def format_status_count(status_count):
     return '<br>'.join(output)
 
 
-def format_bigtable_row(descqa_run):
+def format_bigtable_row(run):
+
+    descqa_run = DescqaRun(run, config.root_dir, validated=True)
 
     user = descqa_run.status.get('user', '')
     user = '&nbsp;({})'.format(user) if user else ''
@@ -56,8 +58,8 @@ def format_bigtable_row(descqa_run):
     return '\n'.join(output)
 
 
-def prepare_bigtable(page=0):
-    all_runs = get_all_runs(config.root_dir)
+def prepare_bigtable(page=1):
+    all_runs = list(iter_all_runs(config.root_dir))
     n_per_page = config.run_per_page
     if all_runs:
         npages = ((len(all_runs) - 1) // n_per_page) + 1

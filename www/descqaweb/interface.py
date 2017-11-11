@@ -5,7 +5,7 @@ import json
 import datetime
 import base64
 
-__all__ = ['encode_png', 'get_all_runs', 'DescqaRun']
+__all__ = ['encode_png', 'iter_all_runs', 'DescqaRun']
 
 ALLOWED_EXT = {'txt', 'dat', 'csv', 'log', 'json', 'yaml', 'pdf', 'png'}
 STATUS_COLORS = {'PASSED': 'green', 'SKIPPED': 'gold', 'FAILED': 'orangered', 'ERROR': 'darkred'}
@@ -119,18 +119,25 @@ class DescqaItem(object):
         return self._files
 
 
-class DescqaRun(object):
-    def __init__(self, run_name, base_dir):
-        self.path = os.path.join(base_dir, run_name)
-        self.base_dir = base_dir
-        assert os.path.isdir(self.path)
-        assert not os.path.exists(os.path.join(self.path, '.lock'))
-
-        self.name = run_name
-        m = re.match(r'(20\d{2}-[01]\d-[0123]\d)(?:_(\d+))?', self.name)
-        assert m is not None
+def validate_descqa_run_name(run_name, base_dir):
+    path = os.path.join(base_dir, run_name)
+    if not os.path.isdir(path):
+        return
+    if os.path.exists(os.path.join(path, '.lock')):
+        return
+    m = re.match(r'(20\d{2}-[01]\d-[0123]\d)(?:_(\d+))?', run_name)
+    if m:
         m = m.groups()
-        self.sort_key = datetime.datetime(*(int(i) for i in m[0].split('-')), microsecond=int(m[1] or 0))
+        return datetime.datetime(*(int(i) for i in m[0].split('-')), microsecond=int(m[1] or 0))
+
+
+class DescqaRun(object):
+    def __init__(self, run_name, base_dir, validated=False):
+        if not validated:
+            assert validate_descqa_run_name(run_name, base_dir) is not None
+        self.base_dir = base_dir
+        self.name = run_name
+        self.path = os.path.join(base_dir, run_name)
 
         self._tests = None
         self._catalogs = None
@@ -216,14 +223,12 @@ class DescqaRun(object):
         return self._status
 
 
-def get_all_runs(base_dir, run_filter=None):
-    all_runs = list()
+def iter_all_runs_unsorted(base_dir):
     for run_name in os.listdir(base_dir):
-        try:
-            run = DescqaRun(run_name, base_dir)
-        except AssertionError:
-            continue
-        if run_filter is None or run_filter(run):
-            all_runs.append(run)
-    all_runs.sort(key=lambda r: r.sort_key, reverse=True)
-    return all_runs
+        run_key = validate_descqa_run_name(run_name, base_dir)
+        if run_key:
+            yield (run_name, run_key)
+
+
+def iter_all_runs(base_dir):
+    return (r[0] for r in sorted(iter_all_runs_unsorted(base_dir), key=lambda r: r[1], reverse=True))
