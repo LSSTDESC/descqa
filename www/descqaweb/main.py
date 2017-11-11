@@ -17,7 +17,7 @@ def run():
         print_file(form.getfirst('file'))
         return
 
-    print('Content-type: text/html')
+    print('Content-Type: text/html; charset=utf-8')
     print()
 
     if form.getfirst('header'):
