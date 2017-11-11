@@ -107,6 +107,7 @@ Note: If you don't have GitHub ssh key set up, you can do
 
 Hack on! Make changes inside your local descqa clone. See [here](https://github.com/LSSTDESC/descqa/blob/master/validation_code/README.md) for more detailed instruction on how to create a new test.
 
+_Note_: Please write [2-3 compatible](http://python-future.org/compatible_idioms.html) code.
 
 ### Step 5: Test
 
