@@ -125,7 +125,7 @@ def validate_descqa_run_name(run_name, base_dir):
         return
     if os.path.exists(os.path.join(path, '.lock')):
         return
-    m = re.match(r'(20\d{2}-[01]\d-[0123]\d)(?:_(\d+))?', run_name)
+    m = re.match(r'(2[01]\d{2}-[01]\d-[0123]\d)(?:_(\d+))?', run_name)
     if m:
         m = m.groups()
         return datetime.datetime(*(int(i) for i in m[0].split('-')), microsecond=int(m[1] or 0))
