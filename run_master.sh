@@ -12,7 +12,7 @@ DESCQAROOTDIR="/global/projecta/projectdirs/lsst/groups/CS/descqa"
 # load python module and set PYTHONPATH
 module unload python
 export PYTHONPATH=""
-source /global/common/cori/contrib/lsst/apps/anaconda/4.4.0-py2/bin/activate ""
+source /global/common/cori/contrib/lsst/apps/anaconda/4.4.0-py3/bin/activate ""
 source activate DESCQA
 
 # for kcorrect 

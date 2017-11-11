@@ -1,8 +1,8 @@
-from __future__ import division, print_function
+from __future__ import division, unicode_literals, absolute_import
 import os
 from warnings import warn
 import itertools
-zip = itertools.izip
+from builtins import zip, str
 
 import numpy as np
 
@@ -26,7 +26,7 @@ mpl.rcParams['ytick.minor.size'] = 3.0
 import matplotlib.pyplot
 plt = matplotlib.pyplot
 
-import utils
+from . import utils
 
 __all__ = ['BaseValidationTest', 'ValidationTest', 'TestResult', 'mpl', 'plt', 'SimpleComparisonPlot', 'utils']
 
@@ -66,7 +66,7 @@ class TestResult(object):
             try:
                 self.score = float(score)
             except (TypeError, ValueError):
-                if isinstance(score, basestring) and score.upper() in ('PASSED', 'FAILED', 'SKIPPED'):
+                if isinstance(score, str) and score.upper() in ('PASSED', 'FAILED', 'SKIPPED'):
                     # this is for backward compatibility in other validations
                     status = score.upper()
                     self.passed = (status == 'PASSED')
@@ -170,7 +170,7 @@ class ValidationTest(BaseValidationTest):
         test_result : TestResult object
             use the TestResult object to return test result
         """
-        output_filenames = {k: os.path.join(base_output_dir, v) for k, v in self._output_filenames.iteritems()}
+        output_filenames = {k: os.path.join(base_output_dir, v) for k, v in self._output_filenames.items()}
 
         #make sure galaxy catalog has appropriate quantities
         if not galaxy_catalog.has_quantities(self._required_quantities):
@@ -316,7 +316,7 @@ class SimpleComparisonPlot():
 
 
     def plot_data(self, ref_data, ref_label, other_data, other_labels, ref_as_line=False, interp=False):
-        if isinstance(other_labels, basestring):
+        if isinstance(other_labels, str):
             ref_color = 'C1'
             other_format = [('-', 'C0')]
             other_data = [other_data]
@@ -367,7 +367,7 @@ class SimpleComparisonPlot():
     def mask_data(self, data):
         if self.logy:
             mask = np.isfinite(data['y']) & (data['y'] > 0)
-            d = {k: v[mask] for k, v in data.iteritems()}
+            d = {k: v[mask] for k, v in data.items()}
             if 'y-' in d:
                 d['y-'][d['y-'] <= 0] = 1.0e-100
             return d
