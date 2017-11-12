@@ -66,7 +66,7 @@ class ConditionalLuminosityFunction(BaseValidationTest):
         absolute_magnitude_field, quantities_needed = prepared
         colnames = [absolute_magnitude_field, 'halo_mass', 'redshift_true']
         bins = (self.magnitude_bins, self.mass_bins, self.z_bins)
-        hist_cen = np.zeros((self.n_magnitude_bins, self.n_mass_bins, self.n_z_bins), np.int)
+        hist_cen = np.zeros((self.n_magnitude_bins, self.n_mass_bins, self.n_z_bins))
         hist_sat = np.zeros_like(hist_cen)
 
         cen_query = GCRQuery('is_central')
