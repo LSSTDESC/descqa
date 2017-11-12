@@ -1,4 +1,4 @@
-from __future__ import unicode_literals, absolute_import
+from __future__ import unicode_literals, absolute_import, division
 import os
 import numpy as np
 from GCR import GCRQuery
@@ -60,7 +60,7 @@ class ConditionalLuminosityFunction(BaseValidationTest):
     def run_validation_test(self, galaxy_catalog, catalog_name, base_output_dir=None):
 
         prepared = self.prepare_galaxy_catalog(galaxy_catalog)
-        if prepared is None
+        if prepared is None:
             TestResult(skipped=True)
 
         absolute_magnitude_field, quantities_needed = prepared
