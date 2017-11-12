@@ -18,17 +18,13 @@ You can also view
 <br>
 
 <div class="title"><h1>{{ run }}</h1></div>
+
 <div class="runinfo">
 {{ comment }}<br>
-Run initiated by {{ user }}
-{% if start_time %}
-   at {{ start_time }}
-{% endif %} <br>
-
+Run initiated by {{ user }} {{ start_time }}<br>
 {% if time_used and time_used > 0 %}
 This run took {{ time_used|round(1) }} minute(s). <br>
 {% endif %}
-
 </div>
 
 <div class="fliters">
@@ -41,6 +37,7 @@ This run took {{ time_used|round(1) }} minute(s). <br>
 {{ matrix }}
 </table>
 </div>
+
 <script>document.getElementById("pleasewait").style.display="none";</script>
 </body>
 </html>
