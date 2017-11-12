@@ -9,9 +9,7 @@ set -e
 # set DESCQA root directory
 DESCQAROOTDIR="/global/projecta/projectdirs/lsst/groups/CS/descqa"
 
-# load python module and set PYTHONPATH
-module unload python
-export PYTHONPATH=""
+# activate python env
 source /global/common/cori/contrib/lsst/apps/anaconda/4.4.0-py3/bin/activate ""
 source activate DESCQA
 
@@ -21,10 +19,6 @@ export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$KCORRECT_DIR/lib"
 
 # set other necessary paths
 OUTPUTDIR="$DESCQAROOTDIR/run/v2"
-CATALOGDIR="$DESCQAROOTDIR/catalog"
-
-# ensure permission of output is readable by the web interface
-umask 0002
 
 # to allow wildcards in arguments go to master.py
 set -o noglob

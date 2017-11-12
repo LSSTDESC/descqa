@@ -363,6 +363,7 @@ def main(args):
     GCRCatalogs = importlib.import_module('GCRCatalogs')
     if args.gcr_catalogs_path_overwrite:
         del sys.path[0]
+    log.info('Using GCR v{}.'.format(GCRCatalogs.GCR.__version__))
     log.info('Using GCRCatalogs v{}.'.format(GCRCatalogs.__version__))
 
     if args.list_catalogs:
@@ -402,7 +403,7 @@ def main(args):
         log.debug('creating status report...')
         write_master_status(master_status, tasks, output_dir)
         report = get_status_report(tasks)
-        subprocess.check_call(['chmod', '-R', 'o+rX', output_dir])
+        subprocess.check_call(['chmod', '-R', 'a+rX', output_dir])
         log.info('All done! Status report:\n' + report)
         log.info('Web output: https://portal.nersc.gov/project/lsst/descqa/v2/www/index.cgi?run={}'.format(os.path.basename(output_dir)))
 
