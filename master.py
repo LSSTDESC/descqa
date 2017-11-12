@@ -400,15 +400,16 @@ def main(args):
         log.debug('starting to run all validations...')
         run(tasks, validations_to_run, catalogs_to_run, log)
 
-        log.debug('creating status report...')
+        log.debug('generating status report...')
         write_master_status(master_status, tasks, output_dir)
         report = get_status_report(tasks)
-        subprocess.check_call(['chmod', '-R', 'a+rX', output_dir])
+        
         log.info('All done! Status report:\n' + report)
-        log.info('Web output: https://portal.nersc.gov/project/lsst/descqa/v2/www/index.cgi?run={}'.format(os.path.basename(output_dir)))
-
+        
     finally:
         os.unlink(pjoin(output_dir, '.lock'))
+        subprocess.check_call(['chmod', '-R', 'a+rX', output_dir])
+        log.info('Web output: https://portal.nersc.gov/project/lsst/descqa/v2/www/?run={}'.format(os.path.basename(output_dir)))
 
 
 if __name__ == '__main__':
