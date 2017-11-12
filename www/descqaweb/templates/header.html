@@ -1,26 +1,39 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>DESCQA: LSST DESC Quality Assurance</title>
+<title>{{ siteTitle }}</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css">
 <link rel="stylesheet" href="style/style.css">
 </head>
+
 <body>
-<div id="header" class="without-secondary-menu"><div class="section clearfix" >
-<a href="index.cgi" title="Home" rel="home" id="logo" target="_top">
+
+{% if full_header %}
+<header>
+<a href="." title="Home" rel="home" id="logo" target="_top">
 <img src="http://lsst-desc.org/sites/default/files/desc-logo-small.png" alt="Home" />
 </a>
-<div id="name-and-slogan">
-<div id="site-name"> </div>
-</div> <!-- /#name-and-slogan -->
-</div></div> <!-- /.section, /#header -->
+</header>
 
 <div class="title">
-<div style="float:left"><h1>DESCQA: LSST DESC Quality Assurance</h1></div><div style="float:right">
-<a class="everblue" href="index.cgi" title="Home" rel="home" id="logo" target="_top">Home</a>&nbsp;|&nbsp;
-<a class="everblue" href="index.cgi?run=all" target="_top">Runs</a>&nbsp;|&nbsp;
-<a class="everblue" href="https://confluence.slac.stanford.edu/x/Z0uKDQ" target="_blank">Catalog and Test Info</a>
-</div><div style="clear:both"></div>
+
+<div style="float:left"><h1>{{ siteTitle }}</h1></div>
+
+<div style="float:right">
+<a class="everblue" href="." title="Home" rel="home" id="logo" target="_top">Latest Run</a>&nbsp;|&nbsp;
+<a class="everblue" href="?run=all" target="_top">All Runs</a>&nbsp;|&nbsp;
+<a class="everblue" href="https://confluence.slac.stanford.edu/x/Z0uKDQ" target="_blank">More Info</a>
 </div>
+
+<div style="clear:both"></div>
+
+</div>
+{% endif %}
+
+{% if please_wait %}
+<div id="pleasewait">
+<h1>Please wait while the content is being generated.</h1>
+</div>
+{% endif %}
