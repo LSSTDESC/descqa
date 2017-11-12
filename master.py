@@ -11,6 +11,7 @@ import importlib
 import argparse
 import collections
 import fnmatch
+import subprocess
 import yaml
 from builtins import str
 
@@ -161,9 +162,11 @@ class TaskDirectory():
             return self._status
 
 
-def make_all_subdirs(tasks, validations_to_run, catalogs_to_run):
+def make_all_subdirs(tasks, validations_to_run, catalogs_to_run, validation_config_dir=None):
     for validation in validations_to_run:
         os.mkdir(tasks.get_path(validation))
+        if validation_config_dir:
+            check_copy(pjoin(validation_config_dir, validation+'.yaml'), pjoin(tasks.get_path(validation), 'config.yaml'))
         for catalog in catalogs_to_run:
             os.mkdir(tasks.get_path(validation, catalog))
 
@@ -379,9 +382,6 @@ def main(args):
         os.mkdir(snapshot_dir)
         log.info('output of this run is stored in {}'.format(output_dir))
 
-        log.debug('copying config files...')
-        check_copy(args.validation_config_dir, pjoin(snapshot_dir, 'validation_configs'))
-
         log.debug('processing config files...')
         validations_to_run = select_subset(process_config(args.validation_config_dir, args.validation_data_dir), args.validations_to_run)
         catalogs_to_run = select_subset(GCRCatalogs.get_available_catalogs(), args.catalogs_to_run)
@@ -392,14 +392,17 @@ def main(args):
         check_copy(args.validation_code_dir, pjoin(snapshot_dir, 'validation_code'))
         sys.path.insert(0, snapshot_dir)
 
-        log.debug('starting to run all validations...')
+        log.debug('prepare output directories...')
         tasks = TaskDirectory(output_dir)
-        make_all_subdirs(tasks, validations_to_run, catalogs_to_run)
+        make_all_subdirs(tasks, validations_to_run, catalogs_to_run, args.validation_config_dir)
+        
+        log.debug('starting to run all validations...')
         run(tasks, validations_to_run, catalogs_to_run, log)
 
         log.debug('creating status report...')
         write_master_status(master_status, tasks, output_dir)
         report = get_status_report(tasks)
+        subprocess.check_call(['chmod', '-R', 'o+rX', output_dir])
         log.info('All done! Status report:\n' + report)
         log.info('Web output: https://portal.nersc.gov/project/lsst/descqa/v2/www/index.cgi?run={}'.format(os.path.basename(output_dir)))
 
