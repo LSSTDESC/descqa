@@ -6,7 +6,7 @@
 </head>
 <frameset rows="155px,*" framespacing="0" frameborder="no">
    <frame noresize="noresize" scrolling="no" src="?header=1" name="header">
-   <frameset cols="50%,*">
+   <frameset cols="50%,*" frameborder="yes">
       {% if test %}
       <frame src="?left=1&run={{ run }}&test={{ test }}{% if catalog %}#{{ catalog }}{% endif %}" name="leftframe">
       {% elif catalog %}
