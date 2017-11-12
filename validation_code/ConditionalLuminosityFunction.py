@@ -74,7 +74,7 @@ class ConditionalLuminosityFunction(BaseValidationTest):
         if 'r_host' in quantities_needed and 'r_vir' in quantities_needed:
             sat_query &= GCRQuery('r_host < r_vir')
 
-        for data in galaxy_catalog.get_quantities(quantities_needed, return_iterator=True)
+        for data in galaxy_catalog.get_quantities(quantities_needed, return_iterator=True):
             cen_mask = cen_query.mask(data)
             sat_mask = sat_query.mask(data)
             data = np.stack((data[k] for k in colnames)).T
