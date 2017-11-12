@@ -4,7 +4,7 @@ This repository contains the DESCQA simulation validation framework derived from
 
 A [web interface](https://portal.nersc.gov/project/lsst/descqa/v2/www/) hosted on NERSC demostrates this framework.
 
-**Note**: The master branch now hosts DESCQA2. If you are looking for DESCQA1 as presented in the [companion paper](https://arxiv.org/abs/1709.09665), please go to [v1 branch](https://github.com/LSSTDESC/descqa/tree/v1) and [v1 web interface](https://portal.nersc.gov/project/lsst/descqa/v1/www/)
+**Note**: The master branch now hosts DESCQA2. If you are looking for DESCQA1 as presented in the [companion paper](https://arxiv.org/abs/1709.09665), please go to [v1 branch](https://github.com/LSSTDESC/descqa/tree/v1) and [v1 web interface](https://portal.nersc.gov/project/lsst/descqa/v1/www/).
 
 Starting from DESCQA2, the configurations and readers of catalogs are separated from DESCQA and are now hosted in [GCRCatalogs](https://github.com/LSSTDESC/gcr-catalogs). 
 
