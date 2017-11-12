@@ -61,7 +61,7 @@ class ConditionalLuminosityFunction(BaseValidationTest):
 
         prepared = self.prepare_galaxy_catalog(galaxy_catalog)
         if prepared is None:
-            TestResult(skipped=True)
+            return TestResult(skipped=True)
 
         absolute_magnitude_field, quantities_needed = prepared
         colnames = [absolute_magnitude_field, 'halo_mass', 'redshift_true']
