@@ -21,9 +21,10 @@ def run():
 
     print('Content-Type: text/html; charset=utf-8')
     print()
+    sys.stdout.flush()
 
     if form.getfirst('header'):
-        print(env.get_template('header.html').render(full_header=True, please_wait=False, siteTitle=config.site_title))
+        print(env.get_template('header.html').render(full_header=True, header_page=True, siteTitle=config.site_title))
         return
 
     _run = form.getfirst('run', '')
@@ -44,7 +45,7 @@ def run():
 
         if catalog or test:
             if form.getfirst('left'):
-                print(env.get_template('header.html').render(full_header=False, please_wait=True, siteTitle=config.site_title))
+                print(env.get_template('header.html').render(please_wait=True, siteTitle=config.site_title))
                 sys.stdout.flush()
                 print(env.get_template('leftpanel.html').render(**prepare_leftpanel(_run, test, catalog)))
             else:
