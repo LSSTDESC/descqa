@@ -45,34 +45,42 @@ class ConditionalLuminosityFunction(BaseValidationTest):
             quantities_needed.add('r_host')
             quantities_needed.add('r_vir')
 
-        absolute_magnitude_field = gc.first_available(*self.possible_Mag_fields)
-        quantities_needed.add(absolute_magnitude_field)
+        try:
+            absolute_magnitude_field = gc.first_available(*self.possible_Mag_fields)
+        except ValueError:
+            return
 
-        return absolute_magnitude_field, gc.get_quantities(quantities_needed)
+        quantities_needed.add(absolute_magnitude_field)
+        if not gc.has_quantities(quantities_needed):
+            return
+
+        return absolute_magnitude_field, quantities_needed
 
 
     def run_validation_test(self, galaxy_catalog, catalog_name, base_output_dir=None):
 
-        try:
-            absolute_magnitude_field, data = self.prepare_galaxy_catalog(galaxy_catalog)
-        except (ValueError):
+        prepared = self.prepare_galaxy_catalog(galaxy_catalog)
+        if prepared is None
             TestResult(skipped=True)
 
-            
+        absolute_magnitude_field, quantities_needed = prepared
         colnames = [absolute_magnitude_field, 'halo_mass', 'redshift_true']
+        bins = (self.magnitude_bins, self.mass_bins, self.z_bins)
+        hist_cen = np.zeros((self.n_magnitude_bins, self.n_mass_bins, self.n_z_bins), np.int)
+        hist_sat = np.zeros_like(hist_cen)
 
         cen_query = GCRQuery('is_central')
         sat_query = ~cen_query
-        if 'r_host' in data and 'r_vir' in data:
+        if 'r_host' in quantities_needed and 'r_vir' in quantities_needed:
             sat_query &= GCRQuery('r_host < r_vir')
 
-        cen_mask = cen_query.mask(data)
-        sat_mask = sat_query.mask(data)
+        for data in galaxy_catalog.get_quantities(quantities_needed, return_iterator=True)
+            cen_mask = cen_query.mask(data)
+            sat_mask = sat_query.mask(data)
+            data = np.stack((data[k] for k in colnames)).T
+            hist_cen += np.histogramdd(data[cen_mask], bins)[0]
+            hist_sat += np.histogramdd(data[sat_mask], bins)[0]
 
-        bins = (self.magnitude_bins, self.mass_bins, self.z_bins)
-        data = np.stack((data[k] for k in colnames)).T
-        hist_cen = np.histogramdd(data[cen_mask], bins)[0]
-        hist_sat = np.histogramdd(data[sat_mask], bins)[0]
         del data, cen_mask, sat_mask
 
         halo_counts = hist_cen.sum(axis=0)
@@ -87,20 +95,16 @@ class ConditionalLuminosityFunction(BaseValidationTest):
 
 
     def make_plot(self, clf, name, save_to):
-
         fig, ax = plt.subplots(self.n_mass_bins, self.n_z_bins, sharex=True, sharey=True, figsize=(12,10), dpi=100)
 
         for i in range(self.n_z_bins):
             for j in range(self.n_mass_bins):
                 ax_this = ax[j,i]
-                ax_this.semilogy(self.mag_center, clf['tot'][:,j,i]/self.dmag, label='Total')
-                ax_this.semilogy(self.mag_center, clf['sat'][:,j,i]/self.dmag, label='Satellites', linestyle=':')
-                ax_this.semilogy(self.mag_center, clf['cen'][:,j,i]/self.dmag, label='Centrals', linestyle='--')
+                for k, ls in zip(('total', 'satellites', 'centrals'), ('-', ':', '--')):
+                    ax_this.semilogy(self.mag_center, clf[k[:3]][:,j,i]/self.dmag, label=k, ls=ls)
                 ax_this.set_ylim(0.05, 50)
-                ax_this.text(-25, 10, '${:.1E}\\leq M <{:.1E}$\n${:g}\\leq z<{:g}$'.format(self.mass_bins[j],
-                                                                                         self.mass_bins[j+1],
-                                                                                         self.z_bins[i],
-                                                                                         self.z_bins[i+1]))
+                bins = self.mass_bins[j], self.mass_bins[j+1], self.z_bins[i], self.z_bins[i+1]
+                ax_this.text(-25, 10, '${:.1E}\\leq M <{:.1E}$\n${:g}\\leq z<{:g}$'.format(*bins))
 
         ax_this.legend(loc='lower right', frameon=False, fontsize='medium')
 
@@ -114,4 +118,3 @@ class ConditionalLuminosityFunction(BaseValidationTest):
         fig.tight_layout()
         fig.savefig(save_to)
         plt.close(fig)
-
