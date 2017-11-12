@@ -47,12 +47,12 @@ def format_bigtable_row(run):
     catalog_status = format_status_count(descqa_run.status.get('status_count_group_by_catalog', {}))
 
     output = []
-    main_link = '&nbsp;<a href="index.cgi?run={}" onMouseOver="appear(\'{}\', \'{}\');" onMouseOut="disappear();">{}</a>'.format(\
+    main_link = '&nbsp;<a href="?run={}" onMouseOver="appear(\'{}\', \'{}\');" onMouseOut="disappear();">{}</a>'.format(\
             descqa_run.name, test_status, catalog_status, descqa_run.name)
     output.append('<td>{}{}{}</td>'.format(main_link, user, comment))
     output.append('<td><img src="style/{}.gif"></td>'.format(light))
-    test_links = '&nbsp;|&nbsp;'.join(('<a href="index.cgi?run={0}&test={1}">{1}</a>'.format(descqa_run.name, t) for t in descqa_run.tests))
-    catalog_links = '&nbsp;|&nbsp;'.join(('<a href="index.cgi?run={0}&catalog={1}">{1}</a>'.format(descqa_run.name, c) for c in descqa_run.catalogs))
+    test_links = '&nbsp;|&nbsp;'.join(('<a href="?run={0}&test={1}">{1}</a>'.format(descqa_run.name, t) for t in descqa_run.tests))
+    catalog_links = '&nbsp;|&nbsp;'.join(('<a href="?run={0}&catalog={1}">{1}</a>'.format(descqa_run.name, c) for c in descqa_run.catalogs))
     output.append('<td>TESTS:&nbsp;{}<br>{}{}&nbsp;</td>'.format(test_links, 'CATALOGS:&nbsp;' if catalog_links else '', catalog_links))
 
     return '\n'.join(output)

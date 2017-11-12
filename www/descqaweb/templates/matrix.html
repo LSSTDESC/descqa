@@ -1,24 +1,30 @@
-{% include 'header.html' %}
-
-<br>
+<div style="max-width: 1000px;">
+<h3><a class="everblue" href="../../v1/www/">Click here</a> if you are looking for DESCQA v1.</h3>
 <h3>
-The DESCQA framework executes tests on galaxy catalogs generated from LSST-related simulations.
-The most recent run of the full suite of tests is shown below. To view the results for an individual catalog, click one of the catalog names at the top of the table. To view the results for an individual test, click one of the test names along the left of the table. For previous runs, click <a class="everblue" href="index.cgi?run=all">here</a>.
-<br><br>
-The tests and catalogs have been contributed by LSST-DESC collaborators. Full details about the catalogs and tests, and how to contribute, are available <a class="everblue" href="https://confluence.slac.stanford.edu/x/Z0uKDQ" target="_blank">here</a>.
+The DESCQA framework executes validation tests on mock galaxy catalogs.
+These tests and catalogs are contributed by LSST DESC collaborators.
+See <a href="https://arxiv.org/abs/1709.09665" target="_blank">the DESCQA paper</a> for more information.
+Full details about the catalogs and tests, and how to contribute, are available <a class="everblue" href="https://confluence.slac.stanford.edu/x/Z0uKDQ" target="_blank">here</a> (collaborators only).
 </h3>
+<h3>
+Below is a summary matrix of "Run {{ run }}". To view the results for an individual catalog, click one of the catalog names at the top of the table. To view the results for an individual test, click one of the test names along the left of the table.
+</h3>
+<h3>
+You can also view
+<a class="everblue" href=".">the latest full run</a> and
+<a class="everblue" href="?run=all">a list of all runs</a>.
+</h3>
+</div>
+<br>
+
 <div class="title"><h1>{{ run }}</h1></div>
+
 <div class="runinfo">
 {{ comment }}<br>
-Run initiated by {{ user }}
-{% if start_time %}
-   at {{ start_time }}
-{% endif %} <br>
-
+Run initiated by {{ user }} {{ start_time }}<br>
 {% if time_used and time_used > 0 %}
 This run took {{ time_used|round(1) }} minute(s). <br>
 {% endif %}
-
 </div>
 
 <div class="fliters">
@@ -31,7 +37,7 @@ This run took {{ time_used|round(1) }} minute(s). <br>
 {{ matrix }}
 </table>
 </div>
+
+<script>document.getElementById("pleasewait").style.display="none";</script>
 </body>
 </html>
-
-

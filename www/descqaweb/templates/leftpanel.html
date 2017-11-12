@@ -1,16 +1,8 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta http-equiv="content-type" content="text/html; charset=utf-8">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css">
-<link rel="stylesheet" href="style/style.css">
-</head>
-<body>
 <base target="rightframe">
-<a class="everblue" href="index.cgi" target="_top">&lt; Back to home</a><br>
-<a class="everblue" href="index.cgi?run=all" name="top" target="_top">&lt; Back to "big table" (list of all runs)</a><br>
-<a class="everblue" href="index.cgi?run={{ run }}" target="_top">&lt; Back to "matrix" (for this run)</a>
-<div class="title"><h1><a class="everblue" href="index.cgi?run={{ run }}" target="_top">{{ run }}</a> ::
+<a class="everblue" href="." target="_top">&lt; Back to home</a><br>
+<a class="everblue" href="?run=all" name="top" target="_top">&lt; Back to "big table" (list of all runs)</a><br>
+<a class="everblue" href="?run={{ run }}" target="_top">&lt; Back to "matrix" (for this run)</a>
+<div class="title"><h1><a class="everblue" href="?run={{ run }}" target="_top">{{ run }}</a> ::
 {{ title }}{% if is_group_by_catalog %} :: (Group by catalog){% endif %}</h1></div>
 <br>
 {% if group %}
@@ -40,14 +32,14 @@
     <td>
       <i>Summary outputs:</i><br>
         {% for f in summary.files %}
-        &nbsp;&nbsp;<a href="index.cgi?file={{ f.relpath }}">{{ f.filename }}</a><br>
+        &nbsp;&nbsp;<a href="?file={{ f.relpath }}">{{ f.filename }}</a><br>
         {% endfor %}
       <br>
     </td>
     <td>
       {% for f in summary.files %}
         {% if f.is_png %}
-          <a href="index.cgi?file={{ f.relpath }}"><img src="data:image/png;base64,{{ f.data }}" width="100%"></a><br>
+          <a href="?file={{ f.relpath }}"><img src="data:image/png;base64,{{ f.data }}" width="100%"></a><br>
         {% endif %}
       {% endfor %}
     </td>
@@ -80,7 +72,7 @@
     {% if item.files %}
       <i>Outputs:</i><br>
         {% for f in item.files %}
-        &nbsp;&nbsp;<a href="index.cgi?file={{ f.relpath }}">{{ f.filename }}</a><br>
+        &nbsp;&nbsp;<a href="?file={{ f.relpath }}">{{ f.filename }}</a><br>
         {% endfor %}
       <br>
     {% endif %}
@@ -89,7 +81,7 @@
     <td>
       {% for f in item.files %}
         {% if f.is_png %}
-          <a href="index.cgi?file={{ f.relpath }}"><img src="data:image/png;base64,{{ f.data }}" width="100%"></a><br>
+          <a href="?file={{ f.relpath }}"><img src="data:image/png;base64,{{ f.data }}" width="100%"></a><br>
         {% endif %}
       {% endfor %}
     </td>
@@ -104,5 +96,6 @@
 {% else %}
   <span class="darkred"><i><b>No tests were made</b></i></span>
 {% endif %}
+<script>document.getElementById("pleasewait").style.display="none";</script>
 </body>
 </html>
