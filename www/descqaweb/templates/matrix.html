@@ -28,6 +28,7 @@ Run initiated by {{ user }} {{ start_time }}<br>
 {% if time_used and time_used > 0 %}
 This run took {{ time_used|round(1) }} minute(s). <br>
 {% endif %}
+{% if versions %}Versions used: {{ versions }}<br>{% endif %}
 </div>
 
 <div class="fliters">

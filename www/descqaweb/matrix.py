@@ -44,6 +44,7 @@ def prepare_matrix(run=None, catalog_prefix=None, test_prefix=None):
     data['run'] = descqa_run.name
     data['comment'] = descqa_run.status.get('comment', '')
     data['user'] = descqa_run.status.get('user', 'UNKNOWN')
+    data['versions'] = ' | '.join(('{}: {}'.format(k, v) for k, v in descqa_run.status.get('versions', dict())))
 
     if 'start_time' in descqa_run.status:
         data['start_time'] = time.strftime('at %Y/%m/%d %H:%M:%S PT', time.localtime(descqa_run.status.get('start_time')))
