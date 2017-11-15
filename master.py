@@ -425,7 +425,7 @@ def main(args):
 
     finally:
         os.unlink(pjoin(output_dir, '.lock'))
-        subprocess.check_call(['chmod', '-R', 'a+rX', output_dir])
+        subprocess.check_call(['chmod', '-R', 'a+rX,o-w', output_dir])
         log.info('Web output: https://portal.nersc.gov/project/lsst/descqa/v2/www/?run={}'.format(os.path.basename(output_dir)))
 
 
