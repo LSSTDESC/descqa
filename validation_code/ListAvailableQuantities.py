@@ -24,6 +24,6 @@ class ListAvailableQuantities(BaseValidationTest):
         self._save_quantities(catalog_name, galaxy_catalog.list_all_quantities(), os.path.join(base_output_dir, 'quantities.txt'))
         self._save_quantities(catalog_name, galaxy_catalog.list_all_native_quantities(), os.path.join(base_output_dir, 'native_quantities.txt'))
         with open(os.path.join(base_output_dir, 'config.yaml'), 'w') as f:
-            f.write(yaml.dump(galaxy_catalog.get_input_kwargs(), default_flow_style=False))
+            f.write(yaml.dump(galaxy_catalog.get_catalog_info(), default_flow_style=False))
             f.write('\n')
         return TestResult(0, passed=True)
