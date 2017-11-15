@@ -10,6 +10,7 @@ set -e
 DESCQAROOTDIR="/global/projecta/projectdirs/lsst/groups/CS/descqa"
 
 # activate python env
+export PYTHONPATH=""
 source /global/common/cori/contrib/lsst/apps/anaconda/4.4.0-py3/bin/activate ""
 source activate DESCQA
 
