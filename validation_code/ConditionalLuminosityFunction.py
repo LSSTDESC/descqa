@@ -88,7 +88,8 @@ class ConditionalLuminosityFunction(BaseValidationTest):
                               absolute_magnitude2_field, 'redshift_true'))
             
         cen_query = GCRQuery('is_central') & red_query
-        sat_query = (~cen_query) & red_query
+        sat_query = ~GCRQuery('is_central') & red_query
+
 
         if 'r_host' in quantities_needed and 'r_vir' in quantities_needed:
             sat_query &= GCRQuery('r_host < r_vir')
