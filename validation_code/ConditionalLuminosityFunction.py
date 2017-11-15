@@ -23,7 +23,7 @@ class ConditionalLuminosityFunction(BaseValidationTest):
         self.possible_Mag2_fields = [f.format(band2) for f in possible_Mag_fields]
         self.band1 = band1
         self.band2 = band2
-        self.color_cut_percent = float(color_cut_percent)
+        self.color_cut_percent = float(color_cut_percent or 0.2)
 
         self.magnitude_bins   = magnitude_bins or np.linspace(-26, -18, 29)
         self.mass_bins        = mass_bins or np.logspace(13.5, 15, 5)
@@ -36,7 +36,7 @@ class ConditionalLuminosityFunction(BaseValidationTest):
         self.dmag = self.magnitude_bins[1:] - self.magnitude_bins[:-1]
         self.mag_center = (self.magnitude_bins[1:] + self.magnitude_bins[:-1])*0.5
         
-        self.color_cut = lambda g, r, z: g-r>np.sort((g-r)[z<0.2])[-int(len(g[z<0.2])*self.color_cut_percent)]
+        self.color_cut = lambda g, r, z: g-r>np.percentile((g-r)[z<0.2],self.color_cut_percent*100)
 
         self._other_kwargs = kwargs
         
@@ -87,22 +87,19 @@ class ConditionalLuminosityFunction(BaseValidationTest):
                               absolute_magnitude1_field, 
                               absolute_magnitude2_field, 'redshift_true'))
             
-        cen_query = GCRQuery('is_central')
-        sat_query = ~cen_query
+        cen_query = GCRQuery('is_central') & red_query
+        sat_query = (~cen_query) & red_query
 
         if 'r_host' in quantities_needed and 'r_vir' in quantities_needed:
             sat_query &= GCRQuery('r_host < r_vir')
 
-        data = next(galaxy_catalog.get_quantities(quantities_needed, return_iterator=True))
-        
         for data in galaxy_catalog.get_quantities(quantities_needed, return_iterator=True):
-            red_mask = red_query.mask(data)
-            cen_mask = cen_query.mask(data) 
+            cen_mask = cen_query.mask(data)  
             sat_mask = sat_query.mask(data)
 
             data = np.stack((data[k] for k in colnames)).T
-            hist_cen += np.histogramdd(data[cen_mask&red_mask], bins)[0]
-            hist_sat += np.histogramdd(data[sat_mask&red_mask], bins)[0]
+            hist_cen += np.histogramdd(data[cen_mask], bins)[0]
+            hist_sat += np.histogramdd(data[sat_mask], bins)[0]
           
         del data, cen_mask, sat_mask
 
