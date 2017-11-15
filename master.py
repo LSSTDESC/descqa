@@ -98,6 +98,18 @@ def create_logger(verbose=False):
     return log
 
 
+def record_version(module, version, record_dict=None, logger=None):
+    if record_dict is None:
+        record_dict = dict()
+
+    record_dict[module] = version
+
+    if logger:
+        logger.info('Using {} {}'.format(module, version))
+
+    return record_dict
+
+
 def check_copy(src, dst):
     if os.path.exists(dst):
         raise OSError('{} already exists'.format(dst))
@@ -348,11 +360,15 @@ def make_argpath_absolute(args):
 def main(args):
     log = create_logger(verbose=args.verbose)
 
-    master_status = {}
+    master_status = dict()
     master_status['user'] = get_username()
     master_status['start_time'] = time.time()
     if args.comment:
         master_status['comment'] = args.comment
+    master_status['versions'] = dict()
+
+    git_hash = subprocess.check_output(['git', 'rev-parse', '--verify', '--short', 'HEAD'])
+    version_records = record_version('DESCQA', git_hash, master_status['versions'], logger=log)
 
     make_argpath_absolute(args)
 
@@ -363,8 +379,9 @@ def main(args):
     GCRCatalogs = importlib.import_module('GCRCatalogs')
     if args.gcr_catalogs_path_overwrite:
         del sys.path[0]
-    log.info('Using GCR v{}.'.format(GCRCatalogs.GCR.__version__))
-    log.info('Using GCRCatalogs v{}.'.format(GCRCatalogs.__version__))
+
+    record_version('GCR', GCRCatalogs.GCR.__version__, master_status['versions'], logger=log)
+    record_version('GCRCatalogs', GCRCatalogs.__version__, master_status['versions'], logger=log)
 
     if args.list_catalogs:
         print('-'*50)
@@ -396,16 +413,16 @@ def main(args):
         log.debug('prepare output directories...')
         tasks = TaskDirectory(output_dir)
         make_all_subdirs(tasks, validations_to_run, catalogs_to_run, args.validation_config_dir)
-        
+
         log.debug('starting to run all validations...')
         run(tasks, validations_to_run, catalogs_to_run, log)
 
         log.debug('generating status report...')
         write_master_status(master_status, tasks, output_dir)
         report = get_status_report(tasks)
-        
+
         log.info('All done! Status report:\n' + report)
-        
+
     finally:
         os.unlink(pjoin(output_dir, '.lock'))
         subprocess.check_call(['chmod', '-R', 'a+rX', output_dir])
