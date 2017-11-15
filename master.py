@@ -367,7 +367,7 @@ def main(args):
         master_status['comment'] = args.comment
     master_status['versions'] = dict()
 
-    git_hash = subprocess.check_output(['git', 'rev-parse', '--verify', '--short', 'HEAD']).decode()
+    git_hash = subprocess.check_output(['git', 'rev-parse', '--verify', '--short', 'HEAD']).decode().strip()
     version_records = record_version('DESCQA', git_hash, master_status['versions'], logger=log)
 
     make_argpath_absolute(args)
