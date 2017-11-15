@@ -1,2 +1,4 @@
 subclass_name: ConditionalLuminosityFunction
-band: r
+band2: r
+band1: g
+color_cut_percent : 0.2
