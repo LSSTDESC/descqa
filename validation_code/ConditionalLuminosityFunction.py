@@ -8,8 +8,8 @@ __all__ = ['ConditionalLuminosityFunction']
 
 class ConditionalLuminosityFunction(BaseValidationTest):
 
-    def __init__(self, band1='g', band2='r', magnitude_bins=None, mass_bins=None, z_bins=None, 
-                 color_cut_percent=None, **kwargs):
+    def __init__(self, band1='g', band2='r', magnitude_bins=None, mass_bins=None, z_bins=None,
+                 color_cut_fraction=None, **kwargs):
 
         possible_Mag_fields = ('Mag_true_{}_lsst_z0',
                                'Mag_true_{}_lsst_z01',
@@ -23,7 +23,10 @@ class ConditionalLuminosityFunction(BaseValidationTest):
         self.possible_Mag2_fields = [f.format(band2) for f in possible_Mag_fields]
         self.band1 = band1
         self.band2 = band2
-        self.color_cut_percent = float(color_cut_percent or 0.2)
+
+        self.color_cut_fraction = float(color_cut_fraction or 0.2)
+        self.color_cut_percentile_at = 100.0 * (1 - self.color_cut_fraction)
+        self.color_cut = lambda g, r, z: g-r>np.percentile((g-r)[z<0.2], self.color_cut_percentile_at)
 
         self.magnitude_bins   = magnitude_bins or np.linspace(-26, -18, 29)
         self.mass_bins        = mass_bins or np.logspace(13.5, 15, 5)
@@ -35,11 +38,8 @@ class ConditionalLuminosityFunction(BaseValidationTest):
 
         self.dmag = self.magnitude_bins[1:] - self.magnitude_bins[:-1]
         self.mag_center = (self.magnitude_bins[1:] + self.magnitude_bins[:-1])*0.5
-        
-        self.color_cut = lambda g, r, z: g-r>np.percentile((g-r)[z<0.2],self.color_cut_percent*100)
 
         self._other_kwargs = kwargs
-        
 
 
     def prepare_galaxy_catalog(self, gc):
@@ -52,20 +52,13 @@ class ConditionalLuminosityFunction(BaseValidationTest):
             quantities_needed.add('r_host')
             quantities_needed.add('r_vir')
 
-        try:
-            absolute_magnitude1_field = gc.first_available(*self.possible_Mag1_fields)
-        except ValueError:
-            return
+        absolute_magnitude1_field = gc.first_available(*self.possible_Mag1_fields)
+        absolute_magnitude2_field = gc.first_available(*self.possible_Mag2_fields)
 
-        try:
-            absolute_magnitude2_field = gc.first_available(*self.possible_Mag2_fields)
-        except ValueError:
-            return
-        
         quantities_needed.add(absolute_magnitude1_field)
         quantities_needed.add(absolute_magnitude2_field)
-        
-        if not gc.has_quantities(quantities_needed):
+
+        if not (absolute_magnitude1_field and absolute_magnitude2_field and gc.has_quantities(quantities_needed)):
             return
 
         return absolute_magnitude1_field, absolute_magnitude2_field, quantities_needed
@@ -82,11 +75,11 @@ class ConditionalLuminosityFunction(BaseValidationTest):
         bins = (self.magnitude_bins, self.mass_bins, self.z_bins)
         hist_cen = np.zeros((self.n_magnitude_bins, self.n_mass_bins, self.n_z_bins))
         hist_sat = np.zeros_like(hist_cen)
-        
-        red_query = GCRQuery((self.color_cut, 
-                              absolute_magnitude1_field, 
+
+        red_query = GCRQuery((self.color_cut,
+                              absolute_magnitude1_field,
                               absolute_magnitude2_field, 'redshift_true'))
-            
+
         cen_query = GCRQuery('is_central') & red_query
         sat_query = ~GCRQuery('is_central') & red_query
 
@@ -95,13 +88,13 @@ class ConditionalLuminosityFunction(BaseValidationTest):
             sat_query &= GCRQuery('r_host < r_vir')
 
         for data in galaxy_catalog.get_quantities(quantities_needed, return_iterator=True):
-            cen_mask = cen_query.mask(data)  
+            cen_mask = cen_query.mask(data)
             sat_mask = sat_query.mask(data)
 
             data = np.stack((data[k] for k in colnames)).T
             hist_cen += np.histogramdd(data[cen_mask], bins)[0]
             hist_sat += np.histogramdd(data[sat_mask], bins)[0]
-          
+
         del data, cen_mask, sat_mask
 
         halo_counts = hist_cen.sum(axis=0)
