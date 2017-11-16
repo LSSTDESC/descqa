@@ -6,27 +6,20 @@
 # make sure all commands are executed
 set -e
 
-# set DESCQA root directory
+# set output directory
 DESCQAROOTDIR="/global/projecta/projectdirs/lsst/groups/CS/descqa"
+OUTPUTDIR="$DESCQAROOTDIR/run/v2"
 
 # activate python env
 export PYTHONPATH=""
-source /global/common/cori/contrib/lsst/apps/anaconda/4.4.0-py3/bin/activate ""
-source activate DESCQA
-
-# for kcorrect 
-export KCORRECT_DIR="$DESCQAROOTDIR/lib/kcorrect"
-export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$KCORRECT_DIR/lib"
-
-# set other necessary paths
-OUTPUTDIR="$DESCQAROOTDIR/run/v2"
+PYTHON="/global/common/cori/contrib/lsst/apps/anaconda/py3-envs/DESCQA/bin/python"
+# PYTHON="/global/common/software/lsst/common/miniconda/py2-4.3.21/bin/python"
 
 # to allow wildcards in arguments go to master.py
 set -o noglob
 
 # run master.py
-python master.py "$OUTPUTDIR" "$@"
+$PYTHON master.py "$OUTPUTDIR" "$@"
 
 # end subshell
 )
-
