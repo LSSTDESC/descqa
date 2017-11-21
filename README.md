@@ -74,34 +74,33 @@ https://portal.nersc.gov/project/lsst/descqa/v2/www/index.cgi?run=all
 
 ## How to contribute to DESCQA?
 
-### Step 1: Fork the DESCQA GitHub repo and clone a local copy on NERSC
+### Step 1: Fork the DESCQA GitHub repo and clone a local copy on NERSC 
+
+_Note_: You can skip this step and start with Step 2, if you already did it once.
 
 Go to GitHub and [fork](https://guides.github.com/activities/forking/) the DESCQA GitHub repo. 
 Once you have a forked repo, make a local clone on NERSC:
 
-    cd your/own/directory
+    cd /your/own/directory
     git clone git@github.com:YourGitHubUsername/descqa.git
-
-Note: If you don't have GitHub ssh key set up, you can do
-
-    cd your/own/directory
-    git clone https://github.com/YourGitHubUsername/descqa.git
-
-
-### Step 2: Update the master branch of the fork
-
-If you have already forked before, but want to sync your fork repo to the most up-to-date version, you can do
-
-    cd your/own/directory/descqa
-    git checkout master
+    cd descqa
     git remote add upstream https://github.com/LSSTDESC/descqa.git
+
+_Note_: If you don't have a GitHub ssh key set up, replace `git@github.com:YourGitHubUsername/descqa.git` with `https://github.com/YourGitHubUsername/descqa.git` in the second line.
+
+
+### Step 2: Sync the master branch of your fork repo with upstream
+
+_Note_: Do *not* skip this step! 
+    
+    cd /your/own/directory/descqa
+    git checkout master
     git pull upstream master
     git push origin master
 
 
 ### Step 3: Create a new branch
 
-    cd your/own/directory/descqa
     git checkout -b newBranchName
 
 
@@ -116,7 +115,7 @@ _Note_: Please write [2-3 compatible](http://python-future.org/compatible_idioms
 
 Whenyou are happy about your changes, you can commit them. First, make sure you are in your local descqa clone:
 
-    cd your/own/directory/descqa
+    cd /your/own/directory/descqa
 
 and check current status of change:
 
