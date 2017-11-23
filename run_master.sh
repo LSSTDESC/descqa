@@ -6,20 +6,18 @@
 # make sure all commands are executed
 set -e
 
-# set output directory
-DESCQAROOTDIR="/global/projecta/projectdirs/lsst/groups/CS/descqa"
-OUTPUTDIR="$DESCQAROOTDIR/run/v2"
-
 # activate python env
-export PYTHONPATH=""
 PYTHON="/global/common/cori/contrib/lsst/apps/anaconda/py3-envs/DESCQA/bin/python"
-# PYTHON="/global/common/software/lsst/common/miniconda/py2-4.3.21/bin/python"
+
+# set output directory
+OUTPUTDIR="/global/projecta/projectdirs/lsst/groups/CS/descqa/run/v2"
 
 # to allow wildcards in arguments go to master.py
 set -o noglob
 
 # run master.py
-$PYTHON master.py "$OUTPUTDIR" "$@"
+CMD="import descqarun; descqarun.main()"
+$PYTHON -E -c "$CMD" "$OUTPUTDIR" "$@"
 
 # end subshell
 )
