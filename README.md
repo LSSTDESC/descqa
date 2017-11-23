@@ -46,16 +46,11 @@ Then you can simply run `./run_master.sh`; however, there are many useful option
 
    will run all available tests on all catalogs whose name ends in "_test" and also "catalog3", in verbose mode.
 
--  If you just want to see what catalogs are available, you can run:
+-  If you just want to see what catalogs and validation tests are available, you can run:
 
        ./run_master.sh -l
 
-   which will print the names of all available catalogs in `GCRCatalogs`.
-
--  If you want to see all available tests, just run
-
-       ls -1 validation_configs/*.yaml
-
+   which will print the names of all available catalogs in `GCRCatalogs` and all validation tests in `descqa`.
 
 -  If you are working on `GCRCatalogs` and want to use DESCQA to test your own local version of `GCRCatalogs`, you can do:
 
@@ -68,7 +63,7 @@ Then you can simply run `./run_master.sh`; however, there are many useful option
 
 As the master script is running, all the error messages will be printed out in real time if you have set `-v`. You can also go to the web interface to check you result:
 
-https://portal.nersc.gov/project/lsst/descqa/v2/www/index.cgi?run=all
+https://portal.nersc.gov/project/lsst/descqa/v2/index.cgi?run=all
 
 
 
