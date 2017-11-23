@@ -281,18 +281,22 @@ class DescqaTask(object):
         return count_by_validation, count_by_catalog
 
 
-    def log_status(self):
+    def get_status_report(self):
+        report = StringIO()
         for validation in self.validations_to_run:
-            self.logger.info(_horizontal_rule)
-            self.logger.info(validation)
-            self.logger.info(_horizontal_rule)
+            report.write(_horizontal_rule + '\n')
+            report.write(validation + '\n')
+            report.write(_horizontal_rule + '\n')
             l = max(len(catalog) for catalog in self.catalogs_to_run)
             l += 3
 
             for catalog in self.catalogs_to_run:
                 s = self.get_status(validation, catalog)
-                self.logger.info('{{:{}}}{{}}'.format(l).format(catalog, s))
-        self.logger.info(_horizontal_rule)
+                report.write('{{:{}}}{{}}\n'.format(l).format(catalog, s))
+        report.write(_horizontal_rule + '\n')
+        report_content = report.getvalue()
+        report.close()
+        return report_content
 
 
     def run_all_tests(self):
@@ -418,13 +422,13 @@ def main():
         descqa_task = DescqaTask(output_dir, args.validations_to_run, args.catalogs_to_run, logger)
         descqa_task.run()
 
+        logger.debug('finishing up...')
         master_status['status_count'], master_status['status_count_group_by_catalog'] = descqa_task.count_status()
         master_status['end_time'] = time.time()
         with open(pjoin(output_dir, 'STATUS.json'), 'w') as f:
             json.dump(master_status, f, indent=True)
 
-        logger.info('All done! Status report:')
-        descqa_task.log_status()
+        logger.info('All done! Status report:\n' + descqa_task.get_status_report())
 
     finally:
         os.unlink(pjoin(output_dir, '.lock'))
