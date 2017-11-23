@@ -415,12 +415,12 @@ def main():
             raise ValueError('not thing to run...')
 
         log.debug('creating code snapshot and adding to sys.path...')
-        check_copy(args.validation_code_dir, pjoin(snapshot_dir, 'validation_code'))
+        check_copy(descqa.__path__[0], pjoin(snapshot_dir, 'validation_code'))
         sys.path.insert(0, snapshot_dir)
 
         log.debug('prepare output directories...')
         tasks = TaskDirectory(output_dir)
-        make_all_subdirs(tasks, validations_to_run, catalogs_to_run, args.validation_config_dir)
+        make_all_subdirs(tasks, validations_to_run, catalogs_to_run, pjoin(descqa.__path__[0], 'configs'))
 
         log.debug('starting to run all validations...')
         run(tasks, validations_to_run, catalogs_to_run, log)
