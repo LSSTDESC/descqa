@@ -1,1 +1,4 @@
-DirectoryIndex www/
+DirectoryIndex index.cgi
+RewriteEngine On
+RedirectMatch ^/(.*)/www/(.*)$ /$1/$2
+RedirectMatch ^/(.*)/www$ /$1/

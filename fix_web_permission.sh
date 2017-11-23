@@ -14,8 +14,8 @@ $PYTHON -E -c "import descqaweb"
 
 # chmod
 chmod o+r .htaccess
-chmod o+rx . descqaweb/index.cgi
-chmod -R o+rX descqaweb www
+chmod o+rx index.cgi .
+chmod -R o+rX descqaweb www-static
 
 # end subshell
 )

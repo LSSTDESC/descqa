@@ -50,7 +50,7 @@ def format_bigtable_row(run):
     main_link = '&nbsp;<a href="?run={}" onMouseOver="appear(\'{}\', \'{}\');" onMouseOut="disappear();">{}</a>'.format(\
             descqa_run.name, test_status, catalog_status, descqa_run.name)
     output.append('<td>{}{}{}</td>'.format(main_link, user, comment))
-    output.append('<td><img src="style/{}.gif"></td>'.format(light))
+    output.append('<td><img src="{}/{}.gif"></td>'.format(config.static_dir, light))
     test_links = '&nbsp;|&nbsp;'.join(('<a href="?run={0}&test={1}">{1}</a>'.format(descqa_run.name, t) for t in descqa_run.tests))
     catalog_links = '&nbsp;|&nbsp;'.join(('<a href="?run={0}&catalog={1}">{1}</a>'.format(descqa_run.name, c) for c in descqa_run.catalogs))
     output.append('<td>TESTS:&nbsp;{}<br>{}{}&nbsp;</td>'.format(test_links, 'CATALOGS:&nbsp;' if catalog_links else '', catalog_links))
