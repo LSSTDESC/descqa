@@ -3,5 +3,8 @@
 #import cgitb
 #cgitb.enable()
 
+import sys
+sys.path.append('..')
+
 import descqaweb
 descqaweb.run()

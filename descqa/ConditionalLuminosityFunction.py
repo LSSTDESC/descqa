@@ -2,7 +2,8 @@ from __future__ import unicode_literals, absolute_import, division
 import os
 import numpy as np
 from GCR import GCRQuery
-from .ValidationTest import BaseValidationTest, TestResult, plt
+from .base import BaseValidationTest, TestResult
+from .plotting import plt
 
 __all__ = ['ConditionalLuminosityFunction']
 

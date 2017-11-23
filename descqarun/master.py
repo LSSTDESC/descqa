@@ -15,6 +15,9 @@ import subprocess
 import yaml
 from builtins import str
 
+
+__all__ = ['main']
+
 pjoin = os.path.join
 
 
@@ -47,27 +50,6 @@ class CatchExceptionAndStdStream():
         sys.stdout = self._stdout
         sys.stderr = self._stderr
         return True
-
-
-def quick_import(module_name):
-    return getattr(importlib.import_module('validation_code.'+module_name), module_name)
-
-
-def process_config(config_dir, set_data_dir=None):
-    d = dict()
-
-    for f in os.listdir(config_dir):
-        if f.startswith('_') or not f.lower().endswith('.yaml'):
-            continue
-
-        with open(pjoin(config_dir, f)) as fp:
-            d[f[:-5]] = yaml.load(fp.read())
-
-    if set_data_dir:
-        for c in d.values():
-            c['base_data_dir'] = set_data_dir
-
-    return d
 
 
 def select_subset(d, keys_wanted=None):
@@ -210,10 +192,9 @@ def run(tasks, validations_to_run, catalogs_to_run, log):
             log.debug('stdout/stderr while loading "{}" catalog:\n'.format(catalog_name) + catcher.output)
 
         # loop over validations_to_run
-        for validation_name, validation in validations_to_run.items():
+        for validation_name in validations_to_run:
             # get the final output path, set test name
             final_output_dir = tasks.get_path(validation_name, catalog_name)
-            validation['test_name'] = validation_name
 
             # if gc is an error message, log it and abort
             if isinstance(gc, str):
@@ -225,8 +206,7 @@ def run(tasks, validations_to_run, catalogs_to_run, log):
             if validation_name not in validation_instance_cache:
                 catcher = ExceptionAndStdStreamCatcher()
                 with CatchExceptionAndStdStream(catcher):
-                    ValidationTest = quick_import(validation['subclass_name'])
-                    vt = ValidationTest(**validation)
+                    vt = descqa.load_validation(validation_name)
                 if catcher.has_exception:
                     log.error('error occurred when preparing "{}" test'.format(validation_name))
                     log.debug('stdout/stderr and traceback:\n' + catcher.output)
@@ -349,15 +329,44 @@ def get_username():
 
 def make_argpath_absolute(args):
     args.root_output_dir = os.path.abspath(os.path.expanduser(args.root_output_dir))
-    args.source_dir = os.path.abspath(os.path.expanduser(args.source_dir))
-    if args.gcr_catalogs_path_overwrite:
-        args.gcr_catalogs_path_overwrite = os.path.abspath(os.path.expanduser(args.gcr_catalogs_path_overwrite))
-    args.validation_config_dir = pjoin(args.source_dir, os.path.expanduser(args.validation_config_dir))
-    args.validation_code_dir = pjoin(args.source_dir, os.path.expanduser(args.validation_code_dir))
-    args.validation_data_dir = pjoin(args.source_dir, os.path.expanduser(args.validation_data_dir))
+    if args.paths:
+        args.paths = [os.path.abspath(os.path.expanduser(path)) for path in args.paths]
 
 
-def main(args):
+def print_available_and_exit(iterable):
+    print('-'*50)
+    for c in sorted(iterable):
+        print(c)
+    print('-'*50)
+    sys.exit(0)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('root_output_dir',
+            help='Output directory (where the web interface runs on). A sub directory named with the current date will be created within.')
+
+    parser.add_argument('-v', '--verbose', action='store_true',
+            help='Display all debug messages')
+    parser.add_argument('-m', '--comment',
+            help='Attach a comment to this run')
+
+    parser.add_argument('--lt', '--list-validations', dest='list_validations', action='store_true',
+            help='Just list available validations. Runs nothing!')
+    parser.add_argument('-l', '--lc', '--list-catalogs', dest='list_catalogs', action='store_true',
+            help='Just list available catalogs. Runs nothing!')
+
+    parser.add_argument('-t', '--rt', '--validations-to-run', dest='validations_to_run', metavar='VALIDATION', nargs='+',
+            help='Run only a subset of validations')
+    parser.add_argument('-c', '--rc', '--catalogs-to-run', dest='catalogs_to_run', metavar='CATALOG', nargs='+',
+            help='run only a subset of catalogs')
+
+    parser.add_argument('-p', '--insert-sys-path', dest='paths', metavar='PATH', nargs='+',
+            help='Insert path(s) to sys.path')
+
+    args = parser.parse_args()
+
+
     log = create_logger(verbose=args.verbose)
 
     master_status = dict()
@@ -367,31 +376,30 @@ def main(args):
         master_status['comment'] = args.comment
     master_status['versions'] = dict()
 
-    git_hash = subprocess.check_output(['git', 'rev-parse', '--verify', '--short', 'HEAD']).decode().strip()
-    version_records = record_version('DESCQA', git_hash, master_status['versions'], logger=log)
-
     make_argpath_absolute(args)
 
     log.debug('Importing GCR Catalogs...')
-    if args.gcr_catalogs_path_overwrite:
-        sys.path.insert(0, args.gcr_catalogs_path_overwrite)
+    if args.paths:
+        sys.path = args.paths + sys.path
+
     global GCRCatalogs
     GCRCatalogs = importlib.import_module('GCRCatalogs')
-    if args.gcr_catalogs_path_overwrite:
-        del sys.path[0]
 
+    global descqa
+    descqa = importlib.import_module('descqa')
+
+    record_version('DESCQA', descqa.__version__, master_status['versions'], logger=log)
     record_version('GCR', GCRCatalogs.GCR.__version__, master_status['versions'], logger=log)
     record_version('GCRCatalogs', GCRCatalogs.__version__, master_status['versions'], logger=log)
 
     if args.list_catalogs:
-        print('-'*50)
-        for c in sorted(GCRCatalogs.get_available_catalogs()):
-            print(c)
-        print('-'*50)
-        sys.exit(0)
+        print_available_and_exit(GCRCatalogs.available_catalogs)
+
+    if args.list_validations:
+        print_available_and_exit(descqa.available_validations)
 
     log.debug('creating output directory...')
-    output_dir = make_output_dir(args.root_output_dir, args.subdir)
+    output_dir = make_output_dir(args.root_output_dir)
     open(pjoin(output_dir, '.lock'), 'w').close()
 
     try: # we want to remove ".lock" file even if anything went wrong
@@ -401,8 +409,8 @@ def main(args):
         log.info('output of this run is stored in {}'.format(output_dir))
 
         log.debug('processing config files...')
-        validations_to_run = select_subset(process_config(args.validation_config_dir, args.validation_data_dir), args.validations_to_run)
-        catalogs_to_run = select_subset(GCRCatalogs.get_available_catalogs(), args.catalogs_to_run)
+        validations_to_run = select_subset(descqa.available_validations, args.validations_to_run)
+        catalogs_to_run = select_subset(GCRCatalogs.available_catalogs, args.catalogs_to_run)
         if not validations_to_run or not catalogs_to_run:
             raise ValueError('not thing to run...')
 
@@ -430,36 +438,4 @@ def main(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('root_output_dir',
-            help='Output directory (where the web interface runs on). A sub directory named with the current date will be created within.')
-    parser.add_argument('--no-subdir', dest='subdir', action='store_false',
-            help='If set, no sub directory will be created. In this case, `root_output_dir` must not yet exist.')
-
-    parser.add_argument('-v', '--verbose', action='store_true',
-            help='display all debug messages')
-    parser.add_argument('-m', '--comment',
-            help='attach a comment to this run')
-
-    parser.add_argument('-l', '--lc', '--list-catalogs', dest='list_catalogs', action='store_true',
-            help='Just list available catalogs. Runs nothing!')
-
-    parser.add_argument('-t', '--rv', '--validations-to-run', dest='validations_to_run', metavar='VALIDATION', nargs='+',
-            help='run only a subset of validations')
-    parser.add_argument('-c', '--rc', '--catalogs-to-run', dest='catalogs_to_run', metavar='CATALOG', nargs='+',
-            help='run only a subset of catalogs')
-
-    parser.add_argument('--validation-config-dir', default='validation_configs',
-            help='validation config file (default: validation_configs)')
-    parser.add_argument('--validation-code-dir', default='validation_code',
-            help='validation code directory (default: validation_code)')
-    parser.add_argument('--validation-data-dir', default='validation_data',
-            help='validation data directory (default: validation_data)')
-
-    parser.add_argument('-p', '--gcr-catalogs-path-overwrite',
-            help='a path from which Python can import the module `GCRCatalogs`')
-
-    parser.add_argument('--source-dir', default='.',
-            help='source directory (default: current working directory)')
-    args = parser.parse_args()
-    main(args)
+    main()

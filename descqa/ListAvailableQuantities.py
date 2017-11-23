@@ -2,7 +2,7 @@ from __future__ import unicode_literals, absolute_import
 import os
 from builtins import str
 import yaml
-from .ValidationTest import BaseValidationTest, TestResult
+from .base import BaseValidationTest, TestResult
 
 __all__ = ['ListAvailableQuantities']
 

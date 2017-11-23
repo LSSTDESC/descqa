@@ -1,0 +1,4 @@
+subclass_name: ConditionalLuminosityFunction.ConditionalLuminosityFunction
+band2: r
+band1: g
+color_cut_fraction: 0.2

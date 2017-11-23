@@ -1,8 +1,9 @@
-from __future__ import unicode_literals, absolute_import 
+from __future__ import unicode_literals, absolute_import
 import os
 import numpy as np
 import healpy as hp
-from .ValidationTest import BaseValidationTest, TestResult, plt
+from .base import BaseValidationTest, TestResult
+from .plotting import plt
 
 __all__ = ['SkyArea']
 
