@@ -2,15 +2,22 @@ from __future__ import unicode_literals, absolute_import, division
 import os
 import numpy as np
 from GCR import GCRQuery
-from .base import BaseValidationTest, TestResult
+from .base import BaseValidationTest, TestResult, SimpleAttrs
 from .plotting import plt
 
 __all__ = ['ConditionalLuminosityFunction']
 
 class ConditionalLuminosityFunction(BaseValidationTest):
 
-    def __init__(self, band1='g', band2='r', magnitude_bins=None, mass_bins=None, z_bins=None,
-                 color_cut_fraction=None, **kwargs):
+    def __init__(self, **kwargs):
+
+        self.kwargs = kwargs
+        self.band1 = kwargs.get('band1', 'g')
+        self.band2 = kwargs.get('band2', 'r')
+        self.magnitude_bins = np.linspace(*kwargs.get('magnitude_bins', (-26, -18, 29)))
+        self.mass_bins = np.logspace(*kwargs.get('mass_bins', (13.5, 15, 5)))
+        self.z_bins = np.linspace(*kwargs.get('z_bins', (0.2, 1.0, 4)))
+        self.color_cut_fraction = float(kwargs.get('color_cut_fraction', 0.2))
 
         possible_Mag_fields = ('Mag_true_{}_lsst_z0',
                                'Mag_true_{}_lsst_z01',
@@ -20,18 +27,11 @@ class ConditionalLuminosityFunction(BaseValidationTest):
                                'Mag_true_{}_sdss_z01',
                               )
 
-        self.possible_Mag1_fields = [f.format(band1) for f in possible_Mag_fields]
-        self.possible_Mag2_fields = [f.format(band2) for f in possible_Mag_fields]
-        self.band1 = band1
-        self.band2 = band2
+        self.possible_Mag1_fields = [f.format(self.band1) for f in possible_Mag_fields]
+        self.possible_Mag2_fields = [f.format(self.band2) for f in possible_Mag_fields]
 
-        self.color_cut_fraction = float(color_cut_fraction or 0.2)
-        self.color_cut_percentile_at = 100.0 * (1 - self.color_cut_fraction)
-        self.color_cut = lambda g, r, z: g-r>np.percentile((g-r)[z<0.2], self.color_cut_percentile_at)
-
-        self.magnitude_bins   = magnitude_bins or np.linspace(-26, -18, 29)
-        self.mass_bins        = mass_bins or np.logspace(13.5, 15, 5)
-        self.z_bins           = z_bins or np.linspace(0.2, 1.0, 4)
+        color_cut_percentile_at = 100.0 * (1 - self.color_cut_fraction)
+        self.color_cut = lambda g, r, z: g-r>np.percentile((g-r)[z<0.2], color_cut_percentile_at)
 
         self.n_magnitude_bins = len(self.magnitude_bins) - 1
         self.n_mass_bins      = len(self.mass_bins) - 1
@@ -39,8 +39,6 @@ class ConditionalLuminosityFunction(BaseValidationTest):
 
         self.dmag = self.magnitude_bins[1:] - self.magnitude_bins[:-1]
         self.mag_center = (self.magnitude_bins[1:] + self.magnitude_bins[:-1])*0.5
-
-        self._other_kwargs = kwargs
 
 
     def prepare_galaxy_catalog(self, gc):

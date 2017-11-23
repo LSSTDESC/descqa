@@ -16,7 +16,7 @@ OUTPUTDIR="/global/projecta/projectdirs/lsst/groups/CS/descqa/run/v2"
 set -o noglob
 
 # run master.py
-CMD="from descqarun.master import main; main()"
+CMD="import descqarun; descqarun.main()"
 $PYTHON -E -c "$CMD" "$OUTPUTDIR" "$@"
 
 # end subshell

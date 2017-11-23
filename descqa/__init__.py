@@ -1,3 +1,7 @@
-# This is an empty file to make this directory a python package
+"""
+DESCQA Validation Tests
+"""
 from .register import *
+from .base import *
+
 __version__ = '2.4.0'
