@@ -68,7 +68,7 @@ class CatchExceptionAndStdStream():
             if has_exception:
                 self._logger.error('Exception occurred{}. Below are stdout/stderr and traceback:\n{}'.format(self._during, output))
             elif output:
-                self._logger.debug('Below are stdout/stderr {}:\n{}'.format(self._during, output))
+                self._logger.debug('Below are stdout/stderr{}:\n{}'.format(self._during, output))
 
         if self._filenames and output:
             for filename in self._filenames:
@@ -310,10 +310,13 @@ class DescqaTask(object):
                 if validation_instance is None:
                     continue
 
+                msg = 'running validation `{}` on catalog `{}`'.format(validation, catalog)
                 output_dir_this = self.get_path(validation, catalog)
                 logfile = pjoin(output_dir_this, self.logfile_basename)
+                self.logger.debug(msg)
+
                 test_result = None
-                with CatchExceptionAndStdStream(logfile, self.logger, 'running validation `{}` on catalog `{}`'.format(validation, catalog)):
+                with CatchExceptionAndStdStream(logfile, self.logger, msg):
                     test_result = validation_instance.run_validation_test(catalog_instance, catalog, output_dir_this)
 
                 self.set_result(test_result or 'RUN_VALIDATION_TEST_ERROR', validation, catalog)
@@ -332,9 +335,12 @@ class DescqaTask(object):
                     catalog_list.append((catalog, test_result.data))
             catalog_list.sort(key=lambda x: x[0])
 
+            msg = 'generating summary for validation `{}`'.format(validation)
             output_dir_this = self.get_path(validation)
             logfile = pjoin(output_dir_this, self.logfile_basename)
-            with CatchExceptionAndStdStream(logfile, self.logger, 'generating summary for validation `{}`'.format(validation)):
+            self.logger.debug(msg)
+
+            with CatchExceptionAndStdStream(logfile, self.logger, msg):
                 validation_instance.generate_summary(catalog_list, output_dir_this)
 
 
@@ -420,6 +426,8 @@ def main():
 
         logger.debug('preparing to run validation tests...')
         descqa_task = DescqaTask(output_dir, args.validations_to_run, args.catalogs_to_run, logger)
+
+        logger.info('running validation tests...')
         descqa_task.run()
 
         logger.debug('finishing up...')
