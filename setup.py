@@ -8,13 +8,15 @@ http://opensource.org/licenses/MIT
 import os
 from setuptools import setup
 
+with open(os.path.join(os.path.dirname(__file__), 'descqa', 'version.py')) as f:
+    exec(f.read())
+
 setup(
     name='descqa',
-    version=2.3.0,
+    version='2.3.0',
     description='DESCQA: LSST DESC QA Framework for mock galaxy catalogs',
     url='https://github.com/LSSTDESC/descqa',
-    author='Yao-Yuan Mao',
-    author_email='yymao.astro@gmail.com',
+    author='LSST DESC',
     maintainer='Yao-Yuan Mao',
     maintainer_email='yymao.astro@gmail.com',
     license='MIT',
@@ -27,6 +29,9 @@ setup(
     ],
     keywords='DESCQA',
     packages=['descqa'],
-    install_requires=['numpy', 'pyyaml', 'requests', 'h5py', 'astropy', 'matplotlib', 'GCR'],
+    install_requires=['pyyaml'],
+    extras_require = {
+        'full':  ['future', 'numpy', 'scipy', 'matplotlib', 'healpy', 'GCR>=0.6.1'],
+    },
     package_data={'descqa': ['configs/*.yaml', 'data/*']},
 )

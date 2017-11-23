@@ -1,5 +1,4 @@
 from __future__ import division, unicode_literals, absolute_import
-from builtins import str
 
 __all__ = ['BaseValidationTest', 'TestResult']
 

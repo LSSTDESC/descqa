@@ -1,7 +1,6 @@
 import os
 import importlib
 import yaml
-import requests
 from .base import BaseValidationTest
 
 
@@ -12,14 +11,8 @@ def load_yaml(yaml_file):
     """
     Load *yaml_file*. Ruturn a dictionary.
     """
-    try:
-        r = requests.get(yaml_file, stream=True)
-    except requests.exceptions.MissingSchema:
-        with open(yaml_file) as f:
-            config = yaml.load(f)
-    else:
-        r.raw.decode_content = True
-        config = yaml.load(r.raw)
+    with open(yaml_file) as f:
+        config = yaml.load(f)
     return config
 
 
