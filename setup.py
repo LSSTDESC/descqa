@@ -13,7 +13,7 @@ with open(os.path.join(os.path.dirname(__file__), 'descqa', 'version.py')) as f:
 
 setup(
     name='descqa',
-    version='2.3.0',
+    version=__version__,
     description='DESCQA: LSST DESC QA Framework for mock galaxy catalogs',
     url='https://github.com/LSSTDESC/descqa',
     author='LSST DESC',
