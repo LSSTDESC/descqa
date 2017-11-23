@@ -13,7 +13,6 @@ import collections
 import fnmatch
 import subprocess
 import yaml
-from builtins import str
 from . import config
 
 __all__ = ['main']
@@ -185,7 +184,7 @@ class DescqaTask(object):
         for item in wanted:
             matched = fnmatch.filter(available, item)
             if not matched:
-                raise KeyError("{} does not match any available names: {}".format(item, ', '.join(sorted(available))
+                raise KeyError("{} does not match any available names: {}".format(item, ', '.join(sorted(available))))
             output.update(matched)
 
         return output
@@ -222,7 +221,7 @@ class DescqaTask(object):
     def get_catalog_instance(self, catalog):
         logfile = [pjoin(self.get_path(validation, catalog), self.logfile_basename) for validation in self.validations_to_run]
         instance = None
-        with CatchExceptionAndStdStream(logfile, self.logger, 'loading catalog `{}`'.format(validation)):
+        with CatchExceptionAndStdStream(logfile, self.logger, 'loading catalog `{}`'.format(catalog)):
             instance = GCRCatalogs.load_catalog(catalog)
         if instance is None:
             self.set_result('LOAD_CATALOG_ERROR', catalog=catalog)
@@ -243,7 +242,7 @@ class DescqaTask(object):
         else:
             raise ValueError('Must specify *validation* and/or *catalog*')
 
-        assert key not in self._result, 'Result of {} has been set already!'.format(key)
+        assert key not in self._results, 'Result of {} has been set already!'.format(key)
 
         if _is_string_like(test_result):
             status = test_result
@@ -273,8 +272,7 @@ class DescqaTask(object):
 
 
     def check_status(self):
-        assert all((v, c) in self._results for v in self.validations_to_run for c in self.catalogs_to_run)),
-            'hmm, something is wrong with the test results!'
+        assert all((v, c) in self._results for v in self.validations_to_run for c in self.catalogs_to_run), 'hmm, something is wrong with the test results!'
 
 
     def count_status(self):
@@ -395,9 +393,9 @@ def main():
     global descqa
     descqa = importlib.import_module('descqa')
 
-    record_version('DESCQA', descqa.__version__, master_status['versions'], logger=log)
-    record_version('GCR', GCRCatalogs.GCR.__version__, master_status['versions'], logger=log)
-    record_version('GCRCatalogs', GCRCatalogs.__version__, master_status['versions'], logger=log)
+    record_version('DESCQA', descqa.__version__, master_status['versions'], logger=logger)
+    record_version('GCR', GCRCatalogs.GCR.__version__, master_status['versions'], logger=logger)
+    record_version('GCRCatalogs', GCRCatalogs.__version__, master_status['versions'], logger=logger)
 
     if args.list:
         print_available_and_exit(GCRCatalogs.available_catalogs, descqa.available_validations)
@@ -425,13 +423,13 @@ def main():
         with open(pjoin(output_dir, 'STATUS.json'), 'w') as f:
             json.dump(master_status, f, indent=True)
 
-        log.info('All done! Status report:')
+        logger.info('All done! Status report:')
         descqa_task.log_status()
 
     finally:
         os.unlink(pjoin(output_dir, '.lock'))
         subprocess.check_call(['chmod', '-R', 'a+rX,o-w', output_dir])
-        log.info('Web output: {}?run={}'.format(config.base_url, os.path.basename(output_dir)))
+        logger.info('Web output: {}?run={}'.format(config.base_url, os.path.basename(output_dir)))
 
 
 if __name__ == '__main__':

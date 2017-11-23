@@ -1,4 +1,4 @@
 """
 DESCQA Execution Script
 """
-from .master import main
+from .master import *
