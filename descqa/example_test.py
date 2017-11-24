@@ -27,13 +27,13 @@ class ExampleTest(BaseValidationTest):
         self.summary_fig, self.summary_ax = plt.subplots()
 
 
-    def run_validation_test(self, galaxy_catalog, catalog_name, base_output_dir):
+    def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
 
         # check if needed quantities exist
-        if not galaxy_catalog.has_quantities(['ra', 'dec']):
+        if not catalog_instance.has_quantities(['ra', 'dec']):
             return TestResult(skipped=True, summary='do not have needed quantities')
 
-        data = np.random.rand(10) #do your calculation with galaxy_catalog
+        data = np.random.rand(10) #do your calculation with catalog_instance
 
         fig, ax = plt.subplots()
 
@@ -42,15 +42,14 @@ class ExampleTest(BaseValidationTest):
             ax_this.text(0.05, 0.95, self.validation_data)
 
         ax.legend()
-        fig.savefig(os.path.join(base_output_dir, 'plot.png'))
+        fig.savefig(os.path.join(output_dir, 'plot.png'))
         plt.close(fig)
 
         score = data[0] #calculate your summary statistics
         return TestResult(score, passed=True)
 
 
-    def generate_summary(self, catalog_name_list, base_output_dir):
-
+    def conclude_test(self, output_dir):
         self.summary_ax.legend()
-        self.summary_fig.savefig(os.path.join(base_output_dir, 'summary.png'))
+        self.summary_fig.savefig(os.path.join(output_dir, 'summary.png'))
         plt.close(self.summary_fig)

@@ -299,7 +299,7 @@ class DescqaTask(object):
         return report_content
 
 
-    def run_all_tests(self):
+    def run_tests(self):
         for catalog in self.catalogs_to_run:
             catalog_instance = self.get_catalog_instance(catalog)
             if catalog_instance is None:
@@ -310,32 +310,31 @@ class DescqaTask(object):
                 if validation_instance is None:
                     continue
 
-                msg = 'running validation `{}` on catalog `{}`'.format(validation, catalog)
                 output_dir_this = self.get_path(validation, catalog)
                 logfile = pjoin(output_dir_this, self.logfile_basename)
+                msg = 'running validation `{}` on catalog `{}`'.format(validation, catalog)
                 self.logger.debug(msg)
 
                 test_result = None
                 with CatchExceptionAndStdStream(logfile, self.logger, msg):
-                    test_result = validation_instance.run_validation_test(catalog_instance, catalog, output_dir_this)
+                    test_result = validation_instance.run_on_single_catalog(catalog_instance, catalog, output_dir_this)
 
                 self.set_result(test_result or 'RUN_VALIDATION_TEST_ERROR', validation, catalog)
 
 
-    def generate_summary_for_all_tests(self):
+    def conclude_tests(self):
         for validation in self.validations_to_run:
             validation_instance = self.get_validation_instance(validation)
             if validation_instance is None:
                 continue
 
-            catalog_list = [c for c in self.catalogs_to_run if not getattr(self.get_status(validation, c, True), 'skipped', True)]
-            msg = 'generating summary for validation `{}`'.format(validation)
             output_dir_this = self.get_path(validation)
             logfile = pjoin(output_dir_this, self.logfile_basename)
+            msg = 'concluding validation test `{}`'.format(validation)
             self.logger.debug(msg)
 
             with CatchExceptionAndStdStream(logfile, self.logger, msg):
-                validation_instance.generate_summary(catalog_list, output_dir_this)
+                validation_instance.conclude_test(output_dir_this)
 
 
     def run(self):
@@ -348,11 +347,11 @@ class DescqaTask(object):
             return
 
         self.logger.debug('starting to run all validation tests...')
-        self.run_all_tests()
+        self.run_tests()
         self.check_status()
 
-        self.logger.debug('starting to generate summary for all tests...')
-        self.generate_summary_for_all_tests()
+        self.logger.debug('starting to conclude all validation tests...')
+        self.conclude_tests()
 
 
 def main():

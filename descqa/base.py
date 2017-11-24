@@ -47,40 +47,41 @@ class BaseValidationTest(object):
         pass
 
 
-    def run_validation_test(self, galaxy_catalog, catalog_name, base_output_dir):
+    def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         """
-        run the validation test
+        Run the validation test on a single catalog.
+        Return an instance of TestResult.
+        This method will be called once for each catalog.
 
         Parameters
         ----------
-        galaxy_catalog : galaxy catalog reader object
-            instance of a galaxy catalog reader
+        catalog_instance : instance of BaseGenericCatalog
+            instance of the galaxy catalog
 
         catalog_name : str
-            name of galaxy catalog
+            name of the galaxy catalog
 
-        base_output_dir : str
-            output directory
+        output_dir : str
+            output directory (all output must be under this directory)
 
         Returns
         -------
-        test_result : TestResult object
+        test_result : instance of TestResult
             use the TestResult object to return test result
         """
         raise NotImplementedError
 
 
-    def generate_summary(self, catalog_name_list, base_output_dir):
+    def conclude_test(self, output_dir):
         """
-        Make summary plot (or other stuff) for all catalogs.
-        Returns None.
+        Conclude the test.
+        One can make summary plots for all catalogs here.
+        Return None.
+        This method will be called once when all catalogs are done.
 
         Parameters
         ----------
-        catalog_name_list: list of str
-            list of catalog names
-
-        base_output_dir: str
-            output directory
+        output_dir: str
+            output directory (all output must be under this directory)
         """
         pass
