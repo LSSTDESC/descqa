@@ -43,6 +43,7 @@ def get_available_configs(config_dir, register=None):
 
         name = os.path.splitext(config_file)[0]
         config = load_yaml(os.path.join(config_dir, config_file))
+        config['test_name'] = name
         register[name] = config
 
     return register

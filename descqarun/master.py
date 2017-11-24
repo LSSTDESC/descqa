@@ -187,7 +187,7 @@ class DescqaTask(object):
                 raise KeyError("{} does not match any available names: {}".format(item, ', '.join(sorted(available))))
             output.update(matched)
 
-        return output
+        return tuple(sorted(output))
 
 
     def get_path(self, validation, catalog=None):
@@ -328,13 +328,7 @@ class DescqaTask(object):
             if validation_instance is None:
                 continue
 
-            catalog_list = []
-            for catalog in self.catalogs_to_run:
-                test_result = self.get_status(validation, catalog, return_test_result=True)
-                if test_result is not None and not test_result.skipped:
-                    catalog_list.append((catalog, test_result.data))
-            catalog_list.sort(key=lambda x: x[0])
-
+            catalog_list = [c for c in self.catalogs_to_run if not getattr(self.get_status(validation, c, True), 'skipped', True)]
             msg = 'generating summary for validation `{}`'.format(validation)
             output_dir_this = self.get_path(validation)
             logfile = pjoin(output_dir_this, self.logfile_basename)
