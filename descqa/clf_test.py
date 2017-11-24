@@ -63,9 +63,8 @@ class ConditionalLuminosityFunction(BaseValidationTest):
         return absolute_magnitude1_field, absolute_magnitude2_field, quantities_needed
 
 
-    def run_validation_test(self, galaxy_catalog, catalog_name, base_output_dir=None):
-
-        prepared = self.prepare_galaxy_catalog(galaxy_catalog)
+    def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
+        prepared = self.prepare_galaxy_catalog(catalog_instance)
         if prepared is None:
             return TestResult(skipped=True)
 
@@ -82,11 +81,10 @@ class ConditionalLuminosityFunction(BaseValidationTest):
         cen_query = GCRQuery('is_central') & red_query
         sat_query = ~GCRQuery('is_central') & red_query
 
-
         if 'r_host' in quantities_needed and 'r_vir' in quantities_needed:
             sat_query &= GCRQuery('r_host < r_vir')
 
-        for data in galaxy_catalog.get_quantities(quantities_needed, return_iterator=True):
+        for data in catalog_instance.get_quantities(quantities_needed, return_iterator=True):
             cen_mask = cen_query.mask(data)
             sat_mask = sat_query.mask(data)
 
@@ -102,7 +100,7 @@ class ConditionalLuminosityFunction(BaseValidationTest):
         clf['cen'] = hist_cen / halo_counts
         clf['tot'] = clf['sat'] + clf['cen']
 
-        self.make_plot(clf, catalog_name, os.path.join(base_output_dir, 'clf.png'))
+        self.make_plot(clf, catalog_name, os.path.join(output_dir, 'clf.png'))
 
         return TestResult(passed=True, score=0)
 

@@ -27,30 +27,33 @@ class ExampleTest(BaseValidationTest):
         self.summary_fig, self.summary_ax = plt.subplots()
 
 
-    def run_validation_test(self, galaxy_catalog, catalog_name, base_output_dir):
+    def post_process_plot(self, ax):
+        ax.text(0.05, 0.95, self.validation_data)
+        ax.legend()
+
+
+    def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
 
         # check if needed quantities exist
-        if not galaxy_catalog.has_quantities(['ra', 'dec']):
+        if not catalog_instance.has_quantities(['ra', 'dec']):
             return TestResult(skipped=True, summary='do not have needed quantities')
 
-        data = np.random.rand(10) #do your calculation with galaxy_catalog
+        data = np.random.rand(10) #do your calculation with catalog_instance
 
         fig, ax = plt.subplots()
 
         for ax_this in (ax, self.summary_ax):
             ax_this.plot(data, label=catalog_name)
-            ax_this.text(0.05, 0.95, self.validation_data)
 
-        ax.legend()
-        fig.savefig(os.path.join(base_output_dir, 'plot.png'))
+        self.post_process_plot(ax)
+        fig.savefig(os.path.join(output_dir, 'plot.png'))
         plt.close(fig)
 
         score = data[0] #calculate your summary statistics
         return TestResult(score, passed=True)
 
 
-    def generate_summary(self, catalog_name_list, base_output_dir):
-
-        self.summary_ax.legend()
-        self.summary_fig.savefig(os.path.join(base_output_dir, 'summary.png'))
+    def conclude_test(self, output_dir):
+        self.post_process_plot(self.summary_ax)
+        self.summary_fig.savefig(os.path.join(output_dir, 'summary.png'))
         plt.close(self.summary_fig)
