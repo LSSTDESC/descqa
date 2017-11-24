@@ -27,6 +27,11 @@ class ExampleTest(BaseValidationTest):
         self.summary_fig, self.summary_ax = plt.subplots()
 
 
+    def post_process_plot(self, ax):
+        ax.text(0.05, 0.95, self.validation_data)
+        ax.legend()
+
+
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
 
         # check if needed quantities exist
@@ -39,9 +44,8 @@ class ExampleTest(BaseValidationTest):
 
         for ax_this in (ax, self.summary_ax):
             ax_this.plot(data, label=catalog_name)
-            ax_this.text(0.05, 0.95, self.validation_data)
 
-        ax.legend()
+        self.post_process_plot(ax)
         fig.savefig(os.path.join(output_dir, 'plot.png'))
         plt.close(fig)
 
@@ -50,6 +54,6 @@ class ExampleTest(BaseValidationTest):
 
 
     def conclude_test(self, output_dir):
-        self.summary_ax.legend()
+        self.post_process_plot(self.summary_ax)
         self.summary_fig.savefig(os.path.join(output_dir, 'summary.png'))
         plt.close(self.summary_fig)
