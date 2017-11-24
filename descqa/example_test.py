@@ -30,7 +30,7 @@ class ExampleTest(BaseValidationTest):
     def run_validation_test(self, galaxy_catalog, catalog_name, base_output_dir):
 
         # check if needed quantities exist
-        if not galaxy_catalog.has_quantities(['quantity1', 'quantity2', 'quantity3']):
+        if not galaxy_catalog.has_quantities(['ra', 'dec']):
             return TestResult(skipped=True, summary='do not have needed quantities')
 
         fig, ax = plt.subplots()
