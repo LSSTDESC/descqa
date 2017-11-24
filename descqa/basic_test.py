@@ -2,6 +2,7 @@ from __future__ import unicode_literals, absolute_import
 import os
 from builtins import str
 import yaml
+import numpy as np
 import healpy as hp
 from .base import BaseValidationTest, TestResult
 

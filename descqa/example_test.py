@@ -40,6 +40,8 @@ class ExampleTest(BaseValidationTest):
 
         fig.savefig(os.path.join(base_output_dir, 'plot.png'))
         plt.close(fig)
+        score = np.random.rand()
+        return TestResult(score, passed=True)
 
 
     def generate_summary(self, catalog_name_list, base_output_dir):
