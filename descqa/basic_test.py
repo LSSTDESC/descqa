@@ -5,6 +5,7 @@ import yaml
 import numpy as np
 import healpy as hp
 from .base import BaseValidationTest, TestResult
+from .plotting import plt
 
 __all__ = ['ListAvailableQuantities', 'SkyArea']
 
