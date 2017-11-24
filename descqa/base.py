@@ -1,4 +1,5 @@
 from __future__ import division, unicode_literals, absolute_import
+import os
 
 __all__ = ['BaseValidationTest', 'TestResult']
 
@@ -6,7 +7,7 @@ class TestResult(object):
     """
     class for passing back test result
     """
-    def __init__(self, score=None, summary='', passed=False, skipped=False, data=None):
+    def __init__(self, score=None, summary='', passed=False, skipped=False):
         """
         Parameters
         ----------
@@ -21,15 +22,11 @@ class TestResult(object):
 
         skipped : bool
             if the test is skipped, overwrites all other arguments
-
-        data : optional
-            any other data you want to keep
         """
 
         self.skipped = bool(skipped)
         self.passed = bool(passed)
         self.summary = summary or ''
-        self.data = data
 
         # set score
         if not self.skipped:
@@ -44,6 +41,8 @@ class BaseValidationTest(object):
     very abstract class for validation test class
     """
 
+    data_dir = os.path.join(os.path.dirname(__file__), 'data')
+
     def __init__(self, **kwargs):
         pass
 
@@ -57,10 +56,10 @@ class BaseValidationTest(object):
         galaxy_catalog : galaxy catalog reader object
             instance of a galaxy catalog reader
 
-        catalog_name : string
+        catalog_name : str
             name of galaxy catalog
 
-        base_output_dir : string
+        base_output_dir : str
             output directory
 
         Returns
@@ -71,16 +70,17 @@ class BaseValidationTest(object):
         raise NotImplementedError
 
 
-    def generate_summary(self, catalog_list, base_output_dir):
+    def generate_summary(self, catalog_name_list, base_output_dir):
         """
-        make summary plot for all catalogs
+        Make summary plot (or other stuff) for all catalogs.
+        Returns None.
 
         Parameters
         ----------
-        catalog_list: list of tuple
-            list of (catalog, result.data) used for each catalog comparison
+        catalog_name_list: list of str
+            list of catalog names
 
-        base_output_dir: string
+        base_output_dir: str
             output directory
         """
         pass
