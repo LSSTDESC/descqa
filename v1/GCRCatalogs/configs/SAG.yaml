@@ -1,0 +1,8 @@
+description: This catalog is based on the dark matter only (DMO) version of the MB-2
+  simulation, and employs a semi-analytic approach to galaxy formation. This particular
+  approach is based on the model developed by Springel et al. 2001}, which, as is
+  usual with semi-analytic models, combines merger trees extracted from a dark matter
+  cosmological simulation with a set of coupled differential equations for the baryonic
+  processes taking place within these merger trees as time evolves.
+fn: SAGcatalog.sag
+reader: SAGGalaxyCatalog

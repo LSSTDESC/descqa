@@ -1,0 +1,18 @@
+bins: !!python/tuple
+- 7.0
+- 12.1
+- 18
+description: We calculate the stellar-mass density as a function of the total stellar
+  mass for each galaxy. Stellar masses are defined as the mass locked up in long-lived
+  stars and stellar remnants (the most common definition).  For the SAM models, the
+  total stellar mass is the sum of the disk and spheroid components. The densities
+  are derived from the number counts of galaxies in each stellar mass bin, divided
+  by the simulation volume. These densities are compared with the data from the MassiveBlackII
+  simulation.
+module: BinnedStellarMassFunctionTest
+observation: MassiveBlackII
+validation_range: !!python/tuple
+- 1258925411.794166
+- 630957344480.1943
+zhi: 0.065
+zlo: 0.045

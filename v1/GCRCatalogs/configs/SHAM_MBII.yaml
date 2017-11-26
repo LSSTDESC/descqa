@@ -1,0 +1,4 @@
+description: This catalog is similar to SHAM Li White but has been tuned to the stellar
+  mass function measured from a hydro-simulation, MassiveBlackII.
+match_to: MBII
+reader: SHAMGalaxyCatalog

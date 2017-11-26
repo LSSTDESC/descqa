@@ -1,0 +1,23 @@
+colors:
+- u-g
+- g-r
+- r-i
+- i-z
+description: For each of the mock catalogs, we calculate the distributions of <i>M_u-M_g</i>,
+  <i>M_g-M_r</i>, <i>M_r-M_i</i> and <i>M_i-M_z</i> colors, where the magnitudes are
+  k-corrected absolute magnitudes, and compare with SDSS colors. The SDSS dataset
+  includes <i>ugriz</i> photometry and spectroscopic redshifts from the SDSS main
+  galaxy sample (Gunn98, York2000). SDSS galaxies in the redshift range of 0.06<z<0.09
+  are used for this comparison.
+limiting_band: r
+module: ColorDistributionTest
+sdss_fname: sdss_output_coeffs_z_0.06_0.09.dat
+threshold: 0.05
+translate:
+  g: 'SDSS_g:rest:'
+  i: 'SDSS_i:rest:'
+  r: 'SDSS_r:rest:'
+  u: 'SDSS_u:rest:'
+  z: 'SDSS_z:rest:'
+zhi: 0.065
+zlo: 0.045

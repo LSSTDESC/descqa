@@ -1,0 +1,14 @@
+description: This catalog is based on the dark matter only (DMO) version of the MB-2
+  simulation, and has been tuned to reproduce the spatial clustering and the galaxy-galaxy
+  lensing observed in SDSS. The iHOD model aims to provide a probabilistic mapping
+  between halos and galaxies, assuming that the enormous diversity in the individual
+  galaxy assembly histories inside similar halos would reduce to a stochastic scatter
+  about the mean galaxy-to-halo connection by virtue of the central limit theorem.
+  Building on the global HOD parameterization of Zu and Mandelbaum (2015, 2016, 2017),
+  the iHOD formalism was developed to solve the mapping between galaxy properties
+  (stellar mass and color) and halo mass, using the spatial clustering and the galaxy-galaxy
+  lensing of galaxies in SDSS.  Compared to the traditional HOD methods, iHOD can
+  include ~80% more galaxies while taking into account the stellar mass incompleteness
+  of galaxy samples in a self-consistent fashion.
+fn: iHODcatalog_MBII.h5.iHOD
+reader: iHODGalaxyCatalog
