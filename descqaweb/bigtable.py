@@ -73,4 +73,4 @@ def prepare_bigtable(page=1):
         table_out.append('<tr>{}</tr>'.format(format_bigtable_row(run)))
     table_out.append('</table>')
 
-    return dict(table='\n'.join(table_out), page=page, npages=npages)
+    return dict(table='\n'.join(table_out), page=page, npages=npages, static_dir=config.static_dir)
