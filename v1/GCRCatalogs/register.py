@@ -1,7 +1,7 @@
 import os
 import importlib
 import yaml
-from .GalaxyCatalog import GalaxyCatalog
+from .GalaxyCatalogInterface import GalaxyCatalog
 from .config import base_catalog_dir
 
 
