@@ -41,6 +41,8 @@ def get_available_configs(config_dir, register=None):
         name = os.path.splitext(config_file)[0]
         config = load_yaml(os.path.join(config_dir, config_file))
         config['base_catalog_dir'] = base_catalog_dir
+        if 'fn' in config:
+            config['fn'] = os.path.join(base_catalog_dir, config['fn'])
         register[name] = config
 
     return register

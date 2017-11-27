@@ -18,7 +18,7 @@ set -o noglob
 
 # run master.py
 CMD="import descqarun; descqarun.main()"
-$PYTHON -E -c "$CMD" "$OUTPUTDIR" -p "descqa_v1" -w "$URL" "$@"
+$PYTHON -E -c "$CMD" "$OUTPUTDIR" -p v1 -w "$URL" "$@"
 
 # end subshell
 )
