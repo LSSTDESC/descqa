@@ -20,7 +20,7 @@ def import_subclass(subclass, package=None, required_base_class=None):
     """
     Import and return a subclass.
     """
-    subclass = getattr(importlib.import_module(subclass, package), subclass)
+    subclass = getattr(importlib.import_module('.'+subclass, package), subclass)
     if required_base_class:
         assert issubclass(subclass, required_base_class), "Provided class is not a subclass of *required_base_class*"
     return subclass
