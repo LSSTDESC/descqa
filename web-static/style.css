@@ -85,17 +85,22 @@ h3           {font-size: 110%; line-height: 1.25;}
 }
 
 .description h2{
-    margin-top: 20px;
+    margin-top: 40px;
 }
 
 .description td{
-    padding: 4px;
+    padding: 5px 0px;
     vertical-align: top;
+}
+
+.description thead{
+    font-weight: bold;
 }
 
 .description td:first-child{
     width: 130px;
     text-align: right;
+    padding-right: 0.4em;
 }
 
 span.darkred {
