@@ -5,7 +5,7 @@ from warnings import warn
 import numpy as np
 from scipy.ndimage.filters import uniform_filter1d
 
-from ValidationTest import TestResult, plt
+from .ValidationTest import TestResult, plt
 from .base import BaseValidationTest
 from .CalcStats import CvM_statistic
 from .ComputeColorDistribution import load_SDSS

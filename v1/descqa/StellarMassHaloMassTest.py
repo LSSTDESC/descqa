@@ -5,7 +5,7 @@ import subprocess
 
 import numpy as np
 
-from ValidationTest import *
+from .ValidationTest import *
 
 
 def mean_y_in_x_bins(y, x, bins, sorter=None):

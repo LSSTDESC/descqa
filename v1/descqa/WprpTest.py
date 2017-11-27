@@ -3,7 +3,7 @@ import os
 import numpy as np
 from warnings import warn
 
-from ValidationTest import *
+from .ValidationTest import *
 from helpers.CorrelationFunction import projected_correlation
 
 

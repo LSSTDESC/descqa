@@ -4,7 +4,7 @@ import subprocess
 
 import numpy as np
 
-from BinnedStellarMassFunctionTest import BinnedStellarMassFunctionTest
+from .BinnedStellarMassFunctionTest import BinnedStellarMassFunctionTest
 
 class HaloMassFunctionTest(BinnedStellarMassFunctionTest):
     """

@@ -1,12 +1,12 @@
 # Argonne galaxy catalog class.
 
-from GalaxyCatalogInterface import GalaxyCatalog
+import os
+import re
 import numpy as np
 import h5py
 import astropy.cosmology
 import astropy.units as u
-import os 
-import re
+from .GalaxyCatalogInterface import GalaxyCatalog
 
 class GalacticusGalaxyCatalog(GalaxyCatalog):
     """
@@ -144,7 +144,7 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
                             'mass':              ('log_halomass',  self._unlog10),
                             'disk_stellarmass':  ('log_disk_stellarmass',  self._unlog10),
                             'bulge_stellarmass': ('log_bulge_stellarmass', self._unlog10)}
-        
+
         self.catalog     = {}
         self.sky_area    = 4.*np.pi*u.sr   # all sky by default
         self.cosmology   = None
@@ -185,7 +185,7 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
 
         # TODO: how to get sky area?
         hdfFile.close()
-        
+
 
     def load(self,hdfKeys=[]):
         """
@@ -201,7 +201,7 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
 
         fn = os.path.join(self.kwargs['base_catalog_dir'],self.kwargs['filename'])
         hdfFile = h5py.File(fn, 'r')
-        
+
         #print "load using keys: ", hdfKeys
         #loop over requested keys and fetch those not already loaded
         for key in hdfKeys:
@@ -216,7 +216,7 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
 
     # Functions for applying filters
 
-    #check this function to see if really necessary 
+    #check this function to see if really necessary
     def _check_halo(self, halo, filters):
         """
         Apply the requested filters to a given halo and return True if it
@@ -397,12 +397,12 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
     def getzvalues(self,outkeys,hdf5groups=None):
         myname=self.getzvalues.__name__
         zvalues=[]
-        if(type(outkeys)==str):  #create list if necessary                                                       
+        if(type(outkeys)==str):  #create list if necessary
             outkeys=[outkeys]
-        #endif                                                                                                   
+        #endif
         if(hdf5groups is None):
             hdf5groups=self.hdf5groups
-        #endif                                                                                                   
+        #endif
         for outkey in outkeys:
             if(hdf5groups.has_key(outkey)):
                 if(outkey.find(self.Output)!=-1):
@@ -416,8 +416,8 @@ class GalacticusGalaxyCatalog(GalaxyCatalog):
             #    outputz=hdf5groups[self.Outputs][outkey][self.outputRedshift]
             else:
                 print("Unknown catalog key",outkey)
-            #endif                                                                                               
+            #endif
             zvalues.append(outputz)
 
-        #endfor                                                                                                  
+        #endfor
         return np.asarray(zvalues)

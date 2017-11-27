@@ -1,12 +1,11 @@
 #! /usr/bin/env python
 
-from GalaxyCatalogInterface import GalaxyCatalog
 import os
 import h5py
 import numpy as np
 import astropy.cosmology
 import astropy.units as u
-
+from .GalaxyCatalogInterface import GalaxyCatalog
 
 class SAGGalaxyCatalog(GalaxyCatalog):
     """
@@ -130,28 +129,28 @@ class SAGGalaxyCatalog(GalaxyCatalog):
             output *= (self.h**h_factor)
 
         return output
-                                                                                   
+
     def _stored_property_wrapper(self, name):
         """
         private function used to translate desc keywords into stored keywords in the mock
-        
+
         Parameters
         ----------
         name : string
             key into stored mock catalogue
-        
-        """        
+
+        """
         return (lambda quantity, filter : self._get_stored_property(name, filter))
 
     def _quantity_alias(self, name):
         """
         private function used to alias a desc keyword into another existing quantity keyword
-        
+
         Parameters
         ----------
         name : string
             name to alias
-        
+
         """
         return (lambda quantity, filter : self.quantities[name](quantity, filter))
 
@@ -174,12 +173,12 @@ class SAGcollection():
         self.nz        = 0
         self.boxSizeMpc = 0
         self.zminidx    = -1
-        # turam : Disable this path munging: for DESCQA we are passing in the 
+        # turam : Disable this path munging: for DESCQA we are passing in the
         #         directory with a ".sag" extension to trigger the reader instead
         #         of the name of an individual hdf5 file; for example:
         #         filename was: sag_directory/snapshot/file.hdf5
         #         filename under DESCQA: sag_directory
-        #filename = os.path.split(os.path.split(filename)[0])[0] 
+        #filename = os.path.split(os.path.split(filename)[0])[0]
         print(filename)
 
         if 0 != boxSizeMpc:

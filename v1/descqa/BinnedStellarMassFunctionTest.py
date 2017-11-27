@@ -2,7 +2,7 @@ from __future__ import division, print_function
 import os
 import numpy as np
 
-from ValidationTest import *
+from .ValidationTest import *
 
 
 class BinnedStellarMassFunctionTest(ValidationTest):

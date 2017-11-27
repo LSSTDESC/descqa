@@ -1,10 +1,10 @@
 # Massive Black 2 galaxy catalog class
 
-from GalaxyCatalogInterface import GalaxyCatalog
 import numpy as np
 import astropy.cosmology
 import h5py
 import astropy.units as u
+from .GalaxyCatalogInterface import GalaxyCatalog
 
 class iHODGalaxyCatalog(GalaxyCatalog):
     """
@@ -47,7 +47,7 @@ class iHODGalaxyCatalog(GalaxyCatalog):
         Given a catalog path, attempt to read the catalog and set up its
         internal data structures.
         """
-        self.catalog = self._read_rec_from_hdf5(fn, group='galaxy')   
+        self.catalog = self._read_rec_from_hdf5(fn, group='galaxy')
         self.Ngals = len(self.catalog)
         return self
 

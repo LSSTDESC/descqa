@@ -1,10 +1,10 @@
 # Massive Black 2 galaxy catalog class
 
-from GalaxyCatalogInterface import GalaxyCatalog
 import numpy as np
 from astropy.table import Table
 import astropy.units as u
 import astropy.cosmology
+from .GalaxyCatalogInterface import GalaxyCatalog
 
 class MB2GalaxyCatalog(GalaxyCatalog):
     """
@@ -147,4 +147,4 @@ class MB2GalaxyCatalog(GalaxyCatalog):
     def _luminosity_to_magnitude(self,array_tuple,scalar_tuple):
         bandlum = array_tuple[0]*1.0e28
         bandflux = bandlum/(4*(np.pi)*(1.0e38)*(3.08567758**2))
-        return -2.5*(np.log10(bandflux)) - 48.6 
+        return -2.5*(np.log10(bandflux)) - 48.6

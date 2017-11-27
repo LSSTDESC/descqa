@@ -73,7 +73,8 @@ def load_catalog_from_config_dict(catalog_config):
     load_catalog()
     """
     return import_subclass(catalog_config['reader'],
-                           __package__)(**catalog_config)
+                           __package__,
+                           object)(**catalog_config)
 
 
 def load_catalog(catalog_name, config_overwrite=None):
