@@ -1,7 +1,7 @@
 body         {font-family: Helvetica, Verdana, Geneva, Arial, sans-serif;
               font-size: 13px;
               padding: 12px 8px;}
-                
+
 a.everblue, .nav a {color: blue;
                     text-decoration: none;}
 
@@ -74,6 +74,35 @@ h3           {font-size: 110%; line-height: 1.25;}
 }
 .matrix td.green {
     background-color:#3B5D90;
+}
+
+.homeinfo{
+    width: 1100px;
+}
+
+.description{
+    width: 1100px;
+    margin: 60px 0;
+}
+
+.description table{
+    margin: 30px 0;
+}
+
+.description td{
+    padding: 5px 0px;
+    vertical-align: top;
+}
+
+.description thead{
+    font-weight: bold;
+    font-size: 110%;
+}
+
+.description td:first-child{
+    width: 130px;
+    text-align: right;
+    padding-right: 0.4em;
 }
 
 span.darkred {

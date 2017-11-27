@@ -1,4 +1,4 @@
-<div style="max-width: 1000px;">
+<div class="homeinfo">
 <h3>{{ version_info }}</h3>
 <h3>
 The DESCQA framework executes validation tests on mock galaxy catalogs.
@@ -40,6 +40,11 @@ This run took {{ time_used|round(1) }} minute(s). <br>
 <table class="matrix">
 {{ matrix }}
 </table>
+</div>
+
+<div class="description">
+{{ validation_description }}
+{{ catalog_description }}
 </div>
 
 <script>document.getElementById("pleasewait").style.display="none";</script>

@@ -211,6 +211,12 @@ class DescqaTask(object):
                 f.write('\n')
 
 
+    def get_description(self, description_key='description'):
+        dv = {v: descqa.available_validations[v].get(description_key) for v in self.validations_to_run}
+        dc = {c: GCRCatalogs.available_catalogs[c].get(description_key) for c in self.catalogs_to_run}
+        return {'validation_{}'.format(description_key): dv, 'catalog_{}'.format(description_key): dc}
+
+
     def get_validation_instance(self, validation):
         if validation not in self._validation_instance_cache:
             logfile = pjoin(self.get_path(validation), self.logfile_basename)
@@ -440,6 +446,7 @@ def main():
 
         logger.debug('preparing to run validation tests...')
         descqa_task = DescqaTask(output_dir, args.validations_to_run, args.catalogs_to_run, logger)
+        master_status.update(descqa_task.get_description())
 
         logger.info('running validation tests...')
         descqa_task.run()

@@ -52,4 +52,6 @@ class BaseValidationTest(object):
         output_dir: str
             output directory (all output must be under this directory)
         """
-        self.plot_summary(os.path.join(output_dir, 'summary_plot.png'), getattr(self, '_catalog_list', list()))
+        catalog_list = getattr(self, '_catalog_list', list())
+        catalog_list.sort(key=lambda t: t[0])
+        self.plot_summary(os.path.join(output_dir, 'summary_plot.png'), catalog_list)

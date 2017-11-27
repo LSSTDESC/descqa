@@ -2,3 +2,4 @@ subclass_name: clf_test.ConditionalLuminosityFunction
 band2: r
 band1: g
 color_cut_fraction: 0.2
+description: Conditional luminosity function (in r band) for central and satellite galaxies
