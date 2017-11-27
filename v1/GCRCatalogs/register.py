@@ -1,7 +1,6 @@
 import os
 import importlib
 import yaml
-from .GalaxyCatalogInterface import GalaxyCatalog
 from .config import base_catalog_dir
 
 
@@ -72,8 +71,7 @@ def load_catalog_from_config_dict(catalog_config):
     load_catalog()
     """
     return import_subclass(catalog_config['reader'],
-                           __package__,
-                           GalaxyCatalog)(**catalog_config)
+                           __package__)(**catalog_config)
 
 
 def load_catalog(catalog_name, config_overwrite=None):
