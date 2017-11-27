@@ -97,7 +97,7 @@ def prepare_matrix(run=None, catalog_prefix=None, test_prefix=None):
     for type_this in ('Validation', 'Catalog'):
         key = '{}_description'.format(type_this.lower())
         if key in descqa_run.status:
-            data[key] = '<table class="description"><thead><tr><td>{} Name</td><td>Description</td></tr></thead>\n<tbody>\n{}\n</tbody></table>'.format(
+            data[key] = '<table><thead><tr><td>{} Name</td><td>Description</td></tr></thead>\n<tbody>\n{}\n</tbody></table>'.format(
                 type_this,
                 format_description(descqa_run.status[key]),
             )
