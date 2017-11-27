@@ -1,5 +1,5 @@
 body         {font-family: Helvetica, Verdana, Geneva, Arial, sans-serif;
-              font-size: 12px;
+              font-size: 13px;
               padding: 12px 8px;}
                 
 a.everblue, .nav a {color: blue;
@@ -12,30 +12,27 @@ a.everblue, .nav a {color: blue;
 
 h1           {font-size: 135%; margin: 0;}
 h2           {font-size: 120%;}
+h3           {font-size: 110%; line-height: 1.25;}
 
 .bigboard {width: 100%;}
 
-.bigboard td {padding: 2px 2px 4px 2px;}
+.bigboard td {padding: 5px 2px;}
 .bigboard td:first-child {width:170px;}
 .bigboard td:nth-child(2) {width:25px;}
 .bigboard tr {vertical-align: text-top;}
 .bigboard tr:nth-child(odd) {background-color: #bbf;}
 .bigboard a {text-decoration: none;}
 
-.runinfo {font-size: 110%;
-          margin: 12px 4px;
+.runinfo {margin: 12px 4px;
           line-height: 1.4;}
 
-#pagesDiv, .nav {font-size: 110%;
-                 line-height: 1.4;
+#pagesDiv, .nav {line-height: 1.4;
                  margin: 4px 4px;
                  width: 100%;}
 
 .legend {font-style: italic;
          margin: 6px 4px;}
 .legend img {margin-left: 8px;}
-
-#pagesDiv {font-weight: bold;}
 
 .indenttable {margin-left: 15px;
               border-width: 0px;
@@ -49,8 +46,7 @@ h2           {font-size: 120%;}
     text-align: center;
     width: 100%;
     table-layout: fixed;
-    font-size: 110%;
-    margin-top:20px;
+    margin-top: 20px;
 }
 .matrix td {
     padding: 0;
