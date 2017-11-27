@@ -82,14 +82,11 @@ h3           {font-size: 110%; line-height: 1.25;}
 
 .description{
     width: 1100px;
+    margin: 60px 0;
 }
 
 .description table{
     margin: 30px 0;
-}
-
-.description table:first-child{
-    margin-top: 60px;
 }
 
 .description td{
