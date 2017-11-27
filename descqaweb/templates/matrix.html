@@ -42,6 +42,20 @@ This run took {{ time_used|round(1) }} minute(s). <br>
 </table>
 </div>
 
+{% if validation_description %}
+<div>
+<h2>Validation Description</h2>
+{{ validation_description }}
+</div>
+{% endif %}
+
+{% if catalog_description %}
+<div>
+<h2>Catalog Description</h2>
+{{ catalog_description }}
+</div>
+{% endif %}
+
 <script>document.getElementById("pleasewait").style.display="none";</script>
 </body>
 </html>

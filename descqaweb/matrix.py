@@ -29,6 +29,15 @@ def format_filter_link(targetDir, istest, new_test_prefix, new_catalog_prefix, c
     return '<a href="?run={}{}{}">{}</a>'.format(targetDir, new_test_prefix_str, new_catalog_prefix_str, text)
 
 
+def format_description(description_dict):
+    output = []
+    for k in sorted(description_dict):
+        v = description_dict.get(k)
+        if v:
+            output.append('<tr><td>{}</td><td>{}</td></tr>'.format(k, v))
+    return '\n'.join(output)
+
+
 def prepare_matrix(run=None, catalog_prefix=None, test_prefix=None):
 
     if run:
@@ -84,5 +93,13 @@ def prepare_matrix(run=None, catalog_prefix=None, test_prefix=None):
                     item.status_color, descqa_run.name, test, catalog, item.status.rpartition('_')[-1], item.score))
         matrix.append('</tr>')
     data['matrix'] = '\n'.join(matrix)
+
+    for type_this in ('Validation', 'Catalog'):
+        key = '{}_description'.format(type_this.lower())
+        if key in descqa_run.status:
+            data[key] = '<table class="description"><thead><tr><td>{} Name</td><td>Description</td></tr></thead>\n<tbody>\n{}\n</tbody></table>'.format(
+                type_this,
+                format_description(descqa_run.status[key]),
+            )
 
     return data
