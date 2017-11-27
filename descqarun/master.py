@@ -6,12 +6,17 @@ import time
 import json
 import logging
 import traceback
-import io
 import importlib
 import argparse
 import collections
 import fnmatch
 import subprocess
+
+try:
+    from StringIO import StringIO
+except ModuleNotFoundError:
+    from io import StringIO
+
 import yaml
 from . import config
 
@@ -43,7 +48,7 @@ class CatchExceptionAndStdStream():
         self._logger = logger
         self._filenames = [filenames] if _is_string_like(filenames) else filenames
         self._during = ' when {}'.format(during) if during else ''
-        self._stream = io.BytesIO() if sys.getdefaultencoding() == 'ascii' else io.StringIO()
+        self._stream = StringIO()
 
     def __enter__(self):
         self._stdout = sys.stdout
@@ -286,7 +291,7 @@ class DescqaTask(object):
 
 
     def get_status_report(self):
-        report = io.StringIO()
+        report = StringIO()
         for validation in self.validations_to_run:
             report.write(_horizontal_rule + '\n')
             report.write(validation + '\n')
