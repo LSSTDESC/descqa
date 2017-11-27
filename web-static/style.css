@@ -80,12 +80,15 @@ h3           {font-size: 110%; line-height: 1.25;}
     width: 1100px;
 }
 
-.description {
+.description{
     width: 1100px;
+}
+
+.description table{
     margin-top: 30px;
 }
 
-.description:first-child{
+.description table:first-child{
     margin-top: 60px;
 }
 

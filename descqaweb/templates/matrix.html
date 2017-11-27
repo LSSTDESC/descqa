@@ -42,17 +42,10 @@ This run took {{ time_used|round(1) }} minute(s). <br>
 </table>
 </div>
 
-{% if validation_description %}
 <div class="description">
 {{ validation_description }}
-</div>
-{% endif %}
-
-{% if catalog_description %}
-<div class="description">
 {{ catalog_description }}
 </div>
-{% endif %}
 
 <script>document.getElementById("pleasewait").style.display="none";</script>
 </body>
