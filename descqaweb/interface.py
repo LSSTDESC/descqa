@@ -119,16 +119,20 @@ class DescqaItem(object):
         return self._files
 
 
-def validate_descqa_run_name(run_name, base_dir):
+def validate_descqa_run_name(run_name, base_dir, earliest_datetime=None):
     path = os.path.join(base_dir, run_name)
     if not os.path.isdir(path):
         return
     if os.path.exists(os.path.join(path, '.lock')):
         return
     m = re.match(r'(2[01]\d{2}-[01]\d-[0123]\d)(?:_(\d+))?', run_name)
-    if m:
-        m = m.groups()
-        return datetime.datetime(*(int(i) for i in m[0].split('-')), microsecond=int(m[1] or 0))
+    if not m:
+        return
+    m = m.groups()
+    t = datetime.datetime(*(int(i) for i in m[0].split('-')), microsecond=int(m[1] or 0))
+    if earliest_datetime and t < earliest_datetime:
+        return
+    return t
 
 
 class DescqaRun(object):
@@ -223,12 +227,16 @@ class DescqaRun(object):
         return self._status
 
 
-def iter_all_runs_unsorted(base_dir):
+def iter_all_runs_unsorted(base_dir, days_to_search=None):
+    if days_to_search:
+        earliest_datetime = datetime.datetime.today() - datetime.timedelta(days=days_to_search)
+    else:
+        earliest_datetime = None
     for run_name in os.listdir(base_dir):
-        run_key = validate_descqa_run_name(run_name, base_dir)
+        run_key = validate_descqa_run_name(run_name, base_dir, earliest_datetime)
         if run_key:
             yield (run_name, run_key)
 
 
-def iter_all_runs(base_dir):
-    return (r[0] for r in sorted(iter_all_runs_unsorted(base_dir), key=lambda r: r[1], reverse=True))
+def iter_all_runs(base_dir, days_to_search=None):
+    return (r[0] for r in sorted(iter_all_runs_unsorted(base_dir, days_to_search), key=lambda r: r[1], reverse=True))
