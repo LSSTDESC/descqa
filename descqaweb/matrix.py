@@ -35,7 +35,8 @@ def format_description(description_dict):
         v = description_dict.get(k)
         if v:
             output.append('<tr><td>{}</td><td>{}</td></tr>'.format(k, v))
-    return '\n'.join(output)
+    if output:
+        return '\n'.join(output)
 
 
 def prepare_matrix(run=None, catalog_prefix=None, test_prefix=None):
@@ -97,9 +98,8 @@ def prepare_matrix(run=None, catalog_prefix=None, test_prefix=None):
     for type_this in ('Validation', 'Catalog'):
         key = '{}_description'.format(type_this.lower())
         if key in descqa_run.status:
-            data[key] = '<table><thead><tr><td>{} Name</td><td>Description</td></tr></thead>\n<tbody>\n{}\n</tbody></table>'.format(
-                type_this,
-                format_description(descqa_run.status[key]),
-            )
+            table = format_description(descqa_run.status[key])
+            if table:
+                data[key] = '<table><thead><tr><td>{}</td><td>Description</td></tr></thead>\n<tbody>\n{}\n</tbody></table>'.format(type_this, table)
 
     return data

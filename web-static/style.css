@@ -84,7 +84,7 @@ h3           {font-size: 110%; line-height: 1.25;}
     width: 1100px;
 }
 
-.description h2{
+.description table{
     margin-top: 40px;
 }
 
@@ -95,6 +95,7 @@ h3           {font-size: 110%; line-height: 1.25;}
 
 .description thead{
     font-weight: bold;
+    font-size: 110%;
 }
 
 .description td:first-child{
