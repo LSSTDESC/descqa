@@ -6,7 +6,7 @@ import time
 import json
 import logging
 import traceback
-from io import StringIO
+import io
 import importlib
 import argparse
 import collections
@@ -43,7 +43,7 @@ class CatchExceptionAndStdStream():
         self._logger = logger
         self._filenames = [filenames] if _is_string_like(filenames) else filenames
         self._during = ' when {}'.format(during) if during else ''
-        self._stream = StringIO()
+        self._stream = io.BytesIO() if sys.getdefaultencoding() == 'ascii' else io.StringIO()
 
     def __enter__(self):
         self._stdout = sys.stdout
@@ -56,11 +56,10 @@ class CatchExceptionAndStdStream():
     def __exit__(self, exc_type, exc_value, exc_tb):
         self._stream.flush()
         has_exception = False
-        output = ''
         if exc_type:
-            output += traceback.format_exception(exc_type, exc_value, exc_tb)
+            traceback.print_exception(exc_type, exc_value, exc_tb)
             has_exception = True
-        output += self._stream.getvalue().strip()
+        output = self._stream.getvalue().strip()
         self._stream.close()
         sys.stdout = self._stdout
         sys.stderr = self._stderr
@@ -278,7 +277,6 @@ class DescqaTask(object):
         msg = 'hmmm, something is wrong with the test results!'
         if not all((v, c) in self._results for v in self.validations_to_run for c in self.catalogs_to_run):
             self.logger.error(msg)
-            raise RuntimeError(msg)
 
 
     def count_status(self):
@@ -288,7 +286,7 @@ class DescqaTask(object):
 
 
     def get_status_report(self):
-        report = StringIO()
+        report = io.StringIO()
         for validation in self.validations_to_run:
             report.write(_horizontal_rule + '\n')
             report.write(validation + '\n')
@@ -330,7 +328,7 @@ class DescqaTask(object):
                 self.set_result(test_result or 'RUN_VALIDATION_TEST_ERROR', validation, catalog)
 
         if not run_at_least_one_catalog:
-            msg = 'No valid catalog to run!'
+            msg = 'No valid catalog to run! Abort!'
             self.logger.error(msg)
             raise RuntimeError(msg)
 
