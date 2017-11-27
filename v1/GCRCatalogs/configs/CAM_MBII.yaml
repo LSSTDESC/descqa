@@ -1,0 +1,6 @@
+description: This catalog is based on the dark matter only (DMO) version of the MB-2
+  simulation, and has been tuned to reproduce the Li & White stellar mass function.
+  The galaxy catalog was created using the conditional abundance matching technique
+  described in Hearin et al. 2014.
+fn: yale_cam_age_matching_MBII_z0.00.hdf5
+reader: YaleCAMGalaxyCatalog

@@ -1,0 +1,14 @@
+description: This catalog is based on the dark matter only (DMO) version of the MB-2
+  simulation, and employs a semi-analytic model Galacticus. Galacticus models the
+  baryonic physics of galaxy growth within an evolving, merging hierarchy of dark
+  matter halos. Baryonic processes (including gas cooling and inflow, star formation,
+  stellar and AGN feedback, and galaxy merging) are described by a collection of differential
+  equations which are integrated to a specified tolerance along each branch of the
+  merger tree, plus instantaneous transformations associated with merger events. The
+  result is a catalog of galaxies at all redshifts including both physical properties
+  (stellar masses, sizes, morphologies) and observational properties (e.g. luminosities
+  in any specified bandpass. The parameters of the model are constrained through either
+  particle swarm optimization or MCMC techniques to match a wide variety of data on
+  the galaxy population.
+filename: galacticus_anl_mstar1e7_zrange.hdf5
+reader: GalacticusGalaxyCatalog

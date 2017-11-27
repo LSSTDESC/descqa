@@ -6,12 +6,17 @@ import time
 import json
 import logging
 import traceback
-from io import StringIO
 import importlib
 import argparse
 import collections
 import fnmatch
 import subprocess
+
+try:
+    from StringIO import StringIO
+except ModuleNotFoundError:
+    from io import StringIO
+
 import yaml
 from . import config
 
@@ -57,7 +62,7 @@ class CatchExceptionAndStdStream():
         self._stream.flush()
         has_exception = False
         if exc_type:
-            traceback.print_exception(exc_type, exc_value, exc_tb, file=self._stream)
+            traceback.print_exception(exc_type, exc_value, exc_tb)
             has_exception = True
         output = self._stream.getvalue().strip()
         self._stream.close()
@@ -242,7 +247,9 @@ class DescqaTask(object):
         else:
             raise ValueError('Must specify *validation* and/or *catalog*')
 
-        assert key not in self._results, 'Result of {} has been set already!'.format(key)
+        if key in self._results:
+            self.logger.debug('Warning: result of {} has been set already!'.format(key))
+            return
 
         if _is_string_like(test_result):
             status = test_result
@@ -272,7 +279,9 @@ class DescqaTask(object):
 
 
     def check_status(self):
-        assert all((v, c) in self._results for v in self.validations_to_run for c in self.catalogs_to_run), 'hmm, something is wrong with the test results!'
+        msg = 'hmmm, something is wrong with the test results!'
+        if not all((v, c) in self._results for v in self.validations_to_run for c in self.catalogs_to_run):
+            self.logger.error(msg)
 
 
     def count_status(self):
@@ -300,11 +309,13 @@ class DescqaTask(object):
 
 
     def run_tests(self):
+        run_at_least_one_catalog = False
         for catalog in self.catalogs_to_run:
             catalog_instance = self.get_catalog_instance(catalog)
             if catalog_instance is None:
                 continue
 
+            run_at_least_one_catalog = True
             for validation in self.validations_to_run:
                 validation_instance = self.get_validation_instance(validation)
                 if validation_instance is None:
@@ -320,6 +331,11 @@ class DescqaTask(object):
                     test_result = validation_instance.run_on_single_catalog(catalog_instance, catalog, output_dir_this)
 
                 self.set_result(test_result or 'RUN_VALIDATION_TEST_ERROR', validation, catalog)
+
+        if not run_at_least_one_catalog:
+            msg = 'No valid catalog to run! Abort!'
+            self.logger.error(msg)
+            raise RuntimeError(msg)
 
 
     def conclude_tests(self):
@@ -375,6 +391,9 @@ def main():
     parser.add_argument('-p', '--insert-sys-path', dest='paths', metavar='PATH', nargs='+',
             help='Insert path(s) to sys.path')
 
+    parser.add_argument('-w', '--web-base-url', metavar='URL', default=config.base_url,
+            help='Web interface base URL')
+
     args = parser.parse_args()
 
     logger = create_logger(verbose=args.verbose)
@@ -397,8 +416,9 @@ def main():
     descqa = importlib.import_module('descqa')
 
     record_version('DESCQA', descqa.__version__, master_status['versions'], logger=logger)
-    record_version('GCR', GCRCatalogs.GCR.__version__, master_status['versions'], logger=logger)
     record_version('GCRCatalogs', GCRCatalogs.__version__, master_status['versions'], logger=logger)
+    if hasattr(GCRCatalogs, 'GCR'):
+        record_version('GCR', GCRCatalogs.GCR.__version__, master_status['versions'], logger=logger)
 
     if args.list:
         print_available_and_exit(GCRCatalogs.available_catalogs, descqa.available_validations)
@@ -415,7 +435,8 @@ def main():
         os.mkdir(snapshot_dir)
         check_copy(descqa.__path__[0], pjoin(snapshot_dir, 'descqa'))
         check_copy(GCRCatalogs.__path__[0], pjoin(snapshot_dir, 'GCRCatalogs'))
-        check_copy(GCRCatalogs.GCR.__file__, pjoin(snapshot_dir, 'GCR.py'))
+        if hasattr(GCRCatalogs, 'GCR'):
+            check_copy(GCRCatalogs.GCR.__file__, pjoin(snapshot_dir, 'GCR.py'))
 
         logger.debug('preparing to run validation tests...')
         descqa_task = DescqaTask(output_dir, args.validations_to_run, args.catalogs_to_run, logger)
@@ -434,7 +455,7 @@ def main():
     finally:
         os.unlink(pjoin(output_dir, '.lock'))
         subprocess.check_call(['chmod', '-R', 'a+rX,o-w', output_dir])
-        logger.info('Web output: {}?run={}'.format(config.base_url, os.path.basename(output_dir)))
+        logger.info('Web output: {}?run={}'.format(args.web_base_url, os.path.basename(output_dir)))
 
 
 if __name__ == '__main__':

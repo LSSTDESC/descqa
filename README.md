@@ -1,13 +1,10 @@
 # DESCQA
 
-This repository contains the DESCQA simulation validation framework derived from FlashTest/FlashTestView. It will be used initially to do automated testing of simulated galaxy catalogs but may also expand later to encompass other types of simulation validation.
+This repository contains the DESCQA framework that validates simulated galaxy catalogs. For more information about this framework, please check out the [DESCQA paper](https://arxiv.org/abs/1709.09665).
 
-A [web interface](https://portal.nersc.gov/project/lsst/descqa/v2/) hosted on NERSC demonstrates this framework.
+A [web interface](https://portal.nersc.gov/project/lsst/descqa/) hosted on NERSC displays recent validation results from the DESCQA framework.
 
-**Note**: The master branch now hosts DESCQA2. If you are looking for DESCQA1 as presented in the [companion paper](https://arxiv.org/abs/1709.09665), please go to [v1 branch](https://github.com/LSSTDESC/descqa/tree/v1) and [v1 web interface](https://portal.nersc.gov/project/lsst/descqa/v1/www/).
-
-Starting from DESCQA2, the configurations and readers of catalogs are separated from DESCQA and are now hosted in [GCRCatalogs](https://github.com/LSSTDESC/gcr-catalogs).
-
+**! Important !** Starting from DESCQA v2 (current version), we have separated the configurations and readers of catalogs from DESCQA and moved them to a standalone repo, the [GCRCatalogs](https://github.com/LSSTDESC/gcr-catalogs) repo. We have also changed much of the validation tests. If you are looking for the catalogs and tests in DESCQA v1 (as presented in the [companion paper](https://arxiv.org/abs/1709.09665)), please see the [v1 subdiectory](v1).
 
 
 ## How to run DESCQA?
@@ -63,7 +60,7 @@ Then you can simply run `./run_master.sh`; however, there are many useful option
 
 As the master script is running, all the error messages will be printed out in real time if you have set `-v`. You can also go to the web interface to check you result:
 
-https://portal.nersc.gov/project/lsst/descqa/v2/index.cgi?run=all
+https://portal.nersc.gov/project/lsst/descqa/v2/?run=all
 
 
 
@@ -101,7 +98,7 @@ _Note_: Do *not* skip this step!
 
 ### Step 4: Develop
 
-Hack on! Make changes inside your local descqa clone. See [here](https://github.com/LSSTDESC/descqa/blob/master/validation_code/README.md) for more detailed instruction on how to create a new test.
+Hack on! Make changes inside your local descqa clone. Validation tests can be found under the `descqa` directory. See [here](descqa/README.md) for more detailed instruction on how to create a new test.
 
 _Note_: Please write [2-3 compatible](http://python-future.org/compatible_idioms.html) code.
 
@@ -152,6 +149,7 @@ Then go to https://github.com/LSSTDESC/descqa/ to create a pull request.
 - `descqa/data/`: directory that hosts small data files that validation tests need
 - `descqaqweb/`: package that contains the web interface
 - `descqaqrun/`: package that contains the execution scripts
+- `v1`: catalog readers and validation tests for DESCQA v1
 
 
 ## Dependencies
@@ -165,3 +163,11 @@ Then go to https://github.com/LSSTDESC/descqa/ to create a pull request.
 - future
 - jinja2
 - https://github.com/LSSTDESC/gcr-catalogs
+
+
+### Additional dependencies For v1
+
+- Python 2.7 only
+- kcorrect
+- fast3tree
+- https://bitbucket.org/yymao/helpers

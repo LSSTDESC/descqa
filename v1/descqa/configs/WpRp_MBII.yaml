@@ -1,0 +1,13 @@
+bins: !!python/tuple
+- -1.0
+- 1.3
+- 12
+datafile: MASSIVEBLACKII/wprp_sm-9.8.dat
+description: For each of the mock catalogs, we calculate the projected two-point correlation
+  function, w_p(r_p), in the thin-plane approximation.  We use the catalog at one
+  single epoch and then add redshift space distortion along one spatial axis (z-axis).  We
+  then calculate the projected pair counts, with a projection depth of 80 Mpc/h. We
+  assume periodic boundary conditions for all three spatial axes. We estimate the
+  sample variance of w_p(r_p) using the jackknife technique.
+module: WprpTest
+observation: MBII

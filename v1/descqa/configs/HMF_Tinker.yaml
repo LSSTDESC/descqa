@@ -1,0 +1,21 @@
+bins: !!python/tuple
+- 8.0
+- 15.0
+- 29
+description: The mass distribution of halos is one of the essential components of
+  precision cosmology, and occupies a central place in the paradigm of structure formation.  There
+  are two common ways to define halos in a simulation.  One is based on identifying
+  overdense regions above a certain threshold.  The other method, the FOF algorithm,
+  is based on finding neighbors of particles and neighbors of neighbors as defined
+  by a given separation distance. In DESCQA, we calculate the halo mass function from
+  each catalog, and compare it against some well-established analytic fits in the
+  literature.  We assume Poisson error bars.  We use the Bhattacharya et al. 2001
+  fit for the FOF halos, and Tinker et al. 2008 fit for the case of SO halos.
+module: HaloMassFunctionTest
+observation: Tinker
+validation_range: !!python/tuple
+- 1000000000000.0
+- 316227766016837.94
+zhi: 0.065
+zlo: 0.045
+ztest: 0.0625

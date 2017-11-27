@@ -1,0 +1,12 @@
+bins: !!python/tuple
+- 7.5
+- 15.0
+- 26
+description: Mean stellar mass as a function of halo mass for host halos.
+module: StellarMassHaloMassTest
+observation: MassiveBlackII
+validation_range: !!python/tuple
+- 1000000000000.0
+- 251188643150958.22
+zhi: 0.065
+zlo: 0.045
