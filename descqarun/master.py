@@ -56,10 +56,11 @@ class CatchExceptionAndStdStream():
     def __exit__(self, exc_type, exc_value, exc_tb):
         self._stream.flush()
         has_exception = False
+        output = ''
         if exc_type:
-            traceback.print_exception(exc_type, exc_value, exc_tb, file=self._stream)
+            output += traceback.format_exception(exc_type, exc_value, exc_tb)
             has_exception = True
-        output = self._stream.getvalue().strip()
+        output += self._stream.getvalue().strip()
         self._stream.close()
         sys.stdout = self._stdout
         sys.stderr = self._stderr
@@ -242,7 +243,9 @@ class DescqaTask(object):
         else:
             raise ValueError('Must specify *validation* and/or *catalog*')
 
-        assert key not in self._results, 'Result of {} has been set already!'.format(key)
+        if key in self._results:
+            self.logger.debug('Warning: result of {} has been set already!'.format(key))
+            return
 
         if _is_string_like(test_result):
             status = test_result
