@@ -272,7 +272,10 @@ class DescqaTask(object):
 
 
     def check_status(self):
-        assert all((v, c) in self._results for v in self.validations_to_run for c in self.catalogs_to_run), 'hmm, something is wrong with the test results!'
+        msg = 'hmmm, something is wrong with the test results!'
+        if not all((v, c) in self._results for v in self.validations_to_run for c in self.catalogs_to_run):
+            self.logger.error(msg)
+            raise RuntimeError(msg)
 
 
     def count_status(self):
@@ -300,11 +303,13 @@ class DescqaTask(object):
 
 
     def run_tests(self):
+        run_at_least_one_catalog = False
         for catalog in self.catalogs_to_run:
             catalog_instance = self.get_catalog_instance(catalog)
             if catalog_instance is None:
                 continue
 
+            run_at_least_one_catalog = True
             for validation in self.validations_to_run:
                 validation_instance = self.get_validation_instance(validation)
                 if validation_instance is None:
@@ -320,6 +325,11 @@ class DescqaTask(object):
                     test_result = validation_instance.run_on_single_catalog(catalog_instance, catalog, output_dir_this)
 
                 self.set_result(test_result or 'RUN_VALIDATION_TEST_ERROR', validation, catalog)
+
+        if not run_at_least_one_catalog:
+            msg = 'No valid catalog to run!'
+            self.logger.error(msg)
+            raise RuntimeError(msg)
 
 
     def conclude_tests(self):
