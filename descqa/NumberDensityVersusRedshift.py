@@ -167,7 +167,11 @@ class NumberDensityVersusRedshift(BaseValidationTest):
 
         #get catalog data
         quantities_needed = [self.z,galaxy_catalog.first_available(*self.possible_mag_fields)]
-        catalog_data = self.get_catalog_data(galaxy_catalog,quantities_needed,filters=self.filters)
+        if(galaxy_catalog.first_available(*self.possible_mag_fields)) is not None:
+            catalog_data = self.get_catalog_data(galaxy_catalog,quantities_needed,filters=self.filters)
+        else:
+            return TestResult(skipped=True,summary='Missing requested quantities')
+
         filtermag = [q for q in catalog_data.keys() if not q==self.z][0]
         filtername= re.split(self.band+'_',filtermag)[1].upper()
         filelabel='_'.join([filtername,self.band])
