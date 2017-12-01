@@ -1,0 +1,7 @@
+subclass_name: NumberDensityVersusRedshift.NumberDensityVersusRedshift
+band: i
+zlo: 0.
+zhi: 1.0
+Nbins: 40
+observation: 'DEEP2_JAN'
+datafile: 'N_z/DEEP2/JANewman_i.txt'

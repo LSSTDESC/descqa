@@ -1,0 +1,7 @@
+subclass_name: NumberDensityVersusRedshift.NumberDensityVersusRedshift
+band: i
+zlo: 0.
+zhi: 1.0
+Nbins: 40
+observation: 'Coil2004_maglim'
+datafile: 'N_z/DEEP2/Coil_et_al_2004_Table4_i.txt'
