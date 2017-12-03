@@ -216,7 +216,7 @@ class DescqaTask(object):
 
     def get_description(self, description_key='description'):
         dv = {v: descqa.available_validations[v].get(description_key) for v in self.validations_to_run}
-        dc = {c: GCRCatalogs.available_catalogs[c].get(description_key) for c in self.catalogs_to_run}
+        dc = {c: GCRCatalogs.get_catalog_config(c).get(description_key) for c in self.catalogs_to_run}
         return {'validation_{}'.format(description_key): dv, 'catalog_{}'.format(description_key): dc}
 
 
