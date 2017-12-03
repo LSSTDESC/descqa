@@ -1,0 +1,9 @@
+subclass_name: NumberDensityVersusRedshift.NumberDensityVersusRedshift
+band: g
+zlo: 0.
+zhi: 1.0
+Nbins: 40
+mag_hi: 17.
+mag_lo: 25.
+observation: ''
+description: 'Plot N(z) distributions for selected magnitude cuts in specified band'
