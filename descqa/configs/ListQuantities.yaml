@@ -1,2 +1,3 @@
 subclass_name: basic_test.ListAvailableQuantities
 description: Printing out the config file and all derived and native quantities of each catalog
+included_by_default: true

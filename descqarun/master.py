@@ -146,14 +146,14 @@ def print_available_and_exit(catalogs, validations):
     print('Available catalogs')
     print(_horizontal_rule)
     for c in sorted(catalogs):
-        print(c)
+        print(c, '*' if catalogs[c].get('included_by_default') else '')
     print()
 
     print(_horizontal_rule)
     print('Available validations')
     print(_horizontal_rule)
     for v in sorted(validations):
-        print(v)
+        print(v, '*' if catalogs[c].get('included_by_default') else '')
     print()
 
     sys.exit(0)
@@ -181,7 +181,10 @@ class DescqaTask(object):
     @staticmethod
     def select_subset(available, wanted=None):
         if wanted is None:
-            return set(available)
+            available_default = None
+            if isinstance(available, dict):
+                available_default = [k for k, v in available.items() if v.get('included_by_default')]
+            return set(available_default) if available_default else set(available)
 
         wanted = set(wanted)
         output = set()
@@ -213,7 +216,7 @@ class DescqaTask(object):
 
     def get_description(self, description_key='description'):
         dv = {v: descqa.available_validations[v].get(description_key) for v in self.validations_to_run}
-        dc = {c: GCRCatalogs.available_catalogs[c].get(description_key) for c in self.catalogs_to_run}
+        dc = {c: GCRCatalogs.get_catalog_config(c).get(description_key) for c in self.catalogs_to_run}
         return {'validation_{}'.format(description_key): dv, 'catalog_{}'.format(description_key): dc}
 
 
