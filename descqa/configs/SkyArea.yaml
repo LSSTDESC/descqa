@@ -1,3 +1,4 @@
 subclass_name: basic_test.SkyArea
 nside: 16
 description: Displaying the sky coverage of each catalog
+included_by_default: true
