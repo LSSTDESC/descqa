@@ -181,7 +181,10 @@ class DescqaTask(object):
     @staticmethod
     def select_subset(available, wanted=None):
         if wanted is None:
-            return set(available)
+            available_default = None
+            if isinstance(available, dict):
+                available_default = [k for k, v in available.items() if v.get('included_by_default')]
+            return set(available_default) if available_default else set(available)
 
         wanted = set(wanted)
         output = set()
