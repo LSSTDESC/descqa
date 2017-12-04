@@ -1,4 +1,4 @@
-from __future__ import print_function, unicode_literals, absolute_import
+from __future__ import print_function, division, unicode_literals, absolute_import
 import os
 import math
 try:
@@ -14,7 +14,7 @@ from .plotting import plt
 
 __all__ = ['NumberDensityVersusRedshift']
 
-#setup dict with parameters needed to read in validation data
+#setup dict with parameters needed to read in validation data (TODO: move in to class)
 possible_observations = {
     'Coil2004_magbin': {
         'filename_template': 'N_z/DEEP2/Coil_et_al_2004_Table3_{}.txt',
@@ -39,7 +39,7 @@ possible_observations = {
     },
 }
 
-#plotting constants
+#plotting constants (TODO: move in to class)
 figx_p = 9
 figy_p = 11
 lw2 = 2
@@ -49,6 +49,7 @@ default_colors = ['blue', 'r', 'm', 'g', 'navy', 'y', 'purple', 'gray', 'c',\
         'orange', 'violet', 'coral', 'gold', 'orchid', 'maroon', 'tomato', \
         'sienna', 'chartreuse', 'firebrick', 'SteelBlue']
 validation_color = 'black'
+
 
 class NumberDensityVersusRedshift(BaseValidationTest):
     """
@@ -77,13 +78,13 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         #validation data
         self.validation_data = {}
         self.observation = observation
+
         #check for valid observations
         if not observation:
             print('Warning: no data file supplied, no observation requested; only catalog data will be shown')
-        elif observation not in possible_observations:   #check that observation is known
+        elif observation not in possible_observations:
             raise ValueError('Observation {} not available'.format(observation))
         else:
-            #fetch validation data
             self.validation_data = self.get_validation_data(band, observation)
 
         #plotting variables
@@ -96,10 +97,9 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         #setup summary plot
         self.summary_fig, self.summary_ax = plt.subplots(self.nrows, self.ncolumns, figsize=(figx_p, figy_p), sharex='col')
         #could plot summary validation data here if available but would need to evaluate labels, bin values etc.
-        #otherwise setup a check
-        self.first_pass = True    #so that validation data is plotted only once on summary plot
+        #otherwise setup a check so that validation data is plotted only once on summary plot
+        self.first_pass = True
 
-        #other
         self._other_kwargs = kwargs
 
 
@@ -153,18 +153,17 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         return validation_data
 
 
-    def run_on_single_catalog(self, galaxy_catalog, catalog_name, base_output_dir):
-
+    def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         #get catalog data
-        mag_field = galaxy_catalog.first_available(*self.possible_mag_fields)
+        mag_field = catalog_instance.first_available(*self.possible_mag_fields)
         if not mag_field:
             return TestResult(skipped=True, summary='Missing requested quantities')
-        catalog_data = self.get_catalog_data(galaxy_catalog, [self.z, mag_field], filters=self.filters)
+        catalog_data = self.get_catalog_data(catalog_instance, [self.z, mag_field], filters=self.filters)
         filtername = mag_field.rpartition('_')[-1][-1].upper()
         filelabel = '_'.join((filtername, self.band))
 
         fig, ax = plt.subplots(self.nrows, self.ncolumns, figsize=(figx_p, figy_p), sharex='col')
-        self.yaxis = 'P(z|m)' if self.normed else 'N(z|m)'
+        yaxis = 'P(z|m)' if self.normed else 'N(z|m)'
 
         catalog_color = next(self.colors)
 
@@ -201,14 +200,14 @@ class NumberDensityVersusRedshift(BaseValidationTest):
                 catalog_label = ' '.join((catalog_name, cutlabel.replace(self.band, filtername + ' ' + self.band)))
                 validation_label = ' '.join((self.validation_data.get('label', ''), cutlabel))
                 reskey = cutlabel.replace('$', '')
-                results[reskey] = self.make_subplot(meanz, z_this, n, ax_this, z0, z0err, catalog_color, catalog_label, validation_label)
+                results[reskey] = self.make_subplot(ax_this, n, yaxis, z_this, meanz, z0, z0err, catalog_color, catalog_label, validation_label)
                 results[reskey]['total'] = total
 
                 #add curve for this catalog to summary plot
-                if self.first_pass:  #add validation data if evaluating first catalog
-                    self.make_subplot(meanz, z_this, n, summary_ax_this, z0, z0err, catalog_color, catalog_label, validation_label)
+                if self.first_pass: #add validation data if evaluating first catalog
+                    self.make_subplot(summary_ax_this, n, yaxis, z_this, meanz, z0, z0err, catalog_color, catalog_label, validation_label)
                 else:
-                    self.make_subplot(meanz, z_this, n, summary_ax_this, None, None, catalog_color, catalog_label, validation_label)
+                    self.make_subplot(summary_ax_this, n, yaxis, z_this, meanz, None, None, catalog_color, catalog_label, validation_label)
 
             else:
                 #make empty subplots invisible
@@ -218,7 +217,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         #save results for catalog and validation data in txt files
         for filename, dtype, comment, info in zip_longest((filelabel, self.observation), ('y', 'fit'), (filtername,), ('total',)):
             if filename:
-                with open(os.path.join(base_output_dir, 'Nvsz_' + filename + '.txt'), 'ab') as f_handle: #open file in append mode
+                with open(os.path.join(output_dir, 'Nvsz_' + filename + '.txt'), 'ab') as f_handle: #open file in append mode
                     #loop over magnitude cuts in results dict
                     for key, value in results.items():
                         self.save_quantities(dtype, value, f_handle, comment=' '.join(((comment or ''), key, value.get(info, ''))))
@@ -226,27 +225,21 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         if self.first_pass: #turn off validation data plot in summary for remaining catalogs
             self.first_pass = False
 
-        #make final adjustments to plots
+        #make final adjustments to plots and save figure
         self.post_process_plot(fig)
-
-        #save figure
-        fig.savefig(os.path.join(base_output_dir, 'Nvsz_' + filelabel + '.png'))
+        fig.savefig(os.path.join(output_dir, 'Nvsz_' + filelabel + '.png'))
         plt.close(fig)
         return TestResult(0, passed=True)
 
 
-    def make_subplot(self, meanz, catalog_data, nplot, f, z0, z0err, catalog_color, catalog_label, validation_label):
-
-        results = {}
-        results['meanz'] = meanz
-        if nplot%self.ncolumns == 0:  #1st column
-            f.set_ylabel('$'+self.yaxis+'$', size=fsize)
+    def make_subplot(self, f, nplot, yaxis, catalog_data, meanz, z0, z0err, catalog_color, catalog_label, validation_label):
+        if nplot % self.ncolumns == 0:  #1st column
+            f.set_ylabel('$'+yaxis+'$', size=fsize)
 
         if nplot+1 <= self.nplots-self.ncolumns:  #x scales for last ncol plots only
             #print "noticks",nplot
             for axlabel in f.get_xticklabels():
                 axlabel.set_visible(False)
-
                 #prevent overlapping yaxis labels
                 f.yaxis.get_major_ticks()[0].label1.set_visible(False)
         else:
@@ -255,29 +248,28 @@ class NumberDensityVersusRedshift(BaseValidationTest):
                 axlabel.set_visible(True)
 
         #plot catalog data if available
+        results = {'meanz': meanz}
         if len(catalog_data):
             results['y'] = f.hist(catalog_data, bins=self.zbins, label=catalog_label, color=catalog_color, lw=lw2, normed=self.normed, histtype='step')[0]
 
         #plot validation data if available
         if z0 and z0 > 0:
-            ndata = meanz**2*np.exp(-meanz/z0)
-            if self.normed:
-                norm = self.nz_norm(self.zhi, z0) - self.nz_norm(self.zlo, z0)
-                f.plot(meanz, ndata/norm, label=validation_label, ls='--', color=validation_color, lw=lw2)
-                results['fit'] = ndata/norm
-            else:
+            if not self.normed:
                 raise ValueError("Only fits to normed plots are implemented so far")
+
+            ndata = meanz**2*np.exp(-meanz/z0)
+            norm = self.nz_norm(self.zhi, z0) - self.nz_norm(self.zlo, z0)
+            f.plot(meanz, ndata/norm, label=validation_label, ls='--', color=validation_color, lw=lw2)
+            results['fit'] = ndata/norm
+
             if z0err and z0err > 0:
                 nlo = meanz**2*np.exp(-meanz/(z0-z0err))
                 nhi = meanz**2*np.exp(-meanz/(z0+z0err))
-                if self.normed:
-                    normlo = self.nz_norm(self.zhi, z0-z0err) - self.nz_norm(self.zlo, z0-z0err)
-                    normhi = self.nz_norm(self.zhi, z0+z0err) - self.nz_norm(self.zlo, z0+z0err)
-                    f.fill_between(meanz, nlo/normlo, nhi/normhi, alpha=0.3, facecolor=validation_color)
-                    results['fit+'] = nhi/normhi
-                    results['fit-'] = nlo/normlo
-                else:
-                    raise ValueError("Only fits to normed plots are implemented so far")
+                normlo = self.nz_norm(self.zhi, z0-z0err) - self.nz_norm(self.zlo, z0-z0err)
+                normhi = self.nz_norm(self.zhi, z0+z0err) - self.nz_norm(self.zlo, z0+z0err)
+                f.fill_between(meanz, nlo/normlo, nhi/normhi, alpha=0.3, facecolor=validation_color)
+                results['fit+'] = nhi/normhi
+                results['fit-'] = nlo/normlo
 
         f.legend(loc='best', fancybox=True, framealpha=0.5, fontsize=lsize, numpoints=1)
 
@@ -299,14 +291,14 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         if keyname in results:
             if keyname+'-' in results and keyname+'+' in results:
                 fields = ('meanz', keyname, keyname+'-', keyname+'+')
-                header = ', '.join(['Data columns are: <z>', keyname, keyname+'-', keyname+'+', ' '])
+                header = ', '.join(('Data columns are: <z>', keyname, keyname+'-', keyname+'+', ' '))
             else:
                 fields = ('meanz', keyname)
-                header = ', '.join(['Data columns are: <z>', keyname, ' '])
+                header = ', '.join(('Data columns are: <z>', keyname, ' '))
             np.savetxt(filename, np.vstack((results[k] for k in fields)).T, fmt='%12.4e', header=header+comment)
 
 
     def conclude_test(self, output_dir):
-        self.post_process_plot(self.summary_fig)  #compress space
+        self.post_process_plot(self.summary_fig)
         self.summary_fig.savefig(os.path.join(output_dir, 'summary.png'))
         plt.close(self.summary_fig)
