@@ -118,7 +118,8 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         return mag_lo, mag_hi
 
 
-    def get_catalog_data(self, gc, quantities, filters=None):
+    @staticmethod
+    def get_catalog_data(gc, quantities, filters=None):
         data = {}
         if not gc.has_quantities(quantities):
             return TestResult(skipped=True, summary='Missing requested quantities')
@@ -158,6 +159,8 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         mag_field = catalog_instance.first_available(*self.possible_mag_fields)
         if not mag_field:
             return TestResult(skipped=True, summary='Missing requested quantities')
+
+        #TODO: need to use iterator for larger catalogs!
         catalog_data = self.get_catalog_data(catalog_instance, [self.z, mag_field], filters=self.filters)
         filtername = mag_field.rpartition('_')[-1][-1].upper()
         filelabel = '_'.join((filtername, self.band))
@@ -233,6 +236,8 @@ class NumberDensityVersusRedshift(BaseValidationTest):
 
 
     def make_subplot(self, f, nplot, yaxis, catalog_data, meanz, z0, z0err, catalog_color, catalog_label, validation_label):
+        #TODO: this function needs to be refactored
+
         if nplot % self.ncolumns == 0:  #1st column
             f.set_ylabel('$'+yaxis+'$', size=fsize)
 
