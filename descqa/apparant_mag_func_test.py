@@ -5,23 +5,39 @@ from .base import BaseValidationTest, TestResult
 from .plotting import plt
 
 
-__all__ = ['ExampleTest']
+__all__ = ['ApparentMagFuncTest']
 
-class ExampleTest(BaseValidationTest):
+class ApparentMagFuncTest(BaseValidationTest):
     """
-    An example validation test
+    apparent magnitude function test
     """
-    def __init__(self, **kwargs):
+    def __init__(self, band='i', band_lim=27, observation=none, **kwargs):
+        """
+        parameters
+        ----------
+        band : string
+            photometric band
 
-        # load test config options
-        self.kwargs = kwargs
-        self.option1 = kwargs.get('option1', 'option1_default')
-        self.option2 = kwargs.get('option2', 'option2_default')
-        self.test_name = kwargs.get('test_name', 'example_test')
+        band_lim : float
+            apparent magnitude upper magnitude limit
+        """
 
-        # load validation data
-        with open(os.path.join(self.data_dir, 'README.md')) as f:
-            self.validation_data = f.readline().strip()
+        #catalog quantities
+        possible_mag_fields = ('mag_{}_lsst',
+                               'mag_{}_sdss',
+                               'mag_{}_des',
+                              )
+        self.possible_mag_fields = [f.format(band) for f in possible_mag_fields]
+        self.band = band
+        self.band_lim = band_lim
+
+        #check for validation observations
+        if not observation:
+            print('Warning: no data file supplied, no observation requested; only catalog data will be shown')
+        elif observation not in possible_observations:
+            raise ValueError('Observation {} not available'.format(observation))
+        else:
+            self.validation_data = self.get_validation_data(band, observation)
 
         # prepare summary plot
         self.summary_fig, self.summary_ax = plt.subplots()
@@ -34,19 +50,38 @@ class ExampleTest(BaseValidationTest):
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
 
-        # check if needed quantities exist
-        if not catalog_instance.has_quantities(['ra', 'dec']):
-            return TestResult(skipped=True, summary='do not have needed quantities')
+        mag_field_key = catalog_instance.first_available(*self.possible_mag_fields)
+        if not mag_field:
+            return TestResult(skipped=True, summary='Missing requested quantities')
+        
+        #retreive data
+        d = gc.get_quantities([mag_field_key])
+        m = d[mag_field_key]
+        m = np.sort(m) #put into order--bright to faint
 
-        data = np.random.rand(10) #do your calculation with catalog_instance
+        #caclulate cumulative number of galaxies less than band_lim
+        mask = (m < self.band_lim)
+        N_tot = np.sum(mask)
+        N = np.cumsum(np.ones(N_tot))
+        
+        #define magnitude bins for plotting purposes
+        self.dmag = 0.1
+        self.max_mag = mag_lim + 1.0
+        self.min_mag = 17.7
+        mag_bins = np.arange(self.min_mag ,self.max_mag, self.dmag)
+
+        #calculate N at the specified points
+        inds = np.searchsorted(m,mag_bins)
+        sampled_N = N[inds]
 
         fig, ax = plt.subplots()
 
         for ax_this in (ax, self.summary_ax):
-            ax_this.plot(data, label=catalog_name)
+            ax_this.plot(mag_bins, sampled_N, label=catalog_name)
+            ax_this.plot(self.band_lim, N_tot)
 
         self.post_process_plot(ax)
-        fig.savefig(os.path.join(output_dir, 'plot.png'))
+        fig.savefig(os.path.join(output_dir, 'cumulative_app_mag_plot.png'))
         plt.close(fig)
 
         score = data[0] #calculate your summary statistics
