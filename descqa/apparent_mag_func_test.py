@@ -44,8 +44,7 @@ class ApparentMagFuncTest(BaseValidationTest):
 
 
     def post_process_plot(self, ax):
-        ax.text(0.05, 0.95, self.validation_data)
-        ax.legend()
+        pass
 
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
