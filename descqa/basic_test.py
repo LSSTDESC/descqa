@@ -1,4 +1,4 @@
-from __future__ import unicode_literals, absolute_import
+from __future__ import division, unicode_literals, absolute_import
 import os
 from builtins import str
 import yaml
@@ -37,7 +37,7 @@ class SkyArea(BaseValidationTest):
     validation test to show sky area
     """
     def __init__(self, **kwargs):
-        self.nside = kwargs.get('nside', 16)
+        self.nside = kwargs.get('nside', 64)
         assert hp.isnsideok(self.nside), '`nside` value {} not correct'.format(self.nside)
 
 
@@ -48,6 +48,9 @@ class SkyArea(BaseValidationTest):
         pixels = set()
         for d in catalog_instance.get_quantities(['ra_true', 'dec_true'], return_iterator=True):
             pixels.update(hp.ang2pix(self.nside, d['ra_true'], d['dec_true'], lonlat=True))
+        
+        frac = len(pixels) / hp.nside2npix(self.nside)
+        skyarea = frac * np.rad2deg(np.rad2deg(4.0*np.pi))
 
         hp_map = np.empty(hp.nside2npix(self.nside))
         hp_map.fill(hp.UNSEEN)
@@ -56,4 +59,5 @@ class SkyArea(BaseValidationTest):
         hp.mollview(hp_map, title=catalog_name, coord='C', cbar=None)
         plt.savefig(os.path.join(output_dir, 'skymap.png'))
         plt.close()
-        return TestResult(0, passed=True)
+        return TestResult(0, passed=True, summary='approx. {:.7g} sq. deg.'.format(skyarea))
+
