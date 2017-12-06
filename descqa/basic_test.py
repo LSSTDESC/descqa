@@ -19,65 +19,63 @@ class ListAvailableQuantities(BaseValidationTest):
         self.kwargs = kwargs
         self.calc_min_max = kwargs.get('calc_min_max', False)
 
-    def _save_quantities(self, catalog_name, quantities, filename):
-        quantities = list(quantities)
-        quantities.sort()
+
+    def _save_quantities(self, catalog_name, quantities, filename, ranges=None):
+        is_dict = isinstance(quantities, dict)
         maxlen = max((len(q) for q in quantities))
-        qtype = 'native' if filename.find('native')!=-1 else 'GCR'
         with open(filename, 'w') as f:
-            if self.calc_min_max:
-                f.write('{} {} {} \n'.format('# ' + catalog_name.ljust(maxlen), 'Minimum'.rjust(13), 'Maximum'.rjust(13)))
+            if is_dict:
+                f.write('{} {} {} \n'.format('# ' + catalog_name.ljust(maxlen-2), 'Minimum'.rjust(13), 'Maximum'.rjust(13)))
             else:
                 f.write('# ' + catalog_name + '\n')
-            for q in quantities:
-                if self.calc_min_max:
-                    f.write('{} {:13.4g} {:13.4g} '.format(q.ljust(maxlen), self.ranges[qtype + '-min'].get(q, np.nan), self.ranges[qtype + '-max'].get(q, np.nan)))
+            for q in sorted(quantities):
+                if is_dict:
+                    f.write('{0} {1[0]:13.4g} {1[1]:13.4g} '.format(q.ljust(maxlen), quantities[q]))
                 else:
                     f.write(str(q))
                 f.write('\n')
 
-    def _get_data_ranges(self, catalog_instance):
 
-        self.ranges = defaultdict(dict)
+    def _get_data_ranges(self, catalog_instance, native=False):
 
-        d_min = self.ranges['GCR-min']
-        d_max = self.ranges['GCR-max']
-        quantities = catalog_instance.list_all_quantities()
-        for data in catalog_instance.get_quantities(quantities, return_iterator=True):
+        quantities = catalog_instance.list_all_native_quantities() if native else catalog_instance.list_all_quantities()
+        if not self.calc_min_max:
+            return quantities
+
+        if native:
+            #check for name collisions and add native quantity
+            quantities_needed = []
+            gcr_quantities = catalog_instance.list_all_quantities()
             for q in quantities:
-                if data[q].dtype.char in 'bBiulfd':
-                    d_min[q] = min(np.nanmin(data[q]), d_min.get(q, np.inf))
-                    d_max[q] = max(np.nanmax(data[q]), d_max.get(q, -np.inf))
-                
-        native_quantities = catalog_instance.list_all_native_quantities()
-        quantities_needed=[]
-        #check for name collisions and add native quantity
-        for q in native_quantities:
-            if q in quantities:
-                catalog_instance.add_quantity_modifier(q + '_native', q)
-                quantities_needed.append(q + '_native')
-            else:
-                quantities_needed.append(q)
+                if q in gcr_quantities:
+                    catalog_instance.add_quantity_modifier(q + '_native', q)
+                    quantities_needed.append(q + '_native')
+                else:
+                    quantities_needed.append(q)
+        else:
+            quantities_needed = quantities
 
-        d_min = self.ranges['native-min']
-        d_max = self.ranges['native-max']
+        d_min = {}
+        d_max = {}
         for data in catalog_instance.get_quantities(quantities_needed, return_iterator=True):
             for qx in quantities_needed:
-                q = qx.replace('_native','')
+                q = qx.replace('_native','') if qx.endswith('_native') else qx
                 if data[qx].dtype.char in 'bBiulfd':
                     d_min[q] = min(np.nanmin(data[qx]), d_min.get(q, np.inf))
                     d_max[q] = max(np.nanmax(data[qx]), d_max.get(q, -np.inf))
-
+                
         #clean_up q_native added quantities
         for qx in quantities_needed:
-            if qx.find('_native')!=-1:
+            if qx.endswith('_native'):
                 catalog_instance.del_quantity_modifier(qx)
 
+        return {q: (d_min[q], d_max[q]) for q in d_min}
+
+
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
-        if self.calc_min_max:
-            self._get_data_ranges(catalog_instance)
-        self._save_quantities(catalog_name, catalog_instance.list_all_quantities(), os.path.join(output_dir, 'quantities.txt'))
-        self._save_quantities(catalog_name, catalog_instance.list_all_native_quantities(), os.path.join(output_dir, 'native_quantities.txt'))
+
+        self._save_quantities(catalog_name, self._get_data_ranges(catalog_instance, native=False), os.path.join(output_dir, 'quantities.txt'))
+        self._save_quantities(catalog_name, self._get_data_ranges(catalog_instance, native=True), os.path.join(output_dir, 'native_quantities.txt'))
         with open(os.path.join(output_dir, 'config.yaml'), 'w') as f:
             f.write(yaml.dump(catalog_instance.get_catalog_info(), default_flow_style=False))
             f.write('\n')
