@@ -1,0 +1,4 @@
+subclass_name: basic_test.ListAvailableQuantities
+description: Printing out the config file and all derived and native quantities and range of values for each catalog
+calc_min_max: true
+included_by_default: true
