@@ -10,7 +10,7 @@ possible_observations = {
         'filename_template': 'apparent_mag_func/HSC/hsc_{}_n.dat',
         'usecols': (0, 1, 2),
         'colnames': ('mag', 'n(<mag)', 'err'),
-        'skiprows': 0,
+        'skiprows': 1,
         'label': 'HSC (D. Campbell, Sprint Week-Dec 2017)',
     }
 }
