@@ -113,7 +113,7 @@ class ApparentMagFuncTest(BaseValidationTest):
             sky_area = 25.0
         
         N_tot = len(m)
-        N = np.cumsum(np.ones(N_tot))/catalog_instance.sky_area
+        N = np.cumsum(np.ones(N_tot))/sky_area
         
         #define magnitude bins for plotting purposes
         self.dmag = 0.1
