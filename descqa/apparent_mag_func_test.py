@@ -118,6 +118,8 @@ class ApparentMagFuncTest(BaseValidationTest):
 
         #calculate N at the specified points
         inds = np.searchsorted(m,mag_bins)
+        mask = (inds >= len(m))
+        inds[mask] = -1
         sampled_N = N[inds]
 
         fig, ax = plt.subplots()
