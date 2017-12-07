@@ -140,7 +140,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         for ax_this in (ax, self.summary_ax):
             n = self.validation_data['n(<mag)']
             m = self.validation_data['mag']
-            ax_this.plot(mag_bins, sampled_N, 'o', label=self.validation_data['label'])
+            ax_this.plot(mag, n, 'o', label=self.validation_data['label'])
 
         self.post_process_plot(ax)
         fig.savefig(os.path.join(output_dir, 'cumulative_app_mag_plot.png'))
