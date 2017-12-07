@@ -136,7 +136,7 @@ class ApparentMagFuncTest(BaseValidationTest):
             ax_this.set_ylabel(r'$\rm mag$')
             ax_this.set_ylabel(r'$N(<{\rm mag})~[{\rm deg}^{-2}]$')
             ax_this.set_xlim([17,30])
-            ax_this.set_ylim([1,8])
+            ax_this.set_ylim([1,10**8])
 
         #plot validation data
         for ax_this in (ax, self.summary_ax):
