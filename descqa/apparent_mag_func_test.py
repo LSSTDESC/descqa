@@ -81,6 +81,18 @@ class ApparentMagFuncTest(BaseValidationTest):
     def post_process_plot(self, ax):
         pass
 
+    
+    @staticmethod
+    def get_catalog_data(gc, quantities, filters=None):
+        data = {}
+        if not gc.has_quantities(quantities):
+            return TestResult(skipped=True, summary='Missing requested quantities')
+
+        data = gc.get_quantities(quantities, filters=filters)
+        #make sure data entries are all finite
+        data = GCRQuery(*((np.isfinite, col) for col in data)).filter(data)
+
+        return data
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
 
@@ -89,7 +101,7 @@ class ApparentMagFuncTest(BaseValidationTest):
             return TestResult(skipped=True, summary='Missing requested quantities')
         
         #retreive data
-        d = gc.get_quantities([mag_field_key])
+        d = catalog_instance.get_quantities([mag_field_key])
         m = d[mag_field_key]
         m = np.sort(m) #put into order--bright to faint
 
