@@ -21,7 +21,7 @@ class ApparentMagFuncTest(BaseValidationTest):
     """
     apparent magnitude function test
     """
-    def __init__(self, band='i', band_lim=27.5, observation='', **kwargs):
+    def __init__(self, band='i', band_lim=27.5, observation='HSC', **kwargs):
         """
         parameters
         ----------
