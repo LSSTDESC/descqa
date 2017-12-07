@@ -21,7 +21,7 @@ class ApparentMagFuncTest(BaseValidationTest):
     """
     apparent magnitude function test
     """
-    def __init__(self, band='i', band_lim=27, observation='', **kwargs):
+    def __init__(self, band='i', band_lim=27.5, observation='', **kwargs):
         """
         parameters
         ----------
@@ -106,8 +106,9 @@ class ApparentMagFuncTest(BaseValidationTest):
         m = np.sort(m) #put into order--bright to faint
 
         #caclulate cumulative number of galaxies less than band_lim
-        mask = (m < self.band_lim)
-        N_tot = np.sum(mask)
+        #mask = (m < self.band_lim)
+        #N_tot = np.sum(mask)
+        N_tot = len(m)
         N = np.cumsum(np.ones(N_tot))
         
         #define magnitude bins for plotting purposes
