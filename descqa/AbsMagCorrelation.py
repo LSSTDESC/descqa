@@ -14,7 +14,7 @@ from .plotting import plt
 from astropy.cosmology import WMAP9
 import treecorr
 
-__all__ = ['AngularCorrelation']
+__all__ = ['AbsMagCorrelation']
 
 
 
@@ -181,19 +181,6 @@ class AbsMagCorrelation(BaseValidationTest):
             self.first_pass = False
 
         return TestResult(0, passed=True)
-
-
-    @staticmethod
-    def save_quantities(keyname, results, filename, comment=''):
-        if keyname in results:
-            if keyname+'-' in results and keyname+'+' in results:
-                fields = ('meanz', keyname, keyname+'-', keyname+'+')
-                header = ', '.join(('Data columns are: <z>', keyname, keyname+'-', keyname+'+', ' '))
-            else:
-                fields = ('meanz', keyname)
-                header = ', '.join(('Data columns are: <z>', keyname, ' '))
-            np.savetxt(filename, np.vstack((results[k] for k in fields)).T, fmt='%12.4e', header=header+comment)
-
 
     def conclude_test(self, output_dir):
         pass
