@@ -161,13 +161,39 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         catalog_color = next(self.colors)
         catalog_marker= next(self.markers)
 
+        #initialize arrays for storing histogram sums
+        N_array = np.zeros((self.nrows, self.ncolumns, len(self.zbins)-1), dtype=np.int)
+        sumz_array = np.zeros((self.nrows, self.ncolumns,len(self.zbins)-1))
+                
+        #get catalog data by looping over data iterator (needed for large catalogs) and aggregate histograms
+        for catalog_data in catalog_instance.get_quantities([self.zlabel, mag_field], filters=self.filters, return_iterator=True):
+            catalog_data = GCRQuery(*((np.isfinite, col) for col in catalog_data)).filter(catalog_data)
+            for cut_lo, cut_hi, N, sumz in zip_longest(
+                    self.mag_lo,
+                    self.mag_hi, 
+                    N_array.reshape(-1, N_array.shape[-1]), #flatten all but last dimension of array
+                    sumz_array.reshape(-1, sumz_array.shape[-1]),
+            ):
+                if cut_lo:
+                    mask = (catalog_data[mag_field] < cut_lo)
+                    if cut_hi:
+                        mask &= (catalog_data[mag_field] >= cut_hi)
+                    z_this = catalog_data[self.zlabel][mask]
+                    del mask
+
+                    #bin catalog_data and accumulate subplot histograms
+                    N += np.histogram(z_this, bins=self.zbins)[0]
+                    sumz += np.histogram(z_this, bins=self.zbins, weights=z_this)[0]
+
         #loop over magnitude cuts and make plots
         results = {}
-        for n, (ax_this, summary_ax_this, cut_lo, cut_hi, z0, z0err) in enumerate(zip_longest(
+        for n, (ax_this, summary_ax_this, cut_lo, cut_hi, N, sumz, z0, z0err) in enumerate(zip_longest(
                 ax.flat,
                 self.summary_ax.flat,
                 self.mag_lo,
                 self.mag_hi,
+                N_array.reshape(-1, N_array.shape[-1]),
+                sumz_array.reshape(-1, sumz_array.shape[-1]),
                 self.validation_data.get('z0values', []),
                 self.validation_data.get('z0errors', []),
         )):
@@ -179,26 +205,8 @@ class NumberDensityVersusRedshift(BaseValidationTest):
                 if cut_hi:
                     cut_label = '${} <=$ '.format(cut_hi) + cut_label #also appears in txt file so don't use \leq 
 
-                #initialize arrays for storing histogram sums
-                N = np.zeros(len(self.zbins)-1, dtype=np.int)
-                sumz = np.zeros(len(self.zbins)-1)
-                
-                #loop over catalog-data iterator (needed for large catalogs)
-                for catalog_data in catalog_instance.get_quantities([self.zlabel, mag_field], filters=self.filters, return_iterator=True):
-                    catalog_data = GCRQuery(*((np.isfinite, col) for col in catalog_data)).filter(catalog_data)
-                    mask = (catalog_data[mag_field] < cut_lo)
-                    if cut_hi:
-                        mask &= (catalog_data[mag_field] >= cut_hi)
-
-                    if z0 is None and 'z0const' in self.validation_data:
-                        z0 = self.validation_data['z0const'] + self.validation_data['z0linear'] * cut_lo
-
-                    z_this = catalog_data[self.zlabel][mask]
-                    del mask
-
-                    #bin catalog_data and accumulate
-                    N += np.histogram(z_this, bins=self.zbins)[0]
-                    sumz += np.histogram(z_this, bins=self.zbins, weights=z_this)[0]
+                if z0 is None and 'z0const' in self.validation_data:  #alternate format for some validation data
+                    z0 = self.validation_data['z0const'] + self.validation_data['z0linear'] * cut_lo
 
                 meanz = sumz/N
                 sumN = N.sum()
