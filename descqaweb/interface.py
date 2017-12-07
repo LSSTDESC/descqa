@@ -123,6 +123,8 @@ def validate_descqa_run_name(run_name, base_dir, earliest_datetime=None):
     path = os.path.join(base_dir, run_name)
     if not os.path.isdir(path):
         return
+    if not os.access(path, os.R_OK + os.X_OK):
+        return
     if os.path.exists(os.path.join(path, '.lock')):
         return
     m = re.match(r'(2[01]\d{2}-[01]\d-[0123]\d)(?:_(\d+))?', run_name)

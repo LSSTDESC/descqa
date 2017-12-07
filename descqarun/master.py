@@ -153,7 +153,7 @@ def print_available_and_exit(catalogs, validations):
     print('Available validations')
     print(_horizontal_rule)
     for v in sorted(validations):
-        print(v, '*' if catalogs[c].get('included_by_default') else '')
+        print(v, '*' if validations[v].get('included_by_default') else '')
     print()
 
     sys.exit(0)
