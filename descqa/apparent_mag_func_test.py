@@ -133,8 +133,14 @@ class ApparentMagFuncTest(BaseValidationTest):
             ax_this.plot(mag_bins, sampled_N, '-', label=catalog_name)
             ax_this.plot(self.band_lim, N_tot)
             ax_this.set_yscale('log')
-            ax.set_ylabel(r'$mag$')
-            ax.set_ylabel(r'$N(<{\rm mag}){\rm deg}^{-2}$')
+            ax_this.set_ylabel(r'$\rm mag$')
+            ax_this.set_ylabel(r'$N(<{\rm mag}){\rm deg}^{-2}$')
+
+        #plot validation data
+        for ax_this in (ax, self.summary_ax):
+            n = self.validation_data['n']
+            m = self.validation_data['mag']
+            ax_this.plot(mag_bins, sampled_N, 'o', label=self.validation_data['label'])
 
         self.post_process_plot(ax)
         fig.savefig(os.path.join(output_dir, 'cumulative_app_mag_plot.png'))
