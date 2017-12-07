@@ -128,7 +128,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         for ax_this in (ax, self.summary_ax):
             ax_this.plot(mag_bins, sampled_N, 'o', label=catalog_name)
             ax_this.plot(self.band_lim, N_tot)
-            ax_this.yscale('log')
+            ax_this.set_yscale('log')
 
         self.post_process_plot(ax)
         fig.savefig(os.path.join(output_dir, 'cumulative_app_mag_plot.png'))
