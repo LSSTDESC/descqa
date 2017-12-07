@@ -9,7 +9,7 @@ possible_observations = {
     'HSC': {
         'filename_template': 'apparent_mag_func/HSC/hsc_{}_n.dat',
         'usecols': (0, 1, 2),
-        'colnames': ('mag', 'n', 'err'),
+        'colnames': ('mag', 'n(<mag)', 'err'),
         'skiprows': 0,
         'label': 'HSC (D. Campbell, Sprint Week-Dec 2017)',
     }
@@ -40,6 +40,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         possible_mag_fields = ('mag_{}_lsst',
                                'mag_{}_sdss',
                                'mag_{}_des',
+                               'mag_{}_hsc',
                               )
         self.possible_mag_fields = [f.format(band) for f in possible_mag_fields]
         self.band = band
@@ -84,7 +85,7 @@ class ApparentMagFuncTest(BaseValidationTest):
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
 
         mag_field_key = catalog_instance.first_available(*self.possible_mag_fields)
-        if not mag_field:
+        if not mag_field_key:
             return TestResult(skipped=True, summary='Missing requested quantities')
         
         #retreive data
@@ -118,7 +119,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         fig.savefig(os.path.join(output_dir, 'cumulative_app_mag_plot.png'))
         plt.close(fig)
 
-        score = data[0] #calculate your summary statistics
+        score = 0 #calculate your summary statistics
         return TestResult(score, passed=True)
 
 
