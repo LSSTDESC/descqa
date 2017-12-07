@@ -112,7 +112,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         
         #define magnitude bins for plotting purposes
         self.dmag = 0.1
-        self.max_mag = mag_lim + 1.0
+        self.max_mag = self.band_lim + 1.0
         self.min_mag = 17.7
         mag_bins = np.arange(self.min_mag ,self.max_mag, self.dmag)
 
