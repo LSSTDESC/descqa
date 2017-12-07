@@ -5,13 +5,23 @@ from .base import BaseValidationTest, TestResult
 from .plotting import plt
 
 
+possible_observations = {
+    'HSC': {
+        'filename_template': 'apparent_mag_func/HSC/hsc_{}_n.dat',
+        'usecols': (0, 1, 2),
+        'colnames': ('mag', 'n', 'err'),
+        'skiprows': 0,
+        'label': 'HSC (D. Campbell, Sprint Week-Dec 2017)',
+    }
+}
+
 __all__ = ['ApparentMagFuncTest']
 
 class ApparentMagFuncTest(BaseValidationTest):
     """
     apparent magnitude function test
     """
-    def __init__(self, band='i', band_lim=27, observation=None, **kwargs):
+    def __init__(self, band='i', band_lim=27, observation='', **kwargs):
         """
         parameters
         ----------
@@ -19,7 +29,11 @@ class ApparentMagFuncTest(BaseValidationTest):
             photometric band
 
         band_lim : float
-            apparent magnitude upper magnitude limit
+            apparent magnitude upper limit
+
+        observation : string
+            string indicating which obsrvational data to use for validating
+
         """
 
         #catalog quantities
@@ -41,6 +55,26 @@ class ApparentMagFuncTest(BaseValidationTest):
 
         # prepare summary plot
         self.summary_fig, self.summary_ax = plt.subplots()
+    
+    def get_validation_data(self, band, observation):
+        """
+        load (observational) data to use for validation test
+        """
+        data_args = possible_observations[observation]
+        data_path = os.path.join(self.data_dir, data_args['filename_template'].format(band))
+
+        if not os.path.exists(data_path):
+            raise ValueError("{}-band data file {} not found".format(band, data_path))
+
+        if not os.path.getsize(data_path):
+            raise ValueError("{}-band data file {} is empty".format(band, data_path))
+
+        data = np.loadtxt(data_path, unpack=True, usecols=data_args['usecols'], skiprows=data_args['skiprows'])
+
+        validation_data = dict(zip(data_args['colnames'], data))
+        validation_data['label'] = data_args['label']
+
+        return validation_data
 
 
     def post_process_plot(self, ax):
@@ -76,8 +110,9 @@ class ApparentMagFuncTest(BaseValidationTest):
         fig, ax = plt.subplots()
 
         for ax_this in (ax, self.summary_ax):
-            ax_this.plot(mag_bins, sampled_N, label=catalog_name)
+            ax_this.plot(mag_bins, sampled_N, 'o', label=catalog_name)
             ax_this.plot(self.band_lim, N_tot)
+            ax_this.yscale('log')
 
         self.post_process_plot(ax)
         fig.savefig(os.path.join(output_dir, 'cumulative_app_mag_plot.png'))
