@@ -138,7 +138,7 @@ class ApparentMagFuncTest(BaseValidationTest):
 
         #plot validation data
         for ax_this in (ax, self.summary_ax):
-            n = self.validation_data['n']
+            n = self.validation_data['n(<mag)']
             m = self.validation_data['mag']
             ax_this.plot(mag_bins, sampled_N, 'o', label=self.validation_data['label'])
 
