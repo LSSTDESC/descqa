@@ -106,8 +106,12 @@ class ApparentMagFuncTest(BaseValidationTest):
         m = np.sort(m) #put into order--bright to faint
 
         #caclulate cumulative number of galaxies less than band_lim
-        #mask = (m < self.band_lim)
-        #N_tot = np.sum(mask)
+        try:
+            sky_area = catalog_instance.sky_area
+        except AttributeError:
+            print('Warning: this catalog has no sky_area attribute!  Setting sky_area=25 sq deg.')
+            sky_area = 25.0
+        
         N_tot = len(m)
         N = np.cumsum(np.ones(N_tot))/catalog_instance.sky_area
         
