@@ -109,7 +109,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         #mask = (m < self.band_lim)
         #N_tot = np.sum(mask)
         N_tot = len(m)
-        N = np.cumsum(np.ones(N_tot))
+        N = np.cumsum(np.ones(N_tot))/catalog_instance.sky_area
         
         #define magnitude bins for plotting purposes
         self.dmag = 0.1
@@ -126,9 +126,11 @@ class ApparentMagFuncTest(BaseValidationTest):
         fig, ax = plt.subplots()
 
         for ax_this in (ax, self.summary_ax):
-            ax_this.plot(mag_bins, sampled_N, 'o', label=catalog_name)
+            ax_this.plot(mag_bins, sampled_N, '-', label=catalog_name)
             ax_this.plot(self.band_lim, N_tot)
             ax_this.set_yscale('log')
+            ax.set_ylabel(r'$mag$')
+            ax.set_ylabel(r'$N(<{\rm mag}){\rm deg}^{-2}$')
 
         self.post_process_plot(ax)
         fig.savefig(os.path.join(output_dir, 'cumulative_app_mag_plot.png'))
