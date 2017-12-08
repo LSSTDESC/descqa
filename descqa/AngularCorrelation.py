@@ -131,6 +131,7 @@ class AngularCorrelation(BaseValidationTest):
             dec = catalog_data['dec']
             del catalog_data
 
+            #It works only with rectangle area of sky
             ramin, ramax = ra.min(), ra.max()
             decmin, decmax = dec.min(), dec.max()
 
