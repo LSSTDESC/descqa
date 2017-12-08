@@ -112,3 +112,9 @@ Session.vim
 
 .noseids
 .vscode/
+descqa/data/2pt/BlantonFig13.dat
+descqa/data/2pt/BlantonFig14_gmr_bulge.dat
+descqa/data/2pt/BlantonFig14_gmr_disk.dat
+descqa/data/2pt/BlantonFig14_rmi_bulge.dat
+descqa/data/2pt/BlantonFig14_rmi_disk.dat
+descqa/data/2pt/mv.py
