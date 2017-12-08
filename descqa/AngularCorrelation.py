@@ -22,11 +22,15 @@ class AngularCorrelation(BaseValidationTest):
     """
     Validation test to show 2pt correlation function of ProtoDC2 with SDSS
     """
-    def __init__(self, band='r', survey='sdss', observation='', 
-                 RandomFactor=10, **kwargs):
+    def __init__(self, band='r', observation='', RandomFactor=10, **kwargs):
 
         #catalog quantities
-        self.mag_field = 'mag_{}_{}'.format(band, survey)
+        possible_mag_fields = ('mag_{}_sdss',
+                               'mag_{}_des',
+                               'mag_{}_lsst',
+                              )
+        self.possible_mag_fields = [f.format(band) for f in possible_mag_fields]
+
         self.band = band
         self.redshift_max = 0.3
 
@@ -97,6 +101,7 @@ class AngularCorrelation(BaseValidationTest):
         Loop over magnitude cuts and make plots
         '''
         results = {}
+        mag_field = catalog_instance.first_available(*self.possible_mag_fields)
         filenames = ['r17_18.dat', 'r18_19.dat', 'r19_20.dat', 'r20_21.dat', 'r17_21.dat']
         labels = [r'$r=17-18$', r'$r=18-19$', r'$r=19-20$', r'$r=20-21$', r'$r=17-21$']
         colors = plt.cm.jet(np.linspace(0, 1, len(filenames)))
@@ -119,7 +124,7 @@ class AngularCorrelation(BaseValidationTest):
             else:
                 self.validation_data = self.get_validation_data(self.observation, maglimit)
             #Constrain in redshift and magnitude. DESQA accepts it as a function of corresponding quantities (in this case redshift and r-band magnitude)
-            filters = [zfilter, (lambda mag: (mag > rmin) & (mag < rmax), self.mag_field)] 
+            filters = [zfilter, (lambda mag: (mag > rmin) & (mag < rmax), mag_field)] 
             #Generating catalog data based on the constrains and getting the columns ra and dec
             catalog_data = self.get_catalog_data(catalog_instance, ['ra', 'dec'], filters=filters)
             if catalog_data is None:
