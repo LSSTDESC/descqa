@@ -69,7 +69,7 @@ class IATest(BaseValidationTest):
         np.testing.assert_array_almost_equal(dk, dk_test, decimal=6, err_msg=log_sample_test, verbose=False)
 
         # perform J0, J2, J4 transforms
-        r, wp2, wp2_filt, xi, xi_filt, wp0 = xi_outputs(k, P, k_smooth=0., r_filt=0.)
+        r, wp2, wp2_filt, xi, xi_filt, wp0 = self.xi_outputs(k, P, k_smooth=0., r_filt=0.)
 
         # Combine and add prefactors
         prefactor = 1. #confirm
