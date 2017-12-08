@@ -53,19 +53,20 @@ class IATest(BaseValidationTest):
         return r, wp2, wp2_filt, xi, xi_filt, wp0
 
 
-    def conclude_test(self, output_dir):
+    def add_theory_line(self, ax):
         # get matter power spectrum
         # right now, just pulling from a file
         # could be replaced
+
         Pin = np.loadtxt(self.data_path)
-        k = Pin[:,0]
-        P = Pin[:,1]
+        k = Pin[:, 0]
+        P = Pin[:, 1]
 
         #check log spacing
         dk = np.diff(np.log(k))
         delta_L = (np.log(k[-1])-np.log(k[0]))/(k.size-1)
         dk_test = np.ones_like(dk)*delta_L
-        log_sample_test = 'ERROR! (k,Pk) values are not sampled evenly in log space!'
+        log_sample_test = 'ERROR! (k, Pk) values are not sampled evenly in log space!'
         np.testing.assert_array_almost_equal(dk, dk_test, decimal=6, err_msg=log_sample_test, verbose=False)
 
         # perform J0, J2, J4 transforms
@@ -79,8 +80,11 @@ class IATest(BaseValidationTest):
         amplitude = 1.
         wgplus *= amplitude
 
-        fig, ax = plt.subplots()
         ax.loglog(r, wgplus)
 		ax.set_xlim([0.1, 200])
-        fig.savefig(os.join(output_dir, 'wgplus.png'))
+
+    def conclude_test(self, output_dir):
+        fig, ax = plt.subplots()
+        self.add_theory_line(ax)
+        fig.savefig(os.path.join(output_dir, 'wgplus.png'))
         plt.close(fig)
