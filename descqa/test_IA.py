@@ -79,15 +79,14 @@ class IATest(BaseValidationTest):
         # fit an amplitude, or apply an expected amplitude
         amplitude = 1.
         wgplus *= amplitude
-<<<<<<< HEAD
         
-		rmin=0.1
-		rmax=200
-        ax.loglog(r[np.where (r>=rmin) & (r<=rmax)], wgplus[np.where (r>rmin) && (r<rmax)])
+        rmin=0.1
+        rmax=200
+        ax.loglog(r[(r>=rmin) & (r<=rmax)], wgplus[(r>rmin) & (r<rmax)])
 #        ax.set_xlim([0.1, 200])
 #        ax.set_ylim([1e0, 1e3])
         ax.set_xlabel(r'$r_p$ [Mpc/h]')
-		ax.set_ylabel(r'$w_{g+}$ [Mpc/h]')
+        ax.set_ylabel(r'$w_{g+}$ [Mpc/h]')
 
     def conclude_test(self, output_dir):
         fig, ax = plt.subplots()
