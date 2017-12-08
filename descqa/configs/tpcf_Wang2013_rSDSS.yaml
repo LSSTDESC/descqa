@@ -1,6 +1,6 @@
 subclass_name: AngularCorrelation.AngularCorrelation
 band: r
-survey: sdss
+redshift_max: 0.3
 observation: 'Wang2013_rAppMagSDSS'
 RandomFactor: 10
 description: 'Compare angular correlation functions of catalog and Wang et al (2013) SDSS r-band observations'

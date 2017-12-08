@@ -22,7 +22,8 @@ class AngularCorrelation(BaseValidationTest):
     """
     Validation test to show 2pt correlation function of ProtoDC2 with SDSS
     """
-    def __init__(self, band='r', observation='', RandomFactor=10, **kwargs):
+    def __init__(self, band='r', redshift_max=0.3, observation='', 
+                 RandomFactor=10, **kwargs):
 
         #catalog quantities
         possible_mag_fields = ('mag_{}_sdss',
@@ -32,10 +33,9 @@ class AngularCorrelation(BaseValidationTest):
         self.possible_mag_fields = [f.format(band) for f in possible_mag_fields]
 
         self.band = band
-        self.redshift_max = 0.3
+        self.redshift_max = redshift_max
 
-        #validation data
-        self.validation_data = {}
+        #Observation
         self.observation = observation
 
         #Random number times shape of catalog
@@ -112,25 +112,24 @@ class AngularCorrelation(BaseValidationTest):
         min_sep = 1e-2 #Degree
         max_sep = 5 #Degree
         bin_size = 0.2
+
+        if not self.observation:
+            print('Warning: no data file supplied, no observation requested; only catalog data will be shown')
+        elif self.observation not in self.possible_observations:
+            raise ValueError('Observation {} not available'.format(self.observation))
+
         #Filter on redshift space
         zfilter = (lambda z: (z < self.redshift_max), 'redshift')
+        catalog_data_all = self.get_catalog_data(catalog_instance, ['ra', 'dec', mag_field], filters=[zfilter])
+        if catalog_data_all is None:
+            return TestResult(skipped=True, summary='Missing requested quantities')
+
         for rmax, rmin, fname, label, color in zip(mag_r_maxs, mag_r_mins, filenames, labels, colors):
-            #check for valid observations
-            maglimit = '{}_{}'.format(rmin, rmax) 
-            if not self.observation:
-                print('Warning: no data file supplied, no observation requested; only catalog data will be shown')
-            elif self.observation not in self.possible_observations:
-                raise ValueError('Observation {} not available'.format(self.observation))
-            else:
-                self.validation_data = self.get_validation_data(self.observation, maglimit)
-            #Constrain in redshift and magnitude. DESQA accepts it as a function of corresponding quantities (in this case redshift and r-band magnitude)
-            filters = [zfilter, (lambda mag: (mag > rmin) & (mag < rmax), mag_field)] 
-            #Generating catalog data based on the constrains and getting the columns ra and dec
-            catalog_data = self.get_catalog_data(catalog_instance, ['ra', 'dec'], filters=filters)
-            if catalog_data is None:
-                return TestResult(skipped=True, summary='Missing requested quantities')
+            validation_data = self.get_validation_data(self.observation, '{}_{}'.format(rmin, rmax))
+            catalog_data = GCRQuery((lambda mag: (mag > rmin) & (mag < rmax), mag_field)).filter(catalog_data_all)            
             ra = catalog_data['ra']
             dec = catalog_data['dec']
+            del catalog_data
 
             ramin, ramax = ra.min(), ra.max()
             decmin, decmax = dec.min(), dec.max()
@@ -165,7 +164,7 @@ class AngularCorrelation(BaseValidationTest):
             xi_sig = np.sqrt(varxi) 
 
             plt.errorbar(xi_rad, xi, xi_sig, marker='o', ls='', c=color) 
-            plt.plot(self.validation_data['theta'], self.validation_data['w'], c=color, label=label)
+            plt.plot(validation_data['theta'], validation_data['w'], c=color, label=label)
         plt.legend(loc=0)
         plt.xscale('log')
         plt.yscale('log')
