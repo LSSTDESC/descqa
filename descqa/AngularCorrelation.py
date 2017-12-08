@@ -37,11 +37,6 @@ class AngularCorrelation(BaseValidationTest):
         #Random number times shape of catalog
         self.RandomFactor = RandomFactor
 
-        #setup summary plot
-        self.first_pass = True
-
-        self._other_kwargs = kwargs
-
         self.possible_observations = {
             'Zehavi2011_rAbsMagSDSS': {
                 'filename_template': '2pt/Zehavi2011_SDSS_r_{}.dat',
@@ -67,7 +62,7 @@ class AngularCorrelation(BaseValidationTest):
         '''
         data = {}
         if not gc.has_quantities(quantities):
-            return TestResult(skipped=True, summary='Missing requested quantities')
+            return None
 
         data = gc.get_quantities(quantities, filters=filters)
         #make sure data entries are all finite
@@ -112,6 +107,8 @@ class AngularCorrelation(BaseValidationTest):
         min_sep = 1e-2 #Degree
         max_sep = 5 #Degree
         bin_size = 0.2
+        #Filter on redshift space
+        zfilter = (lambda z: (z < self.redshift_max), 'redshift')
         for rmax, rmin, fname, label, color in zip(mag_r_maxs, mag_r_mins, filenames, labels, colors):
             #check for valid observations
             maglimit = '{}_{}'.format(rmin, rmax) 
@@ -122,9 +119,11 @@ class AngularCorrelation(BaseValidationTest):
             else:
                 self.validation_data = self.get_validation_data(self.observation, maglimit)
             #Constrain in redshift and magnitude. DESQA accepts it as a function of corresponding quantities (in this case redshift and r-band magnitude)
-            filters = [(lambda z: (z<self.redshift_max),'redshift'),(lambda mag: (mag>rmin)&(mag<rmax),self.mag_field)] 
+            filters = [zfilter, (lambda mag: (mag > rmin) & (mag < rmax), self.mag_field)] 
             #Generating catalog data based on the constrains and getting the columns ra and dec
             catalog_data = self.get_catalog_data(catalog_instance, ['ra', 'dec'], filters=filters)
+            if catalog_data is None:
+                return TestResult(skipped=True, summary='Missing requested quantities')
             ra = catalog_data['ra']
             dec = catalog_data['dec']
 
@@ -170,9 +169,6 @@ class AngularCorrelation(BaseValidationTest):
         plt.text(1e-2, 5e-3, 'Lines: Wang et al 2013')
         plt.text(1e-2, 2e-3, 'Points: Catalog')
         plt.savefig(os.path.join(output_dir, 'xi_magnitude.pdf'), bbox_inches='tight')
-
-        if self.first_pass: #turn off validation data plot in summary for remaining catalogs
-            self.first_pass = False
 
         return TestResult(0, passed=True)
 
