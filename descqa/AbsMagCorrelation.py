@@ -23,12 +23,17 @@ class AbsMagCorrelation(BaseValidationTest):
     """
     Validation test to show 2pt correlation function of ProtoDC2 with SDSS
     """
-    def __init__(self, band='r', survey='sdss', observation='', 
-                 RandomFactor=10, **kwargs):
+    def __init__(self, band='r', observation='', RandomFactor=10, **kwargs):
 
         #catalog quantities
-        self.mag_field = 'Mag_true_{}_{}_z0'.format(band, survey)
-        self.band = band
+        possible_mag_fields = ('Mag_true_{}_sdss_z0',
+                               'Mag_true_{}_des_z0',
+                               'Mag_true_{}_lsst_z0',
+                               'Mag_true_{}_sdss_z01',
+                               'Mag_true_{}_des_z01',
+                               'Mag_true_{}_lsst_z01',
+                              )
+        self.possible_mag_fields = [f.format(band) for f in possible_mag_fields]
 
         #validation data
         self.validation_data = {}
@@ -67,7 +72,7 @@ class AbsMagCorrelation(BaseValidationTest):
         '''
         data = {}
         if not gc.has_quantities(quantities):
-            return TestResult(skipped=True, summary='Missing requested quantities')
+            return None
 
         data = gc.get_quantities(quantities, filters=filters)
         #make sure data entries are all finite
@@ -102,6 +107,7 @@ class AbsMagCorrelation(BaseValidationTest):
         Loop over magnitude cuts and make plots
         '''
         results = {}
+        mag_field = catalog_instance.first_available(*self.possible_mag_fields)
         filenames = ['R_-20_-19.dat', 'R_-20_-21.dat', 'R_-21_-22.dat', 'R_-22_-23.dat']
         labels = [r'$-20<M_r<-19$', r'$-21<M_r<-20$', r'$-22<M_r<-21$', r'$-23<M_r<-22$']
         colors = plt.cm.jet(np.linspace(0, 1, len(filenames)))
@@ -126,9 +132,12 @@ class AbsMagCorrelation(BaseValidationTest):
             else:
                 self.validation_data = self.get_validation_data(self.observation, maglimit)
             #Constrain in redshift and magnitude. DESQA accepts it as a function of corresponding quantities (in this case redshift and r-band magnitude)
-            filters = [(lambda z: (z > zmin) & (z < zmax), 'redshift'), (lambda mag: (mag > rmin) & (mag < rmax), self.mag_field)] 
+            filters = [(lambda z: (z > zmin) & (z < zmax), 'redshift'), (lambda mag: (mag > rmin) & (mag < rmax), mag_field)] 
             #Generating catalog data based on the constrains and getting the columns ra and dec
-            catalog_data = self.get_catalog_data(catalog_instance, ['ra', 'dec', 'redshift', self.mag_field], filters=filters)
+            catalog_data = self.get_catalog_data(catalog_instance, ['ra', 'dec', 'redshift', mag_field], filters=filters)
+            if catalog_data is None:
+                return TestResult(skipped=True, summary='Missing requested quantities')
+
             ra = catalog_data['ra']
             dec = catalog_data['dec']
             z = catalog_data['redshift']
