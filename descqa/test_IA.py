@@ -81,5 +81,6 @@ class IATest(BaseValidationTest):
 
         fig, ax = plt.subplots()
         ax.loglog(r, wgplus)
+		ax.set_xlim([0.1, 200])
         fig.savefig(os.join(output_dir, 'wgplus.png'))
         plt.close(fig)
