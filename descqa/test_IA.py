@@ -81,7 +81,7 @@ class IATest(BaseValidationTest):
         wgplus *= amplitude
 
         ax.loglog(r, wgplus)
-		ax.set_xlim([0.1, 200])
+        ax.set_xlim([0.1, 200])
 
     def conclude_test(self, output_dir):
         fig, ax = plt.subplots()
