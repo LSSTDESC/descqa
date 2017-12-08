@@ -100,7 +100,6 @@ class AngularCorrelation(BaseValidationTest):
         '''
         Loop over magnitude cuts and make plots
         '''
-        results = {}
         mag_field = catalog_instance.first_available(*self.possible_mag_fields)
         filenames = ['r17_18.dat', 'r18_19.dat', 'r19_20.dat', 'r20_21.dat', 'r17_21.dat']
         labels = [r'$r=17-18$', r'$r=18-19$', r'$r=19-20$', r'$r=20-21$', r'$r=17-21$']
@@ -124,6 +123,7 @@ class AngularCorrelation(BaseValidationTest):
         if catalog_data_all is None:
             return TestResult(skipped=True, summary='Missing requested quantities')
 
+        plt.figure()
         for rmax, rmin, fname, label, color in zip(mag_r_maxs, mag_r_mins, filenames, labels, colors):
             validation_data = self.get_validation_data(self.observation, '{}_{}'.format(rmin, rmax))
             catalog_data = GCRQuery((lambda mag: (mag > rmin) & (mag < rmax), mag_field)).filter(catalog_data_all)            
