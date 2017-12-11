@@ -12,6 +12,8 @@ from GCR import GCRQuery
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
 import treecorr
+import healpy as hp
+from astropy.table import Table
 
 __all__ = ['AngularCorrelation']
 
@@ -95,6 +97,18 @@ class AngularCorrelation(BaseValidationTest):
 
         return validation_data
 
+    @staticmethod
+    def return_healpixel(ra, dec, nside, nest=False):
+        '''
+        Inputs: RA, DEC in degrees and nside of healpix 
+        Return: array of pixel number
+        '''
+        theta = 90.0 - dec
+        ra = ra * np.pi / 180.
+        theta = theta * np.pi / 180.
+        pixels = hp.ang2pix(nside, theta, ra, nest=False)
+        return pixels
+
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         '''
@@ -122,18 +136,23 @@ class AngularCorrelation(BaseValidationTest):
         catalog_data_all = self.get_catalog_data(catalog_instance, ['ra', 'dec', mag_field], filters=[zfilter])
         if catalog_data_all is None:
             return TestResult(skipped=True, summary='Missing requested quantities')
-
+        nside = 16
         plt.figure()
         for rmax, rmin, fname, label, color in zip(mag_r_maxs, mag_r_mins, filenames, labels, colors):
             validation_data = self.get_validation_data(self.observation, '{}_{}'.format(rmin, rmax))
             catalog_data = GCRQuery((lambda mag: (mag > rmin) & (mag < rmax), mag_field)).filter(catalog_data_all)            
             ra = catalog_data['ra']
             dec = catalog_data['dec']
+            #tmp = Table([ra, dec], names=['RA', 'DEC'])
+            #tmp.write('buzzard_coords.fits', format='fits', overwrite=True)
             del catalog_data
 
             #It works only with rectangle area of sky
             ramin, ramax = ra.min(), ra.max()
             decmin, decmax = dec.min(), dec.max()
+            
+            #plt.scatter(ra, dec)
+            #plt.savefig('s.png')
 
             #Giving ra and dec to treecorr 
             cat = treecorr.Catalog(ra=ra, dec=dec,  ra_units='degrees', dec_units='degrees')
@@ -143,9 +162,25 @@ class AngularCorrelation(BaseValidationTest):
             #Giving number of random points
             randomN = self.RandomFactor * ra.shape[0]
 
-            rand_ra = np.random.uniform(low=ramin, high=ramax, size=randomN)
-            rand_sindec = np.random.uniform(low=np.sin(decmin*np.pi/180.), high=np.sin(decmax*np.pi/180.), size=randomN)
+            orig_p = self.return_healpixel(ra, dec, nside)
+            orig_p, count = np.unique(orig_p, return_counts=True)
+            #There is a uncertainity in the number 30 
+            orig_p = orig_p[count > count.min() * 100]
+
+            if (ramin <=100) & (ramax >= 260):
+                ra = np.where(ra <= 100, ra+360, ra)
+                ramin = ra.min()
+                ramax = ra.max()
+                rand_ra = np.random.uniform(ramin, ramax, randomN)
+                rand_ra = np.where(rand_ra >= 360, rand_ra - 360, rand_ra)
+            else:
+                rand_ra = np.random.uniform(low=ramin, high=ramax, size=randomN)
+            rand_sindec = np.random.uniform(low=np.sin(decmin * np.pi / 180.), high=np.sin(decmax * np.pi / 180.), size=randomN)
             rand_dec = np.arcsin(rand_sindec) * 180. /np.pi
+            rand_p = self.return_healpixel(rand_ra, rand_dec, nside)
+            upixels = np.in1d(rand_p, orig_p)
+            rand_ra = rand_ra[upixels]
+            rand_dec = rand_dec[upixels]
 
             rand_cat = treecorr.Catalog(ra=rand_ra, dec=rand_dec, ra_units='degrees', dec_units='degrees')
             rr = treecorr.NNCorrelation(min_sep=min_sep, max_sep=max_sep, bin_size=bin_size, sep_units='degrees')
