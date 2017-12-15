@@ -25,15 +25,10 @@ class AngularCorrelation(BaseValidationTest):
     Validation test to show 2pt correlation function of ProtoDC2 with SDSS
     """
     def __init__(self, band='r', redshift_max=0.3, observation='', 
-                 RandomFactor=10, **kwargs):
+                 RandomFactor=10, possible_mag_fields='', **kwargs):
 
         #catalog quantities
-        possible_mag_fields = ('mag_{}_sdss',
-                               'mag_{}_des',
-                               'mag_{}_lsst',
-                              )
         self.possible_mag_fields = [f.format(band) for f in possible_mag_fields]
-
         self.band = band
         self.redshift_max = redshift_max
 
@@ -143,14 +138,17 @@ class AngularCorrelation(BaseValidationTest):
             catalog_data = GCRQuery((lambda mag: (mag > rmin) & (mag < rmax), mag_field)).filter(catalog_data_all)            
             ra = catalog_data['ra']
             dec = catalog_data['dec']
-            #tmp = Table([ra, dec], names=['RA', 'DEC'])
-            #tmp.write('buzzard_coords.fits', format='fits', overwrite=True)
-            del catalog_data
 
             #It works only with rectangle area of sky
             ramin, ramax = ra.min(), ra.max()
             decmin, decmax = dec.min(), dec.max()
-            
+            if ramin < 0:
+                ra = np.mod(ra, 360)
+
+            #tmp = Table([ra, dec], names=['RA', 'DEC'])
+            #tmp.write('buzzard_coords.fits', format='fits', overwrite=True)
+            del catalog_data
+
             #plt.scatter(ra, dec)
             #plt.savefig('s.png')
 
@@ -162,11 +160,15 @@ class AngularCorrelation(BaseValidationTest):
             #Giving number of random points
             randomN = self.RandomFactor * ra.shape[0]
 
-            orig_p = self.return_healpixel(ra, dec, nside)
-            orig_p, count = np.unique(orig_p, return_counts=True)
+            #Original pixels
+            original_pixels = self.return_healpixel(ra, dec, nside)
+            original_pixels, original_pixels_count = np.unique(original_pixels, return_counts=True)
             #There is a uncertainity in the number 30 
-            orig_p = orig_p[count > count.min() * 100]
-
+            #original_pixels = original_pixels[original_pixels_count > original_pixels_count.min() * 30]
+            #RemovePixelFactor = np.std(original_pixels_count)
+            #original_pixels = original_pixels[original_pixels_count > original_pixels_count.min() + RemovePixelFactor]
+            #There is a uncertainity in the number 200
+            original_pixels = original_pixels[original_pixels_count > 200]
             if (ramin <=100) & (ramax >= 260):
                 ra = np.where(ra <= 100, ra+360, ra)
                 ramin = ra.min()
@@ -177,8 +179,8 @@ class AngularCorrelation(BaseValidationTest):
                 rand_ra = np.random.uniform(low=ramin, high=ramax, size=randomN)
             rand_sindec = np.random.uniform(low=np.sin(decmin * np.pi / 180.), high=np.sin(decmax * np.pi / 180.), size=randomN)
             rand_dec = np.arcsin(rand_sindec) * 180. /np.pi
-            rand_p = self.return_healpixel(rand_ra, rand_dec, nside)
-            upixels = np.in1d(rand_p, orig_p)
+            rand_pixels = self.return_healpixel(rand_ra, rand_dec, nside)
+            upixels = np.in1d(rand_pixels, original_pixels)
             rand_ra = rand_ra[upixels]
             rand_dec = rand_dec[upixels]
 
