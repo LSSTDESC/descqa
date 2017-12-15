@@ -1,6 +1,44 @@
-subclass_name: AbsMagCorrelation.AbsMagCorrelation
+subclass_name: CorrelationsTwoPoint.CorrelationsTwoPoint
 band: r
 survey: sdss
 observation: 'Zehavi2011_rAbsMagSDSS'
 RandomFactor: 10
+
+#Use this nside of healpix for random generater 
+nside: 16
+
+#RemovePixelFactor: 1 for protoDC2 and RemovePixelFactor: 50 for buzzard
+#RemovePixels: 10 removes all the healpixels with objects less than 10. 
+#I am not sure which number to use. May be people who measure 2pt 
+#correlation function can help
+RemovePixels: 10
+
+#Depending on whether the first letter of possible_mag_fields is capital or 
+#lower python script decides whether to use projected or angular correlations
+possible_mag_fields: ['Mag_true_{}_sdss_z0', 'Mag_true_{}_des_z0', 'Mag_true_{}_lsst_z0', 'Mag_true_{}_sdss_z01', 'Mag_true_{}_des_z01', 'Mag_true_{}_lsst_z01']
+filenames: ['R_-20_-19.dat', 'R_-20_-21.dat', 'R_-21_-22.dat', 'R_-22_-23.dat']
+labels: ['$-20<M_r<-19$', '$-21<M_r<-20$', '$-22<M_r<-21$', '$-23<M_r<-22$']
+colors: ['k', 'b', 'g', 'r']
+#Maximum magnitude, minimum luminosity
+Mag_r_maxs: [-19, -20, -21, -22]
+#Minimum magnitude, maximum luminosity
+Mag_r_mins: [-20, -21, -22, -23]
+#Redshift from Table 1 using cz_min and cz_max 
+zmins: [0.027, 0.042, 0.066, 0.103]
+zmaxs: [0.064, 0.106, 0.159, 0.245]
+
+savepdf: False
+
+
+#Treecorr parameters
+#Minimum separation in treecorr (degree)
+min_sep: 1e-2
+#Maximum separation in treecorr (degree)
+max_sep: 5
+#Bin width
+bin_size: 0.2
+
+#Hubble parameter
+h: 0.7
+
 description: 'Compare angular correlation functions of catalog and Wang et al (2013) SDSS r-band observations'

@@ -1,10 +1,38 @@
-subclass_name: AngularCorrelation.AngularCorrelation
+subclass_name: CorrelationsTwoPoint.CorrelationsTwoPoint
 band: r
 redshift_max: 0.3
 observation: 'Wang2013_rAppMagSDSS'
 RandomFactor: 50
+
+#Use this nside of healpix for random generater 
+nside: 16
+
 #RemovePixelFactor: 1 for protoDC2 and RemovePixelFactor: 50 for buzzard
-#RemovePixels: 200 removes all the healpixels with objects less than 200. I am not sure which number to use
+#RemovePixels: 200 removes all the healpixels with objects less than 200. 
+#I am not sure which number to use. May be people who measure 2pt 
+#correlation function can help
+
 RemovePixels: 200
+
+#Depending on whether the first letter of possible_mag_fields is capital or 
+#lower python script decides whether to use projected or angular correlations
 possible_mag_fields: ['mag_{}_sdss', 'mag_{}_des', 'mag_{}_lsst']
+filenames: ['r17_18.dat', 'r18_19.dat', 'r19_20.dat', 'r20_21.dat', 'r17_21.dat']
+labels: ['$r=17-18$', '$r=18-19$', '$r=19-20$', '$r=20-21$', '$r=17-21$']
+colors: ['k', 'b', 'g', 'c', 'r']
+#Maximum magnitude, minimum luminosity
+mag_r_maxs: [18, 19, 20, 21, 21]
+#Minimum magnitude, maximum luminosity
+mag_r_mins: [17, 18, 19, 20, 17]
+
+savepdf: False
+
+#Treecorr parameters
+#Minimum separation in treecorr (degree)
+min_sep: 1e-2
+#Maximum separation in treecorr (degree)
+max_sep: 5
+#Bin width
+bin_size: 0.2
+
 description: 'Compare angular correlation functions of catalog and Wang et al (2013) SDSS r-band observations'
