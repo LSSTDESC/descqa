@@ -4,7 +4,7 @@ redshift_max: 0.3
 observation: 'Wang2013_rAppMagSDSS'
 RandomFactor: 50
 #RemovePixelFactor: 1 for protoDC2 and RemovePixelFactor: 50 for buzzard
-#RemovePixels: 200 removes all the healpixels with objects less than 200
+#RemovePixels: 200 removes all the healpixels with objects less than 200. I am not sure which number to use
 RemovePixels: 200
 possible_mag_fields: ['mag_{}_sdss', 'mag_{}_des', 'mag_{}_lsst']
 description: 'Compare angular correlation functions of catalog and Wang et al (2013) SDSS r-band observations'

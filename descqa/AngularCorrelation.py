@@ -25,7 +25,8 @@ class AngularCorrelation(BaseValidationTest):
     Validation test to show 2pt correlation function of ProtoDC2 with SDSS
     """
     def __init__(self, band='r', redshift_max=0.3, observation='', 
-                 RandomFactor=10, possible_mag_fields='', **kwargs):
+                 RandomFactor=10, RemovePixels=200, 
+                 possible_mag_fields='', **kwargs):
 
         #catalog quantities
         self.possible_mag_fields = [f.format(band) for f in possible_mag_fields]
@@ -37,6 +38,7 @@ class AngularCorrelation(BaseValidationTest):
 
         #Random number times shape of catalog
         self.RandomFactor = RandomFactor
+        self.RemovePixels = RemovePixels
 
         self.possible_observations = {
             'Zehavi2011_rAbsMagSDSS': {
@@ -168,7 +170,7 @@ class AngularCorrelation(BaseValidationTest):
             #RemovePixelFactor = np.std(original_pixels_count)
             #original_pixels = original_pixels[original_pixels_count > original_pixels_count.min() + RemovePixelFactor]
             #There is a uncertainity in the number 200
-            original_pixels = original_pixels[original_pixels_count > 200]
+            original_pixels = original_pixels[original_pixels_count > self.RemovePixels]
             if (ramin <=100) & (ramax >= 260):
                 ra = np.where(ra <= 100, ra+360, ra)
                 ramin = ra.min()
