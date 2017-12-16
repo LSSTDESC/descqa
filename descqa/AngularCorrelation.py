@@ -40,6 +40,9 @@ class AngularCorrelation(BaseValidationTest):
         self.RandomFactor = RandomFactor
         self.RemovePixels = RemovePixels
 
+        self.kwargs = kwargs
+        #for key, value in kwargs.items():
+        #    print(key)
         self.possible_observations = {
             'Zehavi2011_rAbsMagSDSS': {
                 'filename_template': '2pt/Zehavi2011_SDSS_r_{}.dat',
