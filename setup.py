@@ -29,9 +29,9 @@ setup(
     ],
     keywords='DESCQA',
     packages=['descqa'],
-    install_requires=['pyyaml'],
+    install_requires=['future', 'pyyaml', 'jinja2'],
     extras_require = {
-        'full':  ['future', 'numpy', 'scipy', 'matplotlib', 'healpy', 'GCR>=0.6.1'],
+        'full':  ['numpy', 'scipy', 'matplotlib', 'healpy', 'GCR>=0.6.2'],
     },
     package_data={'descqa': ['configs/*.yaml', 'data/*']},
 )
