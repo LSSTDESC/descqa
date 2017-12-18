@@ -13,7 +13,7 @@ A [web interface](https://portal.nersc.gov/project/lsst/descqa/) hosted on NERSC
 
 2. Once you can access the catalogs, try to make some plots about things you are interested in. You can find [some ideas that have been proposed](https://github.com/LSSTDESC/descqa/labels/validation%20test), but you are more than welcome to come up with new ones! 
 
-3. Now that you are able to make some plots, think about how to "validate" the catalogs (i.e., are there any observation/theory data that can be plotted on the same figure for comparison? How to decide whether a catalog is satisfacoty?)
+3. Now that you are able to make some plots, think about how to "validate" the catalogs (i.e., are there any observation/theory data that can be plotted on the same figure for comparison? How to decide whether a catalog is satisfactory?)
 
 4. Now we can integrate your work into the [DESCQA web interface](https://portal.nersc.gov/project/lsst/descqa/v2/)! This step is slightly more involved, but you can follow [the instruction here](CONTRIBUTING.md).
 
