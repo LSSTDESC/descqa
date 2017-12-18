@@ -5,10 +5,10 @@ python:
 
 install:
   - pip install .
-  - pip install pylint
+  - pip install pylint nose
 
 script:
-  - pylint --disable=C0103,C0301 --extension-pkg-whitelist=numpy `find . -name \*.py -not -path ./v1/\* -print`
-  - python -c "import descqa"
+  - pylint --disable=C0103,C0301 --extension-pkg-whitelist=numpy `find . -name \*.py -not -path ./v1/\* -print` || true
+  - nosetests
   - python -c "import descqaweb"
   - python -c "import descqarun"
