@@ -9,9 +9,9 @@ A [web interface](https://portal.nersc.gov/project/lsst/descqa/) hosted on NERSC
 
 ## Quick start guide
 
-1. First of all, try accessing the catalogs! You can also find more information about the catalogs in [this Confluence page](https://confluence.slac.stanford.edu/x/Z0uKDQ) and [this presentation](https://docs.google.com/presentation/d/1W5lZrQci9J4jaTdLWUIwkPKtq1lbDT3SzTh-YgIkl6k/edit?usp=sharing) ([video](https://youtu.be/4k9Yj6aI1uc)). However, the easiest thing is to go to https://jupyter-dev.nersc.gov and login with your NERSC account, and follow [this tutorial notebook](https://github.com/LSSTDESC/gcr-catalogs/blob/master/examples/GCRCatalogs%20Demo.ipynb) ([download link](https://raw.githubusercontent.com/LSSTDESC/gcr-catalogs/master/examples/GCRCatalogs%20Demo.ipynb), you can then upload the notebook through the jupyter interface). 
+1. First of all, try accessing the catalogs! You can find information about the catalogs in [this Confluence page](https://confluence.slac.stanford.edu/x/Z0uKDQ) and [this presentation](https://docs.google.com/presentation/d/1W5lZrQci9J4jaTdLWUIwkPKtq1lbDT3SzTh-YgIkl6k/edit?usp=sharing) ([video](https://youtu.be/4k9Yj6aI1uc)). However, the easiest way to start is to go to https://jupyter-dev.nersc.gov and login with your NERSC account, and follow [this tutorial notebook](https://github.com/LSSTDESC/gcr-catalogs/blob/master/examples/GCRCatalogs%20Demo.ipynb) ([download link](https://raw.githubusercontent.com/LSSTDESC/gcr-catalogs/master/examples/GCRCatalogs%20Demo.ipynb), you can then upload the notebook through the jupyter interface). 
 
-2. One you can access the catalogs, try to make some plots about things you are interested in. You can find [some ideas that have been proposed](https://github.com/LSSTDESC/descqa/labels/validation%20test), but you are more than welcome to come up with new ones! 
+2. Once you can access the catalogs, try to make some plots about things you are interested in. You can find [some ideas that have been proposed](https://github.com/LSSTDESC/descqa/labels/validation%20test), but you are more than welcome to come up with new ones! 
 
 3. Now that you are able to make some plots, think about how to "validate" the catalogs (i.e., are there any observation/theory data that can be plotted on the same figure for comparison? How to decide whether a catalog is satisfacoty?)
 
