@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Catalog repo for LSST DESC
+DESCQA: LSST DESC QA Framework for mock galaxy catalogs
 Copyright (c) 2017 LSST DESC
 http://opensource.org/licenses/MIT
 """
@@ -13,7 +13,7 @@ with open(os.path.join(os.path.dirname(__file__), 'descqa', 'version.py')) as f:
 
 setup(
     name='descqa',
-    version=__version__,
+    version=__version__, #pylint: disable=E0602
     description='DESCQA: LSST DESC QA Framework for mock galaxy catalogs',
     url='https://github.com/LSSTDESC/descqa',
     author='LSST DESC',
@@ -30,8 +30,8 @@ setup(
     keywords='DESCQA',
     packages=['descqa'],
     install_requires=['future', 'pyyaml', 'jinja2'],
-    extras_require = {
-        'full':  ['numpy', 'scipy', 'matplotlib', 'healpy', 'GCR>=0.6.2'],
+    extras_require={
+        'full': ['numpy', 'scipy', 'matplotlib', 'healpy', 'GCR>=0.6.2'],
     },
     package_data={'descqa': ['configs/*.yaml', 'data/*']},
 )

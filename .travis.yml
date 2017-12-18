@@ -6,10 +6,9 @@ python:
 install:
   - pip install .
   - pip install pylint
-  
+
 script:
   - pylint --disable=C0103,C0301 --extension-pkg-whitelist=numpy `find . -name \*.py -not -path ./v1/\* -print`
   - python -c "import descqa"
   - python -c "import descqaweb"
   - python -c "import descqarun"
-  
