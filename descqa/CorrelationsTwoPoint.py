@@ -1,11 +1,5 @@
 from __future__ import print_function, division, unicode_literals, absolute_import
 import os
-import math
-try:
-    from itertools import zip_longest
-except ImportError:
-    from itertools import izip_longest as zip_longest
-
 import numpy as np
 from GCR import GCRQuery
 
@@ -104,7 +98,7 @@ class CorrelationsTwoPoint(BaseValidationTest):
         theta = 90.0 - dec
         ra = ra * np.pi / 180.
         theta = theta * np.pi / 180.
-        pixels = hp.ang2pix(nside, theta, ra, nest=False)
+        pixels = hp.ang2pix(nside, theta, ra, nest=nest)
         return pixels
 
 
@@ -121,7 +115,7 @@ class CorrelationsTwoPoint(BaseValidationTest):
 
         #Check whether the observations and magnitude systems are matching. 
         if not self.observation:
-            print('Warning: no data file supplied, no observation requested; only catalog data will be shown')
+            raise ValueError('No observation requested')
         elif (self.observation == 'Zehavi2011_rAbsMagSDSS') & (mag_field.islower()):
             raise ValueError('Observation is in absolute magnitude given magnitude is apparent')
         elif (self.observation == 'Wang2013_rAppMagSDSS') & (mag_field.isupper()):
@@ -173,12 +167,17 @@ class CorrelationsTwoPoint(BaseValidationTest):
                 #Original pixels
                 original_pixels = self.return_healpixel(ra, dec, nside)
                 original_pixels, original_pixels_count = np.unique(original_pixels, return_counts=True)
-                #There is a uncertainity in the number 30 
+                #There is a uncertainty in the number 30 
                 #original_pixels = original_pixels[original_pixels_count > original_pixels_count.min() * 30]
                 #RemovePixelFactor = np.std(original_pixels_count)
                 #original_pixels = original_pixels[original_pixels_count > original_pixels_count.min() + RemovePixelFactor]
-                #There is a uncertainity in the number 200
+                #There is a uncertainty in the number 200
                 original_pixels = original_pixels[original_pixels_count > self.RemovePixels]
+                #RA will have value 0 if RA>360. Therefore, to make the uniform
+                #random values I add 360 to numbers less than 360. Then I find 
+                #the minimum and maximum of RA and find uniform RA values.
+                #After that I subtract 360 from values greater than 360 to make
+                #sure that RA will have values from 0 to 360 
                 if (ramin <=100) & (ramax >= 260):
                     ra = np.where(ra <= 100, ra+360, ra)
                     ramin = ra.min()
