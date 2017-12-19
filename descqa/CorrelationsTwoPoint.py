@@ -101,6 +101,17 @@ class CorrelationsTwoPoint(BaseValidationTest):
         pixels = hp.ang2pix(nside, theta, ra, nest=nest)
         return pixels
 
+    def modify_figure(self, xlabel, ylabel, output_dir, filename):
+        plt.legend(loc=0)
+        plt.xscale('log')
+        plt.yscale('log')
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        plt.title(self.possible_observations[self.observation]['label'])
+        plt.savefig(os.path.join(output_dir, '{:s}.png'.format(filename)), bbox_inches='tight')
+        if self.TestParams['savepdf']:
+            plt.savefig(os.path.join(output_dir, '{:s}.pdf'.format(filename)), bbox_inches='tight')
+
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         '''
@@ -212,18 +223,7 @@ class CorrelationsTwoPoint(BaseValidationTest):
 
                 plt.errorbar(xi_rad, xi, xi_sig, marker='o', ls='', c=color) 
                 plt.plot(validation_data['theta'], validation_data['w'], c=color, label=label)
-            plt.legend(loc=0)
-            plt.xscale('log')
-            plt.yscale('log')
-            plt.xlabel(r'$\theta$ deg')
-            plt.ylabel(r'$\xi(\theta)$')
-            #plt.text(1e-2, 5e-3, 'Lines: Wang et al 2013')
-            #plt.text(1e-2, 2e-3, 'Points: Catalog')
-            plt.title(self.possible_observations[self.observation]['label'])
-            plt.savefig(os.path.join(output_dir, 'xi_magnitude.png'), bbox_inches='tight')
-            if self.TestParams['savepdf']:
-                plt.savefig(os.path.join(output_dir, 'xi_magnitude.pdf'), bbox_inches='tight')
-
+            self.modify_figure(r'$\theta$ deg', r'$\xi(\theta)$', output_dir, 'xi_magnitude')
 
         if self.observation == 'Zehavi2011_rAbsMagSDSS':
             filenames = self.TestParams['filenames']
@@ -305,15 +305,7 @@ class CorrelationsTwoPoint(BaseValidationTest):
 
                 plt.errorbar(xi_rad, xi, xi_sig, marker='o', ls='', c=color) 
                 plt.plot(self.validation_data['rp'], self.validation_data['wp'], c=color, label=label)
-            plt.legend(loc=0)
-            plt.xscale('log')
-            plt.yscale('log')
-            plt.xlabel(r'$r_p (h^{-1}$ Mpc)')
-            plt.ylabel(r'$w_p(r_p) (h^{-1}$ Mpc)')
-            plt.title(self.possible_observations[self.observation]['label'])
-            plt.savefig(os.path.join(output_dir, 'proj_xi_magnitude.png'), bbox_inches='tight')
-            if self.TestParams['savepdf']:
-                plt.savefig(os.path.join(output_dir, 'proj_xi_magnitude.pdf'), bbox_inches='tight')
+            self.modify_figure(r'$r_p (h^{-1}$ Mpc)', r'$w_p(r_p) (h^{-1}$ Mpc)', output_dir, 'proj_xi_magnitude')
 
 
         return TestResult(0, passed=True)
