@@ -1,5 +1,8 @@
 # DESCQA
 
+[![DOI](https://zenodo.org/badge/47784041.svg)](https://zenodo.org/badge/latestdoi/47784041)
+[![arXiv:1709.09665](https://img.shields.io/badge/astro--ph.IM-arXiv%3A1709.09665-B31B1B.svg)](https://arxiv.org/abs/1709.09665)
+
 This repository contains the DESCQA framework that validates simulated galaxy catalogs. For more information about this framework, please check out the [DESCQA paper](https://arxiv.org/abs/1709.09665).
 
 A [web interface](https://portal.nersc.gov/project/lsst/descqa/) hosted on NERSC displays recent validation results from the DESCQA framework.
