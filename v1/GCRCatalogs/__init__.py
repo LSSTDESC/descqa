@@ -1,3 +1,5 @@
-# This is an empty file to make this directory a python package
+"""
+DESCQA v1 reader interface
+"""
 from .register import *
-__version__ = '1.0.0'
+__version__ = '1.1.0'
