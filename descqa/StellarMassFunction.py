@@ -1,18 +1,16 @@
 from __future__ import print_function, division, unicode_literals, absolute_import
 import os
-import math
 try:
     from itertools import zip_longest
 except ImportError:
     from itertools import izip_longest as zip_longest
-
-import numpy as np
-from GCR import GCRQuery
-
-from .base import BaseValidationTest, TestResult
-from .plotting import plt
 from itertools import cycle
 from itertools import count
+import numpy as np
+from GCR import GCRQuery
+from astropy.cosmology import FlatLambdaCDM
+from .base import BaseValidationTest, TestResult
+from .plotting import plt
 
 __all__ = ['StellarMassFunction']
 
@@ -26,29 +24,31 @@ class StellarMassFunction(BaseValidationTest):
         'PRIMUS_2013': {
             'filename_template': 'SMF/moustakas_et_al_2013/Table{}.txt',
             'file-info': {'0. < z < .1':{'zlo':0., 'zhi':.1, 'table#':3, 'usecols':[0,1,2,3]},
-                        '.2 < z < .3':{'zlo':.2, 'zhi':.3, 'table#':4, 'usecols':[0,1,2,3]},
-                        '.3 < z < .4':{'zlo':.3, 'zhi':.4, 'table#':4, 'usecols':[0,6,7,8]},
-                        '.4 < z < .5':{'zlo':.4, 'zhi':.5, 'table#':4, 'usecols':[0,11,12,13]},
-                        '.5 < z < .65':{'zlo':.5, 'zhi':.65, 'table#':4, 'usecols':[0,16,17,18]},
-                        '.65 < z < .8':{'zlo':.65, 'zhi':.8, 'table#':4, 'usecols':[0,21,22,23]},
-                        '.8 < z < 1.0':{'zlo':.8, 'zhi':1.0, 'table#':4, 'usecols':[0,26,27,28]},
+                          '.2 < z < .3':{'zlo':.2, 'zhi':.3, 'table#':4, 'usecols':[0,1,2,3]},
+                          '.3 < z < .4':{'zlo':.3, 'zhi':.4, 'table#':4, 'usecols':[0,6,7,8]},
+                          '.4 < z < .5':{'zlo':.4, 'zhi':.5, 'table#':4, 'usecols':[0,11,12,13]},
+                          '.5 < z < .65':{'zlo':.5, 'zhi':.65, 'table#':4, 'usecols':[0,16,17,18]},
+                          '.65 < z < .8':{'zlo':.65, 'zhi':.8, 'table#':4, 'usecols':[0,21,22,23]},
+                          '.8 < z < 1.0':{'zlo':.8, 'zhi':1.0, 'table#':4, 'usecols':[0,26,27,28]},
             },
             'zrange': (0.0, 1.0),
             'colnames': ('logM', 'log_phi', 'dlog_phi+', 'dlog_phi-'),
             'label': 'Moustakas et. al. 2013',
-            'missingdata':'...'
+            'missingdata': '...'
         },
     }
-    zkey_match ='< z <'
+    zkey_match = '< z <'
 
     #plotting constants
     validation_color = 'black'
     validation_marker = 'o'
     default_markers = ['v', 's', 'd', 'H', '^', 'D', 'h', '<', '>', '.']
     msize = 4 #marker-size
+    yaxis_xoffset = 0.02
+    yaxis_yoffset = 0.5
 
     def __init__(self, z='redshift_true', mass='stellar_mass', Nbins=25, log_Mlo=8., log_Mhi=12.,
-                 observation='', zlo=0., zhi=1.0, zint =0.2, ncolumns=2, **kwargs):
+                 observation='', zlo=0., zhi=1.0, zint=0.2, ncolumns=2, **kwargs):
 
         #catalog quantities
         self.zlabel = z
@@ -85,7 +85,7 @@ class StellarMassFunction(BaseValidationTest):
 
         #setup summary plot
         self.summary_fig, self.summary_ax = plt.subplots(self.nrows, self.ncolumns, sharex='col')
-        self.summary_fig.text(0.04, 0.5, self.yaxis, va='center', rotation='vertical') #setup a common axis label
+        self.summary_fig.text(self.yaxis_xoffset, self.yaxis_yoffset, self.yaxis, va='center', rotation='vertical') #setup a common axis label
         #could plot summary validation data here if available but would need to evaluate labels, bin values etc.
         #otherwise setup a check so that validation data is plotted only once on summary plot
         self.first_pass = True
@@ -95,20 +95,21 @@ class StellarMassFunction(BaseValidationTest):
 
     def init_plots(self, zlo, zhi, zint):
         #get magnitude cuts based on validation data or default limits (only catalog data plotted)
-        if len(self.validation_data )> 0:
-            z_lo = [self.validation_data[k].get('zlo') for k in self.validation_data.keys() if self.zkey_match in k]
-            z_hi = [self.validation_data[k].get('zhi') for k in self.validation_data.keys() if self.zkey_match in k]
-        else:
+        if not self.validation_data:
             z_lo = np.arange(zlo, zhi, zint)
             z_hi = np.arange(zint, zhi+zint, zint)
+        else:
+            z_lo = [self.validation_data[k].get('zlo') for k in self.validation_data.keys() if self.zkey_match in k]
+            z_hi = [self.validation_data[k].get('zhi') for k in self.validation_data.keys() if self.zkey_match in k]
 
+        print(z_lo, z_hi)
         #setup number of plots and number of rows required for subplots
         self.nplots = len(z_lo)
         self.nrows = (self.nplots+self.ncolumns-1)//self.ncolumns
 
         #other plotting variables
         self.markers = iter(self.default_markers)
-        self.yaxis = '$d\phi/d\log M (Mpc^{-3} dex^{-1})$'
+        self.yaxis = r'$d\phi/d\log M (Mpc^{-3} dex^{-1})$'
         self.xaxis = '$M^*$'
 
         #custom sizes for ticklabels (sorry Yao - need these)
@@ -143,20 +144,19 @@ class StellarMassFunction(BaseValidationTest):
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         #update color and marker to preserve catalog colors and markers across tests
         catalog_color = next(self._color_iterator)
-        catalog_marker= next(self.markers)
 
         #check catalog data for required quantities
-        if not catalog_instance.has_quantities([self.zlabel,self.Mlabel]):
+        if not catalog_instance.has_quantities([self.zlabel, self.Mlabel]):
             return TestResult(skipped=True, summary='Missing required quantity {} or {}'.format(self.zlabel, self.Mlabel))
 
         #setup plots
         fig, ax = plt.subplots(self.nrows, self.ncolumns, sharex='col')
-        fig.text(0.04, 0.5, self.yaxis, va='center', rotation='vertical') #setup a common axis label
+        fig.text(self.yaxis_xoffset, self.yaxis_yoffset, self.yaxis, va='center', rotation='vertical') #setup a common axis label
 
         #initialize arrays for storing histogram sums
         N_array = np.zeros((self.nrows, self.ncolumns, len(self.Mbins)-1), dtype=np.int)
-        sumM_array = np.zeros((self.nrows, self.ncolumns,len(self.Mbins)-1))
-        sumM2_array = np.zeros((self.nrows, self.ncolumns,len(self.Mbins)-1))
+        sumM_array = np.zeros((self.nrows, self.ncolumns, len(self.Mbins)-1))
+        sumM2_array = np.zeros((self.nrows, self.ncolumns, len(self.Mbins)-1))
 
         #get catalog data by looping over data iterator (needed for large catalogs) and aggregate histograms
         for catalog_data in catalog_instance.get_quantities([self.zlabel, self.Mlabel], filters=self.filters, return_iterator=True):
@@ -178,8 +178,9 @@ class StellarMassFunction(BaseValidationTest):
                     sumM += np.histogram(M_this, bins=self.Mbins, weights=M_this)[0]
                     sumM2 += np.histogram(M_this, bins=self.Mbins, weights=M_this**2)[0]
 
-        if not N.sum():
-            return TestResult(skipped=True, summary='No data found for quantity {}'.format(self.Mlabel))
+        #check that catalog has entries for quantity to be plotted
+        if not np.asarray([N.sum() for N in N_array]).sum():
+            raise ValueError('No data found for quantity {}'.format(self.Mlabel))
 
         #loop over magnitude cuts and make plots
         results = {}
@@ -197,13 +198,15 @@ class StellarMassFunction(BaseValidationTest):
                 ax_this.set_visible(False)
                 summary_ax_this.set_visible(False)
             else:
+                if not zkey:
+                    zkey = '{:.1f} < z < {:.1f}'.format(cut_lo, cut_hi)
                 cut_label = '${}$'.format(zkey)
                 Mvalues = self.get_opt_binpoints(N, sumM, sumM2, self.Mbins)
                 sumN = N.sum()
                 total = '(# of galaxies = {})'.format(sumN)
                 Nerrors = np.sqrt(N)
-                volume = self.get_sky_volume(catalog_instance, cut_hi, zlo=cut_lo)
-                phi =  N/volume/self.DM
+                volume = self.get_sky_volume(catalog_instance, cut_hi, zlo=cut_lo, units='Mpc')
+                phi = N/volume/self.DM
                 phi_errors = Nerrors/volume/self.DM
 
                 #make subplot
@@ -255,8 +258,8 @@ class StellarMassFunction(BaseValidationTest):
             dphi_hi = np.power(10, validation_data['log_phi'] + validation_data['dlog_phi+']) - phi
             dphi_lo = -np.power(10, validation_data['log_phi'] + validation_data['dlog_phi-']) + phi
             ax.errorbar(M, phi, yerr=[dphi_lo,dphi_hi], color=self.validation_color, marker=self.validation_marker, label=validation_label, ms=self.msize)
-            results['data']=phi
-            results['Mdata']=M
+            results['data'] = phi
+            results['Mdata'] = M
             results['data+'] = dphi_hi
             results['data-'] = dphi_lo
         else:
@@ -282,7 +285,7 @@ class StellarMassFunction(BaseValidationTest):
             ax.set_xlabel(self.xaxis)
             for axlabel in ax.get_xticklabels():
                 axlabel.set_visible(True)
-        ax.legend(loc='best', fancybox=True, framealpha=0.5, numpoints=1)
+        ax.legend(loc='lower left', fancybox=True, framealpha=0.5, numpoints=1)
 
 
     @staticmethod
@@ -312,8 +315,9 @@ class StellarMassFunction(BaseValidationTest):
 
 
     @staticmethod
-    def get_sky_volume(catalog_instance, zhi, zlo=0., distance='Mpc'):
-        from astropy.cosmology import FlatLambdaCDM
+    def get_sky_volume(catalog_instance, zhi, zlo=0., units='Mpc'):
+        if not units=='Mpc':
+            raise ValueError("Volume units must be in Mpc^3")
 
         #assume FlatLambaCDM
         if isinstance(catalog_instance.cosmology, FlatLambdaCDM):
@@ -322,7 +326,7 @@ class StellarMassFunction(BaseValidationTest):
         else:
             raise ValueError("Non-flat geometries not supported yet")
 
-        #convert sky area (sq.deg) to radians 
+        #convert sky area (sq.deg) to radians
         sky_area = catalog_instance.sky_area*(np.pi/180.)**2
 
         return sky_area*(Vhi - Vlo)
