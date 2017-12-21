@@ -163,3 +163,26 @@ def generate_uniform_random_ra_dec_footprint(n, footprint=None, nside=None, nest
         n_needed -= count_this
 
     return ra, dec
+
+
+def generate_uniform_random_dist(n, dlo, dhi):
+    """
+    Parameters
+    ----------
+    n : int
+        number of random points needed
+    dlo : float
+        lower distance
+    dhi : float
+        upper distance
+
+    Returns
+    -------
+    dist : ndarray
+        1d array of length n that contains distance
+    """
+    d = np.random.rand(n)
+    d *= (dhi**3.0 - dlo**3.0)
+    d += dlo**3.0
+    d **= 1.0/3.0
+    return d
