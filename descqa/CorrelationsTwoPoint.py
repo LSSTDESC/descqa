@@ -130,7 +130,7 @@ class CorrelationsTwoPoint(BaseValidationTest):
                         dec_units='deg',
                         r=generate_uniform_random_dist(
                             rand_ra.size,
-                            *redshift2dist(np.array([mag_bin['cz_min'], mag_bin['cz_max']])//self._C, catalog_instance.cosmology)
+                            *redshift2dist(np.array([mag_bin['cz_min'], mag_bin['cz_max']])/self._C, catalog_instance.cosmology)
                         ),
                     )
                     rr = treecorr.NNCorrelation(treecorr_config)
@@ -158,7 +158,7 @@ class CorrelationsTwoPoint(BaseValidationTest):
                         self.validation_data[:,0],
                         self.validation_data[:,mag_bin['data_col']]+self.validation_data[:,mag_bin['data_err_col']],
                         self.validation_data[:,mag_bin['data_col']]-self.validation_data[:,mag_bin['data_err_col']],
-                        c=color,
+                        color=color,
                         alpha=0.2)
                 scale_wp = mag_bin['pi_max'] * 2.0 if 'pi_max' in mag_bin else 1.0
                 ax.errorbar(xi_rad, xi*scale_wp, xi_sig*scale_wp, marker='o', ls='', c=color)

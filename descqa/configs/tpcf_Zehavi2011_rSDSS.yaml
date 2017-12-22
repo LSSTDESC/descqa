@@ -27,8 +27,8 @@ fig_ylabel: '$w_p(r_p)\quad[h^{-1}{\rm Mpc}]$'
 
 #Treecorr parameters
 min_sep: 0.1
-max_sep: 50
-bin_size: 0.45
+max_sep: 30
+bin_size: 0.5
 
 random_mult: 6
 
