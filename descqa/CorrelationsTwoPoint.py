@@ -87,7 +87,7 @@ class CorrelationsTwoPoint(BaseValidationTest):
 
         fig, ax = plt.subplots()
         try:
-            for mag_bin, color in zip(self.mag_bins, plt.cm.plasma_r(np.linspace(0, 1, len(self.mag_bins)))):
+            for mag_bin, color in zip(self.mag_bins, plt.cm.plasma_r(np.linspace(0.1, 1, len(self.mag_bins)))):
 
                 # filter catalog data for this bin
                 filters = [

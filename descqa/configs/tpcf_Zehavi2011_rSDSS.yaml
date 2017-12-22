@@ -29,8 +29,10 @@ fig_ylabel: '$w_p(r_p)\quad[h^{-1}{\rm Mpc}]$'
 
 #Treecorr parameters
 min_sep: 0.1
-max_sep: 5
-bin_size: 0.25
+max_sep: 10
+bin_size: 0.3
+
+random_mult: 10
 
 description: |
   Compare projected correlation functions of catalog and Zehavi et al (2011) SDSS r-band observations
