@@ -20,10 +20,12 @@ class CorrelationsTwoPoint(BaseValidationTest):
     """
     Validation test of 2pt correlation function
     """
+    _C = 299792.458
+
     def __init__(self, **kwargs):
         self.possible_mag_fields = kwargs['possible_mag_fields']
         self.need_distance = kwargs['need_distance']
-        self.data_args = kwargs['data_args']
+        self.data_label = kwargs['data_label']
         self.mag_bins = kwargs['mag_bins']
         self.output_filename_template = kwargs['output_filename_template']
         self.label_template = kwargs['label_template']
@@ -42,6 +44,9 @@ class CorrelationsTwoPoint(BaseValidationTest):
         }
         if not self.need_distance:
             self._treecorr_config['sep_units'] = 'deg'
+
+        validation_filepath = os.path.join(self.data_dir, kwargs['data_filename'])
+        self.validation_data = np.loadtxt(validation_filepath, skiprows=2)
 
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
@@ -65,8 +70,8 @@ class CorrelationsTwoPoint(BaseValidationTest):
         ))
         if self.need_distance:
             filters.extend((
-                '{} < {}'.format(colnames['z'], max(mag_bin['z_max'] for mag_bin in self.mag_bins)),
-                '{} >= {}'.format(colnames['z'], min(mag_bin['z_min'] for mag_bin in self.mag_bins)),
+                '{} < {}'.format(colnames['z'], max(mag_bin['cz_max'] for mag_bin in self.mag_bins)/self._C),
+                '{} >= {}'.format(colnames['z'], min(mag_bin['cz_min'] for mag_bin in self.mag_bins)/self._C),
             ))
         catalog_data = catalog_instance.get_quantities(list(colnames.values()), filters=filters)
         catalog_data = {k: catalog_data[v] for k, v in colnames.items()}
@@ -96,8 +101,8 @@ class CorrelationsTwoPoint(BaseValidationTest):
                 ]
                 if self.need_distance:
                     filters.extend((
-                        'z < {}'.format(mag_bin['z_max']),
-                        'z >= {}'.format(mag_bin['z_min']),
+                        'z < {}'.format(mag_bin['cz_max']/self._C),
+                        'z >= {}'.format(mag_bin['cz_min']/self._C),
                     ))
 
                 catalog_data_this = GCRQuery(*filters).filter(catalog_data)
@@ -123,7 +128,10 @@ class CorrelationsTwoPoint(BaseValidationTest):
                         dec=rand_dec,
                         ra_units='deg',
                         dec_units='deg',
-                        r=generate_uniform_random_dist(rand_ra.size, *redshift2dist([mag_bin['z_min'], mag_bin['z_max']], catalog_instance.cosmology)),
+                        r=generate_uniform_random_dist(
+                            rand_ra.size,
+                            *redshift2dist(np.array([mag_bin['cz_min'], mag_bin['cz_max']])//self._C, catalog_instance.cosmology)
+                        ),
                     )
                     rr = treecorr.NNCorrelation(treecorr_config)
                     rr.process(rand_cat)
@@ -143,17 +151,22 @@ class CorrelationsTwoPoint(BaseValidationTest):
                 xi_rad = np.exp(dd.meanlogr)
                 xi_sig = np.sqrt(var_xi)
 
-                validation_filepath = os.path.join(self.data_dir, self.data_args['filename_template'].format(mag_bin['mag_min'], mag_bin['mag_max']))
-                validation_data = np.loadtxt(validation_filepath, usecols=self.data_args['usecols'], skiprows=self.data_args['skiprows'])
 
-                ax.loglog(validation_data[:,0], validation_data[:,1], c=color, label=self.label_template.format(mag_bin['mag_min'], mag_bin['mag_max']))
+                ax.loglog(self.validation_data[:,0], self.validation_data[:,mag_bin['data_col']], c=color, label=self.label_template.format(mag_bin['mag_min'], mag_bin['mag_max']))
+                if 'data_err_col' in mag_bin:
+                    ax.fill_between(
+                        self.validation_data[:,0],
+                        self.validation_data[:,mag_bin['data_col']]+self.validation_data[:,mag_bin['data_err_col']],
+                        self.validation_data[:,mag_bin['data_col']]-self.validation_data[:,mag_bin['data_err_col']],
+                        c=color,
+                        alpha=0.2)
                 scale_wp = mag_bin['pi_max'] * 2.0 if 'pi_max' in mag_bin else 1.0
                 ax.errorbar(xi_rad, xi*scale_wp, xi_sig*scale_wp, marker='o', ls='', c=color)
 
             ax.legend(loc='best')
             ax.set_xlabel(self.fig_xlabel)
             ax.set_ylabel(self.fig_ylabel)
-            ax.set_title('{} vs. {}'.format(catalog_name, self.data_args['label']), fontsize='medium')
+            ax.set_title('{} vs. {}'.format(catalog_name, self.data_label), fontsize='medium')
 
         finally:
             fig.savefig(os.path.join(output_dir, '{:s}.png'.format(self.test_name)), bbox_inches='tight')

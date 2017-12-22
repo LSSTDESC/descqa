@@ -11,17 +11,15 @@ possible_mag_fields:
 output_filename_template: 'wp_rp_Mr_{}_{}.dat'
 label_template: '${} < M_r < {}$'
 
-data_args:
-  filename_template: '2pt/Zehavi2011_SDSS_r_{}_{}.dat'
-  label: 'Zehavi+2011'
-  usecols: [0, 1]
-  skiprows: 1
+data_filename: 'tpcf/Zehavi_2011_ApJ_736_59_Table7.txt'
+data_label: 'Zehavi+2011'
 
 mag_bins:
-  - {mag_max: -22, mag_min: -23, z_max: 0.245, z_min: 0.103, pi_max: 60.0}
-  - {mag_max: -21, mag_min: -22, z_max: 0.159, z_min: 0.066, pi_max: 60.0}
-  - {mag_max: -20, mag_min: -21, z_max: 0.106, z_min: 0.042, pi_max: 40.0}
-  - {mag_max: -19, mag_min: -20, z_max: 0.064, z_min: 0.027, pi_max: 60.0}
+  - {mag_min: -23, mag_max: -22, cz_min: 30900, cz_max: 73500, pi_max: 60.0, data_col: 1, data_err_col: 2}
+  - {mag_min: -22, mag_max: -21, cz_min: 19900, cz_max: 47650, pi_max: 60.0, data_col: 3, data_err_col: 4}
+  - {mag_min: -21, mag_max: -20, cz_min: 12600, cz_max: 31900, pi_max: 60.0, data_col: 5, data_err_col: 6}
+  - {mag_min: -20, mag_max: -19, cz_min:  8050, cz_max: 19250, pi_max: 60.0, data_col: 7, data_err_col: 8}
+  - {mag_min: -19, mag_max: -18, cz_min:  5200, cz_max: 12500, pi_max: 40.0, data_col: 9, data_err_col: 10}
 
 need_distance: true
 fig_xlabel: '$r_p\quad[h^{-1}{\rm Mpc}]$'
@@ -29,10 +27,10 @@ fig_ylabel: '$w_p(r_p)\quad[h^{-1}{\rm Mpc}]$'
 
 #Treecorr parameters
 min_sep: 0.1
-max_sep: 10
-bin_size: 0.3
+max_sep: 50
+bin_size: 0.45
 
-random_mult: 10
+random_mult: 6
 
 description: |
   Compare projected correlation functions of catalog and Zehavi et al (2011) SDSS r-band observations
