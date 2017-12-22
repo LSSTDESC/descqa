@@ -87,6 +87,29 @@ def get_healpixel_footprint(ra, dec, nside, nest=False, count_threshold=None):
     return np.unique(pixels)
 
 
+def generate_uniform_random_ra_dec_min_max(n, ra_min, ra_max, dec_min, dec_max):
+    """
+    Parameters
+    ----------
+    n : int
+        number of random points needed
+    ra_min, ra_max, dec_min, dec_max: float
+        min and max of ra and dec
+
+    Returns
+    -------
+    ra : ndarray
+        1d array of length n that contains RA in degrees
+    dec : ndarray
+        1d array of length n that contains Dec in degrees
+    """
+    ra = np.random.uniform(ra_min, ra_max, size=n)
+    dec = np.random.uniform(np.sin(np.deg2rad(dec_min)), np.sin(np.deg2rad(dec_max)), size=n)
+    dec = np.arcsin(dec, out=dec)
+    dec = np.rad2deg(dec, out=dec)
+    return ra, dec
+
+
 def generate_uniform_random_ra_dec(n):
     """
     Parameters
@@ -101,21 +124,54 @@ def generate_uniform_random_ra_dec(n):
     dec : ndarray
         1d array of length n that contains Dec in degrees
     """
-    # ra = 360 * (U - 0.5)
-    ra = np.random.rand(n)
-    ra -= 0.5
-    ra *= 360.0
-    # dec = arccos(2*U - 1) * (180/pi) - 90
-    dec = np.random.rand(n)
-    dec -= 0.5
-    dec *= 2.0
-    dec = np.arccos(dec, out=dec)
-    dec = np.rad2deg(dec, out=dec)
-    dec -= 90.0
+    return generate_uniform_random_ra_dec_min_max(n, 0, 360.0, -90.0, 90.0)
+
+
+def generate_uniform_random_ra_dec_healpixel(n, pix, nside, nest=False):
+    """
+    Parameters
+    ----------
+    n : int
+        number of random points needed
+    pix : int
+        healpixel ID
+    nside : int
+        number of healpixel nside, must be 2**k
+    nest : bool, optional
+        using healpixel nest or ring ordering
+
+    Returns
+    -------
+    ra : ndarray
+        1d array of length n that contains RA in degrees
+    dec : ndarray
+        1d array of length n that contains Dec in degrees
+    """
+
+    ra, dec = hp.vec2ang(hp.boundaries(nside, pix, 1, nest=nest).T, lonlat=True)
+    ra_dec_min_max = ra.min(), ra.max(), dec.min(), dec.max()
+
+    ra = np.empty(n)
+    dec = np.empty_like(ra)
+    n_needed = n
+
+    while n_needed > 0:
+        ra_this, dec_this = generate_uniform_random_ra_dec_min_max(n_needed*2, *ra_dec_min_max)
+        mask = np.where(hp.ang2pix(nside, ra_this, dec_this, nest=nest, lonlat=True) == pix)[0]
+        count_this = mask.size
+        if n_needed - count_this < 0:
+            count_this = n_needed
+            mask = mask[:n_needed]
+
+        s = slice(-n_needed, -n_needed+count_this if -n_needed+count_this < 0 else None)
+        ra[s] = ra_this[mask]
+        dec[s] = dec_this[mask]
+        n_needed -= count_this
+
     return ra, dec
 
 
-def generate_uniform_random_ra_dec_footprint(n, footprint=None, nside=None, nest=False, max_chunk=100000):
+def generate_uniform_random_ra_dec_footprint(n, footprint=None, nside=None, nest=False):
     """
     Parameters
     ----------
@@ -127,8 +183,6 @@ def generate_uniform_random_ra_dec_footprint(n, footprint=None, nside=None, nest
         number of healpixel nside as used in footprint, must be 2**k
     nest : bool, optional
         using healpixel nest or ring ordering
-    max_chunk : int, optional
-        maximal number of random to generate in each iteration
 
     Returns
     -------
@@ -137,30 +191,23 @@ def generate_uniform_random_ra_dec_footprint(n, footprint=None, nside=None, nest
     dec : ndarray
         1d array of length n that contains Dec in degrees
     """
-    if footprint is not None:
-        assert hp.isnsideok(nside), '`healpixel_nside` is not valid'
-        scale = hp.nside2npix(nside) / len(footprint)
-
-    if footprint is None or scale == 1.0:
+    if footprint is None or hp.nside2npix(nside) == len(footprint):
         return generate_uniform_random_ra_dec(n)
+
+    n_per_pix_all = np.histogram(np.random.rand(n), np.linspace(0, 1, len(footprint)+1))[0]
 
     ra = np.empty(n)
     dec = np.empty_like(ra)
-    n_needed = n
+    count = 0
 
-    while n_needed > 0:
-        n_create = int(min((n_needed + np.ceil(np.sqrt(n_needed)*3.0))*scale, max_chunk))
-        ra_this, dec_this = generate_uniform_random_ra_dec(n_create)
-        mask = np.where(np.in1d(hp.ang2pix(nside, ra_this, dec_this, nest=nest, lonlat=True), footprint))[0]
-        count_this = mask.size
-        if n_needed - count_this < 0:
-            count_this = n_needed
-            mask = mask[:n_needed]
+    for n_per_pix, pix in zip(n_per_pix_all, footprint):
+        ra_this, dec_this = generate_uniform_random_ra_dec_healpixel(n_per_pix, pix, nside, nest)
+        s = slice(count, count+n_per_pix)
+        ra[s] = ra_this
+        dec[s] = dec_this
+        count += n_per_pix
 
-        s = slice(-n_needed, -n_needed+count_this if -n_needed+count_this < 0 else None)
-        ra[s] = ra_this[mask]
-        dec[s] = dec_this[mask]
-        n_needed -= count_this
+    assert count == n
 
     return ra, dec
 

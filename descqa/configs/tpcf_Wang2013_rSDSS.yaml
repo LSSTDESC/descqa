@@ -15,11 +15,11 @@ data_args:
   skiprows: 1
 
 mag_bins:
-  - {mag_max: 18, mag_min: 17, z_max: 0.3}
-  - {mag_max: 19, mag_min: 18, z_max: 0.3}
-  - {mag_max: 20, mag_min: 19, z_max: 0.3}
-  - {mag_max: 21, mag_min: 20, z_max: 0.3}
-  - {mag_max: 21, mag_min: 17, z_max: 0.3}
+  - {mag_max: 18, mag_min: 17}
+  - {mag_max: 19, mag_min: 18}
+  - {mag_max: 20, mag_min: 19}
+  - {mag_max: 21, mag_min: 20}
+  - {mag_max: 21, mag_min: 17}
 
 need_distance: false
 fig_xlabel: '$\theta\quad[{\rm deg}]}$'

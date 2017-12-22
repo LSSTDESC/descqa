@@ -31,7 +31,7 @@ class CorrelationsTwoPoint(BaseValidationTest):
         self.fig_ylabel = kwargs['fig_ylabel']
         self.test_name = kwargs['test_name']
 
-        self.random_nside = kwargs.get('random_nside', 128)
+        self.random_nside = kwargs.get('random_nside', 1024)
         self.random_mult = kwargs.get('random_mult', 3)
 
         self._treecorr_config = {
@@ -62,14 +62,16 @@ class CorrelationsTwoPoint(BaseValidationTest):
         filters.extend((
             '{} < {}'.format(colnames['mag'], max(mag_bin['mag_max'] for mag_bin in self.mag_bins)),
             '{} >= {}'.format(colnames['mag'], min(mag_bin['mag_min'] for mag_bin in self.mag_bins)),
-            '{} < {}'.format(colnames['z'], max(mag_bin['z_max'] for mag_bin in self.mag_bins)),
-            '{} >= {}'.format(colnames['z'], min(mag_bin.get('z_min', -1.0) for mag_bin in self.mag_bins)),
         ))
+        if self.need_distance:
+            filters.extend((
+                '{} < {}'.format(colnames['z'], max(mag_bin['z_max'] for mag_bin in self.mag_bins)),
+                '{} >= {}'.format(colnames['z'], min(mag_bin['z_min'] for mag_bin in self.mag_bins)),
+            ))
         catalog_data = catalog_instance.get_quantities(list(colnames.values()), filters=filters)
         catalog_data = {k: catalog_data[v] for k, v in colnames.items()}
 
         # create random
-
         rand_ra, rand_dec = generate_uniform_random_ra_dec_footprint(
             catalog_data['ra'].size*self.random_mult,
             get_healpixel_footprint(catalog_data['ra'], catalog_data['dec'], self.random_nside),
@@ -81,12 +83,17 @@ class CorrelationsTwoPoint(BaseValidationTest):
             for mag_bin, color in zip(self.mag_bins, plt.cm.plasma_r(np.linspace(0, 1, len(self.mag_bins)))):
 
                 # filter catalog data for this bin
-                catalog_data_this = GCRQuery(
+                filters = [
                     'mag < {}'.format(mag_bin['mag_max']),
                     'mag >= {}'.format(mag_bin['mag_min']),
-                    'z < {}'.format(mag_bin['z_max']),
-                    'z >= {}'.format(mag_bin.get('z_min', -1.0)),
-                ).filter(catalog_data)
+                ]
+                if self.need_distance:
+                    filters.extend((
+                        'z < {}'.format(mag_bin['z_max']),
+                        'z >= {}'.format(mag_bin['z_min']),
+                    ))
+
+                catalog_data_this = GCRQuery(*filters).filter(catalog_data)
 
                 cat = treecorr.Catalog(
                     ra=catalog_data_this['ra'],
