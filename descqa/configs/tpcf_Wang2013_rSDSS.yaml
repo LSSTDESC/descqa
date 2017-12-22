@@ -21,6 +21,7 @@ mag_bins:
 need_distance: false
 fig_xlabel: '$\theta\quad[{\rm deg}]}$'
 fig_ylabel: '$w(\theta)$'
+fig_ylim: [0.0001, 5.0]
 
 #Treecorr parameters
 min_sep: 0.01

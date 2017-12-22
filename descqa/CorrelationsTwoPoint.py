@@ -31,6 +31,7 @@ class CorrelationsTwoPoint(BaseValidationTest):
         self.label_template = kwargs['label_template']
         self.fig_xlabel = kwargs['fig_xlabel']
         self.fig_ylabel = kwargs['fig_ylabel']
+        self.fig_ylim = kwargs['fig_ylim']
         self.test_name = kwargs['test_name']
 
         self.random_nside = kwargs.get('random_nside', 1024)
@@ -154,17 +155,16 @@ class CorrelationsTwoPoint(BaseValidationTest):
 
                 ax.loglog(self.validation_data[:,0], self.validation_data[:,mag_bin['data_col']], c=color, label=self.label_template.format(mag_bin['mag_min'], mag_bin['mag_max']))
                 if 'data_err_col' in mag_bin:
-                    ax.fill_between(
-                        self.validation_data[:,0],
-                        self.validation_data[:,mag_bin['data_col']]+self.validation_data[:,mag_bin['data_err_col']],
-                        self.validation_data[:,mag_bin['data_col']]-self.validation_data[:,mag_bin['data_err_col']],
-                        color=color,
-                        alpha=0.2)
+                    y1 = self.validation_data[:,mag_bin['data_col']] + self.validation_data[:,mag_bin['data_err_col']]
+                    y2 = self.validation_data[:,mag_bin['data_col']] - self.validation_data[:,mag_bin['data_err_col']]
+                    y2[y2<=0] = self.fig_ylim[0]*0.9
+                    ax.fill_between(self.validation_data[:,0], y1, y2, lw=0, color=color, alpha=0.2)
                 scale_wp = mag_bin['pi_max'] * 2.0 if 'pi_max' in mag_bin else 1.0
                 ax.errorbar(xi_rad, xi*scale_wp, xi_sig*scale_wp, marker='o', ls='', c=color)
 
             ax.legend(loc='best')
             ax.set_xlabel(self.fig_xlabel)
+            ax.set_ylim(*self.fig_ylim)
             ax.set_ylabel(self.fig_ylabel)
             ax.set_title('{} vs. {}'.format(catalog_name, self.data_label), fontsize='medium')
 
