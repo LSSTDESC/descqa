@@ -78,6 +78,13 @@ class CorrelationsTwoPoint(BaseValidationTest):
             self.random_nside,
         )
 
+        if not self.need_distance:
+            rand_cat = treecorr.Catalog(ra=rand_ra, dec=rand_dec, ra_units='deg', dec_units='deg')
+            del rand_ra, rand_dec
+            rr = treecorr.NNCorrelation(**self._treecorr_config)
+            rr.process(rand_cat)
+
+
         fig, ax = plt.subplots()
         try:
             for mag_bin, color in zip(self.mag_bins, plt.cm.plasma_r(np.linspace(0, 1, len(self.mag_bins)))):
@@ -105,26 +112,27 @@ class CorrelationsTwoPoint(BaseValidationTest):
 
                 del catalog_data_this
 
-                rand_cat = treecorr.Catalog(
-                    ra=rand_ra,
-                    dec=rand_dec,
-                    ra_units='deg',
-                    dec_units='deg',
-                    r=(generate_uniform_random_dist(rand_ra.size, *redshift2dist([mag_bin['z_min'], mag_bin['z_max']], catalog_instance.cosmology)) if self.need_distance else None),
-                )
-
                 treecorr_config = self._treecorr_config.copy()
                 if 'pi_max' in mag_bin:
                     treecorr_config['min_rpar'] = -mag_bin['pi_max']
                     treecorr_config['max_rpar'] = mag_bin['pi_max']
 
+                if self.need_distance:
+                    rand_cat = treecorr.Catalog(
+                        ra=rand_ra,
+                        dec=rand_dec,
+                        ra_units='deg',
+                        dec_units='deg',
+                        r=generate_uniform_random_dist(rand_ra.size, *redshift2dist([mag_bin['z_min'], mag_bin['z_max']], catalog_instance.cosmology)),
+                    )
+                    rr = treecorr.NNCorrelation(treecorr_config)
+                    rr.process(rand_cat)
+
                 dd = treecorr.NNCorrelation(treecorr_config)
-                rr = treecorr.NNCorrelation(treecorr_config)
                 dr = treecorr.NNCorrelation(treecorr_config)
                 rd = treecorr.NNCorrelation(treecorr_config)
 
                 dd.process(cat)
-                rr.process(rand_cat)
                 dr.process(rand_cat, cat)
                 rd.process(cat, rand_cat)
 
