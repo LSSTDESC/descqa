@@ -8,8 +8,8 @@ from descqa.utils import *
 def check_ra_dec_basic(ra, dec, n):
     assert ra.size == n
     assert dec.size == n
-    assert (ra <= 180.0).all()
-    assert (ra >= -180.0).all()
+    assert (ra <= 360.0).all()
+    assert (ra >= 0.0).all()
     assert (dec <= 90.0).all()
     assert (dec >= -90.0).all()
 
@@ -36,7 +36,7 @@ def test_generate_uniform_random_ra_dec_footprint():
     npix = hp.nside2npix(nside)
     footprint = np.arange(npix)[np.random.randint(2, size=npix).astype(bool)]
 
-    ra, dec = generate_uniform_random_ra_dec_footprint(n, footprint, nside, max_chunk=5000)
+    ra, dec = generate_uniform_random_ra_dec_footprint(n, footprint, nside)
     check_ra_dec_basic(ra, dec, n)
     check_ra_dec_uniform(ra, dec, nside, footprint)
 
