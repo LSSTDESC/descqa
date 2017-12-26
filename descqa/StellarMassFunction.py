@@ -4,13 +4,12 @@ try:
     from itertools import zip_longest
 except ImportError:
     from itertools import izip_longest as zip_longest
-from itertools import cycle
 from itertools import count
 import numpy as np
 from GCR import GCRQuery
-from astropy.cosmology import FlatLambdaCDM
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
+from .utils import get_sky_volume, get_opt_binpoints
 
 __all__ = ['StellarMassFunction']
 
@@ -23,18 +22,19 @@ class StellarMassFunction(BaseValidationTest):
     possible_observations = {
         'PRIMUS_2013': {
             'filename_template': 'SMF/moustakas_et_al_2013/Table{}.txt',
-            'file-info': {'0. < z < .1':{'zlo':0., 'zhi':.1, 'table#':3, 'usecols':[0,1,2,3]},
-                          '.2 < z < .3':{'zlo':.2, 'zhi':.3, 'table#':4, 'usecols':[0,1,2,3]},
-                          '.3 < z < .4':{'zlo':.3, 'zhi':.4, 'table#':4, 'usecols':[0,6,7,8]},
-                          '.4 < z < .5':{'zlo':.4, 'zhi':.5, 'table#':4, 'usecols':[0,11,12,13]},
-                          '.5 < z < .65':{'zlo':.5, 'zhi':.65, 'table#':4, 'usecols':[0,16,17,18]},
-                          '.65 < z < .8':{'zlo':.65, 'zhi':.8, 'table#':4, 'usecols':[0,21,22,23]},
-                          '.8 < z < 1.0':{'zlo':.8, 'zhi':1.0, 'table#':4, 'usecols':[0,26,27,28]},
+            'file-info': {
+                '0. < z < .1':  {'zlo':0.,  'zhi':.1,  'table#':3, 'usecols':[0,1,2,3]},
+                '.2 < z < .3':  {'zlo':.2,  'zhi':.3,  'table#':4, 'usecols':[0,1,2,3]},
+                '.3 < z < .4':  {'zlo':.3,  'zhi':.4,  'table#':4, 'usecols':[0,6,7,8]},
+                '.4 < z < .5':  {'zlo':.4,  'zhi':.5,  'table#':4, 'usecols':[0,11,12,13]},
+                '.5 < z < .65': {'zlo':.5,  'zhi':.65, 'table#':4, 'usecols':[0,16,17,18]},
+                '.65 < z < .8': {'zlo':.65, 'zhi':.8,  'table#':4, 'usecols':[0,21,22,23]},
+                '.8 < z < 1.0': {'zlo':.8,  'zhi':1.0, 'table#':4, 'usecols':[0,26,27,28]},
             },
             'zrange': (0.0, 1.0),
             'colnames': ('logM', 'log_phi', 'dlog_phi+', 'dlog_phi-'),
             'label': 'Moustakas et. al. 2013',
-            'missingdata': '...'
+            'missingdata': '...',
         },
     }
     zkey_match = '< z <'
@@ -112,15 +112,10 @@ class StellarMassFunction(BaseValidationTest):
         self.yaxis = r'$d\phi/d\log M (Mpc^{-3} dex^{-1})$'
         self.xaxis = '$M^*$'
 
-        #custom sizes for ticklabels (sorry Yao - need these)
-        plt.rcParams['xtick.labelsize'] = 8
-        plt.rcParams['ytick.labelsize'] = 8
-
         return z_lo, z_hi
 
 
     def get_validation_data(self, observation):
-        
         data_args = self.possible_observations[observation]
         validation_data = {'label':data_args['label']}
 
@@ -162,11 +157,11 @@ class StellarMassFunction(BaseValidationTest):
         for catalog_data in catalog_instance.get_quantities([self.zlabel, self.Mlabel], filters=self.filters, return_iterator=True):
             catalog_data = GCRQuery(*((np.isfinite, col) for col in catalog_data)).filter(catalog_data)
             for cut_lo, cut_hi, N, sumM, sumM2 in zip_longest(
-                    self.z_lo,
-                    self.z_hi, 
-                    N_array.reshape(-1, N_array.shape[-1]), #flatten all but last dimension of array
-                    sumM_array.reshape(-1, sumM_array.shape[-1]),
-                    sumM2_array.reshape(-1, sumM2_array.shape[-1]),
+                self.z_lo,
+                self.z_hi,
+                N_array.reshape(-1, N_array.shape[-1]), #flatten all but last dimension of array
+                sumM_array.reshape(-1, sumM_array.shape[-1]),
+                sumM2_array.reshape(-1, sumM2_array.shape[-1]),
             ):
                 if cut_lo is not None:  #cut_lo can be 0. so cannot use if cut_lo
                     mask = (cut_lo < catalog_data[self.zlabel]) & (catalog_data[self.zlabel] < cut_hi)
@@ -185,14 +180,14 @@ class StellarMassFunction(BaseValidationTest):
         #loop over magnitude cuts and make plots
         results = {}
         for n, (ax_this, summary_ax_this, cut_lo, cut_hi, N, sumM, sumM2, zkey) in enumerate(zip_longest(
-                ax.flat,
-                self.summary_ax.flat,
-                self.z_lo,
-                self.z_hi,
-                N_array.reshape(-1, N_array.shape[-1]),
-                sumM_array.reshape(-1, sumM_array.shape[-1]),
-                sumM2_array.reshape(-1, sumM2_array.shape[-1]),
-                [k for k in self.validation_data.keys() if self.zkey_match in k],
+            ax.flat,
+            self.summary_ax.flat,
+            self.z_lo,
+            self.z_hi,
+            N_array.reshape(-1, N_array.shape[-1]),
+            sumM_array.reshape(-1, sumM_array.shape[-1]),
+            sumM2_array.reshape(-1, sumM2_array.shape[-1]),
+            [k for k in self.validation_data.keys() if self.zkey_match in k],
         )):
             if cut_lo is None:  #cut_lo is None if self.z_lo is exhausted
                 ax_this.set_visible(False)
@@ -201,11 +196,11 @@ class StellarMassFunction(BaseValidationTest):
                 if not zkey:
                     zkey = '{:.1f} < z < {:.1f}'.format(cut_lo, cut_hi)
                 cut_label = '${}$'.format(zkey)
-                Mvalues = self.get_opt_binpoints(N, sumM, sumM2, self.Mbins)
+                Mvalues = get_opt_binpoints(N, sumM, sumM2, self.Mbins)
                 sumN = N.sum()
                 total = '(# of galaxies = {})'.format(sumN)
                 Nerrors = np.sqrt(N)
-                volume = self.get_sky_volume(catalog_instance, cut_hi, zlo=cut_lo, units='Mpc')
+                volume = get_sky_volume(catalog_instance.sky_area, cut_lo, cut_hi, catalog_instance.cosmology)
                 phi = N/volume/self.DM
                 phi_errors = Nerrors/volume/self.DM
 
@@ -213,7 +208,7 @@ class StellarMassFunction(BaseValidationTest):
                 validation_label = self.validation_data.get('label', '')
                 results[zkey] = {'Mphi':Mvalues, 'total':total, 'phi':phi, 'phi+-':phi_errors}
                 self.catalog_subplot(ax_this, Mvalues, phi, phi_errors, catalog_color, catalog_name)
-                if zkey in self.validation_data.keys():   
+                if zkey in self.validation_data.keys():
                     data = self.validation_subplot(ax_this, self.validation_data[zkey], validation_label)
                     results[zkey].update(data)
                 self.decorate_subplot(ax_this, n, label=cut_label)
@@ -224,7 +219,7 @@ class StellarMassFunction(BaseValidationTest):
                     self.validation_subplot(summary_ax_this, self.validation_data[zkey], validation_label)
                 self.decorate_subplot(summary_ax_this, n, label=cut_label)
 
-                
+
         #save results for catalog and validation data in txt files
         for filename, dtype, info in zip_longest((catalog_name, self.observation), ('phi', 'data'), ('total',)):
             if filename:
@@ -244,20 +239,18 @@ class StellarMassFunction(BaseValidationTest):
 
 
     def catalog_subplot(self, ax, M, phi, phi_errors, catalog_color, catalog_label):
-
         ax.plot(M, phi, label=catalog_label, color=catalog_color)
         ax.fill_between(M, phi - phi_errors, phi + phi_errors, alpha=0.3, facecolor=catalog_color)
 
 
     def validation_subplot(self, ax, validation_data, validation_label):
-
-        results={}
+        results = dict()
         if all(x in validation_data.keys() for x in ('logM', 'log_phi', 'dlog_phi+', 'dlog_phi-')):
             M = np.power(10, validation_data['logM'])
             phi = np.power(10, validation_data['log_phi'])
             dphi_hi = np.power(10, validation_data['log_phi'] + validation_data['dlog_phi+']) - phi
             dphi_lo = -np.power(10, validation_data['log_phi'] + validation_data['dlog_phi-']) + phi
-            ax.errorbar(M, phi, yerr=[dphi_lo,dphi_hi], color=self.validation_color, marker=self.validation_marker, label=validation_label, ms=self.msize)
+            ax.errorbar(M, phi, yerr=[dphi_lo, dphi_hi], color=self.validation_color, marker=self.validation_marker, label=validation_label, ms=self.msize)
             results['data'] = phi
             results['Mdata'] = M
             results['data+'] = dphi_hi
@@ -269,10 +262,11 @@ class StellarMassFunction(BaseValidationTest):
 
 
     def decorate_subplot(self, ax, nplot, label=None):
+        ax.tick_params(labelsize=8)
         ax.set_xscale('log')
         ax.set_yscale('log')
         if label:
-            ax.text(0.95, 0.95, label, horizontalalignment='right', verticalalignment='top', transform=ax.transAxes) 
+            ax.text(0.95, 0.95, label, horizontalalignment='right', verticalalignment='top', transform=ax.transAxes)
 
         #add axes and legend
         if nplot+1 <= self.nplots-self.ncolumns:  #x scales for last ncol plots only
@@ -301,7 +295,7 @@ class StellarMassFunction(BaseValidationTest):
                 header = ', '.join(('Data columns are: <M>', keyname, keyname+'-', keyname+'+', ' '))
             elif keyname+'+-' in results:
                 fields = ('M'+keyname, keyname, keyname+'+-')
-                header = ', '.join(('Data columns are: <M>', keyname, keyname+'+-',' '))
+                header = ', '.join(('Data columns are: <M>', keyname, keyname+'+-', ' '))
             else:
                 fields = ('M'+keyname, keyname)
                 header = ', '.join(('Data columns are: <M>', keyname, ' '))
@@ -312,46 +306,3 @@ class StellarMassFunction(BaseValidationTest):
         self.post_process_plot(self.summary_fig)
         self.summary_fig.savefig(os.path.join(output_dir, 'summary.png'))
         plt.close(self.summary_fig)
-
-
-    @staticmethod
-    def get_sky_volume(catalog_instance, zhi, zlo=0., units='Mpc'):
-        if not units=='Mpc':
-            raise ValueError("Volume units must be in Mpc^3")
-
-        #assume FlatLambaCDM
-        if isinstance(catalog_instance.cosmology, FlatLambdaCDM):
-            Vhi = catalog_instance.cosmology.comoving_distance(zhi).value**3/3.
-            Vlo = catalog_instance.cosmology.comoving_distance(zlo).value**3/3. if zlo > 0. else 0.
-        else:
-            raise ValueError("Non-flat geometries not supported yet")
-
-        #convert sky area (sq.deg) to radians
-        sky_area = catalog_instance.sky_area*(np.pi/180.)**2
-
-        return sky_area*(Vhi - Vlo)
-
-
-    @staticmethod
-    def get_opt_binpoints(N, sumM, sumM2, bins):
-        """
-        compute optimal values at which to plot bin counts
-        optimal point corresponds to location where function describing data
-        equals value of N_i given by (Taylor expansion of integralof over bin)/bin-width:
-           f(c_i) + offset*fprime(c_i) = f(c_i) + bin-width**2*fdblprime(c_i)/24
-
-        uses N (counts per bin)
-             sumM (first moment of points per bin)
-             sumM2 (second moment of points per bin)
-        """ 
-        centers = (bins[1:]+bins[:-1])/2
-        Delta = -bins[:-1]+bins[1:] #bin widths
-        
-        moment0 = N/Delta       #(integrals over bins)/Delta = f(c_i) + Delta**2*fdblprime(c_i)/24
-        moment1 = N*(sumM/N - centers)/Delta  #(first moments about bin centers)/Delta = Delta**2*fprime(c_i)/12
-        moment2 = N*(sumM2/N - 2*centers*sumM/N + centers**2)/Delta  #(second moments about bin centers)/Delta = Delta**2(f(c_i)/12 + Delta**2*fdblprime(c_i)/160)
-        fprime = 12.*moment1/Delta**2  #first derivative of function at bin center
-        fdblprime = 360*(moment2 - moment0*Delta**2/12)/Delta**4 #second derivative of function at bin center
-        offset = Delta**2*fdblprime/fprime/24  # offset*fprime(c_i) = Delta**2*fdblprime(c_i)/24
-
-        return centers + offset
