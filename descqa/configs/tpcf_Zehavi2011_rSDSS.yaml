@@ -1,44 +1,37 @@
 subclass_name: CorrelationsTwoPoint.CorrelationsTwoPoint
-band: r
-survey: sdss
-observation: 'Zehavi2011_rAbsMagSDSS'
-RandomFactor: 10
 
-#Use this nside of healpix for random generater 
-nside: 16
+possible_mag_fields:
+  - Mag_true_r_sdss_z0
+  - Mag_true_r_des_z0
+  - Mag_true_r_lsst_z0
+  - Mag_true_r_sdss_z01
+  - Mag_true_r_des_z01
+  - Mag_true_r_lsst_z01
 
-#RemovePixelFactor: 1 for protoDC2 and RemovePixelFactor: 50 for buzzard
-#RemovePixels: 10 removes all the healpixels with objects less than 10. 
-#I am not sure which number to use. May be people who measure 2pt 
-#correlation function can help
-RemovePixels: 10
+output_filename_template: 'wp_rp_Mr_{}_{}.dat'
+label_template: '${} < M_r < {}$'
 
-#Depending on whether the first letter of possible_mag_fields is capital or 
-#lower python script decides whether to use projected or angular correlations
-possible_mag_fields: ['Mag_true_{}_sdss_z0', 'Mag_true_{}_des_z0', 'Mag_true_{}_lsst_z0', 'Mag_true_{}_sdss_z01', 'Mag_true_{}_des_z01', 'Mag_true_{}_lsst_z01']
-filenames: ['R_-20_-19.dat', 'R_-20_-21.dat', 'R_-21_-22.dat', 'R_-22_-23.dat']
-labels: ['$-20<M_r<-19$', '$-21<M_r<-20$', '$-22<M_r<-21$', '$-23<M_r<-22$']
-colors: ['k', 'b', 'g', 'r']
-#Maximum magnitude, minimum luminosity
-Mag_r_maxs: [-19, -20, -21, -22]
-#Minimum magnitude, maximum luminosity
-Mag_r_mins: [-20, -21, -22, -23]
-#Redshift from Table 1 using cz_min and cz_max 
-zmins: [0.027, 0.042, 0.066, 0.103]
-zmaxs: [0.064, 0.106, 0.159, 0.245]
+data_filename: 'tpcf/Zehavi_2011_ApJ_736_59_Table7.txt'
+data_label: 'Zehavi+2011'
 
-savepdf: False
+mag_bins:
+  - {mag_min: -23, mag_max: -22, cz_min: 30900, cz_max: 73500, pi_max: 60.0, data_col: 1, data_err_col: 2}
+  - {mag_min: -22, mag_max: -21, cz_min: 19900, cz_max: 47650, pi_max: 60.0, data_col: 3, data_err_col: 4}
+  - {mag_min: -21, mag_max: -20, cz_min: 12600, cz_max: 31900, pi_max: 60.0, data_col: 5, data_err_col: 6}
+  - {mag_min: -20, mag_max: -19, cz_min:  8050, cz_max: 19250, pi_max: 60.0, data_col: 7, data_err_col: 8}
+#  - {mag_min: -19, mag_max: -18, cz_min:  5200, cz_max: 12500, pi_max: 40.0, data_col: 9, data_err_col: 10}
 
+need_distance: true
+fig_xlabel: '$r_p\quad[h^{-1}{\rm Mpc}]$'
+fig_ylabel: '$w_p(r_p)\quad[h^{-1}{\rm Mpc}]$'
+fig_ylim: [0.1, 5000]
 
 #Treecorr parameters
-#Minimum separation in treecorr (degree)
-min_sep: 1e-2
-#Maximum separation in treecorr (degree)
-max_sep: 5
-#Bin width
-bin_size: 0.2
+min_sep: 0.15
+max_sep: 40
+bin_size: 0.45
 
-#Hubble parameter
-h: 0.7
+random_mult: 6
 
-description: 'Compare angular correlation functions of catalog and Wang et al (2013) SDSS r-band observations'
+description: |
+  Compare projected correlation functions of catalog and Zehavi et al (2011) SDSS r-band observations
