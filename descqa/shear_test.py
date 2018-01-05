@@ -4,8 +4,8 @@ import os
 import sys
 
 import numpy as np
-#from GCR import GCRQuery
-#import GCRCatalogs
+from GCR import GCRQuery
+import GCRCatalogs
 import descqa 
 
 from builtins import str
@@ -15,8 +15,26 @@ import healpy as hp
 import camb
 import treecorr
 
+from astropy.cosmology import FlatLambdaCDM
+cosmo = FlatLambdaCDM(H0=70, Om0=0.3, Tcmb0=2.725)
+from scipy.interpolate import interp1d
+from scipy.integrate import quad
+
+import astropy.units as u
+import astropy.constants as const
+import camb.correlations
+
+chi_recomb = 14004.036207574154
+pars = camb.CAMBparams()
+h = 0.675
+pars.set_cosmology(H0=h*100, ombh2=0.022, omch2=0.122)
+pars.InitPower.set_params(ns=0.965)
+camb.set_halofit_version(version='takahashi')
+p = camb.get_matter_power_interpolator(pars, nonlinear=True, k_hunit=False, hubble_units=False ,kmax=100., zmax=1100., k_per_logint=False).P
+
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
+
 
 
 
@@ -28,7 +46,7 @@ class ShearTest(BaseValidationTest):
     Validation test for shear and convergence quantities
     """
 
-    def __init__(self, z='redshift_true', ra='ra', dec='dec', e1='shear_1', e2='shear_2', kappa='kappa', nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin', bin_slop=0.1, zlo=0.5, zhi=0.6, **kwargs):
+    def __init__(self, z='redshift_true', ra='ra', dec='dec', e1='shear_1', e2='shear_2', kappa='convergence', nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin', bin_slop=0.1, zlo=0.5, zhi=0.6, **kwargs):
         #catalog quantities
         self.z = z
         #sep-bounds and binning
@@ -45,7 +63,8 @@ class ShearTest(BaseValidationTest):
         self.kappa = kappa
         # cut in redshift
         self.filters = [(lambda z: (z > zlo) & (z < zhi), self.z)]
-        self.summary_fig, self.summary_ax = plt.subplots()
+        self.summary_fig, self.summary_ax = plt.subplots(2, sharex=True)
+        
         #validation data
         # want this to change to theory... 
         #self.validation_data = {}
@@ -60,7 +79,7 @@ class ShearTest(BaseValidationTest):
         #self._other_kwargs = kwargs
         
     
-    def compute_nz(n_z):
+    def compute_nz(self,n_z):
         '''create interpolated n(z) distribution'''
         z_bins = np.linspace(0.0, 2.0, 101)
         n = np.histogram(n_z, bins=z_bins)[0]
@@ -70,25 +89,25 @@ class ShearTest(BaseValidationTest):
         n2 = interp1d(z, n/n2_sum, bounds_error=False, fill_value=0.0, kind='cubic')
         return n2
 
-    def integrand_w(x,n,chi,chi_int):
+    def integrand_w(self,x,n,chi,chi_int):
         ''' This is the inner bit of GWL lensing kernel - z is related to x, not chi'''
         z = chi_int(x)
         H_z = cosmo.H(z).value*3.240779289469756e-20 #1/s units #.to(1./u.s) conversion
         dchidz = 9.715611890256315e-15 /H_z #const.c.to(u.Mpc/u.s).value / (H_z) # Mpc units
         return n(z)/dchidz* (x - chi)/x
 
-    def galaxy_W(z,n,chi_int):
+    def galaxy_W(self,z,n,chi_int):
         ''' galaxy window function'''
         chi = cosmo.comoving_distance(z).value # can be array
         cst =   3./2. * cosmo.H(0).to(1./u.s)**2/const.c.to(u.Mpc / u.s)**2*cosmo.Om(0)# not sure about the z-dependence here
         prefactor =  cst * chi* (1.+z) *u.Mpc
         val_array = []
         for i in range(len(z)):
-            val_array.append(quad(integrand_w, chi[i], chi_recomb, args = (n, chi[i], chi_int))[0])
+            val_array.append(quad(self.integrand_w, chi[i], chi_recomb, args = (n, chi[i], chi_int))[0])
         W = np.array(val_array)*prefactor *(u.Mpc) # now unitless
         return W
 
-    def integrand_lensing_limber(chi, l, galaxy_W_int, chi_int):
+    def integrand_lensing_limber(self,chi, l, galaxy_W_int, chi_int):
         '''return overall integrand for one value of l'''
         chi_unit = chi*u.Mpc
         z = chi_int(chi)
@@ -96,7 +115,7 @@ class ShearTest(BaseValidationTest):
         integrand = p(z, k, grid=False) *galaxy_W_int(z)**2/chi**2 
         return integrand
 
-    def phi(lmax,n_z):
+    def phi(self,lmax,n_z):
         z_array = np.logspace(-3,np.log10(10.),200)
         chi_array = cosmo.comoving_distance(z_array).value
         chi_int = interp1d(chi_array, z_array, bounds_error=False, fill_value=0.0)
@@ -113,17 +132,17 @@ class ShearTest(BaseValidationTest):
         return l, phi_array*prefactor
     
 
-    def theory_corr(n_z, min_sep=2.5, max_sep=250., nbins=20, lmax=20000):
-        ll, pp = self.phi(lmax=lmax, n_z=n_z)
-        pp3_2 = np.zeros((lmax,4))
+    def theory_corr(self,n_z2, min_sep2, max_sep2, nbins2, lmax2):
+        ll, pp = self.phi(lmax=lmax2, n_z=n_z2)
+        pp3_2 = np.zeros((lmax2,4))
         pp3_2[:,1]= pp[:]*(ll*(ll+1.))/(2.*np.pi)
-        xvals = np.logspace(np.log10(min_sep), np.log10(max_sep), nbins) #in arcminutes
-        cxvals = np.cos(xvals*(60.)*(180./np.pi))
+        xvals = np.logspace(np.log10(min_sep2), np.log10(max_sep2), nbins2) #in arcminutes
+        cxvals = np.cos(xvals/(60.)/(180./np.pi))
         vals = camb.correlations.cl2corr(pp3_2, cxvals)
         return xvals, vals[:,1], vals[:,2]
 
 
-    def get_chi2(measured, theory):
+    def get_chi2(self,measured, theory):
         chi2 = (measured-theory)**2/theory
         return chi2/float(len(measured))
         
@@ -145,16 +164,23 @@ class ShearTest(BaseValidationTest):
     
     
     def post_process_plot(self, ax):
-        ax.text(0.05, 0.95, "add text here")
-        ax.legend()
+        #ax.text(0.05, 0.95, "add text here")
+        plt.xscale('log')
+        ax[0].legend()
+        ax[1].legend()
+
 
     
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
 
         # check if needed quantities exist
-        if not catalog_instance.has_quantities([self.z, self.ra, self.dec, self.e1, self.e2,self.kappa]):
+        
+        if not catalog_instance.has_quantities([self.z, self.ra, self.dec]):
             #print("failed")
-            return TestResult(skipped=True, summary='do not have needed quantities')
+            return TestResult(skipped=True, summary='do not have needed location quantities')
+        if not catalog_instance.has_quantities([self.e1, self.e2,self.kappa]):
+            #print("failed")
+            return TestResult(skipped=True, summary='do not have needed shear quantities')
         catalog_data = self.get_catalog_data(catalog_instance, [self.z, self.ra, self.dec, self.e1, self.e2, self.kappa], filters=self.filters)
         # get required catalogue data       
         
@@ -171,17 +197,17 @@ class ShearTest(BaseValidationTest):
         
         
         n_z = catalog_data[self.z]
-        xvals, theory_plus, theory_minus = self.theory_corr(n_z, min_sep=2.5, max_sep=250., nbins=20, lmax=20000)
+        xvals, theory_plus, theory_minus = self.theory_corr(n_z, self.min_sep, self.max_sep, self.nbins, 2000)
 
         cat_s = treecorr.Catalog(ra=catalog_data[self.ra], dec=catalog_data[self.dec], 
-        g1=catalog_data[self.e1]-np.mean(catalog_data[self.e1]), g2=catalog_data[self.e2]-np.mean(catalog_data[self.e2]), ra_units='deg', dec_units='deg')
+        g1=catalog_data[self.e1]-np.mean(catalog_data[self.e1]), g2=-(catalog_data[self.e2]-np.mean(catalog_data[self.e2])), ra_units='deg', dec_units='deg')
         
         gg = treecorr.GGCorrelation(nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin', bin_slop=0.1, verbose=True)
         gg.process(cat_s)
         
         chi2_dof_1= self.get_chi2(gg.xip, theory_plus) # correct this
         
-        r = numpy.exp(gg.meanlogr)
+        r = np.exp(gg.meanlogr)
         xip = gg.xip
         xim = gg.xim
         
@@ -189,7 +215,7 @@ class ShearTest(BaseValidationTest):
         plt.plot(xip)
         plt.plot(theory_plus)
         plt.show()
-        sig = numpy.sqrt(gg.varxi)
+        sig = np.sqrt(gg.varxi)
         
         # directly compare xip and xim to theory_plus and theory_minus. Take into account cosmic variance. 
         
@@ -212,10 +238,15 @@ class ShearTest(BaseValidationTest):
         
         data = np.random.rand(10) #do your calculation with catalog_instance
 
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(2,sharex=True)
 
         for ax_this in (ax, self.summary_ax):
-            ax_this.plot(data, label=catalog_name)
+            ax_this[0].plot(xvals,xip,'x', label="w+ autocorrelation")
+            ax_this[0].plot(xvals,theory_plus,'x',color='g', label="w+ theory")
+            ax_this[1].plot(xvals,xim,'x',color='r', label="w- auto")
+            ax_this[1].plot(xvals,theory_minus,'x',color='y', label="w- theory")
+
+
 
         self.post_process_plot(ax)
         fig.savefig(os.path.join(output_dir, 'plot.png'))

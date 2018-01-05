@@ -4,7 +4,7 @@ ra: 'ra'
 dec: 'dec'
 e1: 'shear_1'
 e2: 'shear_2'
-kappa: 'kappa'
+kappa: 'convergence'
 nbins: 20
 min_sep: 2.5
 max_sep: 250
