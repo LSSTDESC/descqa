@@ -9,6 +9,8 @@ from .plotting import plt
 import sys
 sys.path.insert(0, '/global/common/software/lsst/common/miniconda/py3-4.2.12/lib/python3.6/site-packages')
 sys.path.insert(0, '/global/common/software/lsst/common/miniconda/py3-4.2.12/bin/python')
+sys.path.insert(0, '..')
+
 
 
 from GCR import GCRQuery
