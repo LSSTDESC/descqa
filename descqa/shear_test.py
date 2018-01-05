@@ -4,8 +4,8 @@ import os
 import sys
 
 import numpy as np
-from GCR import GCRQuery
-import GCRCatalogs
+#from GCR import GCRQuery
+#import GCRCatalogs
 import descqa 
 
 from builtins import str
