@@ -1,5 +1,5 @@
 
-from __future__ import unicode_literals, absolute_import, division
+#from __future__ import unicode_literals, absolute_import, division
 import os
 import numpy as np
 from .base import BaseValidationTest, TestResult
@@ -7,8 +7,8 @@ from .plotting import plt
 
 
 import sys
-sys.path.insert(0,'/global/common/software/lsst/common/miniconda/py3-4.2.12/lib/python3.6/site-packages')
-sys.path.insert(0,'/global/common/software/lsst/common/miniconda/py3-4.2.12/bin/python')
+sys.path.insert(0, '/global/common/software/lsst/common/miniconda/py3-4.2.12/lib/python3.6/site-packages')
+sys.path.insert(0, '/global/common/software/lsst/common/miniconda/py3-4.2.12/bin/python')
 
 
 from GCR import GCRQuery
@@ -35,11 +35,9 @@ class ShearTest(BaseValidationTest):
     Validation test for shear and convergence quantities
     """
 
-    def __init__(self, z='redshift_true', ra = 'ra', dec = 'dec', e1 = 'shear_1', e2= 'shear_2', kappa ='kappa', nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin', bin_slop=0.1, zlo = 0.5, zhi= 0.6, **kwargs):
-
+    def __init__(self, z='redshift_true', ra='ra', dec='dec', e1='shear_1', e2='shear_2', kappa='kappa', nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin', bin_slop=0.1, zlo=0.5, zhi=0.6, **kwargs):
         #catalog quantities
         self.z = z
-
         #sep-bounds and binning
         self.min_sep = min_sep
         self.max_sep = max_sep
@@ -47,20 +45,14 @@ class ShearTest(BaseValidationTest):
         self.sep_bins = np.linspace(min_sep, max_sep, nbins+1)
         self.sep_units = sep_units
         self.bin_slop = bin_slop
-        
         self.ra = ra
         self.dec = dec
         self.e1 = e1
         self.e2 = e2
         self.kappa = kappa
-        
-        
         # cut in redshift
         self.filters = [(lambda z: (z > zlo) & (z < zhi), self.z)]
-        
-
         self.summary_fig, self.summary_ax = plt.subplots()
-
         #validation data
         # want this to change to theory... 
         #self.validation_data = {}
@@ -77,12 +69,12 @@ class ShearTest(BaseValidationTest):
     
     def compute_nz(n_z):
         '''create interpolated n(z) distribution'''
-        z_bins = np.linspace(0.0,2.0,101)
-        n = np.histogram(n_z,bins=z_bins)[0]
+        z_bins = np.linspace(0.0, 2.0, 101)
+        n = np.histogram(n_z, bins=z_bins)[0]
         z = (z_bins[1:]-z_bins[:-1])/2. + z_bins[:-1]
-        n2 = interp1d(z,n,bounds_error=False,fill_value=0.0,kind='cubic')
-        n2_sum = quad(n2,0,2.0)[0]
-        n2 = interp1d(z,n/n2_sum,bounds_error=False,fill_value=0.0,kind='cubic')
+        n2 = interp1d(z, n, bounds_error=False, fill_value=0.0, kind='cubic')
+        n2_sum = quad(n2, 0, 2.0)[0]
+        n2 = interp1d(z, n/n2_sum, bounds_error=False, fill_value=0.0, kind='cubic')
         return n2
 
     def integrand_w(x,n,chi,chi_int):
@@ -99,46 +91,46 @@ class ShearTest(BaseValidationTest):
         prefactor =  cst * chi* (1.+z) *u.Mpc
         val_array = []
         for i in range(len(z)):
-            val_array.append(quad(integrand_w,chi[i],chi_recomb, args = (n,chi[i],chi_int))[0])
+            val_array.append(quad(integrand_w, chi[i], chi_recomb, args = (n, chi[i], chi_int))[0])
         W = np.array(val_array)*prefactor *(u.Mpc) # now unitless
         return W
 
-    def integrand_lensing_limber(chi,l,galaxy_W_int,chi_int):
+    def integrand_lensing_limber(chi, l, galaxy_W_int, chi_int):
         '''return overall integrand for one value of l'''
         chi_unit = chi*u.Mpc
         z = chi_int(chi)
         k = (l+0.5)/chi
-        integrand = p(z,k,grid=False) *galaxy_W_int(z)**2/chi**2 
+        integrand = p(z, k, grid=False) *galaxy_W_int(z)**2/chi**2 
         return integrand
 
     def phi(lmax,n_z):
         z_array = np.logspace(-3,np.log10(10.),200)
         chi_array = cosmo.comoving_distance(z_array).value
-        chi_int = interp1d(chi_array,z_array,bounds_error=False,fill_value=0.0)
+        chi_int = interp1d(chi_array, z_array, bounds_error=False, fill_value=0.0)
         n = self.compute_nz(n_z)
-        galaxy_W_int = interp1d(z_array,self.galaxy_W(z_array,n,chi_int),bounds_error=False,fill_value=0.0)
+        galaxy_W_int = interp1d(z_array, self.galaxy_W(z_array, n, chi_int), bounds_error=False, fill_value=0.0)
         phi_array = []
-        l= range(0,lmax,1)
+        l= range(0, lmax, 1)
         l = np.array(l)
         for i in l:
-            a = quad(self.integrand_lensing_limber,1.e-10,chi_recomb,args=(i,galaxy_W_int,chi_int),epsrel = 1.e-6)[0]
+            a = quad(self.integrand_lensing_limber, 1.e-10, chi_recomb, args=(i, galaxy_W_int, chi_int), epsrel = 1.e-6)[0]
             phi_array.append(a)
         phi_array = np.array(phi_array)
         prefactor =  1.0#(l+2)*(l+1)*l*(l-1)  / (l+0.5)**4
-        return l,phi_array*prefactor
+        return l, phi_array*prefactor
     
 
-    def theory_corr(n_z,min_sep=2.5,max_sep=250.,nbins=20,lmax=20000):
-        ll, pp = self.phi(lmax=lmax,n_z=n_z)
+    def theory_corr(n_z, min_sep=2.5, max_sep=250., nbins=20, lmax=20000):
+        ll, pp = self.phi(lmax=lmax, n_z=n_z)
         pp3_2 = np.zeros((lmax,4))
         pp3_2[:,1]= pp[:]*(ll*(ll+1.))/(2.*np.pi)
-        xvals = np.logspace(np.log10(min_sep),np.log10(max_sep),nbins) #in arcminutes
+        xvals = np.logspace(np.log10(min_sep), np.log10(max_sep), nbins) #in arcminutes
         cxvals = np.cos(xvals*(60.)*(180./np.pi))
-        vals = camb.correlations.cl2corr(pp3_2,cxvals)
+        vals = camb.correlations.cl2corr(pp3_2, cxvals)
         return xvals, vals[:,1], vals[:,2]
 
 
-    def get_chi2(measured,theory):
+    def get_chi2(measured, theory):
         chi2 = (measured-theory)**2/theory
         return chi2/float(len(measured))
         
@@ -179,7 +171,7 @@ class ShearTest(BaseValidationTest):
         
         
         n_z = catalog_data[self.z]
-        xvals,theory_plus, theory_minus = self.theory_corr(n_z,min_sep=2.5,max_sep=250.,nbins=20,lmax=20000)
+        xvals, theory_plus, theory_minus = self.theory_corr(n_z, min_sep=2.5, max_sep=250., nbins=20, lmax=20000)
 
         cat_s = treecorr.Catalog(ra=catalog_data[self.ra], dec=catalog_data[self.dec], 
         g1=catalog_data[self.e1]-np.mean(catalog_data[self.e1]), g2=catalog_data[self.e2]-np.mean(catalog_data[self.e2]), ra_units='deg', dec_units='deg')
@@ -187,7 +179,7 @@ class ShearTest(BaseValidationTest):
         gg = treecorr.GGCorrelation(nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin', bin_slop=0.1, verbose=True)
         gg.process(cat_s)
         
-        chi2_dof_1= self.get_chi2(gg.xip,theory_plus) # correct this
+        chi2_dof_1= self.get_chi2(gg.xip, theory_plus) # correct this
         
         r = numpy.exp(gg.meanlogr)
         xip = gg.xip
