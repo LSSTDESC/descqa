@@ -1,32 +1,23 @@
 
 #from __future__ import unicode_literals, absolute_import, division
 import os
-import numpy as np
-from .base import BaseValidationTest, TestResult
-from .plotting import plt
-
-
 import sys
-sys.path.insert(0, '/global/common/software/lsst/common/miniconda/py3-4.2.12/lib/python3.6/site-packages')
-sys.path.insert(0, '/global/common/software/lsst/common/miniconda/py3-4.2.12/bin/python')
-sys.path.insert(0, '..')
 
-
-
+import numpy as np
 from GCR import GCRQuery
 import GCRCatalogs
 import descqa 
 
 from builtins import str
 import yaml
-import numpy as np
 import healpy as hp
-from descqa.plotting import plt
-
-from descqa import BaseValidationTest, TestResult
 
 import camb
 import treecorr
+
+from .base import BaseValidationTest, TestResult
+from .plotting import plt
+
 
 
 
@@ -151,6 +142,13 @@ class ShearTest(BaseValidationTest):
 
     # define theory from within this class
     
+    
+    
+    def post_process_plot(self, ax):
+        ax.text(0.05, 0.95, "add text here")
+        ax.legend()
+
+    
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
 
         # check if needed quantities exist
@@ -219,9 +217,9 @@ class ShearTest(BaseValidationTest):
         for ax_this in (ax, self.summary_ax):
             ax_this.plot(data, label=catalog_name)
 
-        #self.post_process_plot(ax)
-        #fig.savefig(os.path.join(output_dir, 'plot.png'))
-        #plt.close(fig)
+        self.post_process_plot(ax)
+        fig.savefig(os.path.join(output_dir, 'plot.png'))
+        plt.close(fig)
 
         score = data[0] #calculate your summary statistics
         return TestResult(score, passed=True)
