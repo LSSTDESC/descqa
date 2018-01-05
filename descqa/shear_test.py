@@ -35,8 +35,7 @@ class ShearTest(BaseValidationTest):
     Validation test for shear and convergence quantities
     """
 
-    def __init__(self, z='redshift_true', ra = 'ra', dec = 'dec', e1 = 'shear_1', e2= 'shear_2', kappa ='kappa', nbins=20, min_sep=2.5, max_sep=250, 
-                 sep_units='arcmin', bin_slop=0.1, zlo = 0.5, zhi= 0.6, **kwargs):
+    def __init__(self, z='redshift_true', ra = 'ra', dec = 'dec', e1 = 'shear_1', e2= 'shear_2', kappa ='kappa', nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin', bin_slop=0.1, zlo = 0.5, zhi= 0.6, **kwargs):
 
         #catalog quantities
         self.z = z
