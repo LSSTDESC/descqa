@@ -7,7 +7,7 @@
 set -e
 
 # activate python env
-PYTHON="/global/common/cori/contrib/lsst/apps/anaconda/py3-envs/DESCQA/bin/python"
+PYTHON="/global/common/software/lsst/common/miniconda/py3-4.2.12/bin/python"
 
 # set output directory
 OUTPUTDIR="/global/projecta/projectdirs/lsst/groups/CS/descqa/run/v2"
