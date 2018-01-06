@@ -18,7 +18,7 @@ output_filename_template: 'size_lum_z_{}_{}.dat'
 label_template: '${} < z < {}$'
 
 data_filename: 'size_sm_lum/van_der_Wel_2014_ApJ_788_28_Table5_VLuminosity.txt'
-data_label: 'van der Wal+2014'
+data_label: 'van der Wel+2014'
 
 z_bins:
   - {z_min: 0.0, z_max: 0.5}
@@ -32,4 +32,4 @@ fig_xlabel: '$\log_{10}(L/L_{\odot}) [{\rm V-band}]$'
 fig_ylabel: '$\log_{10}(R_e) [{\rm kpc}]$'
 
 description: |
-  Compare evolution of size as a function of luminosity and redshift and van der Wal et al (2014) HST-3D and CANDELS observations
+  Compare evolution of size as a function of luminosity and redshift and van der Wel et al (2014) HST-3D and CANDELS observations
