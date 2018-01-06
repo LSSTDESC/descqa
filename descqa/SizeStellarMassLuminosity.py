@@ -3,6 +3,7 @@ import os
 import numpy as np
 from GCR import GCRQuery
 from scipy import interpolate 
+from scipy.stats import binned_statistic
 
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
@@ -23,10 +24,11 @@ class SizeStellarMassLuminosity(BaseValidationTest):
     """
     Validation test of 2pt correlation function
     """
-    _C = 299792.458
+    _ARCSEC_TO_RADIAN = np.pi / 180. / 3600.
 
     def __init__(self, **kwargs):
         self.possible_mag_fields = kwargs['possible_mag_fields']
+        self.test_name = kwargs['test_name']
         self.data_label = kwargs['data_label']
         self.z_bins = kwargs['z_bins']
         self.output_filename_template = kwargs['output_filename_template']
@@ -58,29 +60,29 @@ class SizeStellarMassLuminosity(BaseValidationTest):
 
         logL = (AbsSun - AbsM) / 2.5 #unit of sun
         L = 10**logL
-        return L
+        return L, logL
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         '''
         Loop over magnitude cuts and make plots
         '''
         # load catalog data
+        default_L_bin_edges = np.array([9, 9.5, 10, 10.5, 11, 11.5])
+        default_L_bins = (default_L_bin_edges[1:] + default_L_bin_edges[:-1]) / 2.
         spl = redshift2dist(catalog_instance.cosmology)
         
         colnames = dict()
-        #colnames['z'] = catalog_instance.first_available('redshift')
+        #colnames['z'] = catalog_instance.first_available('redshift', 'redshift_true')
         #colnames['size'] = catalog_instance.first_available('size')
         colnames['z'] = 'redshift'
         colnames['size'] = 'size'
         colnames['mag'] = catalog_instance.first_available(*self.possible_mag_fields)
-        #print('colnames ', colnames)
         if not all(v for v in colnames.values()):
             return TestResult(skipped=True, summary='Missing requested quantities')
         #Check whether the columns are finite or not
         filters = [(np.isfinite, c) for c in colnames.values()]
-        #zz = [z_bin['z_max'] for z_bin in self.z_bins]
-        #print('z ', zz)
-        #Select objects within maximum and minimum redshift of the all the bins
+
+        #Select objects within maximum and minimum redshift of all the bins
         filters.extend((
             '{} < {}'.format(colnames['z'], max(z_bin['z_max'] for z_bin in self.z_bins)),
             '{} >= {}'.format(colnames['z'], min(z_bin['z_min'] for z_bin in self.z_bins)),
@@ -88,13 +90,12 @@ class SizeStellarMassLuminosity(BaseValidationTest):
         catalog_data = catalog_instance.get_quantities(list(colnames.values()), filters=filters)
         catalog_data = {k: catalog_data[v] for k, v in colnames.items()}
 
-        fig, axes = plt.subplots(2,3, figsize=(6, 9), sharex=True, sharey=True)
+        fig, axes = plt.subplots(2,3, figsize=(9, 6), sharex=True, sharey=True)
         try:
-            i = 0
-            j = 0
+            col = 0
+            row = 0
             for z_bin in self.z_bins:
-                ax = axes[i,j]
-                
+                ax = axes[row, col]
                 # filter catalog data for this bin
                 filters = [
                     'z < {}'.format(z_bin['z_max']),
@@ -102,22 +103,31 @@ class SizeStellarMassLuminosity(BaseValidationTest):
                 ]
 
                 catalog_data_this = GCRQuery(*filters).filter(catalog_data)
-                size_kpc = catalog_data_this['size'] * interpolate.splev(catalog_data_this['z'], spl) / (1 + catalog_data_this['z'])
+                if len(catalog_data_this['z']) == 0:
+                    continue 
+                size_kpc = catalog_data_this['size'] * self._ARCSEC_TO_RADIAN * interpolate.splev(catalog_data_this['z'], spl) / (1 + catalog_data_this['z'])
+                L_G, logL_G = self.ConvertAbsMagLuminosity(catalog_data_this['mag'], 'g')
+                binned_size_kpc, tmp_1, tmp_2 = binned_statistic(logL_G, size_kpc, bins=default_L_bin_edges, statistic='mean')
+                binned_size_kpc_err, tmp_1, tmp_2 = binned_statistic(logL_G, size_kpc, bins=default_L_bin_edges, statistic='std')
+
+                output_filepath = os.path.join(output_dir, self.output_filename_template.format(z_bin['z_min'], z_bin['z_max']))
+                np.savetxt(output_filepath, np.transpose((default_L_bins, binned_size_kpc, binned_size_kpc_err)))
 
                 del catalog_data_this
 
                 z_mean = (z_bin['z_max'] + z_bin['z_min']) / 2.
                 validation_this = self.validation_data[(self.validation_data[:,0] < z_mean + 0.02) & (self.validation_data[:,0] > z_mean - 0.02)]
 
-                ax.plot(validation_this[:,1], validation_this[:, 2], label=self.label_template.format(z_bin['z_min'], z_bin['z_max']))
-                ax.fill_between(validation_this[:,1], validation_this[:,3], validation_this[:,4], lw=0, alpha=0.2)
-                #ax.errorbar(xi_rad, xi*scale_wp, xi_sig*scale_wp, marker='o', ls='', c=color)
-                j += 1
-                if j > 2:
-                    j = 0
-                    i += 1
+                ax.semilogy(validation_this[:,1], 10**validation_this[:, 2], label=self.label_template.format(z_bin['z_min'], z_bin['z_max']))
+                ax.fill_between(validation_this[:,1], 10**validation_this[:,3], 10**validation_this[:,4], lw=0, alpha=0.2)
+                ax.errorbar(default_L_bins, binned_size_kpc, binned_size_kpc_err, marker='o', ls='')
+                col += 1
+                if col > 2:
+                    col = 0
+                    row += 1
 
                 ax.legend(loc='best')
+
             fig.add_subplot(111, frameon=False)
             # hide tick and tick label of the big axes
             plt.tick_params(labelcolor='none', top='off', bottom='off', left='off', right='off')
@@ -125,10 +135,9 @@ class SizeStellarMassLuminosity(BaseValidationTest):
             plt.xlabel(self.fig_xlabel)
             plt.ylabel(self.fig_ylabel)
             fig.subplots_adjust(hspace=0, wspace=0)
-            fig.suptitle('{} vs. {}'.format(catalog_name, self.data_label), fontsize='medium')
+            fig.suptitle('{} vs. {}'.format(catalog_name, self.data_label), fontsize='medium', y=0.93)
         finally:
-            #fig.savefig(os.path.join(output_dir, '{:s}.png'.format('t')), bbox_inches='tight')
-            fig.savefig(os.path.join('./', '{:s}.png'.format('t')), bbox_inches='tight')
+            fig.savefig(os.path.join(output_dir, '{:s}.png'.format(self.test_name)), bbox_inches='tight')
             plt.close(fig)
         
         #TODO: calculate summary statistics
