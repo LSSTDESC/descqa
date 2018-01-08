@@ -130,7 +130,7 @@ class SizeStellarMassLuminosity(BaseValidationTest):
 
             fig.add_subplot(111, frameon=False)
             # hide tick and tick label of the big axes
-            plt.tick_params(labelcolor='none', top='off', bottom='off', left='off', right='off')
+            plt.tick_params(labelcolor='none', which='both', top='off', bottom='off', left='off', right='off')
             plt.grid(False)
             plt.xlabel(self.fig_xlabel)
             plt.ylabel(self.fig_ylabel)
