@@ -7,8 +7,8 @@ e2: 'shear_2'
 kappa: 'convergence'
 nbins: 20
 min_sep: 2.5
-max_sep: 250
+max_sep: 200
 sep_units: 'arcmin'
 bin_slop: 0.1
-zlo: 0.5
-zhi: 0.6
+zlo: 0.3
+zhi: 0.9

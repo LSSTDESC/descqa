@@ -142,9 +142,9 @@ class ShearTest(BaseValidationTest):
         return xvals, vals[:,1], vals[:,2]
 
 
-    def get_chi2(self,measured, theory):
-        chi2 = (measured-theory)**2/theory
-        return chi2/float(len(measured))
+    def get_score(self,measured, theory):
+        diff = (measured-theory)**2/theory**2
+        return np.sqrt(np.sum(diff))/float(len(measured))
         
     @staticmethod
     def get_catalog_data(gc, quantities, filters=None):
@@ -168,8 +168,22 @@ class ShearTest(BaseValidationTest):
         plt.xscale('log')
         ax[0].legend()
         ax[1].legend()
+        max_height1 = 80
+        max_height2 = 15
+        min_height1 = -5
+        min_height2 = -1
 
+        #very rough DES-like limits (maximum and minimum scales)
+        ax[0].vlines(2.5,min_height1,max_height1,linestyles='--')
+        ax[0].vlines(200.,min_height1,max_height1,linestyles='--')
+        ax[1].vlines(35.,min_height2,max_height2,linestyles='--')
+        ax[1].vlines(200.,min_height2,max_height2,linestyles='--')
 
+        plt.xlabel(r'$\theta \rm{(arcmin)}$')
+        ax[0].set_ylabel(r'$\chi_{+} (10^{-6}) $')
+        ax[1].set_ylabel(r'$\chi_{-} (10^{-6}) $')
+        ax[0].set_ylim([min_height1,max_height1])
+        ax[1].set_ylim([min_height2,max_height2])
     
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
 
@@ -202,26 +216,66 @@ class ShearTest(BaseValidationTest):
         cat_s = treecorr.Catalog(ra=catalog_data[self.ra], dec=catalog_data[self.dec], 
         g1=catalog_data[self.e1]-np.mean(catalog_data[self.e1]), g2=-(catalog_data[self.e2]-np.mean(catalog_data[self.e2])), ra_units='deg', dec_units='deg')
         
-        gg = treecorr.GGCorrelation(nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin', bin_slop=0.1, verbose=True)
+        gg = treecorr.GGCorrelation(nbins=self.nbins, min_sep=2.5, max_sep=250, sep_units='arcmin', bin_slop=0.1, verbose=True)
         gg.process(cat_s)
-        
-        chi2_dof_1= self.get_chi2(gg.xip, theory_plus) # correct this
-        
+        #base result
+
         r = np.exp(gg.meanlogr)
         xip = gg.xip
         xim = gg.xim
-        
-        plt.figure()
-        plt.plot(xip)
-        plt.plot(theory_plus)
-        plt.show()
+
         sig = np.sqrt(gg.varxi)
+
+
+        ####### code to do jack-knifing ################         
+
+        #k-means clustering to define areas
+        from sklearn.cluster import k_means
+        import time
+
+        a = time.time()
+        N_clust = 4
+        nn = np.stack((catalog_data[self.ra],catalog_data[self.dec]),axis=1)
+        cents, labs, inert = k_means(n_clusters=N_clust,random_state=0,X=nn,n_jobs=-1)   
+        print(time.time()-a)
+        print("done with k-means clustering")
+
+
+        # jack-knife code
+        xip_jack=[]
+        xim_jack=[]
+        gg = treecorr.GGCorrelation(nbins=self.nbins, min_sep=2.5, max_sep=250, sep_units='arcmin', bin_slop=0.1, verbose=True)
+        for i in range(N_clust):
+            cat_s = treecorr.Catalog(ra=catalog_data[self.ra][labs!=i], dec=catalog_data[self.dec][labs!=i], g1=catalog_data[self.e1][labs!=i]-np.mean(catalog_data[self.e1][labs!=i]), g2=-(catalog_data[self.e2][labs!=i]-np.mean(catalog_data[self.e2][labs!=i])), ra_units='deg', dec_units='deg')
+            gg.process(cat_s)
+            xip_jack.append(gg.xip)
+            xim_jack.append(gg.xim)
+
+
         
-        # directly compare xip and xim to theory_plus and theory_minus. Take into account cosmic variance. 
+        ### assign covariance matrix - loop is poor python syntax but compared to the time taken for the rest of the test doesn't really matter
+        cp_xip = np.zeros((self.nbins,self.nbins))       
+        for i in range(self.nbins):
+            for j in range(self.nbins):
+                for k in range(N_clust):
+                    cp_xip[i][j] += (N_clust-1.)/N_clust * (xip[i]-xip_jack[k][i])*(xip[j]-xip_jack[k][j])
+
+
+        # Diagonal covariances for error bars on the plots. Use full covariance matrix for chi2 testing. 
+        sig_jack = np.zeros((self.nbins))
+        for i in range(self.nbins):
+            sig_jack[i] = np.sqrt(cp_xip[i][i])
+ 
+       #################################################
+
+
+
+       
+        
         
         
 
-        
+        chi2_dof_1= self.get_score(gg.xip, theory_plus) # correct this       
         
         
         # further correlation functions 
@@ -231,7 +285,8 @@ class ShearTest(BaseValidationTest):
         #treecorr.NKCorrelation(nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin')  # count-kappa  (i.e. <kappa>(R))
         #treecorr.KKCorrelation(nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin')  # count-kappa  (i.e. <kappa>(R))
         # etc... 
-
+        print(xip*1.e6)
+        print(sig*1.e6)
 
 #print(np.exp(gg.logr), gg.xip)
 #np.savez('output.npz', theta=np.exp(gg.logr), ggp=gg.xip, ggm=gg.xim, weight=gg.weight, npairs=gg.npairs)
@@ -241,10 +296,12 @@ class ShearTest(BaseValidationTest):
         fig, ax = plt.subplots(2,sharex=True)
 
         for ax_this in (ax, self.summary_ax):
-            ax_this[0].plot(xvals,xip,'x', label="w+ autocorrelation")
-            ax_this[0].plot(xvals,theory_plus,'x',color='g', label="w+ theory")
-            ax_this[1].plot(xvals,xim,'x',color='r', label="w- auto")
-            ax_this[1].plot(xvals,theory_minus,'x',color='y', label="w- theory")
+            #ax_this[0].plot(xvals,xip*1.e6,'o', color = "#3f9b0b",label=r'$\chi_{+}$')
+            ax_this[0].errorbar(xvals,xip*1.e6,sig_jack*1.e6,lw=0.3,marker='o',ls='',color = "#3f9b0b",label=r'$\chi_{+}$')
+            ax_this[0].plot(xvals,theory_plus*1.e6,'o',color="#9a0eea", label=r'$\chi_{+}$'+" theory")
+            #ax_this[1].plot(xvals,xim*1.e6,'o',color="#3f9b0b", label=r'$\chi_{-}$')
+            ax_this[1].errorbar(xvals,xim*1.e6,sig_jack*1.e6,lw=0.3,marker='o',ls='',color = "#3f9b0b",label=r'$\chi_{-}$')
+            ax_this[1].plot(xvals,theory_minus*1.e6,'o',color="#9a0eea", label=r'$\chi_{-}$'+" theory")
 
 
 
@@ -252,7 +309,7 @@ class ShearTest(BaseValidationTest):
         fig.savefig(os.path.join(output_dir, 'plot.png'))
         plt.close(fig)
 
-        score = data[0] #calculate your summary statistics
+        score = chi2_dof_1 #calculate your summary statistics
         return TestResult(score, passed=True)
 
 
