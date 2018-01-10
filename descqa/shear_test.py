@@ -132,19 +132,26 @@ class ShearTest(BaseValidationTest):
         return l, phi_array*prefactor
     
 
-    def theory_corr(self,n_z2, min_sep2, max_sep2, nbins2, lmax2):
+    def theory_corr(self,n_z2, xvals, lmax2):
         ll, pp = self.phi(lmax=lmax2, n_z=n_z2)
         pp3_2 = np.zeros((lmax2,4))
         pp3_2[:,1]= pp[:]*(ll*(ll+1.))/(2.*np.pi)
-        xvals = np.logspace(np.log10(min_sep2), np.log10(max_sep2), nbins2) #in arcminutes
+        #xvals = np.logspace(np.log10(min_sep2), np.log10(max_sep2), nbins2) #in arcminutes
         cxvals = np.cos(xvals/(60.)/(180./np.pi))
         vals = camb.correlations.cl2corr(pp3_2, cxvals)
         return xvals, vals[:,1], vals[:,2]
 
 
-    def get_score(self,measured, theory):
-        diff = (measured-theory)**2/theory**2
-        return np.sqrt(np.sum(diff))/float(len(measured))
+    def get_score(self,measured,theory,cov, opt='diagonal'):
+        if (opt=='cov'):
+            cov = np.matrix(cov).I
+            print("inverse covariance matrix")
+            print(cov)
+            chi2 = np.matrix(measured-theory)*cov*np.matrix(measured-theory).T
+        else:            
+            chi2 =np.sum( [(measured[i]-theory[i])**2/cov[i][i] for i in range(len(measured))])
+        diff = chi2/float(len(measured))
+        return diff#np.sqrt(np.sum(diff))/float(len(measured))
         
     @staticmethod
     def get_catalog_data(gc, quantities, filters=None):
@@ -210,13 +217,11 @@ class ShearTest(BaseValidationTest):
             return TestResult(skipped=True, summary='e2 values out of range [-1,+1]')
         
         
-        n_z = catalog_data[self.z]
-        xvals, theory_plus, theory_minus = self.theory_corr(n_z, self.min_sep, self.max_sep, self.nbins, 2000)
 
         cat_s = treecorr.Catalog(ra=catalog_data[self.ra], dec=catalog_data[self.dec], 
         g1=catalog_data[self.e1]-np.mean(catalog_data[self.e1]), g2=-(catalog_data[self.e2]-np.mean(catalog_data[self.e2])), ra_units='deg', dec_units='deg')
         
-        gg = treecorr.GGCorrelation(nbins=self.nbins, min_sep=2.5, max_sep=250, sep_units='arcmin', bin_slop=0.1, verbose=True)
+        gg = treecorr.GGCorrelation(nbins=self.nbins, min_sep=self.min_sep, max_sep=self.max_sep, sep_units='arcmin', bin_slop=self.bin_slop, verbose=True)
         gg.process(cat_s)
         #base result
 
@@ -234,7 +239,7 @@ class ShearTest(BaseValidationTest):
         import time
 
         a = time.time()
-        N_clust = 4
+        N_clust = 7
         nn = np.stack((catalog_data[self.ra],catalog_data[self.dec]),axis=1)
         cents, labs, inert = k_means(n_clusters=N_clust,random_state=0,X=nn,n_jobs=-1)   
         print(time.time()-a)
@@ -244,15 +249,17 @@ class ShearTest(BaseValidationTest):
         # jack-knife code
         xip_jack=[]
         xim_jack=[]
-        gg = treecorr.GGCorrelation(nbins=self.nbins, min_sep=2.5, max_sep=250, sep_units='arcmin', bin_slop=0.1, verbose=True)
+        gg = treecorr.GGCorrelation(nbins=self.nbins, min_sep=self.min_sep, max_sep=self.max_sep, sep_units='arcmin', bin_slop=self.bin_slop, verbose=True)
         for i in range(N_clust):
             cat_s = treecorr.Catalog(ra=catalog_data[self.ra][labs!=i], dec=catalog_data[self.dec][labs!=i], g1=catalog_data[self.e1][labs!=i]-np.mean(catalog_data[self.e1][labs!=i]), g2=-(catalog_data[self.e2][labs!=i]-np.mean(catalog_data[self.e2][labs!=i])), ra_units='deg', dec_units='deg')
             gg.process(cat_s)
             xip_jack.append(gg.xip)
             xim_jack.append(gg.xim)
+            print("xip_jack")
+            print(i)
+            print(gg.xip)
 
-
-        
+                
         ### assign covariance matrix - loop is poor python syntax but compared to the time taken for the rest of the test doesn't really matter
         cp_xip = np.zeros((self.nbins,self.nbins))       
         for i in range(self.nbins):
@@ -260,23 +267,39 @@ class ShearTest(BaseValidationTest):
                 for k in range(N_clust):
                     cp_xip[i][j] += (N_clust-1.)/N_clust * (xip[i]-xip_jack[k][i])*(xip[j]-xip_jack[k][j])
 
+        cp_xim = np.zeros((self.nbins,self.nbins))
+        for i in range(self.nbins):
+            for j in range(self.nbins):
+                for k in range(N_clust):
+                    cp_xim[i][j] += (N_clust-1.)/N_clust * (xim[i]-xim_jack[k][i])*(xim[j]-xim_jack[k][j])
+ 
+
 
         # Diagonal covariances for error bars on the plots. Use full covariance matrix for chi2 testing. 
         sig_jack = np.zeros((self.nbins))
+        sigm_jack = np.zeros((self.nbins))
         for i in range(self.nbins):
             sig_jack[i] = np.sqrt(cp_xip[i][i])
+            sigm_jack[i] = np.sqrt(cp_xim[i][i])
  
        #################################################
-
-
-
+      
+        n_z = catalog_data[self.z]
+        xvals, theory_plus, theory_minus = self.theory_corr(n_z, r , 10000)
        
         
-        
-        
+        #assuming r == xvals
+        chi2_dof_1= self.get_score(xip, theory_plus,cp_xip) # correct this       
+        chi2_dof_2 = self.get_score(xim, theory_minus, cp_xim)
 
-        chi2_dof_1= self.get_score(gg.xip, theory_plus) # correct this       
-        
+        print(xvals)
+        print(r)
+        print(chi2_dof_1)
+        print(chi2_dof_2)
+        print("chi2 values")
+
+        print("CP_XIP:")
+        print(cp_xip)
         
         # further correlation functions 
         #dd = treecorr.NNCorrelation(nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin')
@@ -286,7 +309,7 @@ class ShearTest(BaseValidationTest):
         #treecorr.KKCorrelation(nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin')  # count-kappa  (i.e. <kappa>(R))
         # etc... 
         print(xip*1.e6)
-        print(sig*1.e6)
+        print(sig_jack*1.e6)
 
 #print(np.exp(gg.logr), gg.xip)
 #np.savez('output.npz', theta=np.exp(gg.logr), ggp=gg.xip, ggm=gg.xim, weight=gg.weight, npairs=gg.npairs)
@@ -297,10 +320,10 @@ class ShearTest(BaseValidationTest):
 
         for ax_this in (ax, self.summary_ax):
             #ax_this[0].plot(xvals,xip*1.e6,'o', color = "#3f9b0b",label=r'$\chi_{+}$')
-            ax_this[0].errorbar(xvals,xip*1.e6,sig_jack*1.e6,lw=0.3,marker='o',ls='',color = "#3f9b0b",label=r'$\chi_{+}$')
+            ax_this[0].errorbar(r,xip*1.e6,sig_jack*1.e6,lw=0.6,marker='o',ls='',color = "#3f9b0b",label=r'$\chi_{+}$')
             ax_this[0].plot(xvals,theory_plus*1.e6,'o',color="#9a0eea", label=r'$\chi_{+}$'+" theory")
             #ax_this[1].plot(xvals,xim*1.e6,'o',color="#3f9b0b", label=r'$\chi_{-}$')
-            ax_this[1].errorbar(xvals,xim*1.e6,sig_jack*1.e6,lw=0.3,marker='o',ls='',color = "#3f9b0b",label=r'$\chi_{-}$')
+            ax_this[1].errorbar(r,xim*1.e6,sigm_jack*1.e6,lw=0.6,marker='o',ls='',color = "#3f9b0b",label=r'$\chi_{-}$')
             ax_this[1].plot(xvals,theory_minus*1.e6,'o',color="#9a0eea", label=r'$\chi_{-}$'+" theory")
 
 
@@ -310,7 +333,10 @@ class ShearTest(BaseValidationTest):
         plt.close(fig)
 
         score = chi2_dof_1 #calculate your summary statistics
-        return TestResult(score, passed=True)
+        if (score<2):
+            return TestResult(score, passed=True)
+        else:
+            return TestResult(score, passed=False)
 
 
 
