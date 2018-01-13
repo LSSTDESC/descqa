@@ -1,0 +1,3 @@
+subclass_name: CheckQuantities.CheckQuantities
+quantities: 'ellipticity'
+description: 'Plot histograms of listed quantities and perform range, finiteness, mean and standard deviation checks.'
