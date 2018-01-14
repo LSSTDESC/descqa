@@ -43,24 +43,37 @@ class CheckQuantities(BaseValidationTest):
     #other defaults
     Nbins_default = 25
     default_markers = ['o', 'v', 's', 'd', 'H', '^', 'D', 'h', '<', '>', '.']
+    default_linestyles = ['-', '--', '-.', ':']
     possible_quantity_modifiers = ['','_true']
     yaxis_xoffset = 0.02
     yaxis_yoffset = 0.5
+    possible_tests = {'range':['range_min', 'range_max'],
+                      'mean': ['mean_min', 'mean_max'],
+                     } 
 
-    def __init__(self, quantities=None, N_bins=None, ncolumns=2, **kwargs):
+    def __init__(self, quantities=[], N_bins=[], ncolumns=2, sharex='none', **kwargs):
+        """
+        Perform checks on supplied list of quantities;
+        quantities can be list of quantity_names (to be matched), keywords, sub-lists of quantity names, or combinations thereof
+        all curves for a keyword or sub-list of quantity names will appear on the same sub-plot
+        binning can be supplied or default; bins specified by '' revert to default
+        """
         #catalog quantities requested
-        if quantities is None:
+        if not quantities:
             raise ValueError('No quantities given to check')
-        if type(quantities) is str or type(quantities) is list:
+        #check for legal quantities (must be strings or lists of strings)
+        quantities_flat = [''.join(q) for q in quantities if type(q) is str] + [''.join(c) for q in quantities for c in q if type(q) is list]
+        if all(type(q) is str for q in quantities_flat):
             self.quantities = quantities
         else:
-            raise ValueError('Unknown format for quantities to check')
+            raise ValueError('Quantities to be checked must be strings or list of strings')
 
         #setup default or requested binning
-        if type(N_bins) is list and type(quantities) is list:
+        if N_bins:
             if len(N_bins) != len(quantities):
-                raise ValueError('Mismatch in number of quantities ({}) and number of user-selected bins ({})', len(quantities), len(N_bins))
+                raise ValueError('Mismatch in number of quantities or quantity groups ({}) and number of user-selected bins ({})', len(quantities), len(N_bins))
             else:
+                #use supplied binning and default if '' supplied
                 self.N_bins = [int(n) if len(str(n)) > 0 else self.Nbins_default for n in N_bins]
         else:
             self.N_bins = None
@@ -70,132 +83,189 @@ class CheckQuantities(BaseValidationTest):
         self.markers = iter(self.default_markers)
         self._color_iterator = ('C{}'.format(i) for i in count())
         self.yaxis = '$N$'
+        self.sharex = sharex
 
         #setup subplot configuration 
         self.nplots = len(self.quantities)
         self.nrows = (self.nplots+self.ncolumns-1)//self.ncolumns
 
         #setup summary plot
-        self.summary_fig, self.summary_ax = plt.subplots(self.nrows, self.ncolumns)
+        self.summary_fig, self.summary_ax = plt.subplots(self.nrows, self.ncolumns, sharex=self.sharex)
         self.summary_fig.text(self.yaxis_xoffset, self.yaxis_yoffset, self.yaxis, va='center', rotation='vertical') #setup a common axis label
 
         self._other_kwargs = kwargs
 
+    def get_desired_quantities(self, q, catalog_instance):
+        #check if str is a keyword
+        if q in self.checks.keys():
+            desired_quantities = sorted([q.format(s) if 'suffixes' in self.checks[q].keys() else q for s in self.checks[q]['suffixes']])
+        else: #match string from all available quantities                                                                                                          
+            desired_quantities = sorted([q for q in catalog_instance.list_all_quantities() if self.quantities in q])
+            
+        return desired_quantities
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         #update color and marker to preserve catalog colors and markers across tests
         catalog_color = next(self._color_iterator)
 
         #get desired quantities
-        if type(self.quantities) is str:
-            self.desired_quantities = sorted([q for q in catalog_instance.list_all_quantities() if self.quantities in q])
-        elif type(quantities) is list:
-            self.desired_quantities = sorted(self.quantities)
+        desired_quantities = []
+        for qgroup in self.quantities:
+            if type(qgroup) is str:
+                desired_quantities.append(self.get_desired_quantities(qgroup, catalog_instance))
+            elif type(qgroup) is list:
+                desired_qgroup = []
+                for q in qgroup:
+                    desired_qgroup += self.get_desired_quantities(qgroup, catalog_instance)
+                desired_quantities.append(desired_qgroup)
+        #print('desired:',desired_quantities)
 
+        #setup binning for qgroups
         if not self.N_bins:
-            self.N_bins = [self.Nbins_default for q in self.desired_quantities]
+            self.N_bins = [self.Nbins_default for q in desired_quantities]
 
         #generate possible quantities from allowed modifiers
-        self.possible_quantities = [[q+m for m in self.possible_quantity_modifiers if len(m)==0 or (len(m)>0 and not m in q)] for q in self.desired_quantities]
+        possible_quantities = []
+        for qgroup in desired_quantities:
+            possible_qgroup = [[q+m for m in self.possible_quantity_modifiers if len(m)==0 or (len(m)>0 and not m in q)] for q in qgroup]
+            possible_quantities.append(possible_qgroup)
+        #print('possible:',possible_quantities)
 
         #check catalog data for desired quantities and adjust N_bins list accordingly
         quantities=[]
-        for n, pq in enumerate(self.possible_quantities):
-            quantity = catalog_instance.first_available(*pq)
-            if not quantity:
-                print("Skipping missing possible quantities {}",pq)
-                del self.N_bins[n]
+        for n, pqgroup in enumerate(possible_quantities):
+            qgroup = []
+            for pq in pqgroup: 
+                print(pq)
+                quantity = catalog_instance.first_available(*pq)
+                if not quantity:
+                    print("Skipping missing possible quantities {}".format(pq))
+                else:
+                    qgroup.append(quantity)
+            if not qgroup:  #skip group if none found
+                del self.Nbins[n]
             else:
-                quantities.append(quantity)
+                quantities.append(qgroup)
+        #print('found:',quantities)
 
         if not quantities:
             return TestResult(skipped=True, summary='Missing all requested quantities')
 
         #fill out check_values based on supplied checks and available catalog quantities
+        #easiest for now to copy the dict for every q and ignore the qgroups
         check_values = {}
         for key in self.checks.keys():
             #add allowed suffixes to this key
-            if 'suffixes' in self.checks[key]:
-                keys = [key.format(s) for s in self.checks[key]['suffixes']]
-            else:
-                keys = [key]
+            keys = [key.format(s) if 'suffixes' in self.checks[key].keys() else key for s in self.checks[key]['suffixes']]
             #add allowed modifiers to keys
             matches = [k+m for m in self.possible_quantity_modifiers if len(m)==0 or (len(m)>0 and not m in k) for k in keys]
 
             #find corresponding quantities and populate check_values dict
-            for q, N in zip(quantities, self.N_bins):
-                if q in matches:
-                    check_values[q] = self.checks[key]
-                    #use binning in checks dict if available for now
-                    #TODO allow to override this from options
-                    if 'N_bins' not in self.checks[key].keys():
-                        check_values[q]['N_bins'] = N
+            for qgroup, N in zip(quantities, self.N_bins):
+                for q in qgroup:
+                    if q in matches:
+                        check_values[q] = self.checks[key]
+                        #use binning in checks dict if available for now
+                        #TODO allow to override this from options
+                        if 'N_bins' not in self.checks[key].keys():
+                            check_values[q]['N_bins'] = N
 
         #setup plots
-        fig, ax = plt.subplots(self.nrows, self.ncolumns)
+        fig, ax = plt.subplots(self.nrows, self.ncolumns, sharex=self.sharex)
         fig.text(self.yaxis_xoffset, self.yaxis_yoffset, self.yaxis, va='center', rotation='vertical') #setup a common axis label
 
-        #initialize arrays for storing data totals
-        Ntotals = np.zeros(len(quantities), dtype=np.int)
-
-        #initialize arrays for storing histogram sums; number of bins may vary with q
-        N_list, sumq_list, sumq2_list = [], [], []
-        for q in quantities:
-            Nbins = check_values[q]['N_bins']
-            N_list.append(np.zeros(check_values[q]['N_bins'], dtype=np.int))
-            sumq_list.append(np.zeros(check_values[q]['N_bins']))
-            sumq2_list.append(np.zeros(check_values[q]['N_bins']))
-                              
+        #initialize arrays for storing data statistics and histogram sums; number of bins may vary with q
+        Ntotal_list, N_list, sumq_list, sumq2_list = [], [], [], []
+        for qgroup in quantities:
+            Ntotal_g, N_g, sumq_g, sumq2_g = [], [], [], []
+            for q in qgroup:
+                Nbins = check_values[q]['N_bins']
+                Ntotal_g.append(0)
+                N_g.append(np.zeros(check_values[q]['N_bins'], dtype=np.int))
+                sumq_g.append(np.zeros(check_values[q]['N_bins']))
+                sumq2_g.append(np.zeros(check_values[q]['N_bins']))
+            Ntotal_list.append(Ntotal_g)
+            N_list.append(N_g)
+            sumq_list.append(sumq_g)
+            sumq2_list.append(sumq2_g)
+        
         #get catalog data by looping over data iterator (needed for large catalogs) and aggregate histograms
-        for catalog_data in catalog_instance.get_quantities(quantities, return_iterator=True):
-            #accumulate numbers of all data
-            for n, q  in enumerate(quantities):
-                Ntotals[n] += len(catalog_data[q])
+        quantities_flat = [''.join(q) for qgroup in quantities for q in qgroup]
+        for catalog_data in catalog_instance.get_quantities(quantities_flat, return_iterator=True):
+            for ng, qgroup  in enumerate(quantities):
+                for nq, q in enumerate(qgroup):
+                    Ntotal_list[ng][nq] += len(catalog_data[q])
 
             catalog_data = GCRQuery(*((np.isfinite, col) for col in catalog_data)).filter(catalog_data)
 
             bin_edges_list = []
-            for q, N, sumq, sumq2 in zip_longest(quantities, N_list, sumq_list, sumq2_list):
-                #bin catalog_data and accumulate subplot histograms
-                hist, bin_edges = np.histogram(catalog_data[q], bins=check_values[q]['N_bins'])
-                N += hist
-                sumq += np.histogram(catalog_data[q], bins=check_values[q]['N_bins'], weights=catalog_data[q])[0]
-                sumq2 += np.histogram(catalog_data[q], bins=check_values[q]['N_bins'], weights=catalog_data[q]**2)[0]
-                bin_edges_list.append(bin_edges)
+            for qgroup, N_g, sumq_g, sumq2_g in zip(quantities, N_list, sumq_list, sumq2_list):
+                bin_edges_g = []
+                for q, N, sumq, sumq2 in zip(qgroup, N_g, sumq_g, sumq2_g):
+                    #bin catalog_data and accumulate subplot histograms
+                    hist, bin_edges = np.histogram(catalog_data[q], bins=check_values[q]['N_bins'])
+                    N += hist
+                    sumq += np.histogram(catalog_data[q], bins=check_values[q]['N_bins'], weights=catalog_data[q])[0]
+                    sumq2 += np.histogram(catalog_data[q], bins=check_values[q]['N_bins'], weights=catalog_data[q]**2)[0]
+                    bin_edges_g.append(bin_edges)
+                bin_edges_list.append(bin_edges_g)
 
         #TODO check for outliers and truncate range of histograms if required
 
-
         #loop over quantities and make plots
         results = {}
-        for ax_this, summary_ax_this, q, bin_edges, N, sumq, sumq2, Ntotal in zip_longest(
+        print('again',quantities)
+        for qgroup in quantities:
+            print(qgroup)
+        for ax_this, summary_ax_this, qqroup, bin_edges_g, N_g, sumq_g, sumq2_g, Ntotal_g in zip_longest(
                 ax.flat,
                 self.summary_ax.flat,
-                quantities, bin_edges_list, N_list, sumq_list, sumq2_list, Ntotals,
+                quantities, bin_edges_list, N_list, sumq_list, sumq2_list, Ntotal_list,
         ):
-            if q is None:
+            print(qgroup)
+            if qgroup is None:
                 ax_this.set_visible(False)
                 summary_ax_this.set_visible(False)
-            else:
-                meanq = sumq/N
-                sumN = N.sum()
-                mean = sumq.sum()/sumN
-                std = math.sqrt(sumq2.sum()/sumN - mean**2)
+            else: #loop over quantities in each subplot
+                linestyles = iter(self.default_linestyles)
+                for q, bin_edges, N, sumq, sumq2, Ntotal in zip(qgroup, bin_edges_g, N_g, sumq_g, sumq2_g, Ntotal_g):
+                    results[q] = {}
+                    meanq = sumq/N
+                    sumN = N.sum()
+                    mean = sumq.sum()/sumN
+                    std = math.sqrt(sumq2.sum()/sumN - mean**2)
                 
-                #TODO check if means etc. fall in range allowed by check_values
+                    #1st pass check example if means etc. fall in range allowed by check_values
+                    for tests in self.possible_tests.keys():
+                        test_results = []
+                        for test in self.possible_tests[tests]:
+                            if test == tests+'_min':
+                                test_results.append(mean > check_values[q][tests+'_min'] if tests+'_min' in check_values[q] else 'N/A')
+                            elif test == tests+'_max':
+                                test_results.append(mean < check_values[q][tests+'_max'] if tests+'_max' in check_values[q] else 'N/A')
+                        results[q][tests] = all(test_results) if test_results else 'N/A'
 
-                #make subplot
-                catalog_label = ' '.join((catalog_name, '$'+q+'$'))
-                #results[q] = {'bin-means': meanq, 'N':N, 'total':sumN, 'mean': mean, 'std':std}
-                self.catalog_subplot(ax_this, bin_edges[:-1], N, q, catalog_color, catalog_label)
+                    print(q, results[q])
+                    #add histogram to subplot
+                    ls = cycle(linestyles)
+                    print(q,ls)
+                    catalog_label = '$'+q+'$'
+                    self.catalog_subplot(ax_this, bin_edges[:-1], N, q, catalog_color, catalog_label, ls=ls)
 
-                #add curve for this catalog to summary plot
-                self.catalog_subplot(summary_ax_this, bin_edges[:-1], N, q, catalog_color, catalog_label)
+                    #add curve for this catalog to summary plot
+                    self.catalog_subplot(summary_ax_this, bin_edges[:-1], N, q, catalog_color, catalog_label, ls=ls)
                 
-                #save results for catalog in text file
-                with open(os.path.join(output_dir, 'Check_' + catalog_name + '.txt'), 'ab') as f_handle: #open file in append mode
-                    comment = 'Summary for {}\n Total # of nan or inf values = {}\n Total # of galaxies = {}\n Mean = {:12.4g}; Std. Devn = {:12.4g}\n'.format(q,Ntotal - sumN, sumN, mean, std)
-                    self.save_quantities(q, meanq, N, f_handle, comment=comment)
+                    #save results for catalog in text file
+                    with open(os.path.join(output_dir, 'Check_' + catalog_name + '.txt'), 'ab') as f_handle: #open file in append mode
+                        comment = 'Summary for {}\n'\
+                                  ' Total # of nan or inf values = {}\n'\
+                                  ' Total # of galaxies = {}\n'\
+                                  ' Mean = {:12.4g}; TEST RESULT: {}\n'\
+                                  ' Std. Devn = {:12.4g}\n'.format(q,Ntotal - sumN, sumN, mean, results[q]['mean'], std)
+                        self.save_quantities(q, meanq, N, f_handle, comment=comment)
+
+                self.decorate_subplot(ax_this, label=catalog_name)
+                self.decorate_subplot(summary_ax_this, label=catalog_name)
 
         #make final adjustments to plots and save figure
         self.post_process_plot(fig)
@@ -204,11 +274,18 @@ class CheckQuantities(BaseValidationTest):
         return TestResult(0, passed=True)
 
 
-    def catalog_subplot(self, ax, lower_bin_edges, data, xlabel, catalog_color, catalog_label):
+    def catalog_subplot(self, ax, lower_bin_edges, data, xlabel, catalog_color, catalog_label, ls='-'):
+        ax.step(lower_bin_edges, data, label=catalog_label, color=catalog_color, ls=ls)
 
-        ax.step(lower_bin_edges, data, label=catalog_label, color=catalog_color)
-        ax.set_yscale('log')
-        ax.set_xlabel(re.sub('_','',xlabel))
+
+    def decorate_subplot(self, ax, xlabel=None, label=None, yscale='linear'):
+        ax.tick_params(labelsize=8)
+        ax.set_yscale(yscale)
+        if label:
+            ax.text(0.05, 0.95, label, horizontalalignment='right', verticalalignment='top', transform=ax.transAxes)
+        if xlabel:
+            ax.set_xlabel(re.sub('_','',xlabel))
+        ax.legend(loc='best', fancybox=True, framealpha=0.5, numpoints=1)
 
     @staticmethod
     def post_process_plot(fig):
