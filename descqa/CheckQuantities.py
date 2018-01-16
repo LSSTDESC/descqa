@@ -46,6 +46,8 @@ class CheckQuantities(BaseValidationTest):
                       'mean': ['mean_min', 'mean_max'],
                       'std': ['std_min', 'std_max'],
                      } 
+    NA = 'N/A'
+
     #other defaults
     Nbins_default = 25
     default_markers = ['o', 'v', 's', 'd', 'H', '^', 'D', 'h', '<', '>', '.']
@@ -251,8 +253,7 @@ class CheckQuantities(BaseValidationTest):
                     #save statistics in results dict
                     results[q]['mean']['value'] = sumq.sum()/sumN
                     results[q]['std']['value'] = math.sqrt(sumq2.sum()/sumN - results[q]['mean']['value']**2)
-                    if q in data_min.keys() and q in data_max.keys():
-                        results[q]['range']['value'] = (data_min[q], data_max[q])
+                    results[q]['range']['value'] = (data_min[q], data_max[q]) if q in data_min.keys() and q in data_max.keys() else self.NA
 
                     #1st pass check example if means etc. fall in range allowed by check_values
                     for tests in self.possible_tests.keys():
@@ -260,20 +261,21 @@ class CheckQuantities(BaseValidationTest):
                         for test in self.possible_tests[tests]:
                             if test == tests+'_min':
                                 if type(results[q][tests]['value']) is not tuple:
-                                    test_results.append(results[q][tests]['value'] > check_values[q][tests+'_min'] if tests+'_min' in check_values[q] else 'N/A')
+                                    test_results.append(results[q][tests]['value'] > check_values[q][tests+'_min'] if tests+'_min' in check_values[q] else self.NA)
                                 #TODOD range check
                             elif test == tests+'_max':
                                 if type(results[q][tests]['value']) is not tuple:
-                                    test_results.append(results[q][tests]['value'] < check_values[q][tests+'_max'] if tests+'_max' in check_values[q] else 'N/A')
+                                    test_results.append(results[q][tests]['value'] < check_values[q][tests+'_max'] if tests+'_max' in check_values[q] else self.NA)
                                 #TODO range check
-                        results[q][tests]['pass'] = all(test_results) if test_results else 'N/A'
-
+                        if test_results:
+                            results[q][tests]['pass'] = all([res==True for res in test_results]) if not all([res==self.NA for res in test_results]) else self.NA
+                        else:
+                            results[q][tests]['pass'] = self.NA
                     print(q, results[q])
                     #add histogram to subplot using built-in or custom linestyle (up to 8 allowed)
                     ls = next(linestyles) if nplot < len(self.default_linestyles) else None
                     dashes = next(dashstyles) if nplot >= len(self.default_linestyles) and nplot < len(self.default_linestyles) + len(self.default_dashstyles) else None
-                    catalog_label = '$'+re.sub('_','',re.sub(xlabel,'',q))+'$'
-                    print(q,nplot,ls,dashes, catalog_label)
+                    catalog_label = '$'+re.sub('_',' ',re.sub(xlabel,'',q)).strip()+'$'
                     self.catalog_subplot(ax_this, bin_edges[:-1], N, catalog_color, catalog_label, ls=ls, dashes=dashes)
 
                     #add curve for this catalog to summary plot
@@ -296,12 +298,15 @@ class CheckQuantities(BaseValidationTest):
     def get_comment(self, q, Ntotal, sumN, results):
 
         comment = 'Summary for {}\n'\
-                  ' Total # of nan or inf values = {}\n'\
-                  ' Total # of galaxies = {}\n'\
+                  '    Total # of nan or inf values = {}\n'\
+                  '    Total # of galaxies = {}\n'\
                   .format(q, Ntotal - sumN, sumN)
         for key in results[q].keys():
             print(q, key, results[q][key]['value'],  results[q][key]['pass'])
-            string = ' {} = {:12.4g}; TEST RESULT: {}\n'.format(results[q][key]['value'], results[q][key]['pass'])
+            if type(results[q][key]['value']) is tuple and len(results[q][key]['value'])==2:
+                string = '   {} = ({:12.4g},{:12.4g}); TEST RESULT: {}\n'.format(key, results[q][key]['value'][0], results[q][key]['value'][1], results[q][key]['pass'])
+            else:
+                string = '   {} = {:12.4g}; TEST RESULT: {}\n'.format(key, results[q][key]['value'], results[q][key]['pass'])
             comment = comment + string
 
         return comment
