@@ -12,6 +12,7 @@ from GCR import GCRQuery
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
 from itertools import cycle
+from difflib import SequenceMatcher
 import re
 
 __all__ = ['CheckQuantities']
@@ -40,16 +41,21 @@ class CheckQuantities(BaseValidationTest):
             'mean_max': 0.5,
         },
     }       
+    #checks to run
+    possible_tests = {'range':['range_min', 'range_max'],
+                      'mean': ['mean_min', 'mean_max'],
+                      'std': ['std_min', 'std_max'],
+                     } 
     #other defaults
     Nbins_default = 25
     default_markers = ['o', 'v', 's', 'd', 'H', '^', 'D', 'h', '<', '>', '.']
     default_linestyles = ['-', '--', '-.', ':']
+    default_dashstyles = [[8, 4, 2, 4, 2, 4], [8, 4, 8, 4, 2, 4], [8, 4, 2, 4, 2, 4, 2, 4], [8, 4, 8, 4, 8, 4, 2, 4]] #dash-dot-dot, dash-dash-dot, ..
     possible_quantity_modifiers = ['','_true']
     yaxis_xoffset = 0.02
     yaxis_yoffset = 0.5
-    possible_tests = {'range':['range_min', 'range_max'],
-                      'mean': ['mean_min', 'mean_max'],
-                     } 
+    figx = 4.5
+    figy = 4.5
 
     def __init__(self, quantities=[], N_bins=[], ncolumns=2, sharex='none', **kwargs):
         """
@@ -88,9 +94,12 @@ class CheckQuantities(BaseValidationTest):
         #setup subplot configuration 
         self.nplots = len(self.quantities)
         self.nrows = (self.nplots+self.ncolumns-1)//self.ncolumns
+        #scale fig size to number of plots requested
+        self.figx_p = self.ncolumns*self.figx
+        self.figy_p = self.nrows*self.figy
 
         #setup summary plot
-        self.summary_fig, self.summary_ax = plt.subplots(self.nrows, self.ncolumns, sharex=self.sharex)
+        self.summary_fig, self.summary_ax = plt.subplots(self.nrows, self.ncolumns, figsize=(self.figx_p, self.figy_p), sharex=self.sharex)
         self.summary_fig.text(self.yaxis_xoffset, self.yaxis_yoffset, self.yaxis, va='center', rotation='vertical') #setup a common axis label
 
         self._other_kwargs = kwargs
@@ -129,30 +138,33 @@ class CheckQuantities(BaseValidationTest):
         for qgroup in desired_quantities:
             possible_qgroup = [[q+m for m in self.possible_quantity_modifiers if len(m)==0 or (len(m)>0 and not m in q)] for q in qgroup]
             possible_quantities.append(possible_qgroup)
-        #print('possible:',possible_quantities)
 
         #check catalog data for desired quantities and adjust N_bins list accordingly
         quantities=[]
+        xaxis_labels=[]
         for n, pqgroup in enumerate(possible_quantities):
             qgroup = []
             for pq in pqgroup: 
-                print(pq)
                 quantity = catalog_instance.first_available(*pq)
-                if not quantity:
-                    print("Skipping missing possible quantities {}".format(pq))
-                else:
-                    qgroup.append(quantity)
+                #if not quantity:
+                #    print("Skipping missing possible quantities {}".format(pq))
+                #else:
+                qgroup.append(quantity)
             if not qgroup:  #skip group if none found
                 del self.Nbins[n]
             else:
                 quantities.append(qgroup)
+                #find common string in qgroup elements, remove '_' and use it for xaxis label
+                common_strings = [SequenceMatcher(None, qgroup[0],qg).find_longest_match(0,len(qgroup[0]),0, len(qg)) for qg in qgroup]
+                sizes = [match.size for match in common_strings]
+                xaxis_labels.append(re.sub('_', '', qgroup[0][common_strings[sizes.index(min(sizes))].a:common_strings[sizes.index(min(sizes))].size]))
         #print('found:',quantities)
 
         if not quantities:
             return TestResult(skipped=True, summary='Missing all requested quantities')
 
         #fill out check_values based on supplied checks and available catalog quantities
-        #easiest for now to copy the dict for every q and ignore the qgroups
+        #easiest to copy the dict for every q and ignore the qgroups
         check_values = {}
         for key in self.checks.keys():
             #add allowed suffixes to this key
@@ -171,7 +183,7 @@ class CheckQuantities(BaseValidationTest):
                             check_values[q]['N_bins'] = N
 
         #setup plots
-        fig, ax = plt.subplots(self.nrows, self.ncolumns, sharex=self.sharex)
+        fig, ax = plt.subplots(self.nrows, self.ncolumns, figsize=(self.figx_p, self.figy_p), sharex=self.sharex)
         fig.text(self.yaxis_xoffset, self.yaxis_yoffset, self.yaxis, va='center', rotation='vertical') #setup a common axis label
 
         #initialize arrays for storing data statistics and histogram sums; number of bins may vary with q
@@ -199,6 +211,8 @@ class CheckQuantities(BaseValidationTest):
             catalog_data = GCRQuery(*((np.isfinite, col) for col in catalog_data)).filter(catalog_data)
 
             bin_edges_list = []
+            data_min = {}
+            data_max = {}
             for qgroup, N_g, sumq_g, sumq2_g in zip(quantities, N_list, sumq_list, sumq2_list):
                 bin_edges_g = []
                 for q, N, sumq, sumq2 in zip(qgroup, N_g, sumq_g, sumq2_g):
@@ -208,64 +222,70 @@ class CheckQuantities(BaseValidationTest):
                     sumq += np.histogram(catalog_data[q], bins=check_values[q]['N_bins'], weights=catalog_data[q])[0]
                     sumq2 += np.histogram(catalog_data[q], bins=check_values[q]['N_bins'], weights=catalog_data[q]**2)[0]
                     bin_edges_g.append(bin_edges)
+                    #TODO add code to get max and min values
+                    if catalog_data[q].dtype.char in 'bBiulfd':
+                        data_min[q] = min(np.nanmin(catalog_data[q]), data_min.get(q, np.inf))
+                        data_max[q] = max(np.nanmax(catalog_data[q]), data_max.get(q, -np.inf))
                 bin_edges_list.append(bin_edges_g)
 
         #TODO check for outliers and truncate range of histograms if required
 
         #loop over quantities and make plots
         results = {}
-        print('again',quantities)
-        for qgroup in quantities:
-            print(qgroup)
-        for ax_this, summary_ax_this, qqroup, bin_edges_g, N_g, sumq_g, sumq2_g, Ntotal_g in zip_longest(
+        for ax_this, summary_ax_this, qqroup, bin_edges_g, N_g, sumq_g, sumq2_g, Ntotal_g, xlabel  in zip_longest(
                 ax.flat,
                 self.summary_ax.flat,
-                quantities, bin_edges_list, N_list, sumq_list, sumq2_list, Ntotal_list,
+                quantities, bin_edges_list, N_list, sumq_list, sumq2_list, Ntotal_list, xaxis_labels
         ):
-            print(qgroup)
+            print('inloop',qgroup)
             if qgroup is None:
                 ax_this.set_visible(False)
                 summary_ax_this.set_visible(False)
             else: #loop over quantities in each subplot
-                linestyles = iter(self.default_linestyles)
-                for q, bin_edges, N, sumq, sumq2, Ntotal in zip(qgroup, bin_edges_g, N_g, sumq_g, sumq2_g, Ntotal_g):
-                    results[q] = {}
+                linestyles = cycle(self.default_linestyles)
+                dashstyles = cycle(self.default_dashstyles)
+                for nplot, (q, bin_edges, N, sumq, sumq2, Ntotal) in enumerate(zip(qgroup, bin_edges_g, N_g, sumq_g, sumq2_g, Ntotal_g)):
+                    results[q] = {'range':{}, 'mean':{}, 'std':{}}
                     meanq = sumq/N
                     sumN = N.sum()
-                    mean = sumq.sum()/sumN
-                    std = math.sqrt(sumq2.sum()/sumN - mean**2)
-                
+                    #save statistics in results dict
+                    results[q]['mean']['value'] = sumq.sum()/sumN
+                    results[q]['std']['value'] = math.sqrt(sumq2.sum()/sumN - results[q]['mean']['value']**2)
+                    if q in data_min.keys() and q in data_max.keys():
+                        results[q]['range']['value'] = (data_min[q], data_max[q])
+
                     #1st pass check example if means etc. fall in range allowed by check_values
                     for tests in self.possible_tests.keys():
                         test_results = []
                         for test in self.possible_tests[tests]:
                             if test == tests+'_min':
-                                test_results.append(mean > check_values[q][tests+'_min'] if tests+'_min' in check_values[q] else 'N/A')
+                                if type(results[q][tests]['value']) is not tuple:
+                                    test_results.append(results[q][tests]['value'] > check_values[q][tests+'_min'] if tests+'_min' in check_values[q] else 'N/A')
+                                #TODOD range check
                             elif test == tests+'_max':
-                                test_results.append(mean < check_values[q][tests+'_max'] if tests+'_max' in check_values[q] else 'N/A')
-                        results[q][tests] = all(test_results) if test_results else 'N/A'
+                                if type(results[q][tests]['value']) is not tuple:
+                                    test_results.append(results[q][tests]['value'] < check_values[q][tests+'_max'] if tests+'_max' in check_values[q] else 'N/A')
+                                #TODO range check
+                        results[q][tests]['pass'] = all(test_results) if test_results else 'N/A'
 
                     print(q, results[q])
-                    #add histogram to subplot
-                    ls = cycle(linestyles)
-                    print(q,ls)
-                    catalog_label = '$'+q+'$'
-                    self.catalog_subplot(ax_this, bin_edges[:-1], N, q, catalog_color, catalog_label, ls=ls)
+                    #add histogram to subplot using built-in or custom linestyle (up to 8 allowed)
+                    ls = next(linestyles) if nplot < len(self.default_linestyles) else None
+                    dashes = next(dashstyles) if nplot >= len(self.default_linestyles) and nplot < len(self.default_linestyles) + len(self.default_dashstyles) else None
+                    catalog_label = '$'+re.sub('_','',re.sub(xlabel,'',q))+'$'
+                    print(q,nplot,ls,dashes, catalog_label)
+                    self.catalog_subplot(ax_this, bin_edges[:-1], N, catalog_color, catalog_label, ls=ls, dashes=dashes)
 
                     #add curve for this catalog to summary plot
-                    self.catalog_subplot(summary_ax_this, bin_edges[:-1], N, q, catalog_color, catalog_label, ls=ls)
+                    self.catalog_subplot(summary_ax_this, bin_edges[:-1], N, catalog_color, catalog_label, ls=ls, dashes=dashes)
                 
                     #save results for catalog in text file
                     with open(os.path.join(output_dir, 'Check_' + catalog_name + '.txt'), 'ab') as f_handle: #open file in append mode
-                        comment = 'Summary for {}\n'\
-                                  ' Total # of nan or inf values = {}\n'\
-                                  ' Total # of galaxies = {}\n'\
-                                  ' Mean = {:12.4g}; TEST RESULT: {}\n'\
-                                  ' Std. Devn = {:12.4g}\n'.format(q,Ntotal - sumN, sumN, mean, results[q]['mean'], std)
+                        comment = self.get_comment(q, Ntotal, sumN, results)
                         self.save_quantities(q, meanq, N, f_handle, comment=comment)
 
-                self.decorate_subplot(ax_this, label=catalog_name)
-                self.decorate_subplot(summary_ax_this, label=catalog_name)
+                self.decorate_subplot(ax_this, label=catalog_name, xlabel=xlabel)
+                self.decorate_subplot(summary_ax_this, label=catalog_name, xlabel=xlabel)
 
         #make final adjustments to plots and save figure
         self.post_process_plot(fig)
@@ -273,12 +293,31 @@ class CheckQuantities(BaseValidationTest):
         plt.close(fig)
         return TestResult(0, passed=True)
 
+    def get_comment(self, q, Ntotal, sumN, results):
 
-    def catalog_subplot(self, ax, lower_bin_edges, data, xlabel, catalog_color, catalog_label, ls='-'):
-        ax.step(lower_bin_edges, data, label=catalog_label, color=catalog_color, ls=ls)
+        comment = 'Summary for {}\n'\
+                  ' Total # of nan or inf values = {}\n'\
+                  ' Total # of galaxies = {}\n'\
+                  .format(q, Ntotal - sumN, sumN)
+        for key in results[q].keys():
+            print(q, key, results[q][key]['value'],  results[q][key]['pass'])
+            string = ' {} = {:12.4g}; TEST RESULT: {}\n'.format(results[q][key]['value'], results[q][key]['pass'])
+            comment = comment + string
 
+        return comment
+        
 
-    def decorate_subplot(self, ax, xlabel=None, label=None, yscale='linear'):
+    @staticmethod
+    def catalog_subplot(ax, lower_bin_edges, data, catalog_color, catalog_label, ls=None, dashes=None):
+        if dashes is not None:
+            ax.step(lower_bin_edges, data, label=catalog_label, color=catalog_color, dashes=dashes)
+        elif ls is not None:
+            ax.step(lower_bin_edges, data, label=catalog_label, color=catalog_color, ls=ls)
+        else:
+            raise ValueError('catalog_subplot called without linestyle or dashstyle')
+
+    @staticmethod
+    def decorate_subplot(ax, xlabel=None, label=None, yscale='linear'):
         ax.tick_params(labelsize=8)
         ax.set_yscale(yscale)
         if label:
