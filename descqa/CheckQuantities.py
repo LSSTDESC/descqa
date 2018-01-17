@@ -40,6 +40,13 @@ class CheckQuantities(BaseValidationTest):
             'mean_min': -0.5,
             'mean_max': 0.5,
         },
+        'size{}':{
+            'suffixes': ['', '_disk', '_bulge', '_minor', '_minor_disk', '_minor_bulge'],
+            'range_min': 0.,
+            'range_max': 150.,
+            'mean_min': 0.1,
+            'mean_max': 10.,
+        },
     }       
     #checks to run
     possible_tests = {'range':['range_min', 'range_max'],
@@ -52,7 +59,7 @@ class CheckQuantities(BaseValidationTest):
     Nbins_default = 25
     default_markers = ['o', 'v', 's', 'd', 'H', '^', 'D', 'h', '<', '>', '.']
     default_linestyles = ['-', '--', '-.', ':']
-    default_dashstyles = [[8, 4, 2, 4, 2, 4], [8, 4, 8, 4, 2, 4], [8, 4, 2, 4, 2, 4, 2, 4], [8, 4, 8, 4, 8, 4, 2, 4]] #dash-dot-dot, dash-dash-dot, ..
+    default_dashstyles = [[2, 2, 2, 2, 4, 2], [4, 2, 2, 2, 4, 2], [8, 4, 2, 4, 2, 4, 2, 4], [8, 4, 8, 4, 8, 4, 2, 4]] #dot-dot-dash, dash-dash-dot, ..
     possible_quantity_modifiers = ['','_true']
     yaxis_xoffset = 0.02
     yaxis_yoffset = 0.5
@@ -110,14 +117,15 @@ class CheckQuantities(BaseValidationTest):
         #check if str is a keyword
         if q in self.checks.keys():
             desired_quantities = sorted([q.format(s) if 'suffixes' in self.checks[q].keys() else q for s in self.checks[q]['suffixes']])
-        else: #match string from all available quantities                                                                                                          
-            desired_quantities = sorted([q for q in catalog_instance.list_all_quantities() if self.quantities in q])
+        else: #match string from all available quantities                                                                                  
+            desired_quantities = sorted([cq for cq in catalog_instance.list_all_quantities() if q in cq])
             
         return desired_quantities
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         #update color and marker to preserve catalog colors and markers across tests
         catalog_color = next(self._color_iterator)
+        version = catalog_instance.get_catalog_info('version')
 
         #get desired quantities
         desired_quantities = []
@@ -127,7 +135,8 @@ class CheckQuantities(BaseValidationTest):
             elif type(qgroup) is list:
                 desired_qgroup = []
                 for q in qgroup:
-                    desired_qgroup += self.get_desired_quantities(qgroup, catalog_instance)
+                    for dq in self.get_desired_quantities(q, catalog_instance):
+                        desired_qgroup.append(dq)
                 desired_quantities.append(desired_qgroup)
         #print('desired:',desired_quantities)
 
@@ -148,10 +157,10 @@ class CheckQuantities(BaseValidationTest):
             qgroup = []
             for pq in pqgroup: 
                 quantity = catalog_instance.first_available(*pq)
-                #if not quantity:
-                #    print("Skipping missing possible quantities {}".format(pq))
-                #else:
-                qgroup.append(quantity)
+                if not quantity:
+                    print("Skipping missing possible quantities {}".format(pq))
+                else:
+                    qgroup.append(quantity)
             if not qgroup:  #skip group if none found
                 del self.Nbins[n]
             else:
@@ -179,11 +188,13 @@ class CheckQuantities(BaseValidationTest):
                 for q in qgroup:
                     if q in matches:
                         check_values[q] = self.checks[key]
-                        #use binning in checks dict if available for now
+                        #use binning in checks dict if available 
                         #TODO allow to override this from options
                         if 'N_bins' not in self.checks[key].keys():
                             check_values[q]['N_bins'] = N
-
+                    else: #no match found; set bin size from options/default
+                        check_values[q] = {'N_bins': N}
+                        
         #setup plots
         fig, ax = plt.subplots(self.nrows, self.ncolumns, figsize=(self.figx_p, self.figy_p), sharex=self.sharex)
         fig.text(self.yaxis_xoffset, self.yaxis_yoffset, self.yaxis, va='center', rotation='vertical') #setup a common axis label
@@ -224,7 +235,7 @@ class CheckQuantities(BaseValidationTest):
                     sumq += np.histogram(catalog_data[q], bins=check_values[q]['N_bins'], weights=catalog_data[q])[0]
                     sumq2 += np.histogram(catalog_data[q], bins=check_values[q]['N_bins'], weights=catalog_data[q]**2)[0]
                     bin_edges_g.append(bin_edges)
-                    #TODO add code to get max and min values
+                    #get max and min values
                     if catalog_data[q].dtype.char in 'bBiulfd':
                         data_min[q] = min(np.nanmin(catalog_data[q]), data_min.get(q, np.inf))
                         data_max[q] = max(np.nanmax(catalog_data[q]), data_max.get(q, -np.inf))
@@ -234,12 +245,15 @@ class CheckQuantities(BaseValidationTest):
 
         #loop over quantities and make plots
         results = {}
+        for qgroup in quantities:
+            print(qgroup)
+
         for ax_this, summary_ax_this, qqroup, bin_edges_g, N_g, sumq_g, sumq2_g, Ntotal_g, xlabel  in zip_longest(
                 ax.flat,
                 self.summary_ax.flat,
                 quantities, bin_edges_list, N_list, sumq_list, sumq2_list, Ntotal_list, xaxis_labels
-        ):
-            print('inloop',qgroup)
+            ):
+            print('inloop',qgroup )
             if qgroup is None:
                 ax_this.set_visible(False)
                 summary_ax_this.set_visible(False)
@@ -271,11 +285,12 @@ class CheckQuantities(BaseValidationTest):
                             results[q][tests]['pass'] = all([res==True for res in test_results]) if not all([res==self.NA for res in test_results]) else self.NA
                         else:
                             results[q][tests]['pass'] = self.NA
-                    print(q, results[q])
+
                     #add histogram to subplot using built-in or custom linestyle (up to 8 allowed)
                     ls = next(linestyles) if nplot < len(self.default_linestyles) else None
                     dashes = next(dashstyles) if nplot >= len(self.default_linestyles) and nplot < len(self.default_linestyles) + len(self.default_dashstyles) else None
                     catalog_label = '$'+re.sub('_',' ',re.sub(xlabel,'',q)).strip()+'$'
+                    print(nplot, q, catalog_label)
                     self.catalog_subplot(ax_this, bin_edges[:-1], N, catalog_color, catalog_label, ls=ls, dashes=dashes)
 
                     #add curve for this catalog to summary plot
@@ -286,8 +301,8 @@ class CheckQuantities(BaseValidationTest):
                         comment = self.get_comment(q, Ntotal, sumN, results)
                         self.save_quantities(q, meanq, N, f_handle, comment=comment)
 
-                self.decorate_subplot(ax_this, label=catalog_name, xlabel=xlabel)
-                self.decorate_subplot(summary_ax_this, label=catalog_name, xlabel=xlabel)
+                self.decorate_subplot(ax_this, label='v'+version, xlabel=xlabel)
+                self.decorate_subplot(summary_ax_this, label='v'+version, xlabel=xlabel)
 
         #make final adjustments to plots and save figure
         self.post_process_plot(fig)
@@ -302,7 +317,6 @@ class CheckQuantities(BaseValidationTest):
                   '    Total # of galaxies = {}\n'\
                   .format(q, Ntotal - sumN, sumN)
         for key in results[q].keys():
-            print(q, key, results[q][key]['value'],  results[q][key]['pass'])
             if type(results[q][key]['value']) is tuple and len(results[q][key]['value'])==2:
                 string = '   {} = ({:12.4g},{:12.4g}); TEST RESULT: {}\n'.format(key, results[q][key]['value'][0], results[q][key]['value'][1], results[q][key]['pass'])
             else:
@@ -317,16 +331,17 @@ class CheckQuantities(BaseValidationTest):
         if dashes is not None:
             ax.step(lower_bin_edges, data, label=catalog_label, color=catalog_color, dashes=dashes)
         elif ls is not None:
-            ax.step(lower_bin_edges, data, label=catalog_label, color=catalog_color, ls=ls)
+            ax.step(lower_bin_edges, data, label=catalog_label, color=catalog_color, linestyle=ls)
         else:
             raise ValueError('catalog_subplot called without linestyle or dashstyle')
 
     @staticmethod
     def decorate_subplot(ax, xlabel=None, label=None, yscale='linear'):
         ax.tick_params(labelsize=8)
+        ax.set_yticklabels(['{:.2e}'.format(float(y)) for y in ax.get_yticks().tolist()])
         ax.set_yscale(yscale)
         if label:
-            ax.text(0.05, 0.95, label, horizontalalignment='right', verticalalignment='top', transform=ax.transAxes)
+            ax.text(0.05, 0.97, label, horizontalalignment='left', verticalalignment='top', transform=ax.transAxes)
         if xlabel:
             ax.set_xlabel(re.sub('_','',xlabel))
         ax.legend(loc='best', fancybox=True, framealpha=0.5, numpoints=1)

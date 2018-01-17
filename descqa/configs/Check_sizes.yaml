@@ -1,3 +1,4 @@
 subclass_name: CheckQuantities.CheckQuantities
-quantities: ['ellipticity{}', 'size{}', ['mag_g_lsst', 'mag_r_lsst', 'mag_i_lsst']]
+quantities: ['size{}']
+ncolumns: 1
 description: 'Plot histograms of listed quantities and perform range, finiteness, mean and standard deviation checks.'
