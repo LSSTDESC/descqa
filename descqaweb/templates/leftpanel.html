@@ -32,14 +32,14 @@
     <td>
       <i>Summary outputs:</i><br>
         {% for f in summary.files %}
-        &nbsp;&nbsp;<a href="?file={{ f.relpath }}" onclick="javascript:top.history.replaceState( {} , '{{ siteTitle }}', '?file={{ f.relpath }}');">{{ f.filename }}</a><br>
+        &nbsp;&nbsp;<a href="?file={{ f.relpath }}" onclick='javascript:update_url("{{ f.relpath }}");'>{{ f.filename }}</a><br>
         {% endfor %}
       <br>
     </td>
     <td>
       {% for f in summary.files %}
         {% if f.is_png %}
-          <a href="?file={{ f.relpath }}" onclick="javascript:top.history.replaceState( {} , '{{ siteTitle }}', '?file={{ f.relpath }}');"><img src="data:image/png;base64,{{ f.data }}" width="100%"></a><br>
+          <a href="?file={{ f.relpath }}" onclick='javascript:update_url("{{ f.relpath }}");'><img src="data:image/png;base64,{{ f.data }}" width="100%"></a><br>
         {% endif %}
       {% endfor %}
     </td>
@@ -72,7 +72,7 @@
     {% if item.files %}
       <i>Outputs:</i><br>
         {% for f in item.files %}
-        &nbsp;&nbsp;<a href="?file={{ f.relpath }}"  onclick="javascript:top.history.replaceState( {} , '{{ siteTitle }}', '?file={{ f.relpath }}');">{{ f.filename }}</a><br>
+        &nbsp;&nbsp;<a href="?file={{ f.relpath }}"  onclick='javascript:update_url("{{ f.relpath }}");'>{{ f.filename }}</a><br>
         {% endfor %}
       <br>
     {% endif %}
@@ -81,7 +81,7 @@
     <td>
       {% for f in item.files %}
         {% if f.is_png %}
-          <a href="?file={{ f.relpath }}"  onclick="javascript:top.history.replaceState( {} , '{{ siteTitle }}', '?file={{ f.relpath }}');"><img src="data:image/png;base64,{{ f.data }}" width="100%"></a><br>
+          <a href="?file={{ f.relpath }}"  onclick='javascript:update_url("{{ f.relpath }}");'><img src="data:image/png;base64,{{ f.data }}" width="100%"></a><br>
         {% endif %}
       {% endfor %}
     </td>
@@ -96,6 +96,12 @@
 {% else %}
   <span class="darkred"><i><b>No tests were made</b></i></span>
 {% endif %}
-<script>document.getElementById("pleasewait").style.display="none";</script>
+<script>
+  document.getElementById("pleasewait").style.display="none";
+
+  const update_url = function(file){
+    top.history.replaceState( {} , "{{ siteTitle }}", "?run={{ run }}{% if test %}&test={{ test }}{% endif %}{% if catalog %}catalog={{ catalog }}{% endif %}&right=" + file);
+  }
+</script>
 </body>
 </html>
