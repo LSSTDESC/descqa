@@ -13,6 +13,7 @@ from .base import BaseValidationTest, TestResult
 from .plotting import plt
 from itertools import cycle
 from difflib import SequenceMatcher
+from matplotlib.ticker import ScalarFormatter
 import re
 
 __all__ = ['CheckQuantities']
@@ -49,7 +50,7 @@ class CheckQuantities(BaseValidationTest):
         },
     }       
     #checks to run
-    possible_tests = {'range':['range_min', 'range_max'],
+    selected_tests = {'range':['range_min', 'range_max'],
                       'mean': ['mean_min', 'mean_max'],
                       'std': ['std_min', 'std_max'],
                      } 
@@ -175,26 +176,27 @@ class CheckQuantities(BaseValidationTest):
             return TestResult(skipped=True, summary='Missing all requested quantities')
 
         #fill out check_values based on supplied checks and available catalog quantities
-        #easiest to copy the dict for every q and ignore the qgroups
+        #easiest to copy the dict for every q
         check_values = {}
-        for key in self.checks.keys():
-            #add allowed suffixes to this key
-            keys = [key.format(s) if 'suffixes' in self.checks[key].keys() else key for s in self.checks[key]['suffixes']]
-            #add allowed modifiers to keys
-            matches = [k+m for m in self.possible_quantity_modifiers if len(m)==0 or (len(m)>0 and not m in k) for k in keys]
-
-            #find corresponding quantities and populate check_values dict
-            for qgroup, N in zip(quantities, self.N_bins):
-                for q in qgroup:
+        for qgroup, N in zip(quantities, self.N_bins):
+            for q in qgroup:
+                #check all keys in checks dict
+                for key in self.checks.keys():
+                    #add allowed suffixes to this key
+                    keys = [key.format(s) if 'suffixes' in self.checks[key].keys() else key for s in self.checks[key]['suffixes']]
+                    #add allowed modifiers to keys
+                    matches = [k+m for m in self.possible_quantity_modifiers if len(m)==0 or (len(m)>0 and not m in k) for k in keys]
+                    #find corresponding quantities and populate check_values dict
                     if q in matches:
                         check_values[q] = self.checks[key]
                         #use binning in checks dict if available 
                         #TODO allow to override this from options
                         if 'N_bins' not in self.checks[key].keys():
                             check_values[q]['N_bins'] = N
-                    else: #no match found; set bin size from options/default
-                        check_values[q] = {'N_bins': N}
-                        
+
+                if q not in check_values.keys(): #no match found; set bin size from options/default
+                    check_values[q] = {'N_bins': N}
+        
         #setup plots
         fig, ax = plt.subplots(self.nrows, self.ncolumns, figsize=(self.figx_p, self.figy_p), sharex=self.sharex)
         fig.text(self.yaxis_xoffset, self.yaxis_yoffset, self.yaxis, va='center', rotation='vertical') #setup a common axis label
@@ -244,16 +246,17 @@ class CheckQuantities(BaseValidationTest):
         #TODO check for outliers and truncate range of histograms if required
 
         #loop over quantities and make plots
+        ax_all = ax.flat if self.nplots>1 else ax
+        summary_ax_all = self.summary_ax.flat if self.nplots>1 else self.summary_ax
         results = {}
-        for qgroup in quantities:
-            print(qgroup)
 
-        for ax_this, summary_ax_this, qqroup, bin_edges_g, N_g, sumq_g, sumq2_g, Ntotal_g, xlabel  in zip_longest(
-                ax.flat,
-                self.summary_ax.flat,
-                quantities, bin_edges_list, N_list, sumq_list, sumq2_list, Ntotal_list, xaxis_labels
-            ):
-            print('inloop',qgroup )
+        for ax_this, summary_ax_this, qgroup, bin_edges_g, N_g, sumq_g, sumq2_g, Ntotal_g, xlabel in zip_longest(ax_all, summary_ax_all, quantities, bin_edges_list, N_list, sumq_list, sumq2_list, Ntotal_list, xaxis_labels):
+        #this loop messed up quantities..maybe incorrect syntax?
+        #for ax_this, summary_ax_this, qqroup, bin_edges_g, N_g, sumq_g, sumq2_g, Ntotal_g, xlabel  in zip_longest(
+        #        ax.flat,
+        #        self.summary_ax.flat,
+        #        quantities, bin_edges_list, N_list, sumq_list, sumq2_list, Ntotal_list, xaxis_labels
+        #    ):
             if qgroup is None:
                 ax_this.set_visible(False)
                 summary_ax_this.set_visible(False)
@@ -270,60 +273,79 @@ class CheckQuantities(BaseValidationTest):
                     results[q]['range']['value'] = (data_min[q], data_max[q]) if q in data_min.keys() and q in data_max.keys() else self.NA
 
                     #1st pass check example if means etc. fall in range allowed by check_values
-                    for tests in self.possible_tests.keys():
+                    for test_type in self.selected_tests.keys():
                         test_results = []
-                        for test in self.possible_tests[tests]:
-                            if test == tests+'_min':
-                                if type(results[q][tests]['value']) is not tuple:
-                                    test_results.append(results[q][tests]['value'] > check_values[q][tests+'_min'] if tests+'_min' in check_values[q] else self.NA)
-                                #TODOD range check
-                            elif test == tests+'_max':
-                                if type(results[q][tests]['value']) is not tuple:
-                                    test_results.append(results[q][tests]['value'] < check_values[q][tests+'_max'] if tests+'_max' in check_values[q] else self.NA)
-                                #TODO range check
+                        results[q][test_type]['criteria'] = ''
+                        for test in self.selected_tests[test_type]:
+                            if not (results[q][test_type]['value'] == self.NA): #check that value is available
+                                if test == test_type+'_min':
+                                    if type(results[q][test_type]['value']) is not tuple:
+                                        test_results.append(results[q][test_type]['value'] > check_values[q][test_type+'_min'] if test_type+'_min' in check_values[q].keys() else self.NA)
+                                    else:
+                                        test_results.append(results[q][test_type]['value'][0] > check_values[q][test_type+'_min'] if test_type+'_min' in check_values[q].keys() else self.NA)
+                                    criteria = ' {} < {};'.format(check_values[q][test_type+'_min'], test_type) if test_type+'_min' in check_values[q].keys() else ''
+                                    results[q][test_type]['criteria'] = results[q][test_type]['criteria'] + criteria
+                                elif test == test_type+'_max':
+                                    if type(results[q][test_type]['value']) is not tuple:
+                                        test_results.append(results[q][test_type]['value'] < check_values[q][test_type+'_max'] if test_type+'_max' in check_values[q].keys() else self.NA)
+                                    else:
+                                        test_results.append(results[q][test_type]['value'][1] < check_values[q][test_type+'_max'] if test_type+'_max' in check_values[q].keys() else self.NA)
+                                    criteria = ' {} > {};'.format(check_values[q][test_type+'_max'], test_type) if test_type+'_max' in check_values[q].keys() else ''
+                                    results[q][test_type]['criteria'] = results[q][test_type]['criteria'] + criteria
                         if test_results:
-                            results[q][tests]['pass'] = all([res==True for res in test_results]) if not all([res==self.NA for res in test_results]) else self.NA
+                            results[q][test_type]['pass'] = all([res==True for res in test_results]) if not all([res==self.NA for res in test_results]) else self.NA
                         else:
-                            results[q][tests]['pass'] = self.NA
+                            results[q][test_type]['pass'] = self.NA
+                    results[q]['summary'] = 'FAIL' if any([results[q][test_type]['pass'] == False for test_type in self.selected_tests.keys()]) else 'PASS'
 
                     #add histogram to subplot using built-in or custom linestyle (up to 8 allowed)
                     ls = next(linestyles) if nplot < len(self.default_linestyles) else None
                     dashes = next(dashstyles) if nplot >= len(self.default_linestyles) and nplot < len(self.default_linestyles) + len(self.default_dashstyles) else None
-                    catalog_label = '$'+re.sub('_',' ',re.sub(xlabel,'',q)).strip()+'$'
-                    print(nplot, q, catalog_label)
+                    catalog_label = re.sub('_',' ',re.sub(xlabel,'',q)).strip()
                     self.catalog_subplot(ax_this, bin_edges[:-1], N, catalog_color, catalog_label, ls=ls, dashes=dashes)
 
                     #add curve for this catalog to summary plot
                     self.catalog_subplot(summary_ax_this, bin_edges[:-1], N, catalog_color, catalog_label, ls=ls, dashes=dashes)
                 
                     #save results for catalog in text file
-                    with open(os.path.join(output_dir, 'Check_' + catalog_name + '.txt'), 'ab') as f_handle: #open file in append mode
-                        comment = self.get_comment(q, Ntotal, sumN, results)
+                    with open(os.path.join(output_dir, 'Check_' + catalog_name + '_histogram_data.txt'), 'ab') as f_handle: #open file in append mode
+                        comment = 'Data Summary for {}\n'.format(q)
                         self.save_quantities(q, meanq, N, f_handle, comment=comment)
+                    with open(os.path.join(output_dir, 'Check_' + catalog_name + '_test_summary.txt'), 'a') as f_handle: #open file in append mode
+                        summary = self.get_summary(q, Ntotal, sumN, results)
+                        f_handle.write(summary)
 
                 self.decorate_subplot(ax_this, label='v'+version, xlabel=xlabel)
                 self.decorate_subplot(summary_ax_this, label='v'+version, xlabel=xlabel)
+
+        #get overall test result
+        test_result = all([results[q]['summary'] == 'PASS' for q in results.keys()])
 
         #make final adjustments to plots and save figure
         self.post_process_plot(fig)
         fig.savefig(os.path.join(output_dir, '_'.join(('Check',catalog_name)) + '.png'))
         plt.close(fig)
-        return TestResult(0, passed=True)
+        return TestResult(0, passed=test_result)
 
-    def get_comment(self, q, Ntotal, sumN, results):
+    def get_summary(self, q, Ntotal, sumN, results):
 
-        comment = 'Summary for {}\n'\
+        summary = 'Test Summary for {}\n'\
                   '    Total # of nan or inf values = {}\n'\
                   '    Total # of galaxies = {}\n'\
                   .format(q, Ntotal - sumN, sumN)
-        for key in results[q].keys():
-            if type(results[q][key]['value']) is tuple and len(results[q][key]['value'])==2:
-                string = '   {} = ({:12.4g},{:12.4g}); TEST RESULT: {}\n'.format(key, results[q][key]['value'][0], results[q][key]['value'][1], results[q][key]['pass'])
-            else:
-                string = '   {} = {:12.4g}; TEST RESULT: {}\n'.format(key, results[q][key]['value'], results[q][key]['pass'])
-            comment = comment + string
+        for key in self.selected_tests.keys():
+            if key in results[q].keys():
+                if type(results[q][key]['value']) is tuple and len(results[q][key]['value'])==2:
+                    string = '    {} = ({:12.4g},{:12.4g}); TEST RESULT: {}\n'.format(key, results[q][key]['value'][0], results[q][key]['value'][1], results[q][key]['pass'])
+                else:
+                    string = '    {} = {:12.4g}; TEST RESULT: {}\n'.format(key, results[q][key]['value'], results[q][key]['pass'])
+                if results[q][key]['pass'] == False:
+                    string = string + '    VALUE OUTSIDE EXPECTED RANGE: bounds: {}\n'.format(results[q][key]['criteria'])
+                summary = summary + string
+                    
+        summary = summary + 'TEST SUMMARY: {}\n'.format(results[q]['summary'])
 
-        return comment
+        return summary
         
 
     @staticmethod
@@ -338,10 +360,12 @@ class CheckQuantities(BaseValidationTest):
     @staticmethod
     def decorate_subplot(ax, xlabel=None, label=None, yscale='linear'):
         ax.tick_params(labelsize=8)
-        ax.set_yticklabels(['{:.2e}'.format(float(y)) for y in ax.get_yticks().tolist()])
+        #TODO - not working: use scientific notation for tick labels
+        ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))#, useOffset=False))
+        ax.ticklabel_format(style='sci', axis='y', scilimits=(0, 0))
         ax.set_yscale(yscale)
         if label:
-            ax.text(0.05, 0.97, label, horizontalalignment='left', verticalalignment='top', transform=ax.transAxes)
+            ax.text(0.05, 0.99, label, horizontalalignment='left', verticalalignment='top', transform=ax.transAxes)
         if xlabel:
             ax.set_xlabel(re.sub('_','',xlabel))
         ax.legend(loc='best', fancybox=True, framealpha=0.5, numpoints=1)
