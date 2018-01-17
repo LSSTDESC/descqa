@@ -12,7 +12,7 @@
       {% elif catalog %}
       <frame src="?left=1&run={{ run }}&catalog={{ catalog }}{% if test %}#{{ test }}{% endif %}" name="leftframe">
       {% endif %}
-      <frame src="javascript:parent.blank()" name="rightframe">
+      <frame src="{% if right %}?file={{ right }}{% else %}javascript:parent.blank(){% endif %}" name="rightframe">
    </frameset>
 </frameset>
 </html>
