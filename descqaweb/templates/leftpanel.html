@@ -100,7 +100,7 @@
   document.getElementById("pleasewait").style.display="none";
 
   const update_url = function(file){
-    top.history.replaceState( {} , "{{ siteTitle }}", "?run={{ run }}{% if test %}&test={{ test }}{% endif %}{% if catalog %}catalog={{ catalog }}{% endif %}&right=" + file);
+    top.history.replaceState( {} , "{{ siteTitle }}", "?run={{ run }}{% if test %}&test={{ test }}{% endif %}{% if catalog %}&catalog={{ catalog }}{% endif %}&right=" + file);
   }
 </script>
 </body>
