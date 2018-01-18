@@ -112,7 +112,8 @@ class CheckQuantities(BaseValidationTest):
                 ax.hist(value, self.nbins, histtype='step', fill=False, label=quantity, **next(self.prop_cycle))
                 output_rows.append(self._format_row(quantity, result_this_quantity))
 
-            ax.set_ylabel('log ' if checks.get('log') else '' + filename)
+            ax.set_xlabel(('log ' if checks.get('log') else '') + filename)
+            ax.yaxis.set_ticklabels([])
             ax.legend()
             ax.set_title('{} {}'.format(catalog_name, getattr(catalog_instance, 'version', '')))
             fig.tight_layout()
@@ -120,7 +121,7 @@ class CheckQuantities(BaseValidationTest):
             plt.close(fig)
 
         with open(os.path.join(output_dir, 'results.html'), 'w') as f:
-            f.write('<html><head><style>html{font-family: monospace;} tr{padding: 4px;} .fail{color: #F00;} .none{color: #555;}</style></head><body>\n')
+            f.write('<html><head><style>html{font-family: monospace;} tr{padding: 4px 8px;} .fail{color: #F00;} .none{color: #555;}</style></head><body>\n')
 
             for line in output_header:
                 f.write(line)
