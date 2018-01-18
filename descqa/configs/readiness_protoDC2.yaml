@@ -9,8 +9,9 @@ quantities_to_check:
     median: [-0.1, 0.1]
     mean: [-0.05, 0.05]
     std: [1, 2]
-    finite_frac: 1
-    outlier_frac: 0
+    f_nan: 0
+    f_inf: 0
+    f_outlier: 0
 
   - quantities: ['redshift_true', 'redshift']
     label: redshift
@@ -19,8 +20,9 @@ quantities_to_check:
     median: [0.6, 0.8]
     mean: [0.6, 0.8]
     std: [0.1, 0.3]
-    finite_frac: 1
-    outlier_frac: [0, 0.001]
+    f_nan: 0
+    f_inf: 0
+    f_outlier: [0, 0.001]
 
   - quantities: 'ellipticity_[12]*'
     label: ellipticity
@@ -29,8 +31,9 @@ quantities_to_check:
     median: [-0.05, 0.05]
     mean: [-0.05, 0.05]
     std: [0.1, 0.4]
-    finite_frac: 1
-    outlier_frac: [0, 0.03]
+    f_nan: 0
+    f_inf: 0
+    f_outlier: [0, 0.03]
 
   - quantities: ['ellipticity', 'ellipticity_[!12]*']
     label: ellipticity_total
@@ -39,14 +42,20 @@ quantities_to_check:
     median: [0, 1]
     mean: [0, 1]
     std: [0.1, 0.4]
-    finite_frac: 1
-    outlier_frac: [0, 0.02]
+    f_nan: 0
+    f_inf: 0
+    f_outlier: [0, 0.02]
 
   - quantities: 'size*'
     label: size
     log: true
-    finite_frac: [0.7, 1]
-    outlier_frac: [0, 0.05]
+    f_nan: 0
+    f_inf: [0, 0.3]
+    f_outlier: [0, 0.3]
+
+  - quantities: size*_bulge*
+    f_nan: 0
+    f_inf: 0
 
   - quantities: 'shear_*'
     min: [-0.1, 0]
@@ -54,10 +63,18 @@ quantities_to_check:
     median: [-0.01, 0.01]
     mean: [-0.01, 0.01]
     std: [0, 0.01]
-    finite_frac: 1
-    outlier_frac: [0, 0.03]
+    f_nan: 0
+    f_inf: 0
+    f_outlier: [0, 0.03]
 
   - quantities: 'position_angle*'
+    min: [0, 0.001]
+    max: [179.99, 180]
+    median: [89.9, 90.1]
+    mean: [89.9, 90.1]
+    f_nan: 0
+    f_inf: 0
+    f_outlier: 0
 
   - quantities: 'convergence'
 
@@ -69,8 +86,10 @@ quantities_to_check:
     median: 1
     mean: 1
     std: 0
-    finite_frac: 1
-    outlier_frac: 0
+    f_nan: 0
+    f_inf: 0
+    f_zero: 0
+    f_outlier: 0
 
   - quantities: 'sersic_bulge'
     min: 4
@@ -78,12 +97,10 @@ quantities_to_check:
     median: 4
     mean: 4
     std: 0
-    finite_frac: 1
-    outlier_frac: 0
-
-  - quantities: A_v
-
-  - quantities: R_v
+    f_nan: 0
+    f_inf: 0
+    f_zero: 0
+    f_outlier: 0
 
   - quantities: 'mag_*'
     label: mag
@@ -92,5 +109,7 @@ quantities_to_check:
     mean: [20, 30]
     median: [20, 30]
     std: [0, 5]
-    finite_frac: 1
-    outlier_frac: [0, 0.05]
+    f_nan: 0
+    f_inf: 0
+    f_zero: 0
+    f_outlier: [0, 0.05]

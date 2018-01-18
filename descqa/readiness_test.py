@@ -3,7 +3,7 @@ import os
 import re
 import fnmatch
 from itertools import cycle
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 import numpy as np
 
 from .base import BaseValidationTest, TestResult
@@ -19,8 +19,9 @@ def find_outlier(x):
     return (x > (m + d*3)) | (x < (m - d*3))
 
 
-def calc_frac(x, func):
-    return np.count_nonzero(func(x))/len(x)
+def calc_frac(x, func, total=None):
+    total = total or len(x)
+    return np.count_nonzero(func(x)) / total
 
 
 class CheckQuantities(BaseValidationTest):
@@ -28,7 +29,17 @@ class CheckQuantities(BaseValidationTest):
     Readiness test to check catalog quantities before image simulations
     """
 
-    stats_keys = ('min', 'max', 'median', 'mean', 'std', 'finite_frac', 'outlier_frac')
+    stats = OrderedDict((
+        ('min', np.min),
+        ('max', np.max),
+        ('median', np.median),
+        ('mean', np.mean),
+        ('std', np.std),
+        ('f_inf', np.isinf),
+        ('f_nan', np.isnan),
+        ('f_zero', np.logical_not),
+        ('f_outlier', find_outlier),
+    ))
 
     def __init__(self, **kwargs):
         self.quantities_to_check = kwargs['quantities_to_check']
@@ -39,7 +50,7 @@ class CheckQuantities(BaseValidationTest):
 
     def _format_row(self, quantity, plot_filename, results):
         output = ['<tr>', '<td title="{1}">{0}</td>'.format(quantity, plot_filename)]
-        for s in self.stats_keys:
+        for s in self.stats:
             output.append('<td class="{1}" title="{2}">{0:.4g}</td>'.format(*results[s]))
         output.append('</tr>')
         return ''.join(output)
@@ -92,22 +103,16 @@ class CheckQuantities(BaseValidationTest):
                 if checks.get('log'):
                     value = np.log10(value)
 
-                finite_mask = np.isfinite(value)
-                if finite_mask.any():
-                    value = value[finite_mask]
-                    finite_frac = np.count_nonzero(finite_mask) / len(finite_mask)
-                else:
-                    finite_frac = 1.0
-                del finite_mask
+                value_finite = value[np.isfinite(value)]
 
                 result_this_quantity = {}
-                for s in self.stats_keys:
-                    if s == 'finite_frac':
-                        s_value = finite_frac
-                    elif s == 'outlier_frac':
-                        s_value = calc_frac(value, find_outlier)
+                for s, func in self.stats.items():
+                    if s == 'f_outlier':
+                        s_value = calc_frac(value_finite, func, len(value))
+                    elif s.startswith('f_'):
+                        s_value = calc_frac(value, func)
                     else:
-                        s_value = getattr(np, s)(value)
+                        s_value = func(value_finite)
 
                     flag = False
                     if s in checks:
@@ -129,9 +134,9 @@ class CheckQuantities(BaseValidationTest):
                     if flag:
                         failed_count += 1
 
-                quantity_hashes[tuple(result_this_quantity[s][0] for s in self.stats_keys)].add(quantity)
+                quantity_hashes[tuple(result_this_quantity[s][0] for s in self.stats)].add(quantity)
 
-                ax.hist(value, self.nbins, histtype='step', fill=False, label=quantity, **next(self.prop_cycle))
+                ax.hist(value_finite, self.nbins, histtype='step', fill=False, label=quantity, **next(self.prop_cycle))
                 output_rows.append(self._format_row(quantity + (' [log]' if checks.get('log') else ''), plot_filename, result_this_quantity))
 
             ax.set_xlabel(('log ' if checks.get('log') else '') + quantity_group_label)
@@ -159,7 +164,7 @@ class CheckQuantities(BaseValidationTest):
             f.write('</ul><br>\n')
 
             f.write('<table><thead><tr><td>Quantity</td>\n')
-            for s in self.stats_keys:
+            for s in self.stats:
                 f.write('<td>{}</td>'.format(s))
             f.write('</tr></thead><tbody>\n')
             for line in output_rows:
