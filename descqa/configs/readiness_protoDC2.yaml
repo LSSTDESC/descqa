@@ -6,7 +6,7 @@ quantities_to_check:
     label: 'deg'
     min: [-2.51, -2.49]
     max: [2.49, 2.51]
-    median: [-0.05, 0.05]
+    median: [-0.1, 0.1]
     mean: [-0.05, 0.05]
     std: [1, 2]
     finite_frac: 1
@@ -16,11 +16,11 @@ quantities_to_check:
     label: redshift
     min: [-0.05, 0.05]
     max: [0.95, 1.05]
-    median: [0, 1]
-    mean: [0, 1]
-    std: [0, 1]
+    median: [0.6, 0.8]
+    mean: [0.6, 0.8]
+    std: [0.1, 0.3]
     finite_frac: 1
-    outlier_frac: [0, 0.02]
+    outlier_frac: [0, 0.001]
 
   - quantities: 'ellipticity_[12]*'
     label: ellipticity
@@ -30,11 +30,11 @@ quantities_to_check:
     mean: [-0.05, 0.05]
     std: [0.1, 0.4]
     finite_frac: 1
-    outlier_frac: [0, 0.02]
+    outlier_frac: [0, 0.03]
 
   - quantities: ['ellipticity', 'ellipticity_[!12]*']
     label: ellipticity_total
-    min: [0, 0.2]
+    min: [0, 0.01]
     max: [0.8, 1]
     median: [0, 1]
     mean: [0, 1]
@@ -42,23 +42,20 @@ quantities_to_check:
     finite_frac: 1
     outlier_frac: [0, 0.02]
 
-  - quantities: 'mag_*'
-    label: mag
-    min: [null, 15]
-    max: [25, null]
-    mean: [20, 30]
-    median: [20, 30]
-    std: [0, 5]
-    finite_frac: 1
-    outlier_frac: [0, 0.05]
-
   - quantities: 'size*'
     label: size
     log: true
-    finite_frac: 1
+    finite_frac: [0.7, 1]
     outlier_frac: [0, 0.05]
 
   - quantities: 'shear_*'
+    min: [-0.1, 0]
+    max: [0, 0.1]
+    median: [-0.01, 0.01]
+    mean: [-0.01, 0.01]
+    std: [0, 0.01]
+    finite_frac: 1
+    outlier_frac: [0, 0.03]
 
   - quantities: 'position_angle*'
 
@@ -87,3 +84,13 @@ quantities_to_check:
   - quantities: A_v
 
   - quantities: R_v
+
+  - quantities: 'mag_*'
+    label: mag
+    min: [null, 15]
+    max: [25, null]
+    mean: [20, 30]
+    median: [20, 30]
+    std: [0, 5]
+    finite_frac: 1
+    outlier_frac: [0, 0.05]

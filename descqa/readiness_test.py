@@ -55,6 +55,8 @@ class CheckQuantities(BaseValidationTest):
         output_header = []
         quantity_hashes = defaultdict(set)
 
+        output_header.append('<span>Running readiness test on {} {}</span>'.format(catalog_name, getattr(catalog_instance, 'version', '')))
+
         for i, checks in enumerate(self.quantities_to_check):
 
             quantity_patterns = checks['quantities'] if isinstance(checks['quantities'], (tuple, list)) else [checks['quantities']]
@@ -136,7 +138,8 @@ class CheckQuantities(BaseValidationTest):
             ax.yaxis.set_ticklabels([])
             ax.set_title('{} {}'.format(catalog_name, getattr(catalog_instance, 'version', '')), fontsize='small')
             fig.tight_layout()
-            ax.legend(loc='best', fontsize='small')
+            leg = ax.legend(loc='best', fontsize='x-small', ncol=2, frameon=True, facecolor='white')
+            leg.get_frame().set_alpha(0.5)
             fig.savefig(os.path.join(output_dir, plot_filename))
             plt.close(fig)
 
