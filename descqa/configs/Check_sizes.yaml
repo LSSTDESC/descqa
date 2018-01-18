@@ -1,4 +1,0 @@
-subclass_name: CheckQuantities.CheckQuantities
-quantities: ['size{}']
-ncolumns: 1
-description: 'Plot histograms of listed quantities and perform range, finiteness, mean and standard deviation checks.'

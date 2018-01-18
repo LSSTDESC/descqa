@@ -58,6 +58,8 @@ class CheckQuantities(BaseValidationTest):
         for i, checks in enumerate(self.quantities_to_check):
 
             quantity_patterns = checks['quantities'] if isinstance(checks['quantities'], (tuple, list)) else [checks['quantities']]
+            assert quantity_patterns, 'yaml file not specify correctly!'
+
             quantities_this = set()
             for quantity_pattern in quantity_patterns:
                 quantities_this.update(fnmatch.filter(all_quantities, quantity_pattern))
@@ -67,8 +69,12 @@ class CheckQuantities(BaseValidationTest):
                 failed_count += 1
                 continue
 
-            quantity_group_label = re.sub('_+', '_', re.sub(r'\W+', '_', quantity_pattern)).strip('_')
+            if 'label' in checks:
+                quantity_group_label = checks['label']
+            else:
+                quantity_group_label = re.sub('_+', '_', re.sub(r'\W+', '_', quantity_pattern)).strip('_')
             plot_filename = 'p{:02d}_{}.png'.format(i, quantity_group_label)
+
             fig, ax = plt.subplots()
 
             for quantity in quantities_this:
@@ -124,7 +130,7 @@ class CheckQuantities(BaseValidationTest):
                 quantity_hashes[tuple(result_this_quantity[s][0] for s in self.stats_keys)].add(quantity)
 
                 ax.hist(value, self.nbins, histtype='step', fill=False, label=quantity, **next(self.prop_cycle))
-                output_rows.append(self._format_row(quantity, plot_filename, result_this_quantity))
+                output_rows.append(self._format_row(quantity + (' [log]' if checks.get('log') else ''), plot_filename, result_this_quantity))
 
             ax.set_xlabel(('log ' if checks.get('log') else '') + quantity_group_label)
             ax.yaxis.set_ticklabels([])
