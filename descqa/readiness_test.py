@@ -103,7 +103,7 @@ class CheckQuantities(BaseValidationTest):
 
             ax.set_ylabel('log ' if checks.get('log') else '' + filename)
             ax.legend()
-            ax.set_title('{} {}'.format(catalog_name, catalog_instance.get('version', '')))
+            ax.set_title('{} {}'.format(catalog_name, getattr(catalog_instance, 'version', '')))
             fig.tight_layout()
             fig.savefig(os.path.join(output_dir, filename+'.png'))
             plt.close(fig)
