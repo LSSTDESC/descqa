@@ -37,8 +37,8 @@ class CheckQuantities(BaseValidationTest):
         self.prop_cycle = cycle(iter(plt.rcParams['axes.prop_cycle']))
 
 
-    def _format_row(self, quantity, results):
-        output = ['<tr>', '<td>{}</td>'.format(quantity)]
+    def _format_row(self, quantity, plot_filename, results):
+        output = ['<tr>', '<td title="{1}">{0}</td>'.format(quantity, plot_filename)]
         for s in self.stats_keys:
             output.append('<td class="{1}" title="{2}">{0:.4g}</td>'.format(*results[s]))
         output.append('</tr>')
@@ -63,7 +63,7 @@ class CheckQuantities(BaseValidationTest):
                 quantities_this.update(fnmatch.filter(all_quantities, quantity_pattern))
 
             if not quantities_this:
-                output_header.append('<p class="fail">Found no matching quantities for {}</p>'.format(quantity_pattern))
+                output_header.append('<span class="fail">Found no matching quantities for {}</span>'.format(quantity_pattern))
                 failed_count += 1
                 continue
 
@@ -76,9 +76,9 @@ class CheckQuantities(BaseValidationTest):
 
                 if galaxy_count is None:
                     galaxy_count = len(value)
-                    output_header.append('<p>Found {} entries in this catalog.</p>'.format(galaxy_count))
+                    output_header.append('<span>Found {} entries in this catalog.</span>'.format(galaxy_count))
                 elif galaxy_count != len(value):
-                    output_header.append('<p class="fail">"{}" has {} entries (different from {})</p>'.format(quantity, len(value), galaxy_count))
+                    output_header.append('<span class="fail">"{}" has {} entries (different from {})</span>'.format(quantity, len(value), galaxy_count))
                     failed_count += 1
 
                 if checks.get('log'):
@@ -116,7 +116,7 @@ class CheckQuantities(BaseValidationTest):
                     result_this_quantity[s] = (
                         s_value,
                         'none' if flag is None else ('fail' if flag else 'pass'),
-                        checks[s]
+                        checks.get(s, ''),
                     )
                     if flag:
                         failed_count += 1
@@ -124,7 +124,7 @@ class CheckQuantities(BaseValidationTest):
                 quantity_hashes[tuple(result_this_quantity[s][0] for s in self.stats_keys)].add(quantity)
 
                 ax.hist(value, self.nbins, histtype='step', fill=False, label=quantity, **next(self.prop_cycle))
-                output_rows.append(self._format_row(quantity, result_this_quantity))
+                output_rows.append(self._format_row(quantity, plot_filename, result_this_quantity))
 
             ax.set_xlabel(('log ' if checks.get('log') else '') + quantity_group_label)
             ax.yaxis.set_ticklabels([])
@@ -136,22 +136,26 @@ class CheckQuantities(BaseValidationTest):
 
         for same_quantities in quantity_hashes.values():
             if len(same_quantities) > 1:
-                output_header.append('<p class="fail">{} seem be to identical!</p>'.format(', '.join(same_quantities)))
+                output_header.append('<span class="fail">{} seem be to identical!</span>'.format(', '.join(same_quantities)))
+                failed_count += 1
 
         with open(os.path.join(output_dir, 'SUMMARY.html'), 'w') as f:
-            f.write('<html><head><style>html{font-family: monospace;} thead {font-weight: bold;} td{padding: 1px 8px;} .fail{color: #F00;} .none{color: #666;}</style></head><body>\n')
+            f.write('<html><head><style>html{font-family: monospace;} table{border-spacing: 0;} thead,tr:nth-child(even){background: #ddd;} thead{font-weight: bold;} td{padding: 2px 8px;} .fail{color: #F00;} .none{color: #444;}</style></head><body>\n')
 
+            f.write('<ul>\n')
             for line in output_header:
+                f.write('<li>')
                 f.write(line)
-                f.write('\n')
+                f.write('</li>\n')
+            f.write('</ul><br>\n')
 
-            f.write('<table><thead><td>Quantity</td>\n')
+            f.write('<table><thead><tr><td>Quantity</td>\n')
             for s in self.stats_keys:
                 f.write('<td>{}</td>'.format(s))
-            f.write('\n')
+            f.write('</tr></thead><tbody>\n')
             for line in output_rows:
                 f.write(line)
                 f.write('\n')
-            f.write('</table></body></html>\n')
+            f.write('</tbody></table></body></html>\n')
 
         return TestResult(passed=(failed_count == 0), score=failed_count)

@@ -2,7 +2,7 @@ subclass_name: readiness_test.CheckQuantities
 description: 'Plot histograms of listed quantities and perform range, finiteness, mean and standard deviation checks.'
 
 quantities_to_check:
-  - quantities: ellipticity_[12]*
+  - quantities: 'ellipticity_[12]*'
     min: [-1, -0.8]
     max: [0.8, 1]
     mean: [-0.05, 0.05]
@@ -11,7 +11,7 @@ quantities_to_check:
     finite_frac: 1
     outlier_frac: [0, 0.05]
 
-  - quantities: ellipticity, ellipticity_[!12]*
+  - quantities: ['ellipticity', 'ellipticity_[!12]*']
     min: [0, 0.2]
     max: [0.8, 1]
     mean: [0, 1]
@@ -20,7 +20,7 @@ quantities_to_check:
     finite_frac: 1
     outlier_frac: [0, 0.05]
 
-  - quantities: mag_*
+  - quantities: 'mag_*'
     min: [null, 15]
     max: [25, null]
     mean: [20, 30]
@@ -29,19 +29,21 @@ quantities_to_check:
     finite_frac: 1
     outlier_frac: [0, 0.05]
 
-  - quantities: size*
+  - quantities: 'size*'
     log: true
     finite_frac: 1
     outlier_frac: [0, 0.05]
 
-  - quantities: ra_true, ra
+  - quantities: ['ra_true', 'ra']
     std: [1, null]
     finite_frac: 1
 
-  - quantities: dec_true, dec
+  - quantities: ['dec_true', 'dec']
     std: [1, null]
     finite_frac: 1
 
-  - quantities: redshift_true, redshift
+  - quantities: ['redshift_true', 'redshift']
     min: [-0.5, 0.5]
     finite_frac: 1
+
+  - quantities: 'morphology/diskEllipticity'
