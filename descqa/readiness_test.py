@@ -2,6 +2,7 @@ from __future__ import print_function, division, unicode_literals, absolute_impo
 import os
 import re
 import fnmatch
+from itertools import cycle
 import numpy as np
 
 from .base import BaseValidationTest, TestResult
@@ -32,7 +33,7 @@ class CheckQuantities(BaseValidationTest):
         'mean': np.mean,
         'std': np.std,
         'median': np.median,
-        'finite_frac': lambda x: calc_frac(x, np.isfinite),
+        'finite_frac': None,
         'outlier_frac': lambda x: calc_frac(x, find_outlier),
     }
 
@@ -40,6 +41,7 @@ class CheckQuantities(BaseValidationTest):
     def __init__(self, **kwargs):
         self.quantities_to_check = kwargs['quantities_to_check']
         self.nbins = kwargs.get('nbins', 50)
+        self.prop_cycle = cycle(iter(plt.rcParams['axes.prop_cycle']))
 
 
     def _format_row(self, quantity, results):
@@ -79,9 +81,18 @@ class CheckQuantities(BaseValidationTest):
             for quantity, value in quantities_this.items():
                 if checks.get('log'):
                     value = np.log10(value)
+
+                finite_mask = np.isfinite(value)
+                if finite_mask.any():
+                    value = value[finite_mask]
+                    finite_frac = np.count_nonzero(finite_mask) / len(finite_mask)
+                else:
+                    finite_frac = 1.0
+                del finite_mask
+
                 result_this_quantity = {}
                 for s, func in self.stats.items():
-                    s_value = func(value)
+                    s_value = finite_frac if s == 'finite_frac' else func(value)
                     flag = False
                     if s in checks:
                         try:
@@ -98,7 +109,7 @@ class CheckQuantities(BaseValidationTest):
                     if flag:
                         failed_count += 1
 
-                ax.hist(value, self.nbins, fill=False, label=quantity)
+                ax.hist(value, self.nbins, histtype='step', fill=False, label=quantity, **next(self.prop_cycle))
                 output_rows.append(self._format_row(quantity, result_this_quantity))
 
             ax.set_ylabel('log ' if checks.get('log') else '' + filename)
