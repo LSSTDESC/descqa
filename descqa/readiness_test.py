@@ -3,6 +3,7 @@ import os
 import re
 import fnmatch
 from itertools import cycle
+from collections import defaultdict
 import numpy as np
 
 from .base import BaseValidationTest, TestResult
@@ -27,26 +28,19 @@ class CheckQuantities(BaseValidationTest):
     Readiness test to check catalog quantities before image simulations
     """
 
-    stats = {
-        'max': np.max,
-        'min': np.min,
-        'mean': np.mean,
-        'std': np.std,
-        'median': np.median,
-        'finite_frac': None,
-        'outlier_frac': lambda x: calc_frac(x, find_outlier),
-    }
+    stats_keys = ('min', 'max', 'median', 'mean', 'std', 'finite_frac', 'outlier_frac')
 
     def __init__(self, **kwargs):
         self.quantities_to_check = kwargs['quantities_to_check']
+        assert all('quantities' in d for d in self.quantities_to_check), 'yaml file not correctly specified'
         self.nbins = kwargs.get('nbins', 50)
         self.prop_cycle = cycle(iter(plt.rcParams['axes.prop_cycle']))
 
 
     def _format_row(self, quantity, results):
         output = ['<tr>', '<td>{}</td>'.format(quantity)]
-        for s in self.stats:
-            output.append('<td class="{}">{:.4g}</td>'.format(*results[s]))
+        for s in self.stats_keys:
+            output.append('<td class="{1}" title="{2}">{0:.4g}</td>'.format(*results[s]))
         output.append('</tr>')
         return ''.join(output)
 
@@ -55,29 +49,38 @@ class CheckQuantities(BaseValidationTest):
 
         all_quantities = sorted(catalog_instance.list_all_quantities(True))
 
+        galaxy_count = None
         failed_count = 0
         output_rows = []
         output_header = []
-        existing_filenames = []
+        quantity_hashes = defaultdict(set)
 
-        for quantity_pattern, checks in self.quantities_to_check.items():
-            quantities_this = fnmatch.filter(all_quantities, quantity_pattern)
+        for i, checks in enumerate(self.quantities_to_check):
+
+            quantity_patterns = checks['quantities'] if isinstance(checks['quantities'], (tuple, list)) else [checks['quantities']]
+            quantities_this = set()
+            for quantity_pattern in quantity_patterns:
+                quantities_this.update(fnmatch.filter(all_quantities, quantity_pattern))
 
             if not quantities_this:
                 output_header.append('<p class="fail">Found no matching quantities for {}</p>'.format(quantity_pattern))
                 failed_count += 1
                 continue
 
-            filename = re.sub(r'\W+', '_', quantity_pattern).strip('_')
-            while filename in existing_filenames:
-                filename += '_'
-            existing_filenames.append(filename)
-
-            quantities_this = catalog_instance.get_quantities(quantities_this)
-
+            quantity_group_label = re.sub('_+', '_', re.sub(r'\W+', '_', quantity_pattern)).strip('_')
+            plot_filename = 'p{:02d}_{}.png'.format(i, quantity_group_label)
             fig, ax = plt.subplots()
 
-            for quantity, value in quantities_this.items():
+            for quantity in quantities_this:
+                value = catalog_instance[quantity]
+
+                if galaxy_count is None:
+                    galaxy_count = len(value)
+                    output_header.append('<p>Found {} entries in this catalog.</p>'.format(galaxy_count))
+                elif galaxy_count != len(value):
+                    output_header.append('<p class="fail">"{}" has {} entries (different from {})</p>'.format(quantity, len(value), galaxy_count))
+                    failed_count += 1
+
                 if checks.get('log'):
                     value = np.log10(value)
 
@@ -90,8 +93,14 @@ class CheckQuantities(BaseValidationTest):
                 del finite_mask
 
                 result_this_quantity = {}
-                for s, func in self.stats.items():
-                    s_value = finite_frac if s == 'finite_frac' else func(value)
+                for s in self.stats_keys:
+                    if s == 'finite_frac':
+                        s_value = finite_frac
+                    elif s == 'outlier_frac':
+                        s_value = calc_frac(value, find_outlier)
+                    else:
+                        s_value = getattr(np, s)(value)
+
                     flag = False
                     if s in checks:
                         try:
@@ -104,30 +113,40 @@ class CheckQuantities(BaseValidationTest):
                             flag |= (s_value != checks[s])
                     else:
                         flag = None
-                    result_this_quantity[s] = ('none' if flag is None else ('fail' if flag else 'pass'), s_value)
+                    result_this_quantity[s] = (
+                        s_value,
+                        'none' if flag is None else ('fail' if flag else 'pass'),
+                        checks[s]
+                    )
                     if flag:
                         failed_count += 1
+
+                quantity_hashes[tuple(result_this_quantity[s][0] for s in self.stats_keys)].add(quantity)
 
                 ax.hist(value, self.nbins, histtype='step', fill=False, label=quantity, **next(self.prop_cycle))
                 output_rows.append(self._format_row(quantity, result_this_quantity))
 
-            ax.set_xlabel(('log ' if checks.get('log') else '') + filename)
+            ax.set_xlabel(('log ' if checks.get('log') else '') + quantity_group_label)
             ax.yaxis.set_ticklabels([])
-            ax.legend(loc='best', fontsize='small')
-            ax.set_title('{} {}'.format(catalog_name, getattr(catalog_instance, 'version', '')))
+            ax.set_title('{} {}'.format(catalog_name, getattr(catalog_instance, 'version', '')), fontsize='small')
             fig.tight_layout()
-            fig.savefig(os.path.join(output_dir, filename+'.png'))
+            ax.legend(loc='best', fontsize='small')
+            fig.savefig(os.path.join(output_dir, plot_filename))
             plt.close(fig)
 
+        for same_quantities in quantity_hashes.values():
+            if len(same_quantities) > 1:
+                output_header.append('<p class="fail">{} seem be to identical!</p>'.format(', '.join(same_quantities)))
+
         with open(os.path.join(output_dir, 'SUMMARY.html'), 'w') as f:
-            f.write('<html><head><style>html{font-family: monospace;} td{padding: 1px 8px;} .fail{color: #F00;} .none{color: #555;}</style></head><body>\n')
+            f.write('<html><head><style>html{font-family: monospace;} thead {font-weight: bold;} td{padding: 1px 8px;} .fail{color: #F00;} .none{color: #666;}</style></head><body>\n')
 
             for line in output_header:
                 f.write(line)
                 f.write('\n')
 
             f.write('<table><thead><td>Quantity</td>\n')
-            for s in self.stats:
+            for s in self.stats_keys:
                 f.write('<td>{}</td>'.format(s))
             f.write('\n')
             for line in output_rows:
@@ -135,4 +154,4 @@ class CheckQuantities(BaseValidationTest):
                 f.write('\n')
             f.write('</table></body></html>\n')
 
-        return TestResult(passed=(failed_count==0), score=failed_count)
+        return TestResult(passed=(failed_count == 0), score=failed_count)
