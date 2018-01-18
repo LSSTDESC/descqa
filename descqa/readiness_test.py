@@ -120,7 +120,7 @@ class CheckQuantities(BaseValidationTest):
             plt.close(fig)
 
         with open(os.path.join(output_dir, 'results.html'), 'w') as f:
-            f.write('<style>.fail{color: #F00;} .none{color: #555;}</style>\n')
+            f.write('<html><head><style>html{font-family: monospace;} tr{padding: 4px;} .fail{color: #F00;} .none{color: #555;}</style></head><body>\n')
 
             for line in output_header:
                 f.write(line)
@@ -133,6 +133,6 @@ class CheckQuantities(BaseValidationTest):
             for line in output_rows:
                 f.write(line)
                 f.write('\n')
-            f.write('</table>\n')
+            f.write('</table></body></html>\n')
 
         return TestResult(passed=(failed_count==0), score=failed_count)
