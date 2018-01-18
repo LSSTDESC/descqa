@@ -37,7 +37,6 @@ class CheckQuantities(BaseValidationTest):
         'outlier_frac': lambda x: calc_frac(x, find_outlier),
     }
 
-
     def __init__(self, **kwargs):
         self.quantities_to_check = kwargs['quantities_to_check']
         self.nbins = kwargs.get('nbins', 50)
@@ -114,14 +113,14 @@ class CheckQuantities(BaseValidationTest):
 
             ax.set_xlabel(('log ' if checks.get('log') else '') + filename)
             ax.yaxis.set_ticklabels([])
-            ax.legend()
+            ax.legend(loc='best', fontsize='small')
             ax.set_title('{} {}'.format(catalog_name, getattr(catalog_instance, 'version', '')))
             fig.tight_layout()
             fig.savefig(os.path.join(output_dir, filename+'.png'))
             plt.close(fig)
 
-        with open(os.path.join(output_dir, 'results.html'), 'w') as f:
-            f.write('<html><head><style>html{font-family: monospace;} tr{padding: 4px 8px;} .fail{color: #F00;} .none{color: #555;}</style></head><body>\n')
+        with open(os.path.join(output_dir, 'SUMMARY.html'), 'w') as f:
+            f.write('<html><head><style>html{font-family: monospace;} td{padding: 1px 8px;} .fail{color: #F00;} .none{color: #555;}</style></head><body>\n')
 
             for line in output_header:
                 f.write(line)
