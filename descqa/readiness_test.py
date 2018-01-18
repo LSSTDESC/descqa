@@ -45,7 +45,7 @@ class CheckQuantities(BaseValidationTest):
     def _format_row(self, quantity, results):
         output = ['<tr>', '<td>{}</td>'.format(quantity)]
         for s in self.stats:
-            output.append('<td class="{}">{:.8g}</td>'.format(*results[s]))
+            output.append('<td class="{}">{:.4g}</td>'.format(*results[s]))
         output.append('</tr>')
         return ''.join(output)
 
@@ -54,7 +54,7 @@ class CheckQuantities(BaseValidationTest):
 
         all_quantities = sorted(catalog_instance.list_all_quantities(True))
 
-        passed = True
+        failed_count = 0
         output_rows = []
         output_header = []
         existing_filenames = []
@@ -63,8 +63,8 @@ class CheckQuantities(BaseValidationTest):
             quantities_this = fnmatch.filter(all_quantities, quantity_pattern)
 
             if not quantities_this:
-                output_header.append('<p class="warn">Found no matching quantities for {}</p>'.format(quantity_pattern))
-                passed = False
+                output_header.append('<p class="fail">Found no matching quantities for {}</p>'.format(quantity_pattern))
+                failed_count += 1
                 continue
 
             filename = re.sub(r'\W+', '_', quantity_pattern).strip('_')
@@ -96,7 +96,7 @@ class CheckQuantities(BaseValidationTest):
                         flag = None
                     result_this_quantity[s] = ('none' if flag is None else ('fail' if flag else 'pass'), s_value)
                     if flag:
-                        passed = False
+                        failed_count += 1
 
                 ax.hist(value, self.nbins, fill=False, label=quantity)
                 output_rows.append(self._format_row(quantity, result_this_quantity))
@@ -109,6 +109,8 @@ class CheckQuantities(BaseValidationTest):
             plt.close(fig)
 
         with open(os.path.join(output_dir, 'results.html'), 'w') as f:
+            f.write('<style>.fail{color: #F00;} .none{color: #555;}</style>\n')
+
             for line in output_header:
                 f.write(line)
                 f.write('\n')
@@ -122,4 +124,4 @@ class CheckQuantities(BaseValidationTest):
                 f.write('\n')
             f.write('</table>\n')
 
-        return TestResult(passed=passed)
+        return TestResult(passed=(failed_count==0), score=failed_count)

@@ -11,7 +11,7 @@ quantities_to_check:
     finite_frac: 1
     outlier_frac: [0, 0.4]
 
-  mag*:
+  mag_*:
     min: [0, 20]
     max: [20, 40]
     mean: [20, 30]
