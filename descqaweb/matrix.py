@@ -51,7 +51,7 @@ def prepare_matrix(run=None, catalog_prefix=None, test_prefix=None):
 
     data = dict()
 
-    data['version_info'] = config.version_info
+    data['general_info'] = config.general_info
     data['run'] = descqa_run.name
     data['comment'] = cgi.escape(descqa_run.status.get('comment', ''))
     data['user'] = descqa_run.status.get('user', 'UNKNOWN')
