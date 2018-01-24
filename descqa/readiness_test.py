@@ -24,6 +24,11 @@ def calc_frac(x, func, total=None):
     total = total or len(x)
     return np.count_nonzero(func(x)) / total
 
+
+def split_for_natural_sort(s):
+    return tuple((int(y) if y.isdigit() else y for y in re.split(r'(\d+)', s)))
+
+
 class CheckQuantities(BaseValidationTest):
     """
     Readiness test to check catalog quantities before image simulations
@@ -57,10 +62,6 @@ class CheckQuantities(BaseValidationTest):
         output.append('</tr>')
         return ''.join(output)
 
-    def stringSplitByIntegers(self,x):
-        r = re.compile('(\d+)')
-        l = r.split(x)
-        return [int(y) if y.isdigit() else y for y in l]
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
 
@@ -88,7 +89,7 @@ class CheckQuantities(BaseValidationTest):
                 failed_count += 1
                 continue
 
-            quantities_this = sorted(quantities_this, key=self.stringSplitByIntegers)
+            quantities_this = sorted(quantities_this, key=split_for_natural_sort)
 
             if 'label' in checks:
                 quantity_group_label = checks['label']
