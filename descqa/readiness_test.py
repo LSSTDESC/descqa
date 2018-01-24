@@ -5,6 +5,7 @@ import fnmatch
 from itertools import cycle
 from collections import defaultdict, OrderedDict
 import numpy as np
+import numexpr as ne
 
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
@@ -42,7 +43,9 @@ class CheckQuantities(BaseValidationTest):
     ))
 
     def __init__(self, **kwargs):
-        self.quantities_to_check = kwargs['quantities_to_check']
+        self.quantities_to_check = kwargs.get('quantities_to_check', [])
+        self.relations_to_check = kwargs.get('relations_to_check', [])
+        assert (self.quantities_to_check or self.relations_to_check), 'must specify quantities_to_check or relations_to_check'
         assert all('quantities' in d for d in self.quantities_to_check), 'yaml file not correctly specified'
         self.nbins = kwargs.get('nbins', 50)
         self.prop_cycle = cycle(iter(plt.rcParams['axes.prop_cycle']))
@@ -143,8 +146,9 @@ class CheckQuantities(BaseValidationTest):
             ax.yaxis.set_ticklabels([])
             ax.set_title('{} {}'.format(catalog_name, getattr(catalog_instance, 'version', '')), fontsize='small')
             fig.tight_layout()
-            leg = ax.legend(loc='best', fontsize='x-small', ncol=2, frameon=True, facecolor='white')
-            leg.get_frame().set_alpha(0.5)
+            if len(quantities_this) <= 9:
+                leg = ax.legend(loc='best', fontsize='x-small', ncol=3, frameon=True, facecolor='white')
+                leg.get_frame().set_alpha(0.5)
             fig.savefig(os.path.join(output_dir, plot_filename))
             plt.close(fig)
 
@@ -152,6 +156,28 @@ class CheckQuantities(BaseValidationTest):
             if len(same_quantities) > 1:
                 output_header.append('<span class="fail">{} seem be to identical!</span>'.format(', '.join(same_quantities)))
                 failed_count += 1
+
+
+        for relation in self.relations_to_check:
+            quantities_needed = set(ne.necompiler.precompile(relation)[-1])
+            if not catalog_instance.has_quantities(quantities_needed):
+                output_header.append('<span class="fail">Not all quantities needed for `{}` exist!</span>'.format(relation))
+                failed_count += 1
+                continue
+
+            try:
+                result = ne.evaluate(relation, local_dict=catalog_instance.get_quantities(quantities_needed), global_dict={}).all()
+            except Exception:
+                output_header.append('<span class="fail">Not able to evaluate `{}`!</span>'.format(relation))
+                failed_count += 1
+                continue
+
+            if result:
+                output_header.append('<span>It is true that `{}`</span>'.format(relation))
+            else:
+                output_header.append('<span class="fail">`{}` not true!</span>'.format(relation))
+                failed_count += 1
+
 
         with open(os.path.join(output_dir, 'SUMMARY.html'), 'w') as f:
             f.write('<html><head><style>html{font-family: monospace;} table{border-spacing: 0;} thead,tr:nth-child(even){background: #ddd;} thead{font-weight: bold;} td{padding: 2px 8px;} .fail{color: #F00;} .none{color: #444;}</style></head><body>\n')
