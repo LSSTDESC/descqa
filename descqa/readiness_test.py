@@ -53,6 +53,7 @@ class CheckQuantities(BaseValidationTest):
         assert all('quantities' in d for d in self.quantities_to_check), 'yaml file not correctly specified'
         self.nbins = kwargs.get('nbins', 50)
         self.prop_cycle = cycle(iter(plt.rcParams['axes.prop_cycle']))
+        super(CheckQuantities, self).__init__(**kwargs)
 
 
     def _format_row(self, quantity, plot_filename, results):
@@ -81,6 +82,7 @@ class CheckQuantities(BaseValidationTest):
             assert quantity_patterns, 'yaml file not specify correctly!'
 
             quantities_this = set()
+            quantity_pattern = None
             for quantity_pattern in quantity_patterns:
                 quantities_this.update(fnmatch.filter(all_quantities, quantity_pattern))
 
@@ -173,7 +175,7 @@ class CheckQuantities(BaseValidationTest):
 
             try:
                 result = ne.evaluate(relation, local_dict=catalog_instance.get_quantities(quantities_needed), global_dict={}).all()
-            except Exception:
+            except Exception: # pylint: disable=broad-except
                 output_header.append('<span class="fail">Not able to evaluate `{}`!</span>'.format(relation))
                 failed_count += 1
                 continue
