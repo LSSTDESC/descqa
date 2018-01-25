@@ -8,7 +8,7 @@ install:
   - pip install pylint nose
 
 script:
-  - pylint --disable=C0103,C0301 --extension-pkg-whitelist=numpy `find . -name \*.py -not -path ./v1/\* -print` || true
   - nosetests
   - python -c "import descqaweb"
   - python -c "import descqarun"
+  - pylint --disable=C0103,C0301 --extension-pkg-whitelist=numpy $(git diff --name-only $TRAVIS_COMMIT_RANGE | grep 'descqa.*/.\+\.py')
