@@ -1,4 +1,5 @@
 language: python
+cache: pip
 python:
   - "2.7"
   - "3.6"
@@ -11,4 +12,4 @@ script:
   - nosetests
   - python -c "import descqaweb"
   - python -c "import descqarun"
-  - pylint --disable=C0103,C0301 --extension-pkg-whitelist=numpy $(git diff --name-only $TRAVIS_COMMIT_RANGE | grep 'descqa.*/.\+\.py')
+  - CHANGED=$(git diff --name-only $TRAVIS_COMMIT_RANGE | grep '^\(descqa.*\|tests\)/.\+\.py$') && ([[ -z $CHANGED ]] || pylint --disable=C0103,C0301 --extension-pkg-whitelist=numpy $CHANGED)
