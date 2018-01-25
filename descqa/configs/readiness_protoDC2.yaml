@@ -137,7 +137,7 @@ quantities_to_check:
     f_zero: 0
     f_outlier: [0, 0.05]
 
-  - quantities: 'SEDs/totalLuminositiesStellar*:rest'
+  - quantities: 'sed_*_*[0123456789]'
     label: SED
     log: true
     min: [2, 7]
@@ -149,6 +149,14 @@ quantities_to_check:
     f_inf: 0
     f_zero: 0
     f_outlier: [0, 0.03]
+
+  - quantities: 'sed_*_*_disk'
+    label: SED
+    log: true
+
+  - quantities: 'sed_*_*_bulge'
+    label: SED
+    log: true
 
 
 relations_to_check:
