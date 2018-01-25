@@ -137,6 +137,10 @@ quantities_to_check:
     f_zero: 0
     f_outlier: [0, 0.05]
 
+  - quantities: 'stellar_mass*'
+    log: true
+    f_nan: 0
+
   - quantities: 'sed_*_*[0123456789]'
     label: SED
     log: true
@@ -144,21 +148,33 @@ quantities_to_check:
     max: [9, 11]
     mean: [5, 8]
     median: [5, 8]
-    std: [0.5, 0.7]
+    std: [0.5, 1.3]
     f_nan: 0
     f_inf: 0
     f_zero: 0
     f_outlier: [0, 0.03]
 
   - quantities: 'sed_*_*_disk'
-    label: SED
+    label: Disk SED
     log: true
+    f_nan: 0
+    f_inf: 0
+    f_zero: 0
+    f_outlier: [0, 0.03]
 
   - quantities: 'sed_*_*_bulge'
-    label: SED
+    label: Bulge SED 
     log: true
+    f_nan: 0
+    f_inf: 0
+    f_zero: 0
+    f_outlier: [0, 0.03]
 
 
 relations_to_check:
  - 'size_minor_bulge_true <= size_bulge_true'
  - 'size_minor_disk_true <= size_disk_true'
+ - '(size_bulge_true != 0) | (stellar_mass_bulge == 0)'
+ - 'stellar_mass_bulge <= stellar_mass'
+ - 'stellar_mass_disk <= stellar_mass'
+
