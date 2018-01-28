@@ -157,18 +157,30 @@ quantities_to_check:
   - quantities: 'sed_*_*_disk'
     label: Disk SED
     log: true
+    min: [-23.0, -20.0]
+    max: [9, 10]
+    median: [5, 7]
+    mean: [5, 7]
+    std: [1, 2]
     f_nan: 0
-    f_inf: 0
     f_zero: 0
-    f_outlier: [0, 0.03]
+    f_outlier: [0, 0.1]
 
   - quantities: 'sed_*_*_bulge'
     label: Bulge SED 
     log: true
+    min: [-12.0, -7.0]
+    max: [9, 11]
+    median: [3, 7]
+    mean: [3, 7]
+    std: [0.5, 1.5]
     f_nan: 0
-    f_inf: 0
     f_zero: 0
     f_outlier: [0, 0.03]
+
+  - quantities: A_v
+
+  - quantities: R_v
 
 
 relations_to_check:
