@@ -140,7 +140,13 @@ quantities_to_check:
 
   - quantities: 'stellar_mass*'
     log: true
+    min: [null, 10]
+    max: [10, 13]
+    median: [7.5, 9]
+    mean: [7.5, 9]
+    std: [0.5, 1.5]
     f_nan: 0
+    f_outlier: [0, 0.02]
 
   - quantities: 'sed_*_*[0123456789]'
     label: SED
