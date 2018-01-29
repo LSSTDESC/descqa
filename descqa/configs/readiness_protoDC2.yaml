@@ -184,9 +184,9 @@ quantities_to_check:
 
 
 relations_to_check:
- - 'size_minor_bulge_true <= size_bulge_true'
- - 'size_minor_disk_true <= size_disk_true'
- - '(size_bulge_true != 0) | (stellar_mass_bulge == 0)'
- - 'stellar_mass_bulge <= stellar_mass'
- - 'stellar_mass_disk <= stellar_mass'
-
+  - 'size_minor_bulge_true <= size_bulge_true'
+  - 'size_minor_disk_true <= size_disk_true'
+  - '(size_bulge_true != 0) | (stellar_mass_bulge == 0)'
+  - 'stellar_mass_bulge <= stellar_mass'
+  - 'stellar_mass_disk <= stellar_mass'
+  - '1.0 / magnification == (1.0 - convergence)**2.0 - shear_1**2.0 - shear_2**2.0'
