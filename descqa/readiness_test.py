@@ -15,18 +15,39 @@ __all__ = ['CheckQuantities']
 
 
 def find_outlier(x):
+    """
+    return a bool array indicating outliers or not in *x*
+    """
     l, m, h = np.percentile(x, [16.0, 50.0, 84.0])
     d = (h-l) * 0.5
     return (x > (m + d*3)) | (x < (m - d*3))
 
 
 def calc_frac(x, func, total=None):
+    """
+    calculate the fraction of entries in *x* that satisfy *func*
+    """
     total = total or len(x)
     return np.count_nonzero(func(x)) / total
 
 
 def split_for_natural_sort(s):
+    """
+    split a string *s* for natural sort.
+    """
     return tuple((int(y) if y.isdigit() else y for y in re.split(r'(\d+)', s)))
+
+
+def evaluate_expression(expression, catalog_instance):
+    """
+    evaluate a numexpr expression on a GCR catalog
+    """
+    quantities_needed = set(ne.necompiler.precompile(expression)[-1])
+    if not catalog_instance.has_quantities(quantities_needed):
+        raise KeyError("Not all quantities needed exist")
+    return ne.evaluate(expression,
+                       local_dict=catalog_instance.get_quantities(quantities_needed),
+                       global_dict={})
 
 
 class CheckQuantities(BaseValidationTest):
@@ -165,27 +186,31 @@ class CheckQuantities(BaseValidationTest):
                 output_header.append('<span class="fail">{} seem be to identical!</span>'.format(', '.join(same_quantities)))
                 failed_count += 1
 
-
         for relation in self.relations_to_check:
-            quantities_needed = set(ne.necompiler.precompile(relation)[-1])
-            if not catalog_instance.has_quantities(quantities_needed):
-                output_header.append('<span class="fail">Not all quantities needed for `{}` exist!</span>'.format(relation))
-                failed_count += 1
-                continue
+            if isinstance(relation, (tuple, list)):
+                assert len(relation) == 2, '`relation` must a single string or a list of *two* strings.'
+                func = lambda r: np.allclose(
+                    evaluate_expression(r[0], catalog_instance),
+                    evaluate_expression(r[1], catalog_instance),
+                    equal_nan=True
+                )
+                relation_expr = '{} ~~ {}'.format(*relation)
+            else:
+                func = lambda r: evaluate_expression(r, catalog_instance).all()
+                relation_expr = relation
 
             try:
-                result = ne.evaluate(relation, local_dict=catalog_instance.get_quantities(quantities_needed), global_dict={}).all()
-            except Exception: # pylint: disable=broad-except
-                output_header.append('<span class="fail">Not able to evaluate `{}`!</span>'.format(relation))
+                result = func(relation)
+            except Exception as e: # pylint: disable=broad-except
+                output_header.append('<span class="fail">Not able to evaluate `{}`! {}</span>'.format(relation_expr, e))
                 failed_count += 1
                 continue
 
             if result:
-                output_header.append('<span>It is true that `{}`</span>'.format(relation))
+                output_header.append('<span>It is true that `{}`</span>'.format(relation_expr))
             else:
-                output_header.append('<span class="fail">`{}` not true!</span>'.format(relation))
+                output_header.append('<span class="fail">`{}` not true!</span>'.format(relation_expr))
                 failed_count += 1
-
 
         with open(os.path.join(output_dir, 'SUMMARY.html'), 'w') as f:
             f.write('<html><head><style>html{font-family: monospace;} table{border-spacing: 0;} thead,tr:nth-child(even){background: #ddd;} thead{font-weight: bold;} td{padding: 2px 8px;} .fail{color: #F00;} .none{color: #444;}</style></head><body>\n')
