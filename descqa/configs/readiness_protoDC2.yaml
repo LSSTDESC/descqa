@@ -216,10 +216,10 @@ relations_to_check:
   - '(size_bulge_true != 0) | (stellar_mass_bulge == 0)'
   - 'stellar_mass_bulge <= stellar_mass'
   - 'stellar_mass_disk <= stellar_mass'
-  - ['1.0 / magnification', '(1.0 - convergence)**2.0 - shear_1**2.0 - shear_2**2.0']
-  - ['size_minor_true / size_true', '(1.0 - ellipticity_true) / (1.0 + ellipticity_true)']
-  - ['size_minor_disk_true / size_disk_true', '(1.0 - ellipticity_disk_true) / (1.0 + ellipticity_disk_true)']
-  - ['size_minor_bulge_true / size_bulge_true', '(1.0 - ellipticity_bulge_true) / (1.0 + ellipticity_bulge_true)']
-  - ['ellipticity_1_true ** 2.0 + ellipticity_2_true ** 2.0', 'ellipticity_true ** 2.0']
-  - ['ellipticity_1_disk_true ** 2.0 + ellipticity_2_disk_true ** 2.0', 'ellipticity_disk_true ** 2.0']
-  - ['ellipticity_1_bulge_true ** 2.0 + ellipticity_2_bulge_true ** 2.0', 'ellipticity_bulge_true ** 2.0']
+  - '1.0 / magnification ~== (1.0 - convergence)**2.0 - shear_1**2.0 - shear_2**2.0'
+  - 'size_minor_true / size_true ~== (1.0 - ellipticity_true) / (1.0 + ellipticity_true)'
+  - 'size_minor_disk_true / size_disk_true ~== (1.0 - ellipticity_disk_true) / (1.0 + ellipticity_disk_true)'
+  - 'size_minor_bulge_true / size_bulge_true ~== (1.0 - ellipticity_bulge_true) / (1.0 + ellipticity_bulge_true)'
+  - 'ellipticity_1_true ** 2.0 + ellipticity_2_true ** 2.0 ~== ellipticity_true ** 2.0'
+  - 'ellipticity_1_disk_true ** 2.0 + ellipticity_2_disk_true ** 2.0 ~== ellipticity_disk_true ** 2.0'
+  - 'ellipticity_1_bulge_true ** 2.0 + ellipticity_2_bulge_true ** 2.0 ~== ellipticity_bulge_true ** 2.0'

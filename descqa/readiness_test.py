@@ -187,29 +187,29 @@ class CheckQuantities(BaseValidationTest):
                 failed_count += 1
 
         for relation in self.relations_to_check:
-            if isinstance(relation, (tuple, list)):
-                assert len(relation) == 2, '`relation` must a single string or a list of *two* strings.'
-                func = lambda r: np.allclose(
-                    evaluate_expression(r[0], catalog_instance),
-                    evaluate_expression(r[1], catalog_instance),
+            expr1, simeq, expr2 = relation.partition('~==')
+            if simeq:
+                expr1 = expr1.strip()
+                expr2 = expr2.strip()
+                func = lambda: np.allclose(
+                    evaluate_expression(expr1, catalog_instance),
+                    evaluate_expression(expr2, catalog_instance),
                     equal_nan=True
                 )
-                relation_expr = '{} ~~ {}'.format(*relation)
             else:
-                func = lambda r: evaluate_expression(r, catalog_instance).all()
-                relation_expr = relation
+                func = lambda: evaluate_expression(relation, catalog_instance).all()
 
             try:
-                result = func(relation)
+                result = func()
             except Exception as e: # pylint: disable=broad-except
-                output_header.append('<span class="fail">Not able to evaluate `{}`! {}</span>'.format(relation_expr, e))
+                output_header.append('<span class="fail">Not able to evaluate `{}`! {}</span>'.format(relation, e))
                 failed_count += 1
                 continue
 
             if result:
-                output_header.append('<span>It is true that `{}`</span>'.format(relation_expr))
+                output_header.append('<span>It is true that `{}`</span>'.format(relation))
             else:
-                output_header.append('<span class="fail">`{}` not true!</span>'.format(relation_expr))
+                output_header.append('<span class="fail">`{}` not true!</span>'.format(relation))
                 failed_count += 1
 
         with open(os.path.join(output_dir, 'SUMMARY.html'), 'w') as f:
