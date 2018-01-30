@@ -50,6 +50,24 @@ def evaluate_expression(expression, catalog_instance):
                        global_dict={})
 
 
+def check_relation(relation, catalog_instance):
+    """
+    check if *relation* is true in *catalog_instance*
+    """
+    expr1, simeq, expr2 = relation.partition('~==')
+
+    if simeq:
+        expr1 = expr1.strip()
+        expr2 = expr2.strip()
+        return np.allclose(
+            evaluate_expression(expr1, catalog_instance),
+            evaluate_expression(expr2, catalog_instance),
+            equal_nan=True,
+        )
+
+    return evaluate_expression(relation, catalog_instance).all()
+
+
 class CheckQuantities(BaseValidationTest):
     """
     Readiness test to check catalog quantities before image simulations
@@ -187,18 +205,8 @@ class CheckQuantities(BaseValidationTest):
                 failed_count += 1
 
         for relation in self.relations_to_check:
-            expr1, simeq, expr2 = relation.partition('~==')
-            if simeq:
-                func = lambda e1=expr1.strip(), e2=expr2.strip(): np.allclose(
-                    evaluate_expression(e1, catalog_instance),
-                    evaluate_expression(e2, catalog_instance),
-                    equal_nan=True
-                )
-            else:
-                func = lambda r=relation: evaluate_expression(r, catalog_instance).all()
-
             try:
-                result = func()
+                result = check_relation(relation, catalog_instance)
             except Exception as e: # pylint: disable=broad-except
                 output_header.append('<span class="fail">Not able to evaluate `{}`! {}</span>'.format(relation, e))
                 failed_count += 1
