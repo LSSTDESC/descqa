@@ -24,8 +24,8 @@ class ImageVerificationTest(BaseValidationTest):
         self.imag_cut = imag_cut
 
         # Create obs metadata
-        with ObservationMetaDataGenerator(database=opsimdb, driver='sqlite') as obs_gen:
-            self.obs_md = obs_gen.getObservationMetaData(obsHistID=obsHistID,
+        obs_gen = ObservationMetaDataGenerator(database=opsimdb, driver='sqlite')
+        self.obs_md = obs_gen.getObservationMetaData(obsHistID=obsHistID,
                                                          boundType='circle',
                                                          boundLength=fov)[0]
 
