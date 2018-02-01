@@ -3,6 +3,7 @@ import os
 import GCRCatalogs
 import pandas as pd
 from desc.sims.GCRCatSimInterface import *
+from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
 from lsst.obs.lsstSim import LsstSimMapper
 from lsst.sims.GalSimInterface import LSSTCameraWrapper
 from lsst.sims.GalSimInterface import GalSimCelestialObject
