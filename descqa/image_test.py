@@ -7,6 +7,10 @@ from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
 from lsst.obs.lsstSim import LsstSimMapper
 from lsst.sims.GalSimInterface import LSSTCameraWrapper
 from lsst.sims.GalSimInterface import GalSimCelestialObject
+from desc.sims.GCRCatSimInterface.InstanceCatalogWriter import PhoSimDESCQA_ICRS, PhoSimDESCQA
+from desc.sims.GCRCatSimInterface import bulgeDESCQAObject, diskDESCQAObject, knotsDESCQAObject
+from lsst.sims.catUtils.exampleCatalogDefinitions import DefaultPhoSimHeaderMap
+import copy
 import galsim
 import desc.imsim
 from .base import BaseValidationTest, TestResult
@@ -85,13 +89,13 @@ class ImageVerificationTest(BaseValidationTest):
             if imsimCatalog.galsim_type == 'sersic':
                 gal = galsim.Sersic(gsObj.sindex, gsObj.halfLightRadiusArcsec)
             elif imsimCatalog.galsim_type == 'RandomWalk':
-                rng = galsim.BaseDeviate(int(gsObject.uniqueId))
+                rng = galsim.BaseDeviate(int(gsObj.uniqueId))
                 gal = galsim.RandomWalk(npoints=int(gsObj.sindex),
                                         half_light_radius=float(
                                             gsObj.halfLightRadiusArcsec),
                                         rng=rng)
             # Define the flux
-            gal = gal * gsObj.flux('i')
+            gal = gal.withFlux(gsObj.flux('i'))
 
             # Apply ellipticity
             gal = gal.shear(q=gsObj.minorAxisRadians / gsObj.majorAxisRadians,
@@ -153,7 +157,7 @@ class ImageVerificationTest(BaseValidationTest):
         sersicCatalog.camera_wrapper = LSSTCameraWrapper()
         sersicCatalog._initializeGalSimCatalog()
 
-        randomWalkCatalog = desc.imsim.ImSimGalaxies(knotsDataBase, obs_md)
+        randomWalkCatalog = desc.imsim.ImSimRandomWalk(knotsDataBase, obs_md)
         randomWalkCatalog.photParams = phot_params
         randomWalkCatalog.camera = LsstSimMapper().camera
         randomWalkCatalog.camera_wrapper = LSSTCameraWrapper()
@@ -169,7 +173,7 @@ class ImageVerificationTest(BaseValidationTest):
         Generates a simple instance catalog from a given catalog
         """
         cat_bulge = PhoSimDESCQA_ICRS(bulgeDESCQAObject(catalog_name),
-                                      obs_metadata=obs_md,
+                                      obs_metadata=self.obs_md,
                                       cannot_be_null=['hasBulge'])
         cat_bulge.phoSimHeaderMap = copy.deepcopy(DefaultPhoSimHeaderMap)
         cat_bulge.phoSimHeaderMap['rawSeeing'] = ('rawSeeing', None)
@@ -179,14 +183,14 @@ class ImageVerificationTest(BaseValidationTest):
                                 chunk_size=100000)
 
         cat_disk = PhoSimDESCQA_ICRS(diskDESCQAObject(catalog_name),
-                                     obs_metadata=obs_md,
+                                     obs_metadata=self.obs_md,
                                      cannot_be_null=['hasDisk'])
         cat_disk.write_catalog(os.path.join(output_dir, 'catalog.txt'),
                                chunk_size=100000, write_header=False,
                                write_mode='a')
 
         cat_knots = PhoSimDESCQA_ICRS(knotsDESCQAObject(catalog_name),
-                                      obs_metadata=obs_md,
+                                      obs_metadata=self.obs_md,
                                       cannot_be_null=['hasKnots'])
         cat_knots.write_catalog(os.path.join(output_dir, 'catalog.txt'),
                                 chunk_size=100000, write_header=False,
