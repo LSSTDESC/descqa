@@ -92,7 +92,7 @@ class ConditionalLuminosityFunction(BaseValidationTest):
             hist_cen += np.histogramdd(data[cen_mask], bins)[0]
             hist_sat += np.histogramdd(data[sat_mask], bins)[0]
 
-        del data, cen_mask, sat_mask
+        data = cen_mask = sat_mask = None
 
         halo_counts = hist_cen.sum(axis=0)
         clf = dict()

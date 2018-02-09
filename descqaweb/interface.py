@@ -7,7 +7,7 @@ import base64
 
 __all__ = ['b64encode', 'iter_all_runs', 'DescqaRun']
 
-ALLOWED_EXT = {'txt', 'dat', 'csv', 'log', 'json', 'yaml', 'pdf', 'png'}
+ALLOWED_EXT = {'txt', 'dat', 'csv', 'log', 'json', 'yaml', 'pdf', 'png', 'html'}
 STATUS_COLORS = {'PASSED': 'green', 'SKIPPED': 'gold', 'FAILED': 'orangered', 'ERROR': 'darkred'}
 
 
