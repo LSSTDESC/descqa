@@ -1,0 +1,20 @@
+language: python
+
+cache: pip
+
+python:
+- "2.7"
+- "3.6"
+
+install:
+- pip install .[full]
+- pip install pylint nose
+
+before_script:
+- export CHANGED=$(git diff --name-only $TRAVIS_COMMIT_RANGE | grep '^\(descqa.*\|tests\)/.\+\.py$')
+
+script:
+- nosetests
+- python -c "import descqaweb"
+- python -c "import descqarun"
+- '[ -z "$CHANGED" ] || pylint --disable=C0103,C0301 --extension-pkg-whitelist=numpy $CHANGED; EXITCODE=$?; if [ $(($EXITCODE&7)) -gt 0 ]; then exit $EXITCODE; fi;'

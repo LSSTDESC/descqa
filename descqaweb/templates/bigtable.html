@@ -1,13 +1,13 @@
 <div id="statsWindow"><div id="statsHeader"></div><div id="statsBody"></div></div>
 <div id="pagesDiv">
 {% if page > 1 %}
-<a class="everblue" href="?page={{ page-1 }}">&lt;&lt;</a>
+<a class="everblue" href="?run=all&page={{ page-1 }}">&lt;&lt;</a>
 {% else %}
 <span style="color: gray">&lt;&lt;</span>
 {% endif %}
 &nbsp;|&nbsp;
 {% if page < npages %}
-<a class="everblue" href="?run=all&page={}">&gt;&gt;</a>
+<a class="everblue" href="?run=all&page={{ page+1 }}">&gt;&gt;</a>
 {% else %}
 <span style="color: gray">&gt;&gt;</span>
 {% endif %}
