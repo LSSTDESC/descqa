@@ -1,0 +1,30 @@
+subclass_name: CorrelationsTwoPoint.CorrelationsTwoPoint
+
+possible_mag_fields:
+  - stellar_mass
+
+output_filename_template: 'wp_rp_Mr_{}_{}.dat'
+label_template: '${} < M_r < {}$'
+
+data_filename: 'tpcf/Zehavi_2011_ApJ_736_59_Table7.txt'
+data_label: 'Zehavi+2011'
+
+mag_bins:
+  - {mag_min: 31622776601, mag_max: 1976130303910.0, cz_min: 221846, cz_max: 269813.2122, pi_max: 60.0, data_col: 1, data_err_col: 2}
+  - {mag_min: 63095734448, mag_max: 1976130303910.0, cz_min: 221846, cz_max: 269813.2122, pi_max: 60.0, data_col: 3, data_err_col: 4}
+#  - {mag_min: -19, mag_max: -18, cz_min:  5200, cz_max: 12500, pi_max: 40.0, data_col: 9, data_err_col: 10}
+
+fig_xlabel: '$r_p\quad[h^{-1}{\rm Mpc}]$'
+fig_ylabel: '$w_p(r_p)\quad[h^{-1}{\rm Mpc}]$'
+fig_ylim: [0.1, 5000]
+
+#Treecorr parameters
+need_distance: true
+min_sep: 0.15
+max_sep: 40
+bin_size: 0.45
+
+random_mult: 6
+
+description: |
+  Compare projected correlation functions of catalog and Zehavi et al (2011) SDSS r-band observations

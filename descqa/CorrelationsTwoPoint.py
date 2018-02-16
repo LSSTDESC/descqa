@@ -6,7 +6,9 @@ import treecorr
 
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
-from .utils import generate_uniform_random_ra_dec_footprint, get_healpixel_footprint, generate_uniform_random_dist
+from .utils import generate_uniform_random_ra_dec_footprint, \
+                   get_healpixel_footprint, \
+                   generate_uniform_random_dist
 
 
 __all__ = ['CorrelationsTwoPoint']
