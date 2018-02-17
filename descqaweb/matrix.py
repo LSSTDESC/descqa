@@ -39,6 +39,13 @@ def format_description(description_dict):
         return '\n'.join(output)
 
 
+def get_short_status(status):
+    short_status = status.rpartition('_')[-1]
+    if short_status == 'FAILED':
+        short_status = 'NOT QUITE'
+    return short_status
+
+
 def prepare_matrix(run=None, catalog_prefix=None, test_prefix=None):
 
     if run:
@@ -91,7 +98,7 @@ def prepare_matrix(run=None, catalog_prefix=None, test_prefix=None):
         for catalog in catalogs_this:
             item = descqa_run[test, catalog]
             matrix.append('<td class="{}"><a class="celllink" href="?run={}&test={}&catalog={}">{}<br>{}</a></td>'.format(\
-                    item.status_color, descqa_run.name, test, catalog, item.status.rpartition('_')[-1], item.score))
+                    item.status_color, descqa_run.name, test, catalog, get_short_status(item.status), item.score))
         matrix.append('</tr>')
     data['matrix'] = '\n'.join(matrix)
 
