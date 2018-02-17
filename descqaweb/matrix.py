@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
-import os
 import time
-import cgi
+import html
 from . import config
 from .interface import iter_all_runs, DescqaRun
 
@@ -34,7 +33,7 @@ def format_description(description_dict):
     for k in sorted(description_dict):
         v = description_dict.get(k)
         if v:
-            output.append('<tr><td>{}</td><td>{}</td></tr>'.format(k, cgi.escape(v)))
+            output.append('<tr><td>{}</td><td>{}</td></tr>'.format(k, html.escape(v)))
     if output:
         return '\n'.join(output)
 
@@ -60,7 +59,7 @@ def prepare_matrix(run=None, catalog_prefix=None, test_prefix=None):
 
     data['general_info'] = config.general_info
     data['run'] = descqa_run.name
-    data['comment'] = cgi.escape(descqa_run.status.get('comment', ''))
+    data['comment'] = html.escape(descqa_run.status.get('comment', ''))
     data['user'] = descqa_run.status.get('user', 'UNKNOWN')
     data['versions'] = ' | '.join(('{}: {}'.format(k, v) for k, v in descqa_run.status.get('versions', dict()).items()))
 
