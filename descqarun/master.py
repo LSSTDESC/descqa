@@ -263,17 +263,22 @@ class DescqaTask(object):
         if _is_string_like(test_result):
             status = test_result
             test_result = None
+        elif hasattr(test_result, 'status_code'):
+            status = test_result.status_code
         else:
             status = 'VALIDATION_TEST_{}'.format('SKIPPED' if test_result.skipped else ('PASSED' if test_result.passed else 'FAILED'))
 
         self._results[key] = (status, test_result)
 
         with open(pjoin(self.get_path(*key), self.status_basename), 'w') as f:
-            f.write(status + '\n')
-            if getattr(test_result, 'summary', None):
-                f.write(test_result.summary + '\n')
-            if getattr(test_result, 'score', None):
-                f.write('{:.3g}'.format(test_result.score) + '\n')
+            if hasattr(test_result, 'status_full'):
+                f.write(test_result.status_full + '\n')
+            else:
+                f.write(status + '\n')
+                if getattr(test_result, 'summary', None):
+                    f.write(test_result.summary + '\n')
+                if getattr(test_result, 'score', None):
+                    f.write('{:.3g}'.format(test_result.score) + '\n')
 
 
     def get_status(self, validation=None, catalog=None, return_test_result=False):
