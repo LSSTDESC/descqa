@@ -14,7 +14,7 @@ import subprocess
 
 try:
     from StringIO import StringIO
-except ModuleNotFoundError:
+except ImportError:
     from io import StringIO
 
 import yaml
