@@ -11,7 +11,6 @@ from GCR import GCRQuery
 
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
-from itertools import cycle
 
 __all__ = ['NumberDensityVersusRedshift']
 
@@ -60,7 +59,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
 
     def __init__(self, z='redshift_true', band='i', N_zbins=44, zlo=0., zhi=1.1,
                  observation='', mag_lo=27, mag_hi=18, ncolumns=2, normed=True,
-                 **kwargs):
+                 **kwargs): #pylint: disable=W0231
 
         #catalog quantities
         self.zlabel = z
@@ -164,13 +163,13 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         #initialize arrays for storing histogram sums
         N_array = np.zeros((self.nrows, self.ncolumns, len(self.zbins)-1), dtype=np.int)
         sumz_array = np.zeros((self.nrows, self.ncolumns,len(self.zbins)-1))
-                
+
         #get catalog data by looping over data iterator (needed for large catalogs) and aggregate histograms
         for catalog_data in catalog_instance.get_quantities([self.zlabel, mag_field], filters=self.filters, return_iterator=True):
             catalog_data = GCRQuery(*((np.isfinite, col) for col in catalog_data)).filter(catalog_data)
             for cut_lo, cut_hi, N, sumz in zip_longest(
                     self.mag_lo,
-                    self.mag_hi, 
+                    self.mag_hi,
                     N_array.reshape(-1, N_array.shape[-1]), #flatten all but last dimension of array
                     sumz_array.reshape(-1, sumz_array.shape[-1]),
             ):
@@ -203,7 +202,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
             else:
                 cut_label = '{} $< {}$'.format(self.band, cut_lo)
                 if cut_hi:
-                    cut_label = '${} <=$ '.format(cut_hi) + cut_label #also appears in txt file so don't use \leq 
+                    cut_label = '${} <=$ '.format(cut_hi) + cut_label #also appears in txt file so don't use \leq
 
                 if z0 is None and 'z0const' in self.validation_data:  #alternate format for some validation data
                     z0 = self.validation_data['z0const'] + self.validation_data['z0linear'] * cut_lo
@@ -223,18 +222,18 @@ class NumberDensityVersusRedshift(BaseValidationTest):
                 key = cut_label.replace('$', '')
                 results[key] = {'meanz': meanz, 'total':total, 'N':N, 'N+-':Nerrors}
                 self.catalog_subplot(ax_this, meanz, N, Nerrors, catalog_color, catalog_marker, catalog_label)
-                if z0 and z0 > 0.:   
+                if z0 and z0 > 0.:
                     fits = self.validation_subplot(ax_this, meanz, z0, z0err, validation_label)
                 results[key].update(fits)
                 self.decorate_subplot(ax_this, n)
 
                 #add curve for this catalog to summary plot
                 self.catalog_subplot(summary_ax_this, meanz, N, Nerrors, catalog_color, catalog_marker, catalog_label)
-                if self.first_pass and z0 and z0 > 0: 
+                if self.first_pass and z0 and z0 > 0:
                     self.validation_subplot(summary_ax_this, meanz, z0, z0err, validation_label) #add validation data if evaluating first catalog
                 self.decorate_subplot(summary_ax_this, n)
 
-                
+
         #save results for catalog and validation data in txt files
         for filename, dtype, comment, info in zip_longest((filelabel, self.observation), ('N', 'fit'), (filtername,), ('total',)):
             if filename:
@@ -250,7 +249,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         self.post_process_plot(fig)
         fig.savefig(os.path.join(output_dir, 'Nvsz_' + filelabel + '.png'))
         plt.close(fig)
-        return TestResult(0, passed=True)
+        return TestResult(inspect_only=True)
 
 
     def catalog_subplot(self, ax, meanz, data, errors, catalog_color, catalog_marker, catalog_label):

@@ -22,7 +22,7 @@ class CorrelationsTwoPoint(BaseValidationTest):
     """
     _C = 299792.458
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs): #pylint: disable=W0231
         self.possible_mag_fields = kwargs['possible_mag_fields']
         self.need_distance = kwargs['need_distance']
         self.data_label = kwargs['data_label']
@@ -93,7 +93,7 @@ class CorrelationsTwoPoint(BaseValidationTest):
 
         fig, ax = plt.subplots()
         try:
-            for mag_bin, color in zip(self.mag_bins, plt.cm.plasma_r(np.linspace(0.1, 1, len(self.mag_bins)))):
+            for mag_bin, color in zip(self.mag_bins, plt.cm.plasma_r(np.linspace(0.1, 1, len(self.mag_bins)))): #pylint: disable=E1101
 
                 # filter catalog data for this bin
                 filters = [
@@ -173,4 +173,4 @@ class CorrelationsTwoPoint(BaseValidationTest):
             plt.close(fig)
 
         #TODO: calculate summary statistics
-        return TestResult(0, passed=True)
+        return TestResult(inspect_only=True)
