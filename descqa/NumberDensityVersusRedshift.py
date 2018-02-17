@@ -66,6 +66,9 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         possible_mag_fields = ('mag_{}_lsst',
                                'mag_{}_sdss',
                                'mag_{}_des',
+                               'mag_true_{}_lsst',
+                               'mag_true_{}_sdss',
+                               'mag_true_{}_des',
                               )
         self.possible_mag_fields = [f.format(band) for f in possible_mag_fields]
         self.band = band
