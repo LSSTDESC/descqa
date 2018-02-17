@@ -49,6 +49,7 @@ class CatchExceptionAndStdStream():
         self._filenames = [filenames] if _is_string_like(filenames) else filenames
         self._during = ' when {}'.format(during) if during else ''
         self._stream = StringIO()
+        self._stdout = self._stderr = None
 
     def __enter__(self):
         self._stdout = sys.stdout
@@ -423,10 +424,10 @@ def main():
     if args.paths:
         sys.path = [make_path_absolute(path) for path in args.paths] + sys.path
 
-    global GCRCatalogs
+    global GCRCatalogs #pylint: disable=W0601
     GCRCatalogs = importlib.import_module('GCRCatalogs')
 
-    global descqa
+    global descqa #pylint: disable=W0601
     descqa = importlib.import_module('descqa')
 
     record_version('DESCQA', descqa.__version__, master_status['versions'], logger=logger)
@@ -443,7 +444,7 @@ def main():
 
     try: # we want to remove ".lock" file even if anything went wrong
 
-        logger.info('output of this run is stored in {}'.format(output_dir))
+        logger.info('output of this run is stored in %s', output_dir)
         logger.debug('creating code snapshot...')
         snapshot_dir = pjoin(output_dir, '_snapshot')
         os.mkdir(snapshot_dir)
@@ -465,12 +466,12 @@ def main():
         with open(pjoin(output_dir, 'STATUS.json'), 'w') as f:
             json.dump(master_status, f, indent=True)
 
-        logger.info('All done! Status report:\n' + descqa_task.get_status_report())
+        logger.info('All done! Status report:\n%s', descqa_task.get_status_report())
 
     finally:
         os.unlink(pjoin(output_dir, '.lock'))
         subprocess.check_call(['chmod', '-R', 'a+rX,o-w', output_dir])
-        logger.info('Web output: {}?run={}'.format(args.web_base_url, os.path.basename(output_dir)))
+        logger.info('Web output: %s?run=%s', args.web_base_url, os.path.basename(output_dir))
 
 
 if __name__ == '__main__':
