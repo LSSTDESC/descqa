@@ -35,3 +35,5 @@ random_mult: 6
 
 description: |
   Compare projected correlation functions of catalog and Zehavi et al (2011) SDSS r-band observations
+
+included_by_default: true

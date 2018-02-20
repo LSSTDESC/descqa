@@ -49,6 +49,7 @@ class StellarMassFunction(BaseValidationTest):
 
     def __init__(self, z='redshift_true', mass='stellar_mass', Nbins=25, log_Mlo=8., log_Mhi=12.,
                  observation='', zlo=0., zhi=1.0, zint=0.2, ncolumns=2, **kwargs):
+        #pylint: disable=W0231
 
         #catalog quantities
         self.zlabel = z
@@ -235,7 +236,7 @@ class StellarMassFunction(BaseValidationTest):
         self.post_process_plot(fig)
         fig.savefig(os.path.join(output_dir, 'SMF_' + catalog_name + '.png'))
         plt.close(fig)
-        return TestResult(0, passed=True)
+        return TestResult(inspect_only=True)
 
 
     def catalog_subplot(self, ax, M, phi, phi_errors, catalog_color, catalog_label):
