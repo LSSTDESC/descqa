@@ -1,0 +1,35 @@
+subclass_name: CorrelationsTwoPoint.CorrelationsTwoPoint
+
+possible_mag_fields:
+  - mag_r_sdss
+  - mag_r_des
+  - mag_r_lsst
+  - mag_true_r_sdss
+  - mag_true_r_des
+  - mag_true_r_lsst
+
+output_filename_template: 'w_theta_r_{}_{}.dat'
+label_template: '${} < r < {}$'
+
+data_filename: 'tpcf/Wang_2013_MNRAS_stt450_Table2.txt'
+data_label: 'Y.Wang+2013'
+
+mag_bins:
+  - {mag_min: 17, mag_max: 18, data_col: 3, data_err_col: 4}
+  - {mag_min: 18, mag_max: 19, data_col: 5, data_err_col: 6}
+  - {mag_min: 19, mag_max: 20, data_col: 7, data_err_col: 8}
+  - {mag_min: 20, mag_max: 21, data_col: 9, data_err_col: 10}
+  - {mag_min: 17, mag_max: 21, data_col: 1, data_err_col: 2}
+
+need_distance: false
+fig_xlabel: '$\theta\quad[{\rm deg}]}$'
+fig_ylabel: '$w(\theta)$'
+fig_ylim: [0.0001, 5.0]
+
+#Treecorr parameters
+min_sep: 0.01
+max_sep: 10
+bin_size: 0.25
+
+description: |
+  Compare angular correlation functions of catalog and Wang et al (2013) SDSS r-band observations

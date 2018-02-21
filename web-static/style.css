@@ -67,13 +67,16 @@ h3           {font-size: 110%; line-height: 1.25;}
     background-color:#7D1302;
 }
 .matrix td.orangered {
-    background-color:#DA5F4C;
+    background-color:#D55E00;
 }
 .matrix td.gold {
-    background-color:#DADA4C;
+    background-color:#F0E442;
 }
 .matrix td.green {
-    background-color:#3B5D90;
+    background-color:#009E73;
+}
+.matrix td.blue{
+    background-color: #56B4E9;
 }
 
 .homeinfo{
@@ -109,13 +112,16 @@ span.darkred {
     color:#7D1302;
 }
 span.orangered {
-    color:#DA5F4C;
+    color:#D55E00;
 }
 span.gold {
-    color:#DADA4C;
+    color:#56B4E9;
 }
 span.green {
-    color:#3B5D90;
+    color:#009E73;
+}
+span.blue{
+    color: #56B4E9;
 }
 
 a.celllink {
