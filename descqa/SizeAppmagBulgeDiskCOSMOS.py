@@ -10,10 +10,10 @@ from .plotting import plt
 from .utils import generate_uniform_random_ra_dec_footprint, get_healpixel_footprint, generate_uniform_random_dist
 
 
-__all__ = ['SizeAppmagBulgeDisk']
+__all__ = ['SizeAppmagBulgeDiskCOSMOS']
 
 
-class SizeAppmagBulgeDisk(BaseValidationTest):
+class SizeAppmagBulgeDiskCOSMOS(BaseValidationTest):
     """
     Validation test of 2pt correlation function
     """

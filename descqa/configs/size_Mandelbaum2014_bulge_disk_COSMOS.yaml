@@ -1,4 +1,4 @@
-subclass_name: SizeAppmagBulgeDisk.SizeAppmagBulgeDisk
+subclass_name: SizeAppmagBulgeDiskCOSMOS.SizeAppmagBulgeDiskCOSMOS
 
 #observation: either protodc or buzzard
 simulated_catalog: protodc 
@@ -22,16 +22,16 @@ size_field: size_true
 
 mag_bin_separation: 1
   
-protodc_output_filename_template: 'size_lum_COSMOS_z_{}_{}.dat'
-buzzard_output_filename_template: 'size_lum_van_z_{}_{}.dat'
+protodc_output_filename_template: 'size_COSMOS_z_{}_{}.dat'
+buzzard_output_filename_template: 'size_van_z_{}_{}.dat'
 
-protodc_output_figname: 'size_lum_protodc'
-buzzrad_output_figname: 'size_lum_buzzard'
+protodc_output_figname: 'size_protodc'
+buzzrad_output_figname: 'size_buzzard'
 
 text_template: '${} < z < {}$'
 
-protodc_data_filename: 'size_sm_lum/sizes_appmag_bulge_disk_Mandelbaum2014.txt'
-buzzard_data_filename: 'size_sm_lum/van_der_Wel_2014_ApJ_788_28_Table5_VLuminosity.txt'
+protodc_data_filename: 'size/Mandelbaum2014_sizes_appmag_bulge_disk.txt'
+buzzard_data_filename: 'size/van_der_Wel_2014_ApJ_788_28_Table5_VLuminosity.txt'
 protodc_data_label: 'Mandelbaum+2014: COSMOSIS comparing mean and scatter'
 buzzard_data_label: 'van der Wel+2014: comparing mean and scatter'
 
@@ -47,6 +47,6 @@ buzzard_fig_ylabel: '$\log_{10}(R_e)$ (kpc)'
 
 
 protodc_description: |
-  Compare evolution of bulge and disk sizes as a function of i-band magnitude of LSST and redshift and comparing to Mandelbaum et al (2015) HST COSMOS observations
+  Compare evolution of bulge and disk sizes as a function of i-band magnitude of LSST and redshift and comparing to Mandelbaum et al (2015) HST COSMOS F814W observations
 buzzard_description: |
   Compare evolution of size as a function of luminosity and redshift and van der Wel et al (2014) HST-3D and CANDELS observations
