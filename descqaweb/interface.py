@@ -7,9 +7,8 @@ import base64
 
 __all__ = ['b64encode', 'iter_all_runs', 'DescqaRun']
 
-ALLOWED_EXT = {'txt', 'dat', 'csv', 'log', 'json', 'yaml', 'pdf', 'png'}
-STATUS_COLORS = {'PASSED': 'green', 'SKIPPED': 'gold', 'FAILED': 'orangered', 'ERROR': 'darkred'}
-
+ALLOWED_EXT = {'txt', 'dat', 'csv', 'log', 'json', 'yaml', 'pdf', 'png', 'html'}
+STATUS_COLORS = {'PASSED': 'green', 'SKIPPED': 'gold', 'INSPECT': 'blue', 'FAILED': 'orangered', 'ERROR': 'darkred'}
 
 def b64encode(content):
     return base64.b64encode(content).decode('ascii')

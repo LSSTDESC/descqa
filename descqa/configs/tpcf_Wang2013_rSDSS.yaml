@@ -4,6 +4,9 @@ possible_mag_fields:
   - mag_r_sdss
   - mag_r_des
   - mag_r_lsst
+  - mag_true_r_sdss
+  - mag_true_r_des
+  - mag_true_r_lsst
 
 output_filename_template: 'w_theta_r_{}_{}.dat'
 label_template: '${} < r < {}$'

@@ -17,7 +17,7 @@ _Note_: If you don't have a GitHub ssh key set up, replace `git@github.com:YourG
 
 ### Step 2: Sync the master branch of your fork repo with upstream
 
-_Note_: Do *not* skip this step!
+_Note_: **Always do this!**
 
     cd /your/own/directory/descqa
     git checkout master
@@ -27,7 +27,7 @@ _Note_: Do *not* skip this step!
 
 ### Step 3: Create a new branch
 
-    git checkout -b newBranchName
+    git checkout -b newBranchName master
 
 
 ### Step 4: Develop
