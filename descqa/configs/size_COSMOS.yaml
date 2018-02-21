@@ -1,0 +1,52 @@
+subclass_name: SizeStellarMassLuminosityBulgeDisk.SizeStellarMassLuminosityBulgeDisk
+
+#observation: either protodc or buzzard
+#simulated_catalog: protodc 
+simulated_catalog: buzzard 
+
+possible_appmag_fields:
+  - mag_i_lsst
+  - mag_i_sdss
+  - mag_i_des
+
+possible_AbsMag_fields:
+  - Mag_true_i_lsst_z01
+  - Mag_true_i_sdss_z01
+  - Mag_true_i_des_z01
+
+size_fields:
+  - size_bulge_true
+  - size_disk_true
+
+size_field: size_true
+
+mag_bin_separation: 1
+  
+protodc_output_filename_template: 'size_lum_COSMOS_z_{}_{}.dat'
+buzzard_output_filename_template: 'size_lum_van_z_{}_{}.dat'
+
+protodc_output_figname: 'size_lum_protodc'
+buzzrad_output_figname: 'size_lum_buzzard'
+
+label_template: '${} < z < {}$'
+
+protodc_data_filename: 'size_sm_lum/sizes_appmag_Mandelbaum2014.txt'
+buzzard_data_filename: 'size_sm_lum/van_der_Wel_2014_ApJ_788_28_Table5_VLuminosity.txt'
+protodc_data_label: 'Mandelbaum+2014: COSMOSIS comparing mean and scatter'
+buzzard_data_label: 'van der Wel+2014: comparing mean and scatter'
+
+z_bins:
+  - {z_min: 0.0, z_max: 0.5}
+  - {z_min: 0.5, z_max: 1.0}
+  - {z_min: 1.0, z_max: 1.5}
+
+protodc_fig_xlabel: '$i$ mag'
+protodc_fig_ylabel: '$\log_{10}(R_e)$ (arcsec)'
+buzzard_fig_xlabel: '$\log_{10}(L/L_{\odot})$ (V-band)'
+buzzard_fig_ylabel: '$\log_{10}(R_e)$ (kpc)'
+
+
+protodc_description: |
+  Compare evolution of bulge and disk sizes as a function of i-band magnitude of LSST and redshift and comparing to Mandelbaum et al (2015) HST COSMOS observations
+buzzard_description: |
+  Compare evolution of size as a function of luminosity and redshift and van der Wel et al (2014) HST-3D and CANDELS observations
