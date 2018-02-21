@@ -13,13 +13,6 @@ from .utils import generate_uniform_random_ra_dec_footprint, get_healpixel_footp
 __all__ = ['SizeStellarMassLuminosityBulgeDisk']
 
 
-def redshift2dist(cosmology):
-    z = np.arange(0, 5.1, 0.5)
-    comov_d = cosmology.comoving_distance(z).to('kpc').value
-    spl = interpolate.splrep(z, comov_d)   
-    return spl
-
-
 class SizeStellarMassLuminosityBulgeDisk(BaseValidationTest):
     """
     Validation test of 2pt correlation function
@@ -49,37 +42,8 @@ class SizeStellarMassLuminosityBulgeDisk(BaseValidationTest):
             self.validation_data = np.genfromtxt(validation_filepath)
         self.test_name = kwargs['test_name'] 
         self.z_bins = kwargs['z_bins']
-        self.label_template = kwargs['label_template']
-
-    @staticmethod
-    def ConvertAbsMagLuminosity(AbsM, band):
-        '''AbsM: absolute magnitude, band: filter'''
-        if type(AbsM) is list or type(AbsM) is np.ndarray:
-            AbsM = np.array(AbsM)
-
-        bands = {'U':5.61, 'B':5.48, 'V':4.83, 'R':4.42, 'I':4.08, 
-                 'J':3.64, 'H':3.32, 'K':3.28, 'g':5.33, 'r':4.67, 
-                 'i':4.48, 'z':4.42, 'F300W':6.09, 'F450W':5.32, 'F555W':4.85, 
-                 'F606W':4.66, 'F702W':4.32, 'F814W':4.15, 'CFHT_U':5.57, 
-                 'CFHT_B':5.49, 'CFHT_V':4.81, 'CFHT_R':4.44, 'CFHT_I':4.06, 
-                 'NIRI_J':3.64, 'NIRI_H':3.33, 'NIRI_K':3.29}
-
-        if band in bands.keys():
-            AbsSun = bands[band]
-        else:
-            raise ValueError('Filter not implemented')
-
-        logL = (AbsSun - AbsM) / 2.5 #unit of sun
-        L = 10**logL
-        return L, logL
-
-    @staticmethod
-    def ConvertLuminosityAppMag(L, dl):
-        '''L: luminosity in a band, dl: luminosity distance'''
-
-        AbsM = -2.5 * np.log10(L)
-        AppM = AbsM - 5 + 5 * np.log10(dl * 1e6)
-        return AbsM, AppM
+        self.text_template = kwargs['text_template']
+        self.colors = ['r', 'b']
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         '''
@@ -132,7 +96,6 @@ class SizeStellarMassLuminosityBulgeDisk(BaseValidationTest):
             catalog_data = {k: catalog_data[v] for k, v in colnames.items()}
 
         fig, axes = plt.subplots(1, 3, figsize=(9, 3), sharex=True, sharey=True)
-        colors = ['r', 'b']
         try:
             col = 0
             for z_bin in self.z_bins:
@@ -161,15 +124,14 @@ class SizeStellarMassLuminosityBulgeDisk(BaseValidationTest):
 
                     validation_this = self.validation_data[(self.validation_data[:,0] < z_mean + 0.25) & (self.validation_data[:,0] > z_mean - 0.25)]
                     
-                    #ax.set_title(self.label_template.format(z_bin['z_min'], z_bin['z_max']))
-                    ax.text(23, 1, self.label_template.format(z_bin['z_min'], z_bin['z_max']))
-                    ax.semilogy(validation_this[:,1], validation_this[:, 2], label='Bulge', color=colors[0])
-                    ax.fill_between(validation_this[:,1], validation_this[:, 2] + validation_this[:,4], validation_this[:, 2] - validation_this[:,4], lw=0, alpha=0.2, facecolor=colors[0])
-                    ax.semilogy(validation_this[:,1] + 0.5, validation_this[:, 3], label='Disk', color=colors[1])
-                    ax.fill_between(validation_this[:,1] + 0.5, validation_this[:, 3] + validation_this[:,5], validation_this[:, 3] - validation_this[:,5], lw=0, alpha=0.2, facecolor=colors[1])
+                    ax.text(23, 1, self.text_template.format(z_bin['z_min'], z_bin['z_max']))
+                    ax.semilogy(validation_this[:,1], validation_this[:, 2], label='Bulge', color=self.colors[0])
+                    ax.fill_between(validation_this[:,1], validation_this[:, 2] + validation_this[:,4], validation_this[:, 2] - validation_this[:,4], lw=0, alpha=0.2, facecolor=self.colors[0])
+                    ax.semilogy(validation_this[:,1] + 0.5, validation_this[:, 3], label='Disk', color=self.colors[1])
+                    ax.fill_between(validation_this[:,1] + 0.5, validation_this[:, 3] + validation_this[:,5], validation_this[:, 3] - validation_this[:,5], lw=0, alpha=0.2, facecolor=self.colors[1])
  
-                    ax.errorbar(default_mag_bins, binned_bulgesize_arcsec, binned_bulgesize_arcsec_err, marker='o', ls='', c=colors[0])
-                    ax.errorbar(default_mag_bins+0.5, binned_disksize_arcsec, binned_disksize_arcsec_err, marker='o', ls='', c=colors[1])
+                    ax.errorbar(default_mag_bins, binned_bulgesize_arcsec, binned_bulgesize_arcsec_err, marker='o', ls='', c=self.colors[0])
+                    ax.errorbar(default_mag_bins+0.5, binned_disksize_arcsec, binned_disksize_arcsec_err, marker='o', ls='', c=self.colors[1])
                     ax.set_xlim([17, 29])
                     ax.set_ylim([1e-2, 1e1])
                     ax.set_yscale('log', nonposy='clip')
@@ -182,7 +144,7 @@ class SizeStellarMassLuminosityBulgeDisk(BaseValidationTest):
 
                     validation_this = self.validation_data[(self.validation_data[:,0] < z_mean + 0.02) & (self.validation_data[:,0] > z_mean - 0.02)]
 
-                    ax.semilogy(validation_this[:,1], 10**validation_this[:, 2], label=self.label_template.format(z_bin['z_min'], z_bin['z_max']))
+                    ax.semilogy(validation_this[:,1], 10**validation_this[:, 2], label=self.text_template.format(z_bin['z_min'], z_bin['z_max']))
                     ax.fill_between(validation_this[:,1], 10**validation_this[:,3], 10**validation_this[:,4], lw=0, alpha=0.2)
                     ax.errorbar(default_L_bins, binned_size_kpc, binned_size_kpc_err, marker='o', ls='')
                     ax.set_yscale('log', nonposy='clip')

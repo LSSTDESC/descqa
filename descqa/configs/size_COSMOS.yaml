@@ -28,7 +28,7 @@ buzzard_output_filename_template: 'size_lum_van_z_{}_{}.dat'
 protodc_output_figname: 'size_lum_protodc'
 buzzrad_output_figname: 'size_lum_buzzard'
 
-label_template: '${} < z < {}$'
+text_template: '${} < z < {}$'
 
 protodc_data_filename: 'size_sm_lum/sizes_appmag_Mandelbaum2014.txt'
 buzzard_data_filename: 'size_sm_lum/van_der_Wel_2014_ApJ_788_28_Table5_VLuminosity.txt'
