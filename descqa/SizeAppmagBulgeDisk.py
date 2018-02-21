@@ -10,10 +10,10 @@ from .plotting import plt
 from .utils import generate_uniform_random_ra_dec_footprint, get_healpixel_footprint, generate_uniform_random_dist
 
 
-__all__ = ['SizeStellarMassLuminosityBulgeDisk']
+__all__ = ['SizeAppmagBulgeDisk']
 
 
-class SizeStellarMassLuminosityBulgeDisk(BaseValidationTest):
+class SizeAppmagBulgeDisk(BaseValidationTest):
     """
     Validation test of 2pt correlation function
     """

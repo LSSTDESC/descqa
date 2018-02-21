@@ -1,8 +1,8 @@
-subclass_name: SizeStellarMassLuminosityBulgeDisk.SizeStellarMassLuminosityBulgeDisk
+subclass_name: SizeAppmagBulgeDisk.SizeAppmagBulgeDisk
 
 #observation: either protodc or buzzard
-#simulated_catalog: protodc 
-simulated_catalog: buzzard 
+simulated_catalog: protodc 
+#simulated_catalog: buzzard 
 
 possible_appmag_fields:
   - mag_i_lsst
@@ -30,7 +30,7 @@ buzzrad_output_figname: 'size_lum_buzzard'
 
 text_template: '${} < z < {}$'
 
-protodc_data_filename: 'size_sm_lum/sizes_appmag_Mandelbaum2014.txt'
+protodc_data_filename: 'size_sm_lum/sizes_appmag_bulge_disk_Mandelbaum2014.txt'
 buzzard_data_filename: 'size_sm_lum/van_der_Wel_2014_ApJ_788_28_Table5_VLuminosity.txt'
 protodc_data_label: 'Mandelbaum+2014: COSMOSIS comparing mean and scatter'
 buzzard_data_label: 'van der Wel+2014: comparing mean and scatter'
