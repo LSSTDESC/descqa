@@ -75,6 +75,9 @@ h3           {font-size: 110%; line-height: 1.25;}
 .matrix td.green {
     background-color:#009E73;
 }
+.matrix td.blue{
+    background-color: #56B4E9;
+}
 
 .homeinfo{
     width: 1100px;
@@ -116,6 +119,9 @@ span.gold {
 }
 span.green {
     color:#009E73;
+}
+span.blue{
+    color: #56B4E9;
 }
 
 a.celllink {
