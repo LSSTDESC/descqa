@@ -16,17 +16,8 @@ from GCR import GCRQuery
 
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
-
-cosmo = FlatLambdaCDM(H0=70, Om0=0.3, Tcmb0=2.725)
-
-chi_recomb = 14004.036207574154
 pars = camb.CAMBparams()
-h = 0.675
-pars.set_cosmology(H0=h * 100, ombh2=0.022, omch2=0.122)
-pars.InitPower.set_params(ns=0.965)
-camb.set_halofit_version(version='takahashi')
-p = camb.get_matter_power_interpolator(
-    pars, nonlinear=True, k_hunit=False, hubble_units=False, kmax=100., zmax=1100., k_per_logint=False).P
+# note that chi_recomb should be a function of cosmology but this shouldn't have a major impact
 
 __all__ = ['ShearTest']
 
@@ -55,6 +46,8 @@ class ShearTest(BaseValidationTest):
                  **kwargs):
         #pylint: disable=W0231
         #catalog quantities
+
+
         self.z = z
         #sep-bounds and binning
         self.min_sep = min_sep
@@ -74,18 +67,6 @@ class ShearTest(BaseValidationTest):
         self.filters = [(lambda z: (z > zlo) & (z < zhi), self.z)]
         self.summary_fig, self.summary_ax = plt.subplots(2, sharex=True)
 
-        #validation data
-        # want this to change to theory...
-        #self.validation_data = {}
-        #self.observation = observation
-        #setup subplot configuration and get magnitude cuts for each plot
-        #self.mag_lo, self.mag_hi = self.init_plots(mag_lo, mag_hi)
-        #setup summary plot
-        #self.summary_fig, self.summary_ax = plt.subplots(self.nrows, self.ncolumns, figsize=(figx_p, figy_p), sharex='col')
-        #could plot summary validation data here if available but would need to evaluate labels, bin values etc.
-        #otherwise setup a check so that validation data is plotted only once on summary plot
-        #self.first_pass = True
-        #self._other_kwargs = kwargs
 
     def compute_nz(self, n_z):
         '''create interpolated n(z) distribution'''
@@ -97,27 +78,27 @@ class ShearTest(BaseValidationTest):
         n2 = interp1d(z, n / n2_sum, bounds_error=False, fill_value=0.0, kind='cubic')
         return n2
 
-    def integrand_w(self, x, n, chi, chi_int):
+    def integrand_w(self, x, n, chi, chi_int, cosmo):
         ''' This is the inner bit of GWL lensing kernel - z is related to x, not chi'''
         z = chi_int(x)
         H_z = cosmo.H(z).value * 3.240779289469756e-20  #1/s units #.to(1./u.s) conversion
         dchidz = 9.715611890256315e-15 / H_z  #const.c.to(u.Mpc/u.s).value / (H_z) # Mpc units
         return n(z) / dchidz * (x - chi) / x
 
-    def galaxy_W(self, z, n, chi_int):
+    def galaxy_W(self, z, n, chi_int, cosmo, chi_recomb):
         ''' galaxy window function'''
         #pylint: disable=E1101
         chi = cosmo.comoving_distance(z).value  # can be array
         cst = 3. / 2. * cosmo.H(0).to(1. / u.s)**2 / const.c.to(u.Mpc / u.s)**2 * cosmo.Om(
-            0)  # not sure about the z-dependence here
+            0) 
         prefactor = cst * chi * (1. + z) * u.Mpc
         val_array = []
         for i in range(len(z)):
-            val_array.append(quad(self.integrand_w, chi[i], chi_recomb, args=(n, chi[i], chi_int))[0])
+            val_array.append(quad(self.integrand_w, chi[i], chi_recomb, args=(n, chi[i], chi_int, cosmo))[0])
         W = np.array(val_array) * prefactor * (u.Mpc)  # now unitless
         return W
 
-    def integrand_lensing_limber(self, chi, l, galaxy_W_int, chi_int):
+    def integrand_lensing_limber(self, chi, l, galaxy_W_int, chi_int, p):
         '''return overall integrand for one value of l'''
         #chi_unit = chi * u.Mpc
         z = chi_int(chi)
@@ -125,25 +106,25 @@ class ShearTest(BaseValidationTest):
         integrand = p(z, k, grid=False) * galaxy_W_int(z)**2 / chi**2
         return integrand
 
-    def phi(self, lmax, n_z):
+    def phi(self, lmax, n_z, cosmo, p, chi_recomb):
         z_array = np.logspace(-3, np.log10(10.), 200)
         chi_array = cosmo.comoving_distance(z_array).value
         chi_int = interp1d(chi_array, z_array, bounds_error=False, fill_value=0.0)
         n = self.compute_nz(n_z)
-        galaxy_W_int = interp1d(z_array, self.galaxy_W(z_array, n, chi_int), bounds_error=False, fill_value=0.0)
+        galaxy_W_int = interp1d(z_array, self.galaxy_W(z_array, n, chi_int, cosmo, chi_recomb), bounds_error=False, fill_value=0.0)
         phi_array = []
         l = range(0, lmax, 1)
         l = np.array(l)
         for i in l:
             a = quad(
-                self.integrand_lensing_limber, 1.e-10, chi_recomb, args=(i, galaxy_W_int, chi_int), epsrel=1.e-6)[0]
+                self.integrand_lensing_limber, 1.e-10, chi_recomb, args=(i, galaxy_W_int, chi_int, p), epsrel=1.e-6)[0]
             phi_array.append(a)
         phi_array = np.array(phi_array)
         prefactor = 1.0  #(l+2)*(l+1)*l*(l-1)  / (l+0.5)**4
         return l, phi_array * prefactor
 
-    def theory_corr(self, n_z2, xvals, lmax2):
-        ll, pp = self.phi(lmax=lmax2, n_z=n_z2)
+    def theory_corr(self, n_z2, xvals, lmax2, cosmo, p, chi_recomb):
+        ll, pp = self.phi(lmax=lmax2, n_z=n_z2, cosmo=cosmo, p=p, chi_recomb=chi_recomb)
         pp3_2 = np.zeros((lmax2, 4))
         pp3_2[:, 1] = pp[:] * (ll * (ll + 1.)) / (2. * np.pi)
         #xvals = np.logspace(np.log10(min_sep2), np.log10(max_sep2), nbins2) #in arcminutes
@@ -162,7 +143,7 @@ class ShearTest(BaseValidationTest):
         else:
             chi2 = np.sum([(measured[i] - theory[i])**2 / theory[i]**2 for i in range(len(measured))])
         diff = chi2 / float(len(measured))
-        return diff  #np.sqrt(np.sum(diff))/float(len(measured))
+        return diff  
 
     def jackknife(self, catalog_data, xip, xim):
         " computing jack-knife covariance matrix using K-means clustering"
@@ -263,6 +244,18 @@ class ShearTest(BaseValidationTest):
         catalog_data = self.get_catalog_data(
             catalog_instance, [self.z, self.ra, self.dec, self.e1, self.e2, self.kappa], filters=self.filters)
 
+
+        #TODO: ns set to 0.963 for now, as this isn't within astropy's cosmology dictionaries. 
+        cosmo = catalog_instance.cosmology
+        pars.set_cosmology(H0 = cosmo.H0.value , ombh2 = cosmo.Ob0 * (cosmo.H0.value /100.)**2, omch2 = (cosmo.Om0 -cosmo.Ob0 )* (cosmo.H0.value /100.)**2)
+        pars.InitPower.set_params(ns = 0.963)
+        camb.set_halofit_version(version='takahashi')
+        p = camb.get_matter_power_interpolator( pars, nonlinear=True, k_hunit=False, hubble_units=False, kmax=100., zmax=1100., k_per_logint=False).P
+        chi_recomb = cosmo.comoving_distance(1100.).value
+
+
+
+        print(cosmo)
         # read in shear values and check limits
         e1 = catalog_data[self.e1]
         max_e1 = np.max(e1)
@@ -275,22 +268,6 @@ class ShearTest(BaseValidationTest):
         if ((min_e2 < (-1.)) or (max_e2 > 1.0)):
             return TestResult(skipped=True, summary='e2 values out of range [-1,+1]')
 
-        # outputting values for easy testing on home computer
-        #import h5py
-        #f = h5py.File("/global/homes/p/plarsen/protoDC2_values.hdf5", "w")
-        #dset = f.create_dataset("shear_1", np.shape(e1),dtype='f')
-        #dset[...] = e1
-        #dset2 = f.create_dataset("shear_2", np.shape(e1),dtype='f')
-        #dset3 = f.create_dataset("ra", np.shape(e1),dtype='f')
-        #dset4 = f.create_dataset("dec", np.shape(e1),dtype='f')
-        #dset5 = f.create_dataset("z", np.shape(e1),dtype='f')
-        #dset6 = f.create_dataset("kappa", np.shape(e1),dtype='f')
-        #dset2[...] = e2
-        #dset3[...] = catalog_data[self.ra]
-        #dset4[...] = catalog_data[self.dec]
-        #dset5[...] = catalog_data[self.z]
-        #dset6[...] = catalog_data[self.kappa]
-        #f.close()
 
         # compute shear auto-correlation
         cat_s = treecorr.Catalog(
@@ -315,9 +292,6 @@ class ShearTest(BaseValidationTest):
         #sig = np.sqrt(gg.varxi)  # this is shape noise only - should be very low for simulation data
 
         do_jackknife = self.do_jackknife
-        # get jackknife covariances.
-        #cp_xip,cp_xim = self.jackknife(catalog_data,xip,xim)
-
         # Diagonal covariances for error bars on the plots. Use full covariance matrix for chi2 testing.
 
         if (do_jackknife == True):
@@ -335,7 +309,7 @@ class ShearTest(BaseValidationTest):
                 sigm_jack[i] = np.sqrt(gg.varxi[i])
 
         n_z = catalog_data[self.z]
-        xvals, theory_plus, theory_minus = self.theory_corr(n_z, r, 10000)
+        xvals, theory_plus, theory_minus = self.theory_corr(n_z, r, 10000, cosmo, p, chi_recomb)
 
         theory_plus = theory_plus * 1.e6
         theory_minus = theory_minus * 1.e6
@@ -349,27 +323,12 @@ class ShearTest(BaseValidationTest):
         print(theory_minus)
         print(xip)
         print(xim)
-        #determine chi2/dof values
-        ##chi2_dof_1= self.get_score(xip, theory_plus,cp_xip,opt='cov') # correct this
-        #chi2_dof_2 = self.get_score(xim, theory_minus, cp_xim,opt='cov')
 
-        #print(chi2_dof_1)
-        #print(chi2_dof_2)
-        #print("chi2 values")
-
-        #debugging output
-        #print("CP_XIP:")
-        #print(cp_xip)
-        #print(xip)
-        #print(sig_jack)
-
-        # further correlation functions - can add in later
-        #dd = treecorr.NNCorrelation(nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin')
-        #dd.process(cat)
+        #The following are further treecorr correlation functions that could be added in later to extend the test
+        #treecorr.NNCorrelation(nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin')
         #treecorr.NGCorrelation(nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin')  # count-shear  (i.e. <gamma_t>(R))
         #treecorr.NKCorrelation(nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin')  # count-kappa  (i.e. <kappa>(R))
         #treecorr.KKCorrelation(nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin')  # count-kappa  (i.e. <kappa>(R))
-        # etc...
 
         fig, ax = plt.subplots(2, sharex=True)
         for ax_this in (ax, self.summary_ax):
@@ -383,6 +342,9 @@ class ShearTest(BaseValidationTest):
         plt.close(fig)
 
         score = chi2_dof_1  #calculate your summary statistics
+
+        #TODO: This criteria for the score is effectively a placeholder if jackknifing isn't used and assumes a diagonal covariance if it is
+        # Proper validation criteria need to be assigned to this test 
         if (score < 2):
             return TestResult(score, passed=True)
         else:
