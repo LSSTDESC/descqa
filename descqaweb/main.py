@@ -49,7 +49,7 @@ def run():
                 sys.stdout.flush()
                 print(env.get_template('leftpanel.html').render(**prepare_leftpanel(_run, test, catalog)))
             else:
-                print(env.get_template('twopanels.html').render(run=_run, catalog=catalog, test=test))
+                print(env.get_template('twopanels.html').render(run=_run, catalog=catalog, test=test, right=form.getfirst('right')))
             return
 
     print(env.get_template('header.html').render(full_header=True, please_wait=True, config=config))
@@ -59,4 +59,3 @@ def run():
         catalog_prefix=form.getfirst('catalog_prefix'),
         test_prefix=form.getfirst('test_prefix'),
     )))
-
