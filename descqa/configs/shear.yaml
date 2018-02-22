@@ -10,5 +10,7 @@ min_sep: 2.5
 max_sep: 200
 sep_units: 'arcmin'
 bin_slop: 0.07
-zlo: 0.3
-zhi: 0.9
+zlo: 0.2
+zhi: 1.0
+do_jackknife: True
+N_clust: 10

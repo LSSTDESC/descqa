@@ -46,7 +46,7 @@ class ShearTest(BaseValidationTest):
     Validation test for shear and convergence quantities
     """
 
-    def __init__(self, z='redshift_true', ra='ra', dec='dec', e1='shear_1', e2='shear_2', kappa='convergence', nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin', bin_slop=0.1, zlo=0.5, zhi=0.6, **kwargs):
+    def __init__(self, z='redshift_true', ra='ra', dec='dec', e1='shear_1', e2='shear_2', kappa='convergence', nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin', bin_slop=0.1, zlo=0.5, zhi=0.6,do_jackknife=False,N_clust=10, **kwargs):
         #catalog quantities
         self.z = z
         #sep-bounds and binning
@@ -61,9 +61,12 @@ class ShearTest(BaseValidationTest):
         self.e1 = e1
         self.e2 = e2
         self.kappa = kappa
+        self.N_clust = N_clust
+        self.do_jackknife=do_jackknife
         # cut in redshift
         self.filters = [(lambda z: (z > zlo) & (z < zhi), self.z)]
         self.summary_fig, self.summary_ax = plt.subplots(2, sharex=True)
+       
         
         #validation data
         # want this to change to theory... 
@@ -152,6 +155,53 @@ class ShearTest(BaseValidationTest):
             chi2 =np.sum( [(measured[i]-theory[i])**2/cov[i][i] for i in range(len(measured))])
         diff = chi2/float(len(measured))
         return diff#np.sqrt(np.sum(diff))/float(len(measured))
+    
+    
+    def jackknife(self,catalog_data,xip,xim):
+        " computing jack-knife covariance matrix using K-means clustering"
+        #k-means clustering to define areas
+        from sklearn.cluster import k_means
+        N_clust = self.N_clust
+        nn = np.stack((catalog_data[self.ra],catalog_data[self.dec]),axis=1)
+        cents, labs, inert = k_means(n_clusters=N_clust,random_state=0,X=nn,n_jobs=-1)  # check random state, n_jobs is in debugging mode
+        print("computing jack-knife errors")
+        import time
+        time_jack = time.time()
+        # jack-knife code
+        xip_jack=[]
+        xim_jack=[]
+        gg = treecorr.GGCorrelation(nbins=self.nbins, min_sep=self.min_sep, max_sep=self.max_sep, sep_units='arcmin', bin_slop=self.bin_slop, verbose=True)
+        for i in range(N_clust):
+            ##### shear computation excluding each jack-knife region
+            cat_s = treecorr.Catalog(ra=catalog_data[self.ra][labs!=i], dec=catalog_data[self.dec][labs!=i], g1=catalog_data[self.e1][labs!=i]-np.mean(catalog_data[self.e1][labs!=i]), g2=-(catalog_data[self.e2][labs!=i]-np.mean(catalog_data[self.e2][labs!=i])), ra_units='deg', dec_units='deg')
+            gg.process(cat_s)
+            
+            xip_jack.append(gg.xip)
+            xim_jack.append(gg.xim)
+            ## debugging outputs
+            print("xip_jack")
+            print(i)
+            print(gg.xip)
+            print("time = "+str(time.time()-time_jack))
+                
+        ### assign covariance matrix - loop is poor python syntax but compared to the time taken for the rest of the test doesn't really matter
+        cp_xip = np.zeros((self.nbins,self.nbins))       
+        for i in range(self.nbins):
+            for j in range(self.nbins):
+                for k in range(N_clust):
+                    cp_xip[i][j] += (N_clust-1.)/N_clust * (xip[i]-xip_jack[k][i]*1.e6)*(xip[j]-xip_jack[k][j]*1.e6)
+
+        cp_xim = np.zeros((self.nbins,self.nbins))
+        for i in range(self.nbins):
+            for j in range(self.nbins):
+                for k in range(N_clust):
+                    cp_xim[i][j] += (N_clust-1.)/N_clust * (xim[i]-xim_jack[k][i]*1.e6)*(xim[j]-xim_jack[k][j]*1.e6)
+        return cp_xip,cp_xim
+ 
+                  
+  
+                
+                  
         
     @staticmethod
     def get_catalog_data(gc, quantities, filters=None):
@@ -195,16 +245,13 @@ class ShearTest(BaseValidationTest):
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
 
         # check if needed quantities exist
-        
         if not catalog_instance.has_quantities([self.z, self.ra, self.dec]):
-            #print("failed")
             return TestResult(skipped=True, summary='do not have needed location quantities')
         if not catalog_instance.has_quantities([self.e1, self.e2,self.kappa]):
-            #print("failed")
             return TestResult(skipped=True, summary='do not have needed shear quantities')
         catalog_data = self.get_catalog_data(catalog_instance, [self.z, self.ra, self.dec, self.e1, self.e2, self.kappa], filters=self.filters)
-        # get required catalogue data       
         
+        # read in shear values and check limits
         e1 = catalog_data[self.e1]
         max_e1 = np.max(e1)
         min_e1 = np.min(e1)
@@ -216,64 +263,36 @@ class ShearTest(BaseValidationTest):
         if ((min_e2<(-1.)) or (max_e2>1.0)):
             return TestResult(skipped=True, summary='e2 values out of range [-1,+1]')
         
-        
+        import h5py 
+        f = h5py.File("/global/homes/p/plarsen/protoDC2_values.hdf5", "w")
+        dset = f.create_dataset("shear_1", np.shape(e1),dtype='f')
+        dset[...] = e1
+        dset2 = f.create_dataset("shear_2", np.shape(e1),dtype='f')
+        dset3 = f.create_dataset("ra", np.shape(e1),dtype='f')
+        dset4 = f.create_dataset("dec", np.shape(e1),dtype='f')
+        dset5 = f.create_dataset("z", np.shape(e1),dtype='f')
+        dset6 = f.create_dataset("kappa", np.shape(e1),dtype='f')
+        dset2[...] = e2
+        dset3[...] = catalog_data[self.ra]
+        dset4[...] = catalog_data[self.dec]
+        dset5[...] = catalog_data[self.z]
+        dset6[...] = catalog_data[self.kappa]
+        f.close()
 
+
+        # compute shear auto-correlation
         cat_s = treecorr.Catalog(ra=catalog_data[self.ra], dec=catalog_data[self.dec], 
         g1=catalog_data[self.e1]-np.mean(catalog_data[self.e1]), g2=-(catalog_data[self.e2]-np.mean(catalog_data[self.e2])), ra_units='deg', dec_units='deg')
-        
         gg = treecorr.GGCorrelation(nbins=self.nbins, min_sep=self.min_sep, max_sep=self.max_sep, sep_units='arcmin', bin_slop=self.bin_slop, verbose=True)
-        gg.process(cat_s)
-        #base result
+        #gg.process(cat_s)
 
-        r = np.exp(gg.meanlogr)
-        xip = gg.xip
-        xim = gg.xim
+        #r = np.exp(gg.meanlogr)
+        #xip = gg.xip*1.e6
+        #xim = gg.xim*1.e6
+        #sig = np.sqrt(gg.varxi) # this is shape noise only - should be very low for simulation data
 
-        sig = np.sqrt(gg.varxi)
-
-
-        ####### code to do jack-knifing ################         
-
-        #k-means clustering to define areas
-        from sklearn.cluster import k_means
-        import time
-
-        a = time.time()
-        N_clust = 7
-        nn = np.stack((catalog_data[self.ra],catalog_data[self.dec]),axis=1)
-        cents, labs, inert = k_means(n_clusters=N_clust,random_state=0,X=nn,n_jobs=-1)   
-        print(time.time()-a)
-        print("done with k-means clustering")
-
-
-        # jack-knife code
-        xip_jack=[]
-        xim_jack=[]
-        gg = treecorr.GGCorrelation(nbins=self.nbins, min_sep=self.min_sep, max_sep=self.max_sep, sep_units='arcmin', bin_slop=self.bin_slop, verbose=True)
-        for i in range(N_clust):
-            cat_s = treecorr.Catalog(ra=catalog_data[self.ra][labs!=i], dec=catalog_data[self.dec][labs!=i], g1=catalog_data[self.e1][labs!=i]-np.mean(catalog_data[self.e1][labs!=i]), g2=-(catalog_data[self.e2][labs!=i]-np.mean(catalog_data[self.e2][labs!=i])), ra_units='deg', dec_units='deg')
-            gg.process(cat_s)
-            xip_jack.append(gg.xip)
-            xim_jack.append(gg.xim)
-            print("xip_jack")
-            print(i)
-            print(gg.xip)
-
-                
-        ### assign covariance matrix - loop is poor python syntax but compared to the time taken for the rest of the test doesn't really matter
-        cp_xip = np.zeros((self.nbins,self.nbins))       
-        for i in range(self.nbins):
-            for j in range(self.nbins):
-                for k in range(N_clust):
-                    cp_xip[i][j] += (N_clust-1.)/N_clust * (xip[i]-xip_jack[k][i])*(xip[j]-xip_jack[k][j])
-
-        cp_xim = np.zeros((self.nbins,self.nbins))
-        for i in range(self.nbins):
-            for j in range(self.nbins):
-                for k in range(N_clust):
-                    cp_xim[i][j] += (N_clust-1.)/N_clust * (xim[i]-xim_jack[k][i])*(xim[j]-xim_jack[k][j])
- 
-
+        # get jackknife covariances.
+        #cp_xip,cp_xim = self.jackknife(catalog_data,xip,xim)
 
         # Diagonal covariances for error bars on the plots. Use full covariance matrix for chi2 testing. 
         sig_jack = np.zeros((self.nbins))
@@ -282,51 +301,40 @@ class ShearTest(BaseValidationTest):
             sig_jack[i] = np.sqrt(cp_xip[i][i])
             sigm_jack[i] = np.sqrt(cp_xim[i][i])
  
-       #################################################
       
         n_z = catalog_data[self.z]
-        xvals, theory_plus, theory_minus = self.theory_corr(n_z, r , 10000)
-       
+        #xvals, theory_plus, theory_minus = self.theory_corr(n_z, r , 10000)
         
-        #assuming r == xvals
-        chi2_dof_1= self.get_score(xip, theory_plus,cp_xip) # correct this       
-        chi2_dof_2 = self.get_score(xim, theory_minus, cp_xim)
+        #determine chi2/dof values
+        ##chi2_dof_1= self.get_score(xip, theory_plus,cp_xip,opt='cov') # correct this       
+        #chi2_dof_2 = self.get_score(xim, theory_minus, cp_xim,opt='cov')
 
-        print(xvals)
-        print(r)
-        print(chi2_dof_1)
-        print(chi2_dof_2)
-        print("chi2 values")
+        #print(chi2_dof_1)
+        #print(chi2_dof_2)
+        #print("chi2 values")
 
+        #debugging output
         print("CP_XIP:")
         print(cp_xip)
+        print(xip)
+        print(sig_jack)
+
         
-        # further correlation functions 
+        # further correlation functions - can add in later
         #dd = treecorr.NNCorrelation(nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin')
         #dd.process(cat)
         #treecorr.NGCorrelation(nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin')  # count-shear  (i.e. <gamma_t>(R))
         #treecorr.NKCorrelation(nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin')  # count-kappa  (i.e. <kappa>(R))
         #treecorr.KKCorrelation(nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin')  # count-kappa  (i.e. <kappa>(R))
         # etc... 
-        print(xip*1.e6)
-        print(sig_jack*1.e6)
 
-#print(np.exp(gg.logr), gg.xip)
-#np.savez('output.npz', theta=np.exp(gg.logr), ggp=gg.xip, ggm=gg.xim, weight=gg.weight, npairs=gg.npairs)
-        
-        data = np.random.rand(10) #do your calculation with catalog_instance
 
         fig, ax = plt.subplots(2,sharex=True)
-
         for ax_this in (ax, self.summary_ax):
-            #ax_this[0].plot(xvals,xip*1.e6,'o', color = "#3f9b0b",label=r'$\chi_{+}$')
-            ax_this[0].errorbar(r,xip*1.e6,sig_jack*1.e6,lw=0.6,marker='o',ls='',color = "#3f9b0b",label=r'$\chi_{+}$')
-            ax_this[0].plot(xvals,theory_plus*1.e6,'o',color="#9a0eea", label=r'$\chi_{+}$'+" theory")
-            #ax_this[1].plot(xvals,xim*1.e6,'o',color="#3f9b0b", label=r'$\chi_{-}$')
-            ax_this[1].errorbar(r,xim*1.e6,sigm_jack*1.e6,lw=0.6,marker='o',ls='',color = "#3f9b0b",label=r'$\chi_{-}$')
-            ax_this[1].plot(xvals,theory_minus*1.e6,'o',color="#9a0eea", label=r'$\chi_{-}$'+" theory")
-
-
+            ax_this[0].errorbar(r,xip,sig_jack,lw=0.6,marker='o',ls='',color = "#3f9b0b",label=r'$\chi_{+}$')
+            ax_this[0].plot(xvals,theory_plus,'o',color="#9a0eea", label=r'$\chi_{+}$'+" theory")
+            ax_this[1].errorbar(r,xim,sigm_jack,lw=0.6,marker='o',ls='',color = "#3f9b0b",label=r'$\chi_{-}$')
+            ax_this[1].plot(xvals,theory_minus,'o',color="#9a0eea", label=r'$\chi_{-}$'+" theory")
 
         self.post_process_plot(ax)
         fig.savefig(os.path.join(output_dir, 'plot.png'))
