@@ -9,7 +9,7 @@ import os
 from setuptools import setup
 
 with open(os.path.join(os.path.dirname(__file__), 'descqa', 'version.py')) as f:
-    exec(f.read())
+    exec(f.read()) #pylint: disable=W0122
 
 setup(
     name='descqa',
@@ -31,7 +31,7 @@ setup(
     packages=['descqa'],
     install_requires=['future', 'pyyaml', 'jinja2'],
     extras_require={
-        'full': ['numpy', 'scipy', 'matplotlib', 'healpy', 'GCR>=0.6.2', 'treecorr'],
+        'full': ['numpy', 'scipy', 'matplotlib', 'healpy', 'GCR>=0.6.2', 'treecorr', 'camb'],
     },
     package_data={'descqa': ['configs/*.yaml', 'data/*']},
 )
