@@ -151,8 +151,10 @@ class ShearTest(BaseValidationTest):
             print("inverse covariance matrix")
             print(cov)
             chi2 = np.matrix(measured-theory)*cov*np.matrix(measured-theory).T
-        else:            
+        elif (opt=='diagonal'):            
             chi2 =np.sum( [(measured[i]-theory[i])**2/cov[i][i] for i in range(len(measured))])
+        else:
+            chi2 = np.sum( [(measured[i]-theory[i])**2/theory[i]**2  for i in range(len(measured))])
         diff = chi2/float(len(measured))
         return diff#np.sqrt(np.sum(diff))/float(len(measured))
     
@@ -263,48 +265,74 @@ class ShearTest(BaseValidationTest):
         if ((min_e2<(-1.)) or (max_e2>1.0)):
             return TestResult(skipped=True, summary='e2 values out of range [-1,+1]')
         
-        import h5py 
-        f = h5py.File("/global/homes/p/plarsen/protoDC2_values.hdf5", "w")
-        dset = f.create_dataset("shear_1", np.shape(e1),dtype='f')
-        dset[...] = e1
-        dset2 = f.create_dataset("shear_2", np.shape(e1),dtype='f')
-        dset3 = f.create_dataset("ra", np.shape(e1),dtype='f')
-        dset4 = f.create_dataset("dec", np.shape(e1),dtype='f')
-        dset5 = f.create_dataset("z", np.shape(e1),dtype='f')
-        dset6 = f.create_dataset("kappa", np.shape(e1),dtype='f')
-        dset2[...] = e2
-        dset3[...] = catalog_data[self.ra]
-        dset4[...] = catalog_data[self.dec]
-        dset5[...] = catalog_data[self.z]
-        dset6[...] = catalog_data[self.kappa]
-        f.close()
+
+        # outputting values for easy testing on home computer
+        #import h5py 
+        #f = h5py.File("/global/homes/p/plarsen/protoDC2_values.hdf5", "w")
+        #dset = f.create_dataset("shear_1", np.shape(e1),dtype='f')
+        #dset[...] = e1
+        #dset2 = f.create_dataset("shear_2", np.shape(e1),dtype='f')
+        #dset3 = f.create_dataset("ra", np.shape(e1),dtype='f')
+        #dset4 = f.create_dataset("dec", np.shape(e1),dtype='f')
+        #dset5 = f.create_dataset("z", np.shape(e1),dtype='f')
+        #dset6 = f.create_dataset("kappa", np.shape(e1),dtype='f')
+        #dset2[...] = e2
+        #dset3[...] = catalog_data[self.ra]
+        #dset4[...] = catalog_data[self.dec]
+        #dset5[...] = catalog_data[self.z]
+        #dset6[...] = catalog_data[self.kappa]
+        #f.close()
 
 
         # compute shear auto-correlation
         cat_s = treecorr.Catalog(ra=catalog_data[self.ra], dec=catalog_data[self.dec], 
         g1=catalog_data[self.e1]-np.mean(catalog_data[self.e1]), g2=-(catalog_data[self.e2]-np.mean(catalog_data[self.e2])), ra_units='deg', dec_units='deg')
         gg = treecorr.GGCorrelation(nbins=self.nbins, min_sep=self.min_sep, max_sep=self.max_sep, sep_units='arcmin', bin_slop=self.bin_slop, verbose=True)
-        #gg.process(cat_s)
+        gg.process(cat_s)
 
-        #r = np.exp(gg.meanlogr)
-        #xip = gg.xip*1.e6
-        #xim = gg.xim*1.e6
-        #sig = np.sqrt(gg.varxi) # this is shape noise only - should be very low for simulation data
+        r = np.exp(gg.meanlogr)
+        xip = gg.xip*1.e6
+        xim = gg.xim*1.e6
+        sig = np.sqrt(gg.varxi) # this is shape noise only - should be very low for simulation data
 
+        do_jackknife=self.do_jackknife
         # get jackknife covariances.
         #cp_xip,cp_xim = self.jackknife(catalog_data,xip,xim)
 
         # Diagonal covariances for error bars on the plots. Use full covariance matrix for chi2 testing. 
-        sig_jack = np.zeros((self.nbins))
-        sigm_jack = np.zeros((self.nbins))
-        for i in range(self.nbins):
-            sig_jack[i] = np.sqrt(cp_xip[i][i])
-            sigm_jack[i] = np.sqrt(cp_xim[i][i])
- 
+
+        if (do_jackknife==True):
+            cp_xip,cp_xim = self.jackknife(catalog_data,xip,xim)
+            sig_jack = np.zeros((self.nbins))
+            sigm_jack = np.zeros((self.nbins))
+            for i in range(self.nbins):
+                sig_jack[i] = np.sqrt(cp_xip[i][i])
+                sigm_jack[i] = np.sqrt(cp_xim[i][i])
+        else:
+            sig_jack = np.zeros((self.nbins))
+            sigm_jack = np.zeros((self.nbins))
+            for i in range(self.nbins):
+                sig_jack[i] = np.sqrt(gg.varxi[i])
+                sigm_jack[i] = np.sqrt(gg.varxi[i])
+
       
         n_z = catalog_data[self.z]
-        #xvals, theory_plus, theory_minus = self.theory_corr(n_z, r , 10000)
-        
+        xvals, theory_plus, theory_minus = self.theory_corr(n_z, r , 10000)
+
+        theory_plus = theory_plus*1.e6
+        theory_minus = theory_minus*1.e6
+
+
+        if (do_jackknife==True):
+             chi2_dof_1= self.get_score(xip, theory_plus,cp_xip,opt='diagonal') # correct this       
+        else:
+             chi2_dof_1= self.get_score(xip, theory_plus,0,opt='nojack') # correct this       
+
+
+        print(theory_plus)
+        print(theory_minus)
+        print(xip)
+        print(xim)
         #determine chi2/dof values
         ##chi2_dof_1= self.get_score(xip, theory_plus,cp_xip,opt='cov') # correct this       
         #chi2_dof_2 = self.get_score(xim, theory_minus, cp_xim,opt='cov')
@@ -314,10 +342,10 @@ class ShearTest(BaseValidationTest):
         #print("chi2 values")
 
         #debugging output
-        print("CP_XIP:")
-        print(cp_xip)
-        print(xip)
-        print(sig_jack)
+        #print("CP_XIP:")
+        #print(cp_xip)
+        #print(xip)
+        #print(sig_jack)
 
         
         # further correlation functions - can add in later
