@@ -5,11 +5,11 @@ import sys
 
 import numpy as np
 from GCR import GCRQuery
-import GCRCatalogs
-import descqa 
+#import GCRCatalogs
+#import descqa 
 
 from builtins import str
-import yaml
+#import yaml
 import healpy as hp
 
 import camb
