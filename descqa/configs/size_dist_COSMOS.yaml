@@ -1,0 +1,12 @@
+subclass_name: SizeDistribution.SizeDistribution
+
+possible_size_fields:
+  - size
+  - size_true
+
+output_filename_template: 'w_theta_r_{}_{}.dat'
+label_template: '${} < r < {}$'
+
+data_filename: 'size_dist/COSMOS_Great3_sample_size_distribution.txt'
+
+description: Compare slope of N(size) to the same slope in the Great3 COSMOS postage stamps
