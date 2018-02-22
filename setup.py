@@ -31,7 +31,7 @@ setup(
     packages=['descqa'],
     install_requires=['future', 'pyyaml', 'jinja2'],
     extras_require={
-        'full': ['numpy', 'scipy', 'matplotlib', 'healpy', 'GCR>=0.6.2', 'treecorr', 'camb'],
+        'full': ['numpy', 'scipy', 'matplotlib', 'GCR>=0.6.2', 'healpy', 'treecorr', 'camb', 'scikit-learn'],
     },
     package_data={'descqa': ['configs/*.yaml', 'data/*']},
 )
