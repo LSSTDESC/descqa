@@ -6,10 +6,11 @@ python:
 - "2.7"
 - "3.6"
 
-before_install:
+before_install: # camb requires gfortran to be at least gfortran-4.9
 - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
 - sudo apt-get update -qq
-- sudo apt-get install gfortran -y
+- sudo apt-get install gfortran-4.9 -y
+- alias gfortran=gfortran-4.9
 
 install:
 - pip install .[full]
