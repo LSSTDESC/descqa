@@ -6,7 +6,7 @@ from .interface import DescqaRun, b64encode
 
 __all__ = ['prepare_leftpanel', 'print_file']
 
-def prepare_leftpanel(run, test=None, catalog=None):
+def prepare_leftpanel(run, test=None, catalog=None, right=None):
 
     try:
         descqa_run = DescqaRun(run, config.root_dir)
@@ -24,6 +24,7 @@ def prepare_leftpanel(run, test=None, catalog=None):
     data['run'] = descqa_run.name
     data['test'] = test
     data['catalog'] = catalog
+    data['right'] = right
 
     if test:
         data['group'] = [descqa_run[test, c] for c in descqa_run.catalogs]
@@ -53,12 +54,14 @@ def print_file(target_file, root_dir=config.root_dir):
     except (OSError, IOError, AssertionError):
         print('Content-Type: text/plain; charset=utf-8')
         print()
+        sys.stdout.flush()
         print('[Error] Cannot open/read file {}'.format(target_file))
 
     else:
         if target_file.lower().endswith('.png'):
             print('Content-Type: text/html; charset=utf-8')
             print()
+            sys.stdout.flush()
             print('<!DOCTYPE html>')
             print('<html><body>')
             print('<img src="data:image/png;base64,{}" width="100%">'.format(b64encode(file_content)))
@@ -75,10 +78,19 @@ def print_file(target_file, root_dir=config.root_dir):
             except AttributeError:
                 print(file_content)
 
+        elif target_file.lower().endswith('.html'):
+            print('Content-Type: text/html; charset=utf-8')
+            file_content = file_content.decode('utf-8')
+            print('Content-Length: {}'.format(len(file_content)))
+            print()
+            sys.stdout.flush()
+            print(file_content)
+
         else:
             print('Content-Type: text/plain; charset=utf-8')
             file_content = file_content.decode('utf-8')
             print('Content-Length: {}'.format(len(file_content)))
             print('Content-Disposition: inline; filename="{}"'.format(os.path.basename(target_file)))
             print()
+            sys.stdout.flush()
             print(file_content)

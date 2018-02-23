@@ -9,7 +9,7 @@ __all__ = ['ConditionalLuminosityFunction']
 
 class ConditionalLuminosityFunction(BaseValidationTest):
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs): #pylint: disable=W0231
 
         self.kwargs = kwargs
         self.band1 = kwargs.get('band1', 'g')
@@ -102,7 +102,7 @@ class ConditionalLuminosityFunction(BaseValidationTest):
 
         self.make_plot(clf, catalog_name, os.path.join(output_dir, 'clf.png'))
 
-        return TestResult(passed=True, score=0)
+        return TestResult(inspect_only=True)
 
     def make_plot(self, clf, name, save_to):
         fig, ax = plt.subplots(self.n_mass_bins, self.n_z_bins, sharex=True, sharey=True, figsize=(12,10), dpi=100)
