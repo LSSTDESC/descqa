@@ -7,11 +7,11 @@ class TestResult(object):
     """
     class for passing back test result
     """
-    def __init__(self, score=None, summary='', passed=False, skipped=False):
+    def __init__(self, score=None, summary=None, passed=False, skipped=False, inspect_only=False):
         """
         Parameters
         ----------
-        score : float or None
+        score : float
             a float number to represent the test score
 
         summary : str
@@ -22,18 +22,50 @@ class TestResult(object):
 
         skipped : bool
             if the test is skipped, overwrites all other arguments
+
+        inspect_only : bool
+            if the test is only for inspection (i.e., no passing criteria)
         """
 
-        self.skipped = bool(skipped)
         self.passed = bool(passed)
+        self.skipped = bool(skipped)
+        self.inspect_only = bool(inspect_only)
         self.summary = summary or ''
 
+        if sum((self.passed, self.skipped, self.inspect_only)) > 1:
+            raise ValueError('Only *one* of `passed`, `skipped`, and `inspect_only` can be set to True.')
+
         # set score
-        if not self.skipped:
+        if not (self.skipped or self.inspect_only):
             try:
                 self.score = float(score)
             except (TypeError, ValueError):
                 raise ValueError('Must set a float value for `score`')
+
+
+    @property
+    def status_code(self):
+        """
+        get status code (e.g. VALIDATION_TEST_PASSED)
+        """
+        if self.passed:
+            return 'VALIDATION_TEST_PASSED'
+        if self.skipped:
+            return 'VALIDATION_TEST_SKIPPED'
+        if self.inspect_only:
+            return 'VALIDATION_TEST_INSPECT'
+        return 'VALIDATION_TEST_FAILED'
+
+
+    @property
+    def status_full(self):
+        """
+        get full status (3 lines of string: status code, summary, score)
+        """
+        output = [self.status_code, self.summary]
+        if self.score:
+            output.append('{:.3g}'.format(self.score))
+        return '\n'.join(output)
 
 
 class BaseValidationTest(object):
