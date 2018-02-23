@@ -1,10 +1,9 @@
-from GCR import GCRQuery
-from .base import BaseValidationTest, TestResult
-from .plotting import plt
-from .utils import get_opt_binpoints
 import os
 import numpy as np
 from itertools import count
+from .base import BaseValidationTest, TestResult
+from .plotting import plt
+from .utils import get_opt_binpoints
 
 __all__ = ['SizeDistribution']
 
@@ -21,24 +20,15 @@ class SizeDistribution(BaseValidationTest):
     yaxis_xoffset = 0.02
     yaxis_yoffset = 0.5
 
-    def __init__(self, observation='', **kwargs):
-
+    def __init__(self, **kwargs):
+        #pylint: disable=W0231
         #validation data
         validation_filepath = os.path.join(self.data_dir, kwargs['data_filename'])
         self.validation_data = np.loadtxt(validation_filepath)
         
         self.acceptable_keys = kwargs['possible_size_fields']
 
-        #check for valid observations
-        if not observation:
-            print('Warning: no data file supplied, no observation requested; only catalog data will be shown')
-        elif observation not in self.possible_observations:
-            raise ValueError('Observation {} not available'.format(observation))
-        else:
-            self.validation_data = self.get_validation_data(observation)
-
         self._color_iterator = ('C{}'.format(i) for i in count())
-        self._other_kwargs = kwargs        
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         # update color and marker to preserve catalog colors and markers across tests
@@ -90,8 +80,8 @@ class SizeDistribution(BaseValidationTest):
         validation_data = self.validation_data.copy()
         validation_mask = (validation_data[:,0] > min_sizes) & (validation_data[:,0]<median)
         validation_data[:,1] /= validation_data[validation_mask,1][0]
-        validation_slope, validation_intercept = np.polyfit(validation_data[validation_mask, 0],
-                                                            validation_data[validation_mask, 1], 1)
+        validation_slope, _ = np.polyfit(validation_data[validation_mask, 0],
+                                                         validation_data[validation_mask, 1], 1)
 
         # plot a histogram of sizes. This is easier to see as log(sizes) so do that.
         fig, (hist_ax, cumul_ax) = plt.subplots(1, 2)
@@ -119,6 +109,6 @@ class SizeDistribution(BaseValidationTest):
 
         fig.savefig(os.path.join(output_dir, 'size_distribution_{}.png'.format(catalog_name)))
         plt.close(fig)
-        return TestResult(0, passed=True)
+        return TestResult(inspect_only=True)
 
 
