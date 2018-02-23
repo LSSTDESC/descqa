@@ -3,7 +3,7 @@
 # average_mask_adjacent_pixel_count in bottom 95% (these cuts remove bad masking cases)
 # 'FIT_STATUS'[:,4] is not 0 or 5 (a Sersic fit failure)
 # size < exp(5), which cuts out one anomalously large point remaining after previous cuts
-size   N_z_div_sum_N
+#size   N_z_div_sum_N
 0.0106 1.000
 0.0257 0.999
 0.0408 0.994
