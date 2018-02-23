@@ -9,7 +9,6 @@ from sklearn.cluster import k_means
 import treecorr
 import camb
 import camb.correlations
-from astropy.cosmology import FlatLambdaCDM
 import astropy.units as u
 import astropy.constants as const
 from GCR import GCRQuery
@@ -90,7 +89,7 @@ class ShearTest(BaseValidationTest):
         #pylint: disable=E1101
         chi = cosmo.comoving_distance(z).value  # can be array
         cst = 3. / 2. * cosmo.H(0).to(1. / u.s)**2 / const.c.to(u.Mpc / u.s)**2 * cosmo.Om(
-            0) 
+            0)
         prefactor = cst * chi * (1. + z) * u.Mpc
         val_array = []
         for i in range(len(z)):
@@ -133,17 +132,17 @@ class ShearTest(BaseValidationTest):
         return xvals, vals[:, 1], vals[:, 2]
 
     def get_score(self, measured, theory, cov, opt='diagonal'):
-        if (opt == 'cov'):
+        if opt == 'cov':
             cov = np.matrix(cov).I
             print("inverse covariance matrix")
             print(cov)
             chi2 = np.matrix(measured - theory) * cov * np.matrix(measured - theory).T
-        elif (opt == 'diagonal'):
+        elif opt == 'diagonal':
             chi2 = np.sum([(measured[i] - theory[i])**2 / cov[i][i] for i in range(len(measured))])
         else:
             chi2 = np.sum([(measured[i] - theory[i])**2 / theory[i]**2 for i in range(len(measured))])
         diff = chi2 / float(len(measured))
-        return diff  
+        return diff
 
     def jackknife(self, catalog_data, xip, xim):
         " computing jack-knife covariance matrix using K-means clustering"
@@ -201,6 +200,9 @@ class ShearTest(BaseValidationTest):
 
     @staticmethod
     def get_catalog_data(gc, quantities, filters=None):
+        '''
+        Get quantities from catalog
+        '''
         data = {}
         if not gc.has_quantities(quantities):
             return TestResult(skipped=True, summary='Missing requested quantities')
@@ -214,6 +216,9 @@ class ShearTest(BaseValidationTest):
     # define theory from within this class
 
     def post_process_plot(self, ax):
+        '''
+        Post-processing routines on plot
+        '''
         #ax.text(0.05, 0.95, "add text here")
         plt.xscale('log')
         ax[0].legend()
@@ -236,6 +241,9 @@ class ShearTest(BaseValidationTest):
         ax[1].set_ylim([min_height2, max_height2])
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
+        ''' 
+        run test on a single catalog
+        '''
         # check if needed quantities exist
         if not catalog_instance.has_quantities([self.z, self.ra, self.dec]):
             return TestResult(skipped=True, summary='do not have needed location quantities')
@@ -245,12 +253,12 @@ class ShearTest(BaseValidationTest):
             catalog_instance, [self.z, self.ra, self.dec, self.e1, self.e2, self.kappa], filters=self.filters)
 
 
-        #TODO: ns set to 0.963 for now, as this isn't within astropy's cosmology dictionaries. 
+        #TODO: ns set to 0.963 for now, as this isn't within astropy's cosmology dictionaries.
         cosmo = catalog_instance.cosmology
-        pars.set_cosmology(H0 = cosmo.H0.value , ombh2 = cosmo.Ob0 * (cosmo.H0.value /100.)**2, omch2 = (cosmo.Om0 -cosmo.Ob0 )* (cosmo.H0.value /100.)**2)
-        pars.InitPower.set_params(ns = 0.963)
+        pars.set_cosmology(H0=cosmo.H0.value, ombh2=cosmo.Ob0*(cosmo.H0.value /100.)**2, omch2=(cosmo.Om0-cosmo.Ob0)*(cosmo.H0.value /100.)**2)
+        pars.InitPower.set_params(ns=0.963)
         camb.set_halofit_version(version='takahashi')
-        p = camb.get_matter_power_interpolator( pars, nonlinear=True, k_hunit=False, hubble_units=False, kmax=100., zmax=1100., k_per_logint=False).P
+        p = camb.get_matter_power_interpolator(pars, nonlinear=True, k_hunit=False, hubble_units=False, kmax=100., zmax=1100., k_per_logint=False).P
         chi_recomb = cosmo.comoving_distance(1100.).value
 
 
@@ -294,7 +302,7 @@ class ShearTest(BaseValidationTest):
         do_jackknife = self.do_jackknife
         # Diagonal covariances for error bars on the plots. Use full covariance matrix for chi2 testing.
 
-        if (do_jackknife == True):
+        if do_jackknife:
             cp_xip, cp_xim = self.jackknife(catalog_data, xip, xim)
             sig_jack = np.zeros((self.nbins))
             sigm_jack = np.zeros((self.nbins))
@@ -314,7 +322,7 @@ class ShearTest(BaseValidationTest):
         theory_plus = theory_plus * 1.e6
         theory_minus = theory_minus * 1.e6
 
-        if (do_jackknife == True):
+        if do_jackknife:
             chi2_dof_1 = self.get_score(xip, theory_plus, cp_xip, opt='diagonal')  # correct this
         else:
             chi2_dof_1 = self.get_score(xip, theory_plus, 0, opt='nojack')  # correct this
@@ -344,8 +352,8 @@ class ShearTest(BaseValidationTest):
         score = chi2_dof_1  #calculate your summary statistics
 
         #TODO: This criteria for the score is effectively a placeholder if jackknifing isn't used and assumes a diagonal covariance if it is
-        # Proper validation criteria need to be assigned to this test 
-        if (score < 2):
+        # Proper validation criteria need to be assigned to this test
+        if score < 2:
             return TestResult(score, passed=True)
         else:
             return TestResult(score, passed=False)
