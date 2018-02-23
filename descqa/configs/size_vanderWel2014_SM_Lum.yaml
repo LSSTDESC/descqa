@@ -1,5 +1,7 @@
 subclass_name: SizeStellarMassLuminosity.SizeStellarMassLuminosity
 
+observation: onecomp
+
 possible_mag_fields:
   - Mag_true_g_sdss_z0
   - Mag_true_r_sdss_z0
@@ -17,7 +19,7 @@ possible_mag_fields:
 output_filename_template: 'size_lum_z_{}_{}.dat'
 label_template: '${} < z < {}$'
 
-data_filename: 'size_sm_lum/van_der_Wel_2014_ApJ_788_28_Table5_VLuminosity.txt'
+data_filename: 'size/van_der_Wel_2014_ApJ_788_28_Table5_VLuminosity.txt'
 data_label: 'van der Wel+2014: comparing mean and scatter'
 
 z_bins:

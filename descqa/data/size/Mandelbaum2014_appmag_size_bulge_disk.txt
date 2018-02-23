@@ -1,4 +1,4 @@
-# zavg avg_mag avg_bhlr avg_dhlr std_bhlr std_dhlr
+# zavg avg_mag_F814W avg_bhlr_F814W avg_dhlr_F814W std_bhlr_F814W std_dhlr_F814W
 0.250 17.543 0.688 3.114 0.396 4.177
 0.250 19.321 0.419 1.273 0.848 1.724
 0.250 21.105 0.263 0.679 0.471 0.895
