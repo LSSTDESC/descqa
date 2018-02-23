@@ -7,7 +7,6 @@ from scipy.stats import binned_statistic
 
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
-from .utils import generate_uniform_random_ra_dec_footprint, get_healpixel_footprint, generate_uniform_random_dist
 
 
 __all__ = ['SizeStellarMassLuminosity']
@@ -61,7 +60,7 @@ class SizeStellarMassLuminosity(BaseValidationTest):
 
         logL = (AbsSun - AbsM) / 2.5 #unit of sun
         L = 10**logL
-        return L, logL
+        return logL
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         '''
@@ -113,10 +112,10 @@ class SizeStellarMassLuminosity(BaseValidationTest):
                 default_L_bin_edges = np.array([9, 9.5, 10, 10.5, 11, 11.5])
                 default_L_bins = (default_L_bin_edges[1:] + default_L_bin_edges[:-1]) / 2.
                 if self.observation == 'onecomp':
-                    L_G, logL_G = self.ConvertAbsMagLuminosity(catalog_data_this['mag'], 'g')
+                    logL_G = self.ConvertAbsMagLuminosity(catalog_data_this['mag'], 'g')
                     size_kpc = catalog_data_this['size'] * self._ARCSEC_TO_RADIAN * interpolate.splev(catalog_data_this['z'], spl) / (1 + catalog_data_this['z'])
-                    binned_size_kpc, tmp_1, tmp_2 = binned_statistic(logL_G, size_kpc, bins=default_L_bin_edges, statistic='mean')
-                    binned_size_kpc_err, tmp_1, tmp_2 = binned_statistic(logL_G, size_kpc, bins=default_L_bin_edges, statistic='std')
+                    binned_size_kpc = binned_statistic(logL_G, size_kpc, bins=default_L_bin_edges, statistic='mean')[0]
+                    binned_size_kpc_err = binned_statistic(logL_G, size_kpc, bins=default_L_bin_edges, statistic='std')[0]
 
                     np.savetxt(output_filepath, np.transpose((default_L_bins, binned_size_kpc, binned_size_kpc_err)))
 
@@ -126,13 +125,13 @@ class SizeStellarMassLuminosity(BaseValidationTest):
                     ax.fill_between(validation_this[:,1], 10**validation_this[:,3], 10**validation_this[:,4], lw=0, alpha=0.2)
                     ax.errorbar(default_L_bins, binned_size_kpc, binned_size_kpc_err, marker='o', ls='')
                 elif self.observation == 'twocomp':
-                    L_I, logL_I = self.ConvertAbsMagLuminosity(catalog_data_this['mag'], 'i')
+                    logL_I = self.ConvertAbsMagLuminosity(catalog_data_this['mag'], 'i')
                     arcsec_to_kpc = self._ARCSEC_TO_RADIAN * interpolate.splev(catalog_data_this['z'], spl) / (1 + catalog_data_this['z'])
 
-                    binned_bulgesize_kpc, tmp_1, tmp_2 = binned_statistic(logL_I, catalog_data_this['size_bulge'] * arcsec_to_kpc, bins=default_L_bin_edges, statistic='mean')
-                    binned_bulgesize_kpc_err, tmp_1, tmp_2 = binned_statistic(logL_I, catalog_data_this['size_bulge'] * arcsec_to_kpc, bins=default_L_bin_edges, statistic='std')
-                    binned_disksize_kpc, tmp_1, tmp_2 = binned_statistic(logL_I, catalog_data_this['size_disk'] * arcsec_to_kpc, bins=default_L_bin_edges, statistic='mean')
-                    binned_disksize_kpc_err, tmp_1, tmp_2 = binned_statistic(logL_I, catalog_data_this['size_disk'] * arcsec_to_kpc, bins=default_L_bin_edges, statistic='std')
+                    binned_bulgesize_kpc = binned_statistic(logL_I, catalog_data_this['size_bulge'] * arcsec_to_kpc, bins=default_L_bin_edges, statistic='mean')[0]
+                    binned_bulgesize_kpc_err = binned_statistic(logL_I, catalog_data_this['size_bulge'] * arcsec_to_kpc, bins=default_L_bin_edges, statistic='std')[0]
+                    binned_disksize_kpc = binned_statistic(logL_I, catalog_data_this['size_disk'] * arcsec_to_kpc, bins=default_L_bin_edges, statistic='mean')[0]
+                    binned_disksize_kpc_err = binned_statistic(logL_I, catalog_data_this['size_disk'] * arcsec_to_kpc, bins=default_L_bin_edges, statistic='std')[0]
                     binned_bulgesize_kpc = np.nan_to_num(binned_bulgesize_kpc)
                     binned_bulgesize_kpc_err = np.nan_to_num(binned_bulgesize_kpc_err)
                     binned_disksize_kpc = np.nan_to_num(binned_disksize_kpc)
