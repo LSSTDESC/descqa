@@ -295,6 +295,8 @@ class ShearTest(BaseValidationTest):
         gg.process(cat_s)
 
         r = np.exp(gg.meanlogr)
+
+        #NOTE: We are computing 10^6 x correlation function for easier comparison
         xip = gg.xip * 1.e6
         xim = gg.xim * 1.e6
         #sig = np.sqrt(gg.varxi)  # this is shape noise only - should be very low for simulation data
@@ -313,8 +315,8 @@ class ShearTest(BaseValidationTest):
             sig_jack = np.zeros((self.nbins))
             sigm_jack = np.zeros((self.nbins))
             for i in range(self.nbins):
-                sig_jack[i] = np.sqrt(gg.varxi[i])
-                sigm_jack[i] = np.sqrt(gg.varxi[i])
+                sig_jack[i] = np.sqrt(gg.varxi[i])*1.e6
+                sigm_jack[i] = np.sqrt(gg.varxi[i])*1.e6
 
         n_z = catalog_data[self.z]
         xvals, theory_plus, theory_minus = self.theory_corr(n_z, r, 10000, cosmo, p, chi_recomb)
