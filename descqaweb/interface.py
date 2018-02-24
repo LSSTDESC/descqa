@@ -39,13 +39,15 @@ class File(object):
 
 class DescqaItem(object):
     def __init__(self, test, catalog, run, base_dir):
-        if catalog is None:
-            self.relpath = os.path.join(run, test)
-            self.is_test_summary = True
-        else:
-            self.relpath = os.path.join(run, test, catalog)
+        self.path = os.path.join(base_dir, run, test)
+        self.relpath = os.path.join(os.path.basename(os.path.normpath(base_dir)), run, test)
+        self.is_test_summary = True
+
+        if catalog is not None:
+            self.path = os.path.join(self.path, catalog)
+            self.relpath = os.path.join(self.relpath, catalog)
             self.is_test_summary = False
-        self.path = os.path.join(base_dir, self.relpath)
+
         self.test = test
         self.catalog = catalog
         self.run = run
@@ -136,9 +138,8 @@ def validate_descqa_run_name(run_name, sub_base_dir):
 
 class DescqaRun(object):
     def __init__(self, run_name, base_dir, validated=False):
-        run_parent = run_name.rpartition('-')[0]
-        if os.path.basename(os.path.normpath(base_dir)) != run_parent:
-            base_dir = os.path.join(base_dir, run_parent)
+        if not run_name.startswith(os.path.basename(os.path.normpath(base_dir))):
+            base_dir = os.path.join(base_dir, run_name.rpartition('-')[0])
         if not validated:
             assert validate_descqa_run_name(run_name, base_dir) is not None
         self.base_dir = base_dir
