@@ -19,8 +19,18 @@
   <a class="everblue" href="?run=all&page={{ i }}">{{ i }}</a>
   {% endif %}
 {% endfor %}
-
 </div>
+
+<div class="legend">
+  <form action="." method="get">
+  Users: <input name="users" value="{{ search['users'] }}" />
+  Tests: <input name="tests" value="{{ search['tests'] }}" />
+  Catalogs: <input name="catalogs" value="{{ search['catalogs'] }}" />
+  <input name="run" type="hidden" value="all" />
+  <input type="submit" value="Search" />
+  </form>
+</div>
+
 <div class="legend">Legend:
   <img src="{{ static_dir }}/red.gif"/> Run did not successfully complete
   <img src="{{ static_dir }}/yellow.gif"/> Run completed but some tests have execution errors

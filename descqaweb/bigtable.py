@@ -56,11 +56,11 @@ def format_bigtable_row(descqa_run):
 
 
 def filter_search_results(descqa_run, search):
-    if 'user' in search and descqa_run.status.get('user') != search['user']:
+    if 'users' in search and descqa_run.status.get('users') not in search['users'].split():
         return False
-    if 'test' in search and not any(t.startswith(search['test']) for t in descqa_run.tests):
+    if 'tests' in search and not all(any(t.startswith(ts) for t in descqa_run.tests) for ts in search['tests'].split()):
         return False
-    if 'catalog' in search and not any(t.startswith(search['catalog']) for t in descqa_run.catalogs):
+    if 'catalogs' in search and not all(any(c.startswith(cs) for c in descqa_run.catalogs) for cs in search['catalogs'].split()):
         return False
     return True
 
