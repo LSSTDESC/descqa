@@ -8,7 +8,7 @@ __all__ = ['prepare_bigtable']
 try:
     unicode
 except NameError:
-    unicode = str
+    unicode = str  #pylint: disable=redefined-builtin
 
 
 def format_status_count(status_count):
