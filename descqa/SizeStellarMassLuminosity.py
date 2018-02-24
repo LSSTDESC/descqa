@@ -69,13 +69,13 @@ class SizeStellarMassLuminosity(BaseValidationTest):
         spl = redshift2dist(catalog_instance.cosmology)
 
         colnames = dict()
-        colnames['z'] = 'redshift'
+        colnames['z'] = catalog_instance.first_available('redshift', 'redshift_true')
         colnames['mag'] = catalog_instance.first_available(*self.possible_mag_fields)
         if self.observation == 'onecomp':
-            colnames['size'] = 'size_true'
+            colnames['size'] = catalog_instance.first_available('size', 'size_true')
         elif self.observation == 'twocomp':
-            colnames['size_bulge'] = 'size_bulge_true'
-            colnames['size_disk'] = 'size_disk_true'
+            colnames['size_bulge'] = catalog_instance.first_available('size_bulge', 'size_bulge_true')
+            colnames['size_disk'] = catalog_instance.first_available('size_disk', 'size_disk_true')
 
         if not all(v for v in colnames.values()):
             return TestResult(skipped=True, summary='Missing requested quantities')
