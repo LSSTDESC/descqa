@@ -1,0 +1,5 @@
+subclass_name: PositionAngle.PositionAngle
+p_cutoff: 0.05
+possible_position_angle_fields:
+    - position_angle
+    - position_angle_true
