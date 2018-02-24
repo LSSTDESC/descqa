@@ -80,6 +80,9 @@ class EllipticityDistribution(BaseValidationTest):
         possible_mag_fields = ('mag_{}_lsst',
                                'mag_{}_sdss',
                                'mag_{}_des',
+                               'mag_true_{}_lsst',
+                               'mag_true_{}_sdss',
+                               'mag_true_{}_des',
                               )
         possible_Mag_fields = ('Mag_true_{}_z0',
                                'Mag_true_{}_lsst_z0',
