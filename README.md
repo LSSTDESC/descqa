@@ -37,15 +37,9 @@ A [web interface](https://portal.nersc.gov/project/lsst/descqa/) hosted on NERSC
 
 ## Dependencies
 
-- numpy
-- scipy
-- matplotlib >= 2.0.0
-- astropy
-- healpy
-- pyyaml
-- future
-- jinja2
-- https://github.com/LSSTDESC/gcr-catalogs
+See `install_requires` and `extras_require` in [setup.py](setup.py) for the full installation dependencies. 
+
+Note, to *run* DESCQA (v2), [GCRCatalogs](https://github.com/LSSTDESC/gcr-catalogs) is also required.
 
 
 ### Additional dependencies For v1
