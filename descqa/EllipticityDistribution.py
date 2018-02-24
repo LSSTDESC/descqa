@@ -219,7 +219,9 @@ class EllipticityDistribution(BaseValidationTest):
         #check catalog data for required quantities
         required_quantities = []
         for pgroup in self.possible_quantities:
-            required_quantities.append(catalog_instance.first_available(*pgroup))
+            found_quantity = catalog_instance.first_available(*pgroup)
+            if found_quantity is not None:
+                required_quantities.append(found_quantity)
         if not catalog_instance.has_quantities(required_quantities + self.filter_quantities):
             return TestResult(skipped=True, summary='Missing some required quantities: {}'.format(', '.join(required_quantities)))
         if self.ancillary_quantities is not None and not catalog_instance.has_quantities(self.ancillary_quantities):
