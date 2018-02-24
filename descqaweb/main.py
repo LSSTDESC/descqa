@@ -4,13 +4,21 @@ import cgi
 from jinja2 import Environment, PackageLoader
 
 from . import config
-from .bigtable import *
-from .twopanels import *
-from .matrix import *
+from .bigtable import prepare_bigtable
+from .twopanels import prepare_leftpanel, print_file
+from .matrix import prepare_matrix
 
 __all__ = ['run']
 
 env = Environment(loader=PackageLoader('descqaweb', 'templates'))
+
+
+def _convert_to_integer(value, default=0):
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return default
+
 
 def run():
     form = cgi.FieldStorage()
@@ -30,13 +38,12 @@ def run():
     _run = form.getfirst('run', '')
 
     if _run.lower() == 'all':
-        try:
-            page = int(form.getfirst('page', 1))
-        except (ValueError, TypeError):
-            page = 1
+        page = _convert_to_integer(form.getfirst('page'), 1)
+        months = _convert_to_integer(form.getfirst('months'), config.months_to_search)
+        search = {item: form.getfirst(item) for item in ('users', 'tests', 'catalogs') if form.getfirst(item)}
         print(env.get_template('header.html').render(full_header=True, please_wait=True, config=config))
         sys.stdout.flush()
-        print(env.get_template('bigtable.html').render(**prepare_bigtable(page)))
+        print(env.get_template('bigtable.html').render(**prepare_bigtable(page, months, search)))
         return
 
     elif _run:
