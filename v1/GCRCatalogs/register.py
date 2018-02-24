@@ -4,7 +4,7 @@ import yaml
 from .config import base_catalog_dir
 
 
-__all__ = ['available_catalogs', 'get_available_catalogs', 'load_catalog']
+__all__ = ['available_catalogs', 'get_catalog_config', 'get_available_catalogs', 'load_catalog']
 
 
 def load_yaml(yaml_file):
@@ -25,6 +25,13 @@ def import_subclass(subclass, package=None, required_base_class=None):
     if required_base_class:
         assert issubclass(subclass, required_base_class), "Provided class is not a subclass of *required_base_class*"
     return subclass
+
+
+def get_catalog_config(catalog):
+    """
+    get the config dict of *catalog*
+    """
+    return available_catalogs[catalog]
 
 
 def get_available_configs(config_dir, register=None):

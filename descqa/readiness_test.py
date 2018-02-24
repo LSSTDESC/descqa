@@ -5,6 +5,7 @@ import fnmatch
 from itertools import cycle
 from collections import defaultdict, OrderedDict
 import numpy as np
+import numexpr as ne
 
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
@@ -14,14 +15,57 @@ __all__ = ['CheckQuantities']
 
 
 def find_outlier(x):
+    """
+    return a bool array indicating outliers or not in *x*
+    """
     l, m, h = np.percentile(x, [16.0, 50.0, 84.0])
     d = (h-l) * 0.5
     return (x > (m + d*3)) | (x < (m - d*3))
 
 
 def calc_frac(x, func, total=None):
+    """
+    calculate the fraction of entries in *x* that satisfy *func*
+    """
     total = total or len(x)
     return np.count_nonzero(func(x)) / total
+
+
+def split_for_natural_sort(s):
+    """
+    split a string *s* for natural sort.
+    """
+    return tuple((int(y) if y.isdigit() else y for y in re.split(r'(\d+)', s)))
+
+
+def evaluate_expression(expression, catalog_instance):
+    """
+    evaluate a numexpr expression on a GCR catalog
+    """
+    quantities_needed = set(ne.necompiler.precompile(expression)[-1])
+    if not catalog_instance.has_quantities(quantities_needed):
+        raise KeyError("Not all quantities needed exist")
+    return ne.evaluate(expression,
+                       local_dict=catalog_instance.get_quantities(quantities_needed),
+                       global_dict={})
+
+
+def check_relation(relation, catalog_instance):
+    """
+    check if *relation* is true in *catalog_instance*
+    """
+    expr1, simeq, expr2 = relation.partition('~==')
+
+    if simeq:
+        expr1 = expr1.strip()
+        expr2 = expr2.strip()
+        return np.allclose(
+            evaluate_expression(expr1, catalog_instance),
+            evaluate_expression(expr2, catalog_instance),
+            equal_nan=True,
+        )
+
+    return evaluate_expression(relation, catalog_instance).all()
 
 
 class CheckQuantities(BaseValidationTest):
@@ -42,10 +86,13 @@ class CheckQuantities(BaseValidationTest):
     ))
 
     def __init__(self, **kwargs):
-        self.quantities_to_check = kwargs['quantities_to_check']
+        self.quantities_to_check = kwargs.get('quantities_to_check', [])
+        self.relations_to_check = kwargs.get('relations_to_check', [])
+        assert (self.quantities_to_check or self.relations_to_check), 'must specify quantities_to_check or relations_to_check'
         assert all('quantities' in d for d in self.quantities_to_check), 'yaml file not correctly specified'
         self.nbins = kwargs.get('nbins', 50)
         self.prop_cycle = cycle(iter(plt.rcParams['axes.prop_cycle']))
+        super(CheckQuantities, self).__init__(**kwargs)
 
 
     def _format_row(self, quantity, plot_filename, results):
@@ -74,6 +121,7 @@ class CheckQuantities(BaseValidationTest):
             assert quantity_patterns, 'yaml file not specify correctly!'
 
             quantities_this = set()
+            quantity_pattern = None
             for quantity_pattern in quantity_patterns:
                 quantities_this.update(fnmatch.filter(all_quantities, quantity_pattern))
 
@@ -81,6 +129,8 @@ class CheckQuantities(BaseValidationTest):
                 output_header.append('<span class="fail">Found no matching quantities for {}</span>'.format(quantity_pattern))
                 failed_count += 1
                 continue
+
+            quantities_this = sorted(quantities_this, key=split_for_natural_sort)
 
             if 'label' in checks:
                 quantity_group_label = checks['label']
@@ -143,14 +193,29 @@ class CheckQuantities(BaseValidationTest):
             ax.yaxis.set_ticklabels([])
             ax.set_title('{} {}'.format(catalog_name, getattr(catalog_instance, 'version', '')), fontsize='small')
             fig.tight_layout()
-            leg = ax.legend(loc='best', fontsize='x-small', ncol=2, frameon=True, facecolor='white')
-            leg.get_frame().set_alpha(0.5)
+            if len(quantities_this) <= 9:
+                leg = ax.legend(loc='best', fontsize='x-small', ncol=3, frameon=True, facecolor='white')
+                leg.get_frame().set_alpha(0.5)
             fig.savefig(os.path.join(output_dir, plot_filename))
             plt.close(fig)
 
         for same_quantities in quantity_hashes.values():
             if len(same_quantities) > 1:
                 output_header.append('<span class="fail">{} seem be to identical!</span>'.format(', '.join(same_quantities)))
+                failed_count += 1
+
+        for relation in self.relations_to_check:
+            try:
+                result = check_relation(relation, catalog_instance)
+            except Exception as e: # pylint: disable=broad-except
+                output_header.append('<span class="fail">Not able to evaluate `{}`! {}</span>'.format(relation, e))
+                failed_count += 1
+                continue
+
+            if result:
+                output_header.append('<span>It is true that `{}`</span>'.format(relation))
+            else:
+                output_header.append('<span class="fail">`{}` not true!</span>'.format(relation))
                 failed_count += 1
 
         with open(os.path.join(output_dir, 'SUMMARY.html'), 'w') as f:
@@ -173,3 +238,4 @@ class CheckQuantities(BaseValidationTest):
             f.write('</tbody></table></body></html>\n')
 
         return TestResult(passed=(failed_count == 0), score=failed_count)
+
