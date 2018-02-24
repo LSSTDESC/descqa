@@ -9,7 +9,7 @@ __all__ = ['PositionAngle']
 
 class PositionAngle(BaseValidationTest):
     """
-    validation test to check the slope of the size distribution at small sizes.
+    validation test to check that the distribution of galaxy position sizes is random.
     """
     def __init__(self, **kwargs):
         #pylint: disable=W0231
