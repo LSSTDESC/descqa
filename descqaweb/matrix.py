@@ -9,7 +9,7 @@ __all__ = ['prepare_matrix']
 
 def find_last_descqa_run():
     last_run = None
-    for run in iter_all_runs(config.root_dir, 180):
+    for run in iter_all_runs(config.root_dir):
         descqa_run = DescqaRun(run, config.root_dir, validated=True)
         if last_run is None:
             last_run = descqa_run
@@ -80,7 +80,7 @@ def prepare_matrix(run=None, catalog_prefix=None, test_prefix=None):
 
     catalogs_this = descqa_run.get_catalogs(catalog_prefix)
 
-    table_width = (len(catalogs_this) + 1)*130
+    table_width = len(catalogs_this)*120 + 200
     if table_width > 1280:
         data['table_width'] = "100%"
     else:
