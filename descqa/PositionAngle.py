@@ -29,7 +29,7 @@ class PositionAngle(BaseValidationTest):
         # check catalog data for required quantities
         key = catalog_instance.first_available(*self.acceptable_keys)
         if not key:
-            summary = 'Missing required quantity' + ' or '.join(['{}']*len(self.acceptable_keys))
+            summary = 'Missing required quantity ' + ' or '.join(['{}']*len(self.acceptable_keys))
             return TestResult(skipped=True, summary=summary.format(*self.acceptable_keys))
 
         # get data
@@ -39,23 +39,25 @@ class PositionAngle(BaseValidationTest):
         good_data_mask = np.logical_not(np.logical_or(np.isinf(pos_angles), np.isnan(pos_angles)))
         
         if is_degrees:
-            ks_results = scipy.stats.kstest(pos_angles, self.uniform_radians)
+            ks_results = scipy.stats.kstest(pos_angles, self.uniform_degrees)
         else:
             ks_results = scipy.stats.kstest(pos_angles, self.uniform_radians)
 
-        N, _, _ = plt.hist(pos_angles[good_data_mask], bins=20, edgecolor='black')
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        N, _, _ = ax.hist(pos_angles[good_data_mask], bins=20, edgecolor='black')
         if is_degrees:
-            plt.xlabel("Angle [deg]")
+            ax.set_xlabel("Angle [deg]")
         else:
-            plt.xlabel("Angle [rad]")
-        plt.ylabel("N")
-        plt.ylim(0,np.max(N)*1.15)
-        plt.text(0.95, 0.96,'Uniform distribution: $p={:.3f}$'%ks_results[1], 
+            ax.set_xlabel("Angle [rad]")
+        ax.set_ylabel("N")
+        ax.set_ylim(0,np.max(N)*1.15)
+        ax.text(0.95, 0.96,'Uniform distribution: $p={:.3f}$'.format(ks_results[1]), 
                  horizontalalignment='right', verticalalignment='top',
                  transform=plt.gca().transAxes)
 
         fig.savefig(os.path.join(output_dir, 'position_angle_{}.png'.format(catalog_name)))
         plt.close(fig)
-        return TestResult(passed = (ks_results[0]>self.cutoff))
+        return TestResult(score = ks_results[1], passed = (ks_results[1]>self.cutoff))
 
 
