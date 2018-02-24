@@ -1,18 +1,16 @@
 from __future__ import print_function, division, unicode_literals, absolute_import
 import os
-import math
 try:
     from itertools import zip_longest
 except ImportError:
     from itertools import izip_longest as zip_longest
+from itertools import count
 
 import numpy as np
 from GCR import GCRQuery
-from itertools import count
 
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
-from .utils import get_opt_binpoints
 
 __all__ = ['EllipticityDistribution']
 
@@ -24,13 +22,12 @@ class EllipticityDistribution(BaseValidationTest):
     possible_observations = {
         'COSMOS_2013': {
             'label': 'COSMOS 2013',
-            'band_mag':'i',
-            'band_Mag':['V', 'r', 'g'],
-            'zlo':0.0,
-            'zhi':2.0,
-            'definition':'e_squared',
-            #'morphology':('LRG','early','disk', 'late', 'irregular'),
-            'morphology':('LRG','early','disk', 'late'),
+            'band_mag': 'i',
+            'band_Mag': ['V', 'r', 'g'],
+            'zlo': 0.0,
+            'zhi': 2.0,
+            'definition': 'e_squared',
+            'morphology': ('LRG', 'early', 'disk', 'late'),
             'filename_template': 'ellipticity/COSMOS/joachimi_et_al_2013/{}{}_{}.dat',
             'file-info': {
                 'LRG':{'prefix':'all', 'suffix':'mag24'},
@@ -74,10 +71,10 @@ class EllipticityDistribution(BaseValidationTest):
     yaxis_xoffset = 0.02
     yaxis_yoffset = 0.5
 
-    def __init__(self, z='redshift_true', zlo=0., zhi=2.,  N_ebins=40, N_theta_bins=20, observation='', ncolumns=2, 
-                 morphology =['all'], band_mag='i', mag_lo=24, band_Mag='r', Mag_hi=-21, Mag_lo=-17, normed=False,
+    def __init__(self, z='redshift_true', zlo=0., zhi=2., N_ebins=40, observation='', ncolumns=2,
+                 morphology=('all',), band_mag='i', mag_lo=24, band_Mag='r', Mag_hi=-21, Mag_lo=-17, normed=False,
                  **kwargs):
-
+        #pylint: disable=W0231
         #catalog quantities
         self.filter_quantities = [z]
         possible_mag_fields = ('mag_{}_lsst',
@@ -95,20 +92,18 @@ class EllipticityDistribution(BaseValidationTest):
 
         possible_ellipticity_definitions = {'e_default':{'possible_quantities':[['ellipticity', 'ellipticity_true']],
                                                          'function':self.e_default,
-                                                         'xaxis_label': '$e = (1-q)/(1+q)$',
+                                                         'xaxis_label': r'$e = (1-q)/(1+q)$',
                                                          'file_label':'e',
                                                         },
                                             'e_squared':{'possible_quantities':[['size', 'size_true'], ['size_minor', 'size_minor_true']],
-                                                        'function':self.e_squared,
-                                                        'xaxis_label': '$e = \sqrt{(1-q^2)/(1+q^2)}$',
-                                                        'file_label':'e2',
-                                                       },
+                                                         'function':self.e_squared,
+                                                         'xaxis_label': r'$e = \sqrt{(1-q^2)/(1+q^2)}$',
+                                                         'file_label':'e2',
+                                                        },
                                            }
         #binning
         self.N_ebins = N_ebins
         self.ebins = np.linspace(0., 1, N_ebins+1)
-        #self.N_thetabins = N_theta_bins
-        #self.thetabins = np.linspace(-np.pi/2, np.pi/2, N_thetabins+1) #angle 
 
         #validation data
         self.validation_data = {}
@@ -133,9 +128,9 @@ class EllipticityDistribution(BaseValidationTest):
         self.zlo = self.validation_data.get('zlo', float(zlo))
         self.zhi = self.validation_data.get('zhi', float(zhi))
         self.filters = [(lambda z: (z > self.zlo) & (z < self.zhi), z)]
-        self.band_mag = self.validation_data.get('band_mag',band_mag)
+        self.band_mag = self.validation_data.get('band_mag', band_mag)
         self.possible_mag_fields = [f.format(self.band_mag) for f in possible_mag_fields]
-        self.band_Mag = self.validation_data.get('band_Mag',[band_Mag])
+        self.band_Mag = self.validation_data.get('band_Mag', [band_Mag])
         self.possible_Mag_fields = [f.format(band) for f in possible_Mag_fields for band in self.band_Mag]
         self.mag_lo = dict(zip(self.morphology, [self.validation_data.get('cuts', {}).get(m, {}).get('mag_lo', mag_lo) for m in self.morphology]))
         self.Mag_lo = dict(zip(self.morphology, [self.validation_data.get('cuts', {}).get(m, {}).get('Mag_lo', Mag_lo) for m in self.morphology]))
@@ -146,7 +141,7 @@ class EllipticityDistribution(BaseValidationTest):
         self.ellipticity_function = possible_ellipticity_definitions[self.validation_data.get('definition', 'e_default')].get('function')
         self.xaxis_label = possible_ellipticity_definitions[self.validation_data.get('definition', 'e_default')].get('xaxis_label')
         self.file_label = possible_ellipticity_definitions[self.validation_data.get('definition', 'e_default')].get('file_label')
-                                             
+
         #check for native quantities
         self.native_luminosities = dict(zip([band for band in possible_native_luminosities if band in self.band_Mag],\
                                             [possible_native_luminosities[band] for band in possible_native_luminosities if band in self.band_Mag]))
@@ -178,7 +173,6 @@ class EllipticityDistribution(BaseValidationTest):
             self.yaxis = '$P(e)$'
         else:
             self.yaxis = '$N$'
-        return
 
 
     def get_validation_data(self, observation):
@@ -226,7 +220,7 @@ class EllipticityDistribution(BaseValidationTest):
             return TestResult(skipped=True, summary='Missing some required quantities: {}'.format(', '.join(required_quantities)))
         if self.ancillary_quantities is not None and not catalog_instance.has_quantities(self.ancillary_quantities):
             return TestResult(skipped=True, summary='Missing some ancillary quantities: {}'.format(', '.join(self.ancillary_quantities)))
-            
+
         mag_field = catalog_instance.first_available(*self.possible_mag_fields)
         if not mag_field:
             return TestResult(skipped=True, summary='Missing needed quantities to make magnitude cuts')
@@ -236,7 +230,7 @@ class EllipticityDistribution(BaseValidationTest):
         all_quantities = required_quantities +[mag_field, Mag_field] + self.filter_quantities
         if self.ancillary_quantities is not None:
             all_quantities = all_quantities + self.ancillary_quantities
-        print('Fetching quantities',all_quantities)
+        print('Fetching quantities', all_quantities)
 
         mag_filtername = str(mag_field.split('_')[-2])
         Mag_filtername = str(Mag_field.split('_')[2])
@@ -255,10 +249,10 @@ class EllipticityDistribution(BaseValidationTest):
         for catalog_data in catalog_instance.get_quantities(all_quantities, filters=self.filters, return_iterator=True):
             catalog_data = GCRQuery(*((np.isfinite, col) for col in catalog_data)).filter(catalog_data)
             for morphology, N, sume, sume2 in zip_longest(
-                self.morphology,
-                N_array.reshape(-1, N_array.shape[-1]), #flatten all but last dimension of array
-                sume_array.reshape(-1, sume_array.shape[-1]),
-                sume2_array.reshape(-1, sume2_array.shape[-1]),
+                    self.morphology,
+                    N_array.reshape(-1, N_array.shape[-1]), #flatten all but last dimension of array
+                    sume_array.reshape(-1, sume_array.shape[-1]),
+                    sume2_array.reshape(-1, sume2_array.shape[-1]),
             ):
                 #make cuts
                 if morphology is not None:
@@ -269,7 +263,7 @@ class EllipticityDistribution(BaseValidationTest):
                             mask &= (self.validation_data['cuts'][morphology].get(key+'_min') < catalog_data[aq]) &\
                                     (catalog_data[aq] < self.validation_data['cuts'][morphology].get(key+'_max'))
 
-                    print ('Number of {} galaxies passing selection cuts for morphology {} = {}'.format(catalog_name, morphology,np.sum(mask)))
+                    print('Number of {} galaxies passing selection cuts for morphology {} = {}'.format(catalog_name, morphology, np.sum(mask)))
                     #compute ellipticity from definition
                     e_this = self.ellipticity_function(*[catalog_data[q][mask] for q in required_quantities])
                     #print('mm', np.min(e_this), np.max(e_this))
@@ -286,7 +280,7 @@ class EllipticityDistribution(BaseValidationTest):
 
         #make plots
         results = {}
-        for n, (ax_this, summary_ax_this, morphology,  N, sume, sume2) in enumerate(zip_longest(
+        for n, (ax_this, summary_ax_this, morphology, N, sume, sume2) in enumerate(zip_longest(
                 ax.flat,
                 self.summary_ax.flat,
                 self.morphology,
@@ -309,7 +303,6 @@ class EllipticityDistribution(BaseValidationTest):
                 reskey = cutlabel.replace('$', '')
 
                 #get points to be plotted
-                #e_values = get_opt_binpoints(N, sume, sume2, self.ebins)
                 e_values = sume/N
                 sumN = N.sum()
                 total = '(# of galaxies = {})'.format(sumN)
@@ -350,7 +343,7 @@ class EllipticityDistribution(BaseValidationTest):
         self.post_process_plot(fig)
         fig.savefig(os.path.join(output_dir, ''.join(['Nvs', self.file_label, '_', filelabel+'.png'])))
         plt.close(fig)
-        return TestResult(0, passed=True)
+        return TestResult(inspect_only=True)
 
 
     def catalog_subplot(self, ax, e_values, N, catalog_color, catalog_label, errors=None):
@@ -362,8 +355,8 @@ class EllipticityDistribution(BaseValidationTest):
     def validation_subplot(self, ax, validation_data, validation_label):
         results = dict()
         if validation_data is not None:
-            N,e_edges = np.histogram(validation_data, bins=self.ebins)
-            sum_e,_ = np.histogram(validation_data, bins=self.ebins, weights=validation_data)
+            N, _ = np.histogram(validation_data, bins=self.ebins)
+            sum_e, _ = np.histogram(validation_data, bins=self.ebins, weights=validation_data)
             e_ave = sum_e/N
             errors = np.sqrt(N)
             if self.normed:
@@ -384,11 +377,9 @@ class EllipticityDistribution(BaseValidationTest):
         ax.set_yscale('log')
         if label:
             ax.set_title(label, fontsize='x-small')
-            #ax.text(0.05, 0.95, label, horizontalalignment='right', verticalalignment='top', transform=ax.transAxes, fontsize='x-small')
 
        #add axes and legend
         if nplot+1 <= self.nplots-self.ncolumns:  #x scales for last ncol plots only
-            #print "noticks",nplot
             for axlabel in ax.get_xticklabels():
                 axlabel.set_visible(False)
                 #prevent overlapping yaxis labels
@@ -402,8 +393,7 @@ class EllipticityDistribution(BaseValidationTest):
 
     @staticmethod
     def post_process_plot(fig):
-        #fig.subplots_adjust(hspace=0)
-        return
+        pass
 
     @staticmethod
     def save_quantities(keyname, results, filename, comment=''):
