@@ -11,7 +11,7 @@ install:
 - pip install pylint nose
 
 before_script:
-- export CHANGED=$(git diff --name-only $TRAVIS_COMMIT_RANGE | grep '^\(descqa.*\|tests\)/.\+\.py$')
+- export CHANGED=$(git diff --diff-filter=d --name-only $TRAVIS_COMMIT_RANGE | grep '^\(descqa.*\|tests\)/.\+\.py$')
 
 script:
 - nosetests
