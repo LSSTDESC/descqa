@@ -9,7 +9,7 @@ __all__ = ['prepare_matrix']
 
 def find_last_descqa_run():
     last_run = None
-    for run in iter_all_runs(config.root_dir, 180):
+    for run in iter_all_runs(config.root_dir):
         descqa_run = DescqaRun(run, config.root_dir, validated=True)
         if last_run is None:
             last_run = descqa_run

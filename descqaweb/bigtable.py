@@ -1,5 +1,5 @@
 from __future__ import unicode_literals
-import cgi
+import html
 from .interface import iter_all_runs, DescqaRun
 from . import config
 
@@ -16,17 +16,14 @@ def format_status_count(status_count):
     try:
         for name, d in status_count.items():
             total = sum(d.values())
-            output.append(name + ' - ' + '; '.join(('{}/{} {}'.format(d[k], total, cgi.escape(k)) for k in d)))
+            output.append(name + ' - ' + '; '.join(('{}/{} {}'.format(d[k], total, html.escape(k)) for k in d)))
     except AttributeError:
         if isinstance(status_count, unicode):
-            output = [cgi.escape(l) for l in status_count.splitlines()]
+            output = [html.escape(l) for l in status_count.splitlines()]
     return '<br>'.join(output)
 
 
-def format_bigtable_row(run):
-
-    descqa_run = DescqaRun(run, config.root_dir, validated=True)
-
+def format_bigtable_row(descqa_run):
     user = descqa_run.status.get('user', '')
     user = '&nbsp;({})'.format(user) if user else ''
 
@@ -58,14 +55,31 @@ def format_bigtable_row(run):
     return '\n'.join(output)
 
 
-def prepare_bigtable(page=1):
-    all_runs = list(iter_all_runs(config.root_dir))
+def filter_search_results(descqa_run, search):
+    if 'user' in search and descqa_run.status.get('user') != search['user']:
+        return False
+    if 'test' in search and not any(t.startswith(search['test']) for t in descqa_run.tests):
+        return False
+    if 'catalog' in search and not any(t.startswith(search['catalog']) for t in descqa_run.catalogs):
+        return False
+    return True
+
+
+def prepare_bigtable(page=1, months=3, search=None):
+    all_runs = list(iter_all_runs(config.root_dir, months_to_search=months))
+    if search:
+        all_runs = [descqa_run
+                    for descqa_run in (DescqaRun(run, config.root_dir, validated=True) for run in all_runs)
+                    if filter_search_results(descqa_run, search)]
+
     n_per_page = config.run_per_page
-    if all_runs:
-        npages = ((len(all_runs) - 1) // n_per_page) + 1
-        if page > npages:
-            page = npages
-        all_runs = all_runs[n_per_page*(page-1):n_per_page*page]
+    npages = ((len(all_runs) - 1) // n_per_page) + 1
+    if page > npages:
+        page = npages
+    all_runs = all_runs[n_per_page*(page-1):n_per_page*page]
+
+    if not search:
+        all_runs = [DescqaRun(run, config.root_dir, validated=True) for run in all_runs]
 
     table_out = []
     table_out.append('<table class="bigboard" border="0" width="100%" cellspacing="0">')
@@ -73,4 +87,4 @@ def prepare_bigtable(page=1):
         table_out.append('<tr>{}</tr>'.format(format_bigtable_row(run)))
     table_out.append('</table>')
 
-    return dict(table='\n'.join(table_out), page=page, npages=npages, static_dir=config.static_dir)
+    return dict(table='\n'.join(table_out), page=page, npages=npages, static_dir=config.static_dir, search=search)
