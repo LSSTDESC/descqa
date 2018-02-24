@@ -80,7 +80,7 @@ def prepare_matrix(run=None, catalog_prefix=None, test_prefix=None):
 
     catalogs_this = descqa_run.get_catalogs(catalog_prefix)
 
-    table_width = (len(catalogs_this) + 1)*130
+    table_width = len(catalogs_this)*120 + 200
     if table_width > 1280:
         data['table_width'] = "100%"
     else:

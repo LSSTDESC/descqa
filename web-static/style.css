@@ -54,7 +54,7 @@ h3           {font-size: 110%; line-height: 1.25;}
 }
 .matrix td:first-child {
     text-align: right;
-    width: 130px;
+    width: 200px;
     font-weight: bold;
     padding-right: 0.4em;
 }
