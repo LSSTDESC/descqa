@@ -227,7 +227,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
                 self.catalog_subplot(ax_this, meanz, N, Nerrors, catalog_color, catalog_marker, catalog_label)
                 if z0 and z0 > 0.:
                     fits = self.validation_subplot(ax_this, meanz, z0, z0err, validation_label)
-                results[key].update(fits)
+                    results[key].update(fits)
                 self.decorate_subplot(ax_this, n)
 
                 #add curve for this catalog to summary plot
