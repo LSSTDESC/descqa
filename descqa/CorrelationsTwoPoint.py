@@ -24,11 +24,12 @@ class CorrelationsTwoPoint(BaseValidationTest):
     """
     _C = 299792.458
 
-    def __init__(self, **kwargs): #pylint: disable=W0231
-        self.possible_mag_fields = kwargs['possible_mag_fields']
+    def __init__(self, **kwargs):
+        self.requsted_columns = kwargs['requsted_columns']
+        self.test_samples = kwargs['test_stamples']
+
         self.need_distance = kwargs['need_distance']
         self.data_label = kwargs['data_label']
-        self.mag_bins = kwargs['mag_bins']
         self.output_filename_template = kwargs['output_filename_template']
         self.label_template = kwargs['label_template']
         self.fig_xlabel = kwargs['fig_xlabel']
@@ -45,57 +46,88 @@ class CorrelationsTwoPoint(BaseValidationTest):
             'max_sep': kwargs['max_sep'],
             'bin_size': kwargs['bin_size'],
         }
+        self.pi_max = kwargs.get('pi_max', None)
         if not self.need_distance:
             self._treecorr_config['sep_units'] = 'deg'
 
         validation_filepath = os.path.join(self.data_dir, kwargs['data_filename'])
         self.validation_data = np.loadtxt(validation_filepath, skiprows=2)
 
+    def load_catalog_data(self, catalog_instance):
+        """
+        """
 
-    def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
-        '''
-        Loop over magnitude cuts and make plots
-        '''
-        # load catalog data
         colnames = dict()
-        colnames['z'] = catalog_instance.first_available('redshift', 'redshift_true')
-        colnames['ra'] = catalog_instance.first_available('ra', 'ra_true')
-        colnames['dec'] = catalog_instance.first_available('dec', 'dec_true')
-        colnames['mag'] = catalog_instance.first_available(*self.possible_mag_fields)
+        col_value_mins = dict()
+        col_value_maxs = dict()
+        for key in self.requsted_columns.keys():
+            colnames[key] = catalog_instance.first_available(*self.requsted_columns[key])
+            col_value_mins[key] = []
+            col_value_maxs[key] = []
+            for sample in test_samples.keys():
+                col_value_mins[key].append(test_samples[sample][key]['min'])
+                col_value_maxs[key].append(test_samples[sample][key]['max'])
 
         if not all(v for v in colnames.values()):
             return TestResult(skipped=True, summary='Missing requested quantities')
 
         filters = [(np.isfinite, c) for c in colnames.values()]
-        filters.extend((
-            '{} < {}'.format(colnames['mag'], max(mag_bin['mag_max'] for mag_bin in self.mag_bins)),
-            '{} >= {}'.format(colnames['mag'], min(mag_bin['mag_min'] for mag_bin in self.mag_bins)),
-        ))
-        if self.need_distance:
+
+        for key in self.requsted_columns.keys():
             filters.extend((
-                '{} < {}'.format(colnames['z'], max(mag_bin['cz_max'] for mag_bin in self.mag_bins)/self._C),
-                '{} >= {}'.format(colnames['z'], min(mag_bin['cz_min'] for mag_bin in self.mag_bins)/self._C),
+                '{} < {}'.format(colnames[key], max(col_value_maxs[key])),
+                '{} >= {}'.format(colnames[key], min(col_value_mins[key])),
             ))
+
         catalog_data = catalog_instance.get_quantities(list(colnames.values()), filters=filters)
         catalog_data = {k: catalog_data[v] for k, v in colnames.items()}
 
-        # create random
+        return catalog_data
+
+    def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
+        '''
+        Loop over magnitude cuts and make plots
+        '''
+
+        catalog_data = load_catalog_data(catalog_instance)
+
         rand_ra, rand_dec = generate_uniform_random_ra_dec_footprint(
-            catalog_data['ra'].size*self.random_mult,
+            catalog_data['ra'].size * self.random_mult,
             get_healpixel_footprint(catalog_data['ra'], catalog_data['dec'], self.random_nside),
             self.random_nside,
         )
-
         if not self.need_distance:
             rand_cat = treecorr.Catalog(ra=rand_ra, dec=rand_dec, ra_units='deg', dec_units='deg')
             del rand_ra, rand_dec
             rr = treecorr.NNCorrelation(**self._treecorr_config)
             rr.process(rand_cat)
 
+        for sample in test_samples:
+            filters = []
+            for key in sample.keys():
+                filters.extend([
+                    '{} < {}'.format(key, sample[key]),
+                    '{} >= {}'.format(key, sample[key]),
+                ])
+            catalog_data_this = GCRQuery(*filters).filter(catalog_data)
+
+            cat = treecorr.Catalog(
+                ra=catalog_data_this['ra'],
+                dec=catalog_data_this['dec'],
+                ra_units='deg',
+                dec_units='deg',
+                r=(redshift2dist(catalog_data_this['z'], catalog_instance.cosmology)
+                    if self.need_distance else None),
+            )
+
+            del catalog_data_this
+
+            xi_rad, xi_sig = run_tree_corr(cat, )
 
         fig, ax = plt.subplots()
         try:
-            for mag_bin, color in zip(self.mag_bins, plt.cm.plasma_r(np.linspace(0.1, 1, len(self.mag_bins)))): #pylint: disable=E1101
+            for mag_bin, color in zip(self.mag_bins,
+                                      plt.cm.plasma_r(np.linspace(0.1, 1, len(self.mag_bins)))):
 
                 # filter catalog data for this bin
                 filters = [
@@ -115,7 +147,8 @@ class CorrelationsTwoPoint(BaseValidationTest):
                     dec=catalog_data_this['dec'],
                     ra_units='deg',
                     dec_units='deg',
-                    r=(redshift2dist(catalog_data_this['z'], catalog_instance.cosmology) if self.need_distance else None),
+                    r=(redshift2dist(catalog_data_this['z'], catalog_instance.cosmology)
+                       if self.need_distance else None),
                 )
 
                 del catalog_data_this
@@ -133,7 +166,8 @@ class CorrelationsTwoPoint(BaseValidationTest):
                         dec_units='deg',
                         r=generate_uniform_random_dist(
                             rand_ra.size,
-                            *redshift2dist(np.array([mag_bin['cz_min'], mag_bin['cz_max']])/self._C, catalog_instance.cosmology)
+                            *redshift2dist(np.array([mag_bin['cz_min'], mag_bin['cz_max']]) /
+                                           self._C, catalog_instance.cosmology)
                         ),
                     )
                     rr = treecorr.NNCorrelation(treecorr_config)
@@ -147,7 +181,8 @@ class CorrelationsTwoPoint(BaseValidationTest):
                 dr.process(rand_cat, cat)
                 rd.process(cat, rand_cat)
 
-                output_filepath = os.path.join(output_dir, self.output_filename_template.format(mag_bin['mag_min'], mag_bin['mag_max']))
+                output_filepath = os.path.join(
+                    output_dir, self.output_filename_template.format(mag_bin['mag_min'], mag_bin['mag_max']))
                 dd.write(output_filepath, rr, dr, rd)
 
                 xi, var_xi = dd.calculateXi(rr, dr, rd)
@@ -155,10 +190,15 @@ class CorrelationsTwoPoint(BaseValidationTest):
                 xi_sig = np.sqrt(var_xi)
 
 
-                ax.loglog(self.validation_data[:,0], self.validation_data[:,mag_bin['data_col']], c=color, label=self.label_template.format(mag_bin['mag_min'], mag_bin['mag_max']))
+                ax.loglog(self.validation_data[:,0],
+                          self.validation_data[:,mag_bin['data_col']],
+                          c=color,
+                          label=self.label_template.format(mag_bin['mag_min'], mag_bin['mag_max']))
                 if 'data_err_col' in mag_bin:
-                    y1 = self.validation_data[:,mag_bin['data_col']] + self.validation_data[:,mag_bin['data_err_col']]
-                    y2 = self.validation_data[:,mag_bin['data_col']] - self.validation_data[:,mag_bin['data_err_col']]
+                    y1 = (self.validation_data[:,mag_bin['data_col']] +
+                          self.validation_data[:,mag_bin['data_err_col']])
+                    y2 = (self.validation_data[:,mag_bin['data_col']] -
+                          self.validation_data[:,mag_bin['data_err_col']])
                     y2[y2<=0] = self.fig_ylim[0]*0.9
                     ax.fill_between(self.validation_data[:,0], y1, y2, lw=0, color=color, alpha=0.2)
                 scale_wp = mag_bin['pi_max'] * 2.0 if 'pi_max' in mag_bin else 1.0

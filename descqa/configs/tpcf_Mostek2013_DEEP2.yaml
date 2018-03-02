@@ -7,7 +7,7 @@ output_filename_template: 'wp_rp_Mr_{}_{}.dat'
 label_template: '${} < M_r < {}$'
 
 data_filename: 'tpcf/Zehavi_2011_ApJ_736_59_Table7.txt'
-data_label: 'Zehavi+2011'
+data_label: 'DEEP2: Mostek2013 Threshold'
 
 mag_bins:
   - {mag_min: 31622776601, mag_max: 1976130303910.0, cz_min: 221846, cz_max: 269813.2122, pi_max: 60.0, data_col: 1, data_err_col: 2}

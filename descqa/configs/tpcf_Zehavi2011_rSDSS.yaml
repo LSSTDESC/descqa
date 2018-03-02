@@ -1,25 +1,50 @@
 subclass_name: CorrelationsTwoPoint.CorrelationsTwoPoint
 
-possible_mag_fields:
-  - Mag_true_r_sdss_z0
-  - Mag_true_r_des_z0
-  - Mag_true_r_lsst_z0
-  - Mag_true_r_sdss_z01
-  - Mag_true_r_des_z01
-  - Mag_true_r_lsst_z01
-
-output_filename_template: 'wp_rp_Mr_{}_{}.dat'
+output_filename_template: 'wp_rp_{}.dat'
 label_template: '${} < M_r < {}$'
 
 data_filename: 'tpcf/Zehavi_2011_ApJ_736_59_Table7.txt'
 data_label: 'Zehavi+2011'
 
-mag_bins:
-  - {mag_min: -23, mag_max: -22, cz_min: 30900, cz_max: 73500, pi_max: 60.0, data_col: 1, data_err_col: 2}
-  - {mag_min: -22, mag_max: -21, cz_min: 19900, cz_max: 47650, pi_max: 60.0, data_col: 3, data_err_col: 4}
-  - {mag_min: -21, mag_max: -20, cz_min: 12600, cz_max: 31900, pi_max: 60.0, data_col: 5, data_err_col: 6}
-  - {mag_min: -20, mag_max: -19, cz_min:  8050, cz_max: 19250, pi_max: 60.0, data_col: 7, data_err_col: 8}
-#  - {mag_min: -19, mag_max: -18, cz_min:  5200, cz_max: 12500, pi_max: 40.0, data_col: 9, data_err_col: 10}
+requested_columns:
+  ra:
+    - ra
+    - ra_true
+  dec:
+    - dec
+    - dec_true
+  mag:
+    - Mag_true_r_sdss_z0
+    - Mag_true_r_des_z0
+    - Mag_true_r_lsst_z0
+    - Mag_true_r_sdss_z01
+    - Mag_true_r_des_z01
+    - Mag_true_r_lsst_z01
+  z:
+    - redshift
+    - redshift_true
+
+test_samples:
+  Mr_-23_-22:
+    mag: {min: -23, max: -22}
+    redshift: {min: 0.1031, max: 0.2452}
+  Mr_-22_-21:
+    mag: {min: -22, max: -21}
+    redshift: {min: 0.0663, max: 0.1589}
+  Mr_-21_-20:
+    mag: {min: -21, max: -20}
+    redshift: {min: 0.0420, max: 0.1064}
+  Mr_-20_-19:
+    mag: {min: -20, max: -19}
+    redshift: {min: 0.0269, max: 0.0642}
+
+data_filename: 'tpcf/Zehavi_2011_ApJ_736_59_Table7.txt'
+data_label: 'Zehavi+2011'
+test_data:
+  - {data_col: 1, data_err_col: 2}
+  - {data_col: 3, data_err_col: 4}
+  - {data_col: 5, data_err_col: 6}
+  - {data_col: 7, data_err_col: 8}
 
 need_distance: true
 fig_xlabel: '$r_p\quad[h^{-1}{\rm Mpc}]$'
@@ -30,6 +55,7 @@ fig_ylim: [0.1, 5000]
 min_sep: 0.15
 max_sep: 40
 bin_size: 0.45
+pi_max: 60.0
 
 random_mult: 6
 
