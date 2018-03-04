@@ -155,7 +155,7 @@ class DescqaRun(object):
 
     @staticmethod
     def _find_subdirs(path):
-        return tuple(sorted((d for d in os.listdir(path) if os.path.isdir(os.path.join(path, d)) and not d.startswith('_'))))
+        return tuple(sorted((d for d in os.listdir(path) if os.path.isdir(os.path.join(path, d)) and os.access(os.path.join(path, d), os.R_OK + os.X_OK) and not d.startswith('_'))))
 
     def _find_tests(self):
         return self._find_subdirs(self.path)
