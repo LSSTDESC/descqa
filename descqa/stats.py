@@ -65,7 +65,26 @@ def AD_statistic(n1, n2, y1, y2, threshold):
     return ads, success
 
 
-def CvM_statistic(n1, n2, y1, y2, threshold):
+# def CvM_statistic(n1, n2, y1, y2, threshold):
+#     '''
+#     Calculate the two-sample Cramer-von Mises statistic from two CDFs;
+#     n1, n2: number of objects in the two samples;
+#     y1, y2: CDF y-values of the two distribution, and they should have
+#     the same x-axis.
+#     '''
+#     n = n1+n2
+#     h = (n1*y1+n2*y2)/n
+#     cvm_omega = np.sqrt(np.trapz((y2-y1)**2, h))
+
+#     if cvm_omega<threshold:
+#         success = True
+#     else:
+#         success = False
+
+#     return cvm_omega, success
+
+
+def CvM_statistic(n1, n2, x1, y1, x2, y2):
     '''
     Calculate the two-sample Cramer-von Mises statistic from two CDFs;
     n1, n2: number of objects in the two samples;
@@ -73,12 +92,11 @@ def CvM_statistic(n1, n2, y1, y2, threshold):
     the same x-axis.
     '''
     n = n1+n2
-    h = (n1*y1+n2*y2)/n
-    cvm_omega = np.sqrt(np.trapz((y2-y1)**2, h))
+    x_interp = np.linspace(-2, 5, 10000)
+    y1_interp = np.interp(x_interp, x1, y1)
+    y2_interp = np.interp(x_interp, x2, y2)
+    h = (n1*y1_interp+n2*y2_interp)/n
 
-    if cvm_omega<threshold:
-        success = True
-    else:
-        success = False
+    cvm_omega = np.sqrt(np.trapz((y2_interp-y1_interp)**2, x=h))
 
-    return cvm_omega, success
+    return cvm_omega
