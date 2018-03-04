@@ -258,7 +258,13 @@ class ColorDistribution(BaseValidationTest):
 
     def color_transformation(self, data, validation_name, mock_name, mock_translate_original):
         '''
-        Return the mock catalog (data) with new columns of transformed magnitudes
+        Return the mock catalog (data) with new columns of transformed magnitudes.
+
+        Transformations of DES -> SDSS and DES -> CFHT are derived from Equations A9-12 and
+        A19-22 the paper: arxiv.org/abs/1708.01531
+
+        Transformations of SDSS -> CFHT are from:
+        www1.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/community/CFHTLS-SG/docs/extra/filters.html
         '''
         if (validation_name=='SDSS') and (mock_name.startswith('buzzard')):
             # DES -> SDSS transformation
