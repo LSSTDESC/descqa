@@ -10,8 +10,12 @@ from .base import BaseValidationTest, TestResult
 from .stats import CvM_statistic
 
 colors = ['u-g', 'g-r', 'r-i', 'i-z']
+summary_output_file = 'summary.txt'
+plot_pdf_file = 'plot_pdf.png'
+plot_cdf_file = 'plot_cdf.png'
 sdss_path = '/global/projecta/projectdirs/lsst/groups/CS/descqa/data/rongpu/SpecPhoto_sdss_mgs_extinction_corrected.fits'
 deep2_path = '/global/projecta/projectdirs/lsst/groups/CS/descqa/data/rongpu/DEEP2_uniq_Terapix_Subaru_trimmed_wights_added.fits'
+
 
 find_first_true = np.argmax
 
@@ -127,6 +131,19 @@ class ColorDistribution(BaseValidationTest):
 
         self.make_plots()
 
+        # Write to summary file
+        fn = os.path.join(self.output_dir, summary_output_file)
+        with open(fn, 'a') as f:
+            f.write('%2.3f < z < %2.3f\n'%(self.zlo, self.zhi))
+            f.write('r_mag < %2.3f\n\n'%(self.obs_r_mag_limit))
+            for color in colors:
+                if not ((color in self.obs_color_dist) and (color in self.mock_color_dist)):
+                    continue
+                f.write("Median "+color+" difference (obs - mock) = %2.3f\n"%(self.color_shift[color]))
+                f.write(color+": {} = {:2.6f}\n".format('CvM statistic', self.cvm_omega[color]))
+                f.write(color+" (shifted): {} = {:2.6f}\n".format('CvM statistic', self.cvm_omega_shift[color]))
+                f.write("\n")
+
         return TestResult(inspect_only=True)
 
     def make_plots(self):
@@ -186,12 +203,12 @@ class ColorDistribution(BaseValidationTest):
 
         if self.plot_pdf_q:
             fig_pdf.tight_layout()
-            fig_pdf.savefig(os.path.join(self.output_dir, 'plot_pdf.png'))
+            fig_pdf.savefig(os.path.join(self.output_dir, plot_pdf_file))
         plt.close(fig_pdf)
 
         if self.plot_cdf_q:
             fig_cdf.tight_layout()
-            fig_cdf.savefig(os.path.join(self.output_dir, 'plot_cdf.png'))
+            fig_cdf.savefig(os.path.join(self.output_dir, plot_cdf_file))
         plt.close(fig_cdf)
 
     def get_color_dist(self, colors, translate, cat, weights=None):
