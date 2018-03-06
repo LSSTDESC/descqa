@@ -1,30 +1,71 @@
 subclass_name: CorrelationsTwoPoint.CorrelationsTwoPoint
 
-possible_mag_fields:
-  - stellar_mass
+# Catalog columns to attempt to load. The simplified names (e.g. ra, dec) are
+# the names that we be used to cut on in test_samples. Make sure these match.
+requested_columns:
+  ra:
+    - ra
+    - ra_true
+  dec:
+    - dec
+    - dec_true
+  mag:
+    - Mag_true_r_sdss_z0
+    - Mag_true_r_des_z0
+    - Mag_true_r_lsst_z0
+    - Mag_true_r_sdss_z01
+    - Mag_true_r_des_z01
+    - Mag_true_r_lsst_z01
+  z:
+    - redshift
+    - redshift_true
 
-output_filename_template: 'wp_rp_Mr_{}_{}.dat'
-label_template: '${} < M_r < {}$'
+# Definition of samples and cuts to apply.  The names of these columns must
+# match the simple column name definitions above.
+test_samples:
+  Mr_-23_-22:
+    mag: {min: -23, max: -22}
+    z: {min: 0.1031, max: 0.2452}
+  Mr_-22_-21:
+    mag: {min: -22, max: -21}
+    z: {min: 0.0663, max: 0.1589}
+  Mr_-21_-20:
+    mag: {min: -21, max: -20}
+    z: {min: 0.0420, max: 0.1064}
+  Mr_-20_-19:
+    mag: {min: -20, max: -19}
+    z: {min: 0.0269, max: 0.0642}
 
+# If we want to compute wp(rp) instead of angular space correlations these
+# variables must be set.
+need_distance: true
+pi_max: # Line of sight, wp(rp) binning.
+
+# Output file naming format for output of the resultant correlation values.
+output_filename_template: 'wp_rp_{}.dat'
+
+# Name of file and columns to load and compare against the test samples.
 data_filename: 'tpcf/Zehavi_2011_ApJ_736_59_Table7.txt'
-data_label: 'DEEP2: Mostek2013 Threshold'
+data_label: 'Zehavi+2011'
+test_data:
+  - {data_col: 1, data_err_col: 2}
+  - {data_col: 3, data_err_col: 4}
+  - {data_col: 5, data_err_col: 6}
+  - {data_col: 7, data_err_col: 8}
 
-mag_bins:
-  - {mag_min: 31622776601, mag_max: 1976130303910.0, cz_min: 221846, cz_max: 269813.2122, pi_max: 60.0, data_col: 1, data_err_col: 2}
-  - {mag_min: 63095734448, mag_max: 1976130303910.0, cz_min: 221846, cz_max: 269813.2122, pi_max: 60.0, data_col: 3, data_err_col: 4}
-#  - {mag_min: -19, mag_max: -18, cz_min:  5200, cz_max: 12500, pi_max: 40.0, data_col: 9, data_err_col: 10}
-
+# Plotting configuration.
 fig_xlabel: '$r_p\quad[h^{-1}{\rm Mpc}]$'
 fig_ylabel: '$w_p(r_p)\quad[h^{-1}{\rm Mpc}]$'
 fig_ylim: [0.1, 5000]
+label_template: '${} < M_r < {}$'
 
 #Treecorr parameters
-need_distance: true
 min_sep: 0.15
 max_sep: 40
 bin_size: 0.45
-
 random_mult: 6
 
 description: |
-  Compare projected correlation functions of catalog and Zehavi et al (2011) SDSS r-band observations
+  Test comparing a the 2pt correlation of a stellar mass selected sample at z~1 to power law fits from DEEP2.
+
+included_by_default: true

@@ -1,11 +1,7 @@
-subclass_name: CorrelationsTwoPoint.CorrelationsTwoPoint
+subclass_name: CorrelationsTwoPoint.CorrelationsProjectedTwoPoint
 
-output_filename_template: 'wp_rp_{}.dat'
-label_template: '${} < M_r < {}$'
-
-data_filename: 'tpcf/Zehavi_2011_ApJ_736_59_Table7.txt'
-data_label: 'Zehavi+2011'
-
+# Catalog columns to attempt to load. The simplified names (e.g. ra, dec) are
+# the names that we be used to cut on in test_samples. Make sure these match.
 requested_columns:
   ra:
     - ra
@@ -24,39 +20,53 @@ requested_columns:
     - redshift
     - redshift_true
 
+# Definition of samples and cuts to apply.  The names of these columns must
+# match the simple column name definitions above.
 test_samples:
   Mr_-23_-22:
     mag: {min: -23, max: -22}
-    redshift: {min: 0.1031, max: 0.2452}
+    z: {min: 0.1031, max: 0.2452}
   Mr_-22_-21:
     mag: {min: -22, max: -21}
-    redshift: {min: 0.0663, max: 0.1589}
+    z: {min: 0.0664, max: 0.1589}
   Mr_-21_-20:
     mag: {min: -21, max: -20}
-    redshift: {min: 0.0420, max: 0.1064}
+    z: {min: 0.0420, max: 0.1064}
   Mr_-20_-19:
     mag: {min: -20, max: -19}
-    redshift: {min: 0.0269, max: 0.0642}
+    z: {min: 0.0269, max: 0.0642}
 
+# Output file naming format for output of the resultant correlation values.
+output_filename_template: 'wp_rp_{}.dat'
+
+# Name of file and columns to load and compare against the test samples.
 data_filename: 'tpcf/Zehavi_2011_ApJ_736_59_Table7.txt'
 data_label: 'Zehavi+2011'
+# Specify the columns to load from the data for comparison. The names here
+# should match the sample names from test_samples.
 test_data:
-  - {data_col: 1, data_err_col: 2}
-  - {data_col: 3, data_err_col: 4}
-  - {data_col: 5, data_err_col: 6}
-  - {data_col: 7, data_err_col: 8}
+  Mr_-23_-22: {data_col: 1, data_err_col: 2}
+  Mr_-22_-21: {data_col: 3, data_err_col: 4}
+  Mr_-21_-20: {data_col: 5, data_err_col: 6}
+  Mr_-20_-19: {data_col: 7, data_err_col: 8}
 
-need_distance: true
+# Plotting configuration.
 fig_xlabel: '$r_p\quad[h^{-1}{\rm Mpc}]$'
 fig_ylabel: '$w_p(r_p)\quad[h^{-1}{\rm Mpc}]$'
 fig_ylim: [0.1, 5000]
+label_column: mag # Name of the column from requested columns to write in the legend.
+label_template: '${} < M_r < {}$'
+
+pi_maxes: # Line of sight, wp(rp) binning for each sample.
+  Mr_-23_-22: 60.0
+  Mr_-22_-21: 60.0
+  Mr_-21_-20: 60.0
+  Mr_-20_-19: 60.0
 
 #Treecorr parameters
 min_sep: 0.15
 max_sep: 40
 bin_size: 0.45
-pi_max: 60.0
-
 random_mult: 6
 
 description: |
