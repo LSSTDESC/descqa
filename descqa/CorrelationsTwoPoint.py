@@ -1,7 +1,8 @@
 from __future__ import print_function, division, unicode_literals, absolute_import
-import os
-import numpy as np
 from GCR import GCRQuery
+import numpy as np
+import os
+import scipy.special as scsp
 import treecorr
 
 from .base import BaseValidationTest, TestResult
@@ -10,7 +11,8 @@ from .utils import generate_uniform_random_ra_dec_footprint, \
                    get_healpixel_footprint, \
                    generate_uniform_random_dist
 
-__all__ = ['CorrelationsAngularTwoPoint', 'CorrelationsProjectedTwoPoint']
+__all__ = ['CorrelationsAngularTwoPoint', 'CorrelationsProjectedTwoPoint',
+           'DEEP2StellarMassTwoPoint']
 
 
 def redshift2dist(z, cosmology):
@@ -28,7 +30,13 @@ def redshift2dist(z, cosmology):
     return cosmology.comoving_distance(z).to('Mpc').value * cosmology.h
 
 
-def load_catalog_data(catalog_instance, requested_columns, test_samples):
+class CorrelationUtilities(object):
+    """ Mixin class for cutting a catalog sample, plotting the correlation
+    results, and scoring the  the results of the correlation measurements
+    and comparing them to test data.
+    """
+
+    def load_catalog_data(self, catalog_instance, requested_columns, test_samples):
         """ Load requested columns from a Generic Catalog Reader instance.
 
         Parameters
@@ -81,37 +89,30 @@ def load_catalog_data(catalog_instance, requested_columns, test_samples):
 
         return catalog_data
 
+    def create_test_sample(self, catalog_data, test_sample):
+        """ Select a subset of the catalog data an input test sample.
 
-def create_test_sample(catalog_data, test_sample):
-    """ Select a subset of the catalog data an input test sample.
+        Parameters
+        ----------
+        catalog_data : a GenericCatalogReader catalog instance
+        test_sample : dictionary of dictionaries
+            A dictionary specifying the columns to cut on and the min/max values of
+            the cut.
+            Example:
+                {mag: {min: -23,    max: -22}
+                 z:   {min: 0.1031, max: 0.2452}}
 
-    Parameters
-    ----------
-    catalog_data : a GenericCatalogReader catalog instance
-    test_sample : dictionary of dictionaries
-        A dictionary specifying the columns to cut on and the min/max values of
-        the cut.
-        Example:
-            {mag: {min: -23,    max: -22}
-             z:   {min: 0.1031, max: 0.2452}}
-
-    Returns
-    -------
-    A GenericCatalogReader catalog instance cut to the requested bounds.
-    """
-    filters = []
-    for key in test_sample.keys():
-        filters.extend((
-            '{} < {}'.format(key, test_sample[key]['max']),
-            '{} >= {}'.format(key, test_sample[key]['min']),
-        ))
-    return GCRQuery(*filters).filter(catalog_data)
-
-
-class PlotCorrelation(object):
-    """ Mixin class for plotting the results of the correlation measurements
-    and comparing them to test data.
-    """
+        Returns
+        -------
+        A GenericCatalogReader catalog instance cut to the requested bounds.
+        """
+        filters = []
+        for key in test_sample.keys():
+            filters.extend((
+                '{} < {}'.format(key, test_sample[key]['max']),
+                '{} >= {}'.format(key, test_sample[key]['min']),
+            ))
+        return GCRQuery(*filters).filter(catalog_data)
 
     def plot_data_comparison(self, corr_data, catalog_name, output_dir):
         """ Plot measured correlation functions and compare them against test
@@ -160,8 +161,26 @@ class PlotCorrelation(object):
         fig.savefig(os.path.join(output_dir, '{:s}.png'.format(self.test_name)), bbox_inches='tight')
         plt.close(fig)
 
+    def score_and_test(self, corr_data):
+        """ Given the resultant correlations, compute the test score and return
+        a TestResult
 
-class CorrelationsAngularTwoPoint(BaseValidationTest, PlotCorrelation):
+        Parameters
+        ----------
+        corr_data : list of float array likes
+            List containing resultant data from correlation functions computed
+            in the test.
+            Example:
+                [[np.array([...]), np.array([...]), np.array([...])]]
+
+        Returns
+        -------
+        descqa.TestResult
+        """
+        return TestResult(inspect_only=True)
+
+
+class CorrelationsAngularTwoPoint(BaseValidationTest, CorrelationUtilities):
     """
     Validation test for an angular 2pt correlation function.
 
@@ -200,15 +219,16 @@ class CorrelationsAngularTwoPoint(BaseValidationTest, PlotCorrelation):
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
 
-        catalog_data = load_catalog_data(catalog_instance=catalog_instance,
-                                         requested_columns=self.requested_columns,
-                                         test_samples=self.test_samples)
+        catalog_data = self.load_catalog_data(catalog_instance=catalog_instance,
+                                              requested_columns=self.requested_columns,
+                                              test_samples=self.test_samples)
 
         rand_cat, rr = self.generate_processed_randoms(catalog_data)
 
         correlation_data = []
         for sample_name in self.test_samples.keys():
-            tmp_catalog_data = self.create_test_sample(catalog_data, test_samples[sample_name])
+            tmp_catalog_data = self.create_test_sample(
+                catalog_data, self.test_samples[sample_name])
 
             output_treecorr_filepath = os.path.join(
                 output_dir, self.output_filename_template.format(sample_name))
@@ -217,14 +237,14 @@ class CorrelationsAngularTwoPoint(BaseValidationTest, PlotCorrelation):
                 catalog_data=tmp_catalog_data,
                 treecorr_rand_cat=rand_cat,
                 rr=rr,
-                output_filepath=output_treecorr_filepath)
+                output_file_name=output_treecorr_filepath)
             correlation_data.append([xi_rad, xi, xi_sig])
 
         self.plot_data_comparison(corr_data=correlation_data,
                                   catalog_name=catalog_name,
-                                  output_filename=output_dir)
+                                  output_dir=output_dir)
 
-        return TestResult(inspect_only=True)
+        return self.score_and_test(correlation_data)
 
     def generate_processed_randoms(self, catalog_data):
         """ Create and process random data for the 2pt correlation function.
@@ -249,7 +269,7 @@ class CorrelationsAngularTwoPoint(BaseValidationTest, PlotCorrelation):
 
         return rand_cat, rr
 
-    def run_tree_corr(self, catalog_data, treecorr_rand_cat, rr, output_file_name):
+    def run_treecorr(self, catalog_data, treecorr_rand_cat, rr, output_file_name):
         """ Run treecorr on input catalog data and randoms.
 
         Produce measured correlation functions using the Landy-Szalay
@@ -294,13 +314,8 @@ class CorrelationsAngularTwoPoint(BaseValidationTest, PlotCorrelation):
 
         return xi_rad, xi, xi_sig
 
-    def compute_summary_statistics(self):
-        """
-        """
-        pass
 
-
-class CorrelationsProjectedTwoPoint(BaseValidationTest, PlotCorrelation):
+class CorrelationsProjectedTwoPoint(BaseValidationTest, CorrelationUtilities):
     """
     Validation test for an radial 2pt correlation function.
 
@@ -341,9 +356,9 @@ class CorrelationsProjectedTwoPoint(BaseValidationTest, PlotCorrelation):
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
 
-        catalog_data = load_catalog_data(catalog_instance=catalog_instance,
-                                         requested_columns=self.requested_columns,
-                                         test_samples=self.test_samples)
+        catalog_data = self.load_catalog_data(catalog_instance=catalog_instance,
+                                              requested_columns=self.requested_columns,
+                                              test_samples=self.test_samples)
 
         rand_ra, rand_dec = generate_uniform_random_ra_dec_footprint(
             catalog_data['ra'].size*self.random_mult,
@@ -357,7 +372,8 @@ class CorrelationsProjectedTwoPoint(BaseValidationTest, PlotCorrelation):
             output_treecorr_filepath = os.path.join(
                 output_dir, self.output_filename_template.format(sample_name))
 
-            tmp_catalog_data = create_test_sample(catalog_data, self.test_samples[sample_name])
+            tmp_catalog_data = self.create_test_sample(
+                catalog_data, self.test_samples[sample_name])
 
             xi_rad, xi, xi_sig = self.run_treecorr_projected(
                 catalog_data=tmp_catalog_data,
@@ -374,7 +390,7 @@ class CorrelationsProjectedTwoPoint(BaseValidationTest, PlotCorrelation):
                                   catalog_name=catalog_name,
                                   output_dir=output_dir)
 
-        return TestResult(inspect_only=True)
+        return self.score_and_test(correlation_data)
 
     def run_treecorr_projected(self, catalog_data, rand_ra, rand_dec,
                                cosmology, z_min, z_max, pi_max, output_file_name):
@@ -444,7 +460,141 @@ class CorrelationsProjectedTwoPoint(BaseValidationTest, PlotCorrelation):
 
         return xi_rad, xi * 2. * pi_max, xi_sig * 2. * pi_max
 
-    def compute_summary_statistics(self):
+class DEEP2StellarMassTwoPoint(CorrelationsProjectedTwoPoint):
+    """ Test simulated data against the power laws fits to Stellar Mass
+    selected samples in DEEP2. This class also serves as an example of creating
+    a specific test from the two correlation classes in the test suite.
+
+    In the future this could also include a color cut however absolute U and B
+    band magnitudes are not stored in the catalog and converting the current
+    fluxes to those is currently out of scope.
+    """
+
+    def power_law(self, r, r0, g):
+        """ Compute the power law of a simple 2 parameter projected correlation
+        function.
+
+        Parameters
+        ---------
+        r : float array like
+            Comoving positions to compute the power law at.
+        r0 : float
+            Amplitude of the correlation function
+        g : float
+            Power law of the correlation function.
+
+        Returns
+        -------
+        float array like
         """
+        gamma_func_ratio = scsp.gamma(1/2.) * scsp.gamma((g - 1) / 2) / scsp.gamma(g / 2)
+        return r * (r0 / r) ** g * gamma_func_ratio
+
+    def power_law_err(self, r, r0, g, r0_err, g_err):
+        """ Compute the error on the power law model given errors on r0 and g.
+        function.
+
+        Parameters
+        ---------
+        r : float array like
+            Comoving positions to compute the power law at.
+        r0 : float
+            Amplitude of the correlation function
+        g : float
+            Power law of the correlation function.
+        r0_err : float
+            Error on r0
+        g_err : float
+            Error on the power law slope.
+
+        Returns
+        -------
+        float array like
         """
-        pass
+        gamma_func_ratio = scsp.gamma(1/2.) * scsp.gamma((g - 1) / 2) / scsp.gamma(g / 2)
+        p_law = r * (r0 / r) ** g * gamma_func_ratio
+        dev_r0 = r ** (1 - g) * r0 ** (g - 1) * g * gamma_func_ratio * r0_err
+        dev_g = (p_law * np.log(r) +
+                 2 * p_law * scsp.polygamma(0, (g - 1) / 2) +
+                 -2 * p_law * scsp.polygamma(0, g / 2)) * g_err
+        return np.sqrt(dev_r0 ** 2 + dev_g ** 2)
+
+    def plot_data_comparison(self, corr_data, catalog_name, output_dir):
+        fig, ax = plt.subplots()
+
+
+        print(self.test_samples)
+        print(self.label_column)
+        for sample_name, sample_corr, color in zip(self.test_samples.keys(),
+                                                   corr_data,
+                                                   plt.cm.plasma_r(
+                                                       np.linspace(0.1, 1, len(self.test_samples)))):
+
+            p_law = self.power_law(sample_corr[0],
+                                   self.validation_data[self.test_data[sample_name]['row'],
+                                                        self.test_data[sample_name]['r0']],
+                                   self.validation_data[self.test_data[sample_name]['row'],
+                                                        self.test_data[sample_name]['g']])
+            p_law_err = self.power_law_err(sample_corr[0],
+                                           self.validation_data[self.test_data[sample_name]['row'],
+                                                                self.test_data[sample_name]['r0']],
+                                           self.validation_data[self.test_data[sample_name]['row'],
+                                                                self.test_data[sample_name]['g']],
+                                           self.validation_data[self.test_data[sample_name]['row'],
+                                                                self.test_data[sample_name]['r0_err']],
+                                           self.validation_data[self.test_data[sample_name]['row'],
+                                                                self.test_data[sample_name]['g_err']])
+            print(sample_name, self.label_column)
+            ax.loglog(sample_corr[0],
+                      p_law,
+                      c=color,
+                      label=self.label_template.format(
+                          np.log10(self.test_samples[sample_name][self.label_column]['min']),
+                          np.log10(self.test_samples[sample_name][self.label_column]['max'])))
+            ax.fill_between(sample_corr[0],
+                            p_law - p_law_err,
+                            p_law + p_law_err,
+                            lw=0, color=color, alpha=0.2)
+            ax.errorbar(sample_corr[0], sample_corr[1], sample_corr[2], marker='o', ls='', c=color)
+
+        ax.legend(loc='best')
+        ax.set_xlabel(self.fig_xlabel)
+        ax.set_ylim(*self.fig_ylim)
+        ax.set_ylabel(self.fig_ylabel)
+        ax.set_title('{} vs. {}'.format(catalog_name, self.data_label), fontsize='medium')
+
+        fig.savefig(os.path.join(output_dir, '{:s}.png'.format(self.test_name)), bbox_inches='tight')
+        plt.close(fig)
+
+    def score_and_test(self, corr_data):
+        """ Test the average chi^2 per degree of freedom against power law fits
+        to the DEEP2 dataset.
+        """
+        chi_per_nu = 0
+        total_sample = 0
+        r_idx_min = np.searchsorted(corr_data[0][0], 1.)
+        r_idx_max = np.searchsorted(corr_data[0][0], 10., side='right')
+        for sample_name, sample_corr in zip(self.test_samples.keys(), corr_data):
+            r_data = sample_corr[0][r_idx_min:r_idx_max]
+            p_law = self.power_law(r_data,
+                                   self.validation_data[self.test_data[sample_name]['row'],
+                                                        self.test_data[sample_name]['r0']],
+                                   self.validation_data[self.test_data[sample_name]['row'],
+                                                        self.test_data[sample_name]['g']])
+            p_law_err = self.power_law_err(r_data,
+                                           self.validation_data[self.test_data[sample_name]['row'],
+                                                                self.test_data[sample_name]['r0']],
+                                           self.validation_data[self.test_data[sample_name]['row'],
+                                                                self.test_data[sample_name]['g']],
+                                           self.validation_data[self.test_data[sample_name]['row'],
+                                                                self.test_data[sample_name]['r0_err']],
+                                           self.validation_data[self.test_data[sample_name]['row'],
+                                                                self.test_data[sample_name]['g_err']])
+            chi_per_nu = np.sum(((sample_corr[1][r_idx_min:r_idx_max] - p_law) / p_law_err) ** 2)
+            chi_per_nu /= len(r_data)
+            total_sample += 1
+
+        score = chi_per_nu / total_sample
+        test_pass = score < 2.0
+
+        return TestResult(score=score, passed=test_pass, summary="Ave chi^2/nu value against power law fits.")

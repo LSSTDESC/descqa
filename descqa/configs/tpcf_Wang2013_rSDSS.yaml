@@ -1,30 +1,50 @@
-subclass_name: CorrelationsTwoPoint.CorrelationsTwoPoint
+subclass_name: CorrelationsTwoPoint.CorrelationsAngularTwoPoint
 
-possible_mag_fields:
-  - mag_r_sdss
-  - mag_r_des
-  - mag_r_lsst
-  - mag_true_r_sdss
-  - mag_true_r_des
-  - mag_true_r_lsst
+requested_columns:
+  ra:
+    - ra
+    - ra_true
+  dec:
+    - dec
+    - dec_true
+  mag:
+    - mag_r_sdss
+    - mag_r_des
+    - mag_r_lsst
+    - mag_true_r_sdss
+    - mag_true_r_des
+    - mag_true_r_lsst
 
-output_filename_template: 'w_theta_r_{}_{}.dat'
+output_filename_template: 'w_theta_r_{}.dat'
 label_template: '${} < r < {}$'
 
 data_filename: 'tpcf/Wang_2013_MNRAS_stt450_Table2.txt'
 data_label: 'Y.Wang+2013'
 
-mag_bins:
-  - {mag_min: 17, mag_max: 18, data_col: 3, data_err_col: 4}
-  - {mag_min: 18, mag_max: 19, data_col: 5, data_err_col: 6}
-  - {mag_min: 19, mag_max: 20, data_col: 7, data_err_col: 8}
-  - {mag_min: 20, mag_max: 21, data_col: 9, data_err_col: 10}
-  - {mag_min: 17, mag_max: 21, data_col: 1, data_err_col: 2}
+test_samples:
+  r_17_18:
+    mag: {min: 17, max: 18}
+  r_18_19:
+    mag: {min: 18, max: 19}
+  r_19_20:
+    mag: {min: 19, max: 20}
+  r_20_21:
+    mag: {min: 20, max: 21}
+  r_17_21:
+    mag: {min: 17, max: 21}
+
+test_data:
+  r_17_18: {data_col: 3, data_err_col: 4}
+  r_18_19: {data_col: 5, data_err_col: 6}
+  r_19_20: {data_col: 7, data_err_col: 8}
+  r_20_21: {data_col: 9, data_err_col: 10}
+  r_17_21: {data_col: 1, data_err_col: 2}
 
 need_distance: false
 fig_xlabel: '$\theta\quad[{\rm deg}]}$'
 fig_ylabel: '$w(\theta)$'
 fig_ylim: [0.0001, 5.0]
+label_column: mag # Name of the column from requested columns to write in the legend.
 
 #Treecorr parameters
 min_sep: 0.01

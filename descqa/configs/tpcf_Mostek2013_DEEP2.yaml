@@ -1,4 +1,4 @@
-subclass_name: CorrelationsTwoPoint.CorrelationsTwoPoint
+subclass_name: CorrelationsTwoPoint.DEEP2StellarMassTwoPoint
 
 # Catalog columns to attempt to load. The simplified names (e.g. ra, dec) are
 # the names that we be used to cut on in test_samples. Make sure these match.
@@ -9,55 +9,43 @@ requested_columns:
   dec:
     - dec
     - dec_true
-  mag:
-    - Mag_true_r_sdss_z0
-    - Mag_true_r_des_z0
-    - Mag_true_r_lsst_z0
-    - Mag_true_r_sdss_z01
-    - Mag_true_r_des_z01
-    - Mag_true_r_lsst_z01
   z:
     - redshift
     - redshift_true
+  mstellar:
+    - stellar_mass
 
 # Definition of samples and cuts to apply.  The names of these columns must
 # match the simple column name definitions above.
 test_samples:
-  Mr_-23_-22:
-    mag: {min: -23, max: -22}
-    z: {min: 0.1031, max: 0.2452}
-  Mr_-22_-21:
-    mag: {min: -22, max: -21}
-    z: {min: 0.0663, max: 0.1589}
-  Mr_-21_-20:
-    mag: {min: -21, max: -20}
-    z: {min: 0.0420, max: 0.1064}
-  Mr_-20_-19:
-    mag: {min: -20, max: -19}
-    z: {min: 0.0269, max: 0.0642}
-
-# If we want to compute wp(rp) instead of angular space correlations these
-# variables must be set.
-need_distance: true
-pi_max: # Line of sight, wp(rp) binning.
+  Ms_gt10.5:
+    mstellar: {min: 31622776601.683792, max: 10000000000000000}
+    z: {min: 0.74, max: 1.05}
+  Ms_gt10.8:
+    mstellar: {min: 63095734448.019424, max: 10000000000000000}
+    z: {min: 0.74, max: 1.05}
 
 # Output file naming format for output of the resultant correlation values.
 output_filename_template: 'wp_rp_{}.dat'
 
 # Name of file and columns to load and compare against the test samples.
-data_filename: 'tpcf/Zehavi_2011_ApJ_736_59_Table7.txt'
-data_label: 'Zehavi+2011'
+data_filename: 'tpcf/Mostek_2013_APJ_767_98M.txt'
+data_label: 'Mostek+2013'
 test_data:
-  - {data_col: 1, data_err_col: 2}
-  - {data_col: 3, data_err_col: 4}
-  - {data_col: 5, data_err_col: 6}
-  - {data_col: 7, data_err_col: 8}
+  Ms_gt10.5: {row: 0, r0: 0, r0_err: 1, g: 2, g_err: 3}
+  Ms_gt10.8: {row: 1, r0: 0, r0_err: 1, g: 2, g_err: 3}
+
 
 # Plotting configuration.
 fig_xlabel: '$r_p\quad[h^{-1}{\rm Mpc}]$'
 fig_ylabel: '$w_p(r_p)\quad[h^{-1}{\rm Mpc}]$'
 fig_ylim: [0.1, 5000]
-label_template: '${} < M_r < {}$'
+label_template: '${} < log(M_s) < {}$'
+label_column: mstellar
+
+pi_maxes: # Line of sight, wp(rp) binning for each sample.
+  Ms_gt10.5: 20.0
+  Ms_gt10.8: 20.0
 
 #Treecorr parameters
 min_sep: 0.15
@@ -68,4 +56,4 @@ random_mult: 6
 description: |
   Test comparing a the 2pt correlation of a stellar mass selected sample at z~1 to power law fits from DEEP2.
 
-included_by_default: true
+included_by_default: false
