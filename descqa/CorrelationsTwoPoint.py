@@ -25,27 +25,28 @@ def redshift2dist(z, cosmology):
 
     Returns
     -------
-    float array like comoving distances
+    float array like of comoving distances
     """
     return cosmology.comoving_distance(z).to('Mpc').value * cosmology.h
 
 
 class CorrelationUtilities(object):
-    """ Mixin class for cutting a catalog sample, plotting the correlation
-    results, and scoring the  the results of the correlation measurements
-    and comparing them to test data.
+    """ Mixin class for Correlation classes that loads catalogs, cuts a catalog
+    sample, plots the correlation results, and scores the the results of the
+    correlation measurements by comparing them to test data.
     """
 
     def load_catalog_data(self, catalog_instance, requested_columns, test_samples):
-        """ Load requested columns from a Generic Catalog Reader instance.
+        """ Load requested columns from a Generic Catalog Reader instance and
+        trim to the min and max of the requested cuts in test_samples.
 
         Parameters
         ----------
         catalog_instance : a Generic Catalog object.
-        rested_columns : dictionary of lists of strings
-            A dictionary containing keyed on a simple column name (e.g. mag, z)
+        requested_columns : dictionary of lists of strings
+            A dictionary keyed on a simple column name (e.g. mag, z)
             with values of lists containing string names to try to load from
-            the input GCR.
+            the GCR catalog instance.
             Example:
                 {'mag': ['Mag_true_r_sdss_z0', 'Mag_true_r_des_z0'], ...}
         test_samples : dictionary of dictionaries
@@ -63,25 +64,27 @@ class CorrelationUtilities(object):
         colnames = dict()
         col_value_mins = dict()
         col_value_maxs = dict()
-        for key in requested_columns.keys():
-            colnames[key] = catalog_instance.first_available(*requested_columns[key])
-            if key != 'ra' and key != 'dec':
-                col_value_mins[key] = []
-                col_value_maxs[key] = []
-                for sample in test_samples.keys():
-                    col_value_mins[key].append(test_samples[sample][key]['min'])
-                    col_value_maxs[key].append(test_samples[sample][key]['max'])
+        for col_key in requested_columns.keys():
+            colnames[col_key] = catalog_instance.first_available(*requested_columns[col_key])
+            # Grab one of the test sample cuts and test that this column name
+            # is used if it is store its min and max values.
+            if col_key in test_samples[list(test_samples.keys())[0]]:
+                col_value_mins[col_key] = []
+                col_value_maxs[col_key] = []
+                for sample_key in test_samples.keys():
+                    col_value_mins[col_key].append(test_samples[sample_key][col_key]['min'])
+                    col_value_maxs[col_key].append(test_samples[sample_key][col_key]['max'])
 
         if not all(v for v in colnames.values()):
             return TestResult(skipped=True, summary='Missing requested quantities')
 
         filters = [(np.isfinite, c) for c in colnames.values()]
 
-        for key in requested_columns.keys():
-            if key != 'ra' and key != 'dec':
+        for col_key in requested_columns.keys():
+            if col_key in test_samples[list(test_samples.keys())[0]]:
                 filters.extend((
-                    '{} < {}'.format(colnames[key], max(col_value_maxs[key])),
-                    '{} >= {}'.format(colnames[key], min(col_value_mins[key])),
+                    '{} < {}'.format(colnames[col_key], max(col_value_maxs[col_key])),
+                    '{} >= {}'.format(colnames[col_key], min(col_value_mins[col_key])),
                 ))
 
         catalog_data = catalog_instance.get_quantities(list(colnames.values()), filters=filters)
@@ -91,6 +94,9 @@ class CorrelationUtilities(object):
 
     def create_test_sample(self, catalog_data, test_sample):
         """ Select a subset of the catalog data an input test sample.
+
+        This function should be overloaded in inherited classes for more
+        complex cuts (e.g. color cuts).
 
         Parameters
         ----------
@@ -124,7 +130,7 @@ class CorrelationUtilities(object):
             List containing resultant data from correlation functions computed
             in the test.
             Example:
-                [[np.array([...]), np.array([...]), np.array([...])]]
+                [[np.array([...]), np.array([...]), np.array([...])], ...]
         catalog_name : string
             Name of the catalog used in the test.
         output_dir : string
@@ -171,7 +177,7 @@ class CorrelationUtilities(object):
             List containing resultant data from correlation functions computed
             in the test.
             Example:
-                [[np.array([...]), np.array([...]), np.array([...])]]
+                [[np.array([...]), np.array([...]), np.array([...])], ...]
 
         Returns
         -------
@@ -288,8 +294,8 @@ class CorrelationsAngularTwoPoint(BaseValidationTest, CorrelationUtilities):
 
         Returns
         -------
-        list of array likes
-           Resultant correlation function. separation, amplitude, amp_err.
+        tuple of array likes
+           Resultant correlation function. (separation, amplitude, amp_err).
         """
         cat = treecorr.Catalog(
             ra=catalog_data['ra'],
@@ -409,18 +415,18 @@ class CorrelationsProjectedTwoPoint(BaseValidationTest, CorrelationUtilities):
         cosmology : astropy.cosmology
             An astropy.cosmology instance specifying the catalog cosmology.
         z_min : float
-            Minimum redshift of the catalog_data sample
+            Minimum redshift of the catalog_data sample.
         z_max : float
-            Maximum redshift of the catalog_data sample
+            Maximum redshift of the catalog_data sample.
         pi_max : float
-            Maximum comoving distance along the line of sight to correlate
+            Maximum comoving distance along the line of sight to correlate.
         output_file_name : string
             Full path name of the file to write the resultant correlation to.
 
         Returns
         -------
-        list of array likes
-           Resultant correlation function. separation, amplitude, amp_err.
+        tuple of array likes
+           Resultant correlation function. (separation, amplitude, amp_err).
         """
         treecorr_config = self.treecorr_config.copy()
         treecorr_config['min_rpar'] = -pi_max
@@ -465,9 +471,9 @@ class DEEP2StellarMassTwoPoint(CorrelationsProjectedTwoPoint):
     selected samples in DEEP2. This class also serves as an example of creating
     a specific test from the two correlation classes in the test suite.
 
-    In the future this could also include a color cut however absolute U and B
-    band magnitudes are not stored in the catalog and converting the current
-    fluxes to those is currently out of scope.
+    In the future this could also include a color cut, however absolute U and B
+    band magnitudes are not stored in the simulated catalogs currently and
+    converting the current fluxes to those is currently out of scope.
     """
 
     def power_law(self, r, r0, g):
@@ -523,8 +529,6 @@ class DEEP2StellarMassTwoPoint(CorrelationsProjectedTwoPoint):
         fig, ax = plt.subplots()
 
 
-        print(self.test_samples)
-        print(self.label_column)
         for sample_name, sample_corr, color in zip(self.test_samples.keys(),
                                                    corr_data,
                                                    plt.cm.plasma_r(
@@ -544,7 +548,6 @@ class DEEP2StellarMassTwoPoint(CorrelationsProjectedTwoPoint):
                                                                 self.test_data[sample_name]['r0_err']],
                                            self.validation_data[self.test_data[sample_name]['row'],
                                                                 self.test_data[sample_name]['g_err']])
-            print(sample_name, self.label_column)
             ax.loglog(sample_corr[0],
                       p_law,
                       c=color,
@@ -595,6 +598,10 @@ class DEEP2StellarMassTwoPoint(CorrelationsProjectedTwoPoint):
             total_sample += 1
 
         score = chi_per_nu / total_sample
-        test_pass = score < 2.0
+        # Made up value. Assert that average chi^2/nu is less than 2.
+        test_pass = score < 2
 
-        return TestResult(score=score, passed=test_pass, summary="Ave chi^2/nu value against power law fits.")
+        return TestResult(score=score,
+                          passed=test_pass,
+                          summary="Ave chi^2/nu value comparing to power law fits to stellar mass threshold "
+                                  "DEEP2 data. Test threshold set to 2.")
