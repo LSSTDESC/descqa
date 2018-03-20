@@ -155,7 +155,7 @@ class DescqaRun(object):
 
     @staticmethod
     def _find_subdirs(path):
-        return tuple(sorted((d for d in os.listdir(path) if os.path.isdir(os.path.join(path, d)) and not d.startswith('_'))))
+        return tuple(sorted((d for d in os.listdir(path) if os.path.isdir(os.path.join(path, d)) and os.access(os.path.join(path, d), os.R_OK + os.X_OK) and not d.startswith('_'))))
 
     def _find_tests(self):
         return self._find_subdirs(self.path)
@@ -238,7 +238,8 @@ def iter_all_runs_unsorted(base_dir):
 
 
 def iter_all_runs(base_dir, months_to_search=None):
-    for i, month_dir in enumerate(sorted(os.listdir(base_dir), reverse=True)):
+    for i, month_dir in enumerate(sorted((d for d in os.listdir(base_dir) 
+            if re.match(r'\d{4}-[01]\d$', d) and os.path.isdir(os.path.join(base_dir, d))), reverse=True)):
         if months_to_search is not None and i >= int(months_to_search):
             break
         sub_base_dir = os.path.join(base_dir, month_dir)
