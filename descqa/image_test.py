@@ -50,64 +50,6 @@ class ImageVerificationTest(BaseValidationTest):
     def conclude_test(self, output_dir):
         pass
 
-
-
-    def _build_galsim_objects(self, imsimCatalog, gsobjects={}):
-        """
-        Creates a dictionary indexed by galaxyID which contains galsim objects
-        """
-
-        # Extract relevant columns
-        objectNames = imsimCatalog.column_by_name('uniqueId')
-        galaxyID = imsimCatalog.column_by_name('galaxyID')
-        raICRS = imsimCatalog.column_by_name('raICRS')
-        decICRS = imsimCatalog.column_by_name('decICRS')
-        xPupil = imsimCatalog.column_by_name('x_pupil')
-        yPupil = imsimCatalog.column_by_name('y_pupil')
-        halfLight = imsimCatalog.column_by_name('halfLightRadius')
-        minorAxis = imsimCatalog.column_by_name('minorAxis')
-        majorAxis = imsimCatalog.column_by_name('majorAxis')
-        positionAngle = imsimCatalog.column_by_name('positionAngle')
-        sindex = imsimCatalog.column_by_name('sindex')
-        gamma1 = imsimCatalog.column_by_name('gamma1')
-        gamma2 = imsimCatalog.column_by_name('gamma2')
-        kappa = imsimCatalog.column_by_name('kappa')
-
-        sedList = imsimCatalog._calculateGalSimSeds()
-
-        for (name, gid, ra, dec, xp, yp, hlr, minor, major, pa, ss, sn, gam1, gam2, kap) in \
-            zip(objectNames, galaxyID, raICRS, decICRS, xPupil, yPupil, halfLight,
-                minorAxis, majorAxis, positionAngle, sedList, sindex,
-                gamma1, gamma2, kappa):
-
-            gid = int(gid)
-            flux_dict = {'i': ss.calcADU(imsimCatalog.bandpassDict['i'],
-                                         imsimCatalog.photParams)}
-            gsObj = GalSimCelestialObject(imsimCatalog.galsim_type, ss, ra, dec, xp, yp,
-                                          hlr, minor, major, pa, sn, flux_dict, gam1, gam2, kap, uniqueId=name)
-
-            if imsimCatalog.galsim_type == 'sersic':
-                gal = galsim.Sersic(gsObj.sindex, gsObj.halfLightRadiusArcsec)
-            elif imsimCatalog.galsim_type == 'RandomWalk':
-                rng = galsim.BaseDeviate(int(gsObj.uniqueId))
-                gal = galsim.RandomWalk(npoints=int(gsObj.sindex),
-                                        half_light_radius=float(
-                                            gsObj.halfLightRadiusArcsec),
-                                        rng=rng)
-            # Define the flux
-            gal = gal.withFlux(gsObj.flux('i'))
-
-            # Apply ellipticity
-            gal = gal.shear(q=gsObj.minorAxisRadians / gsObj.majorAxisRadians,
-                            beta=(0.5 * np.pi + gsObj.positionAngleRadians) * galsim.radians)
-
-            if gid in gsobjects:
-                gsobjects[gid] += gal
-            else:
-                gsobjects[gid] = gal
-
-        return gsobjects
-
     def _parse_instance_catalog(self, catalog, output_dir, imag_cut=25.0):
         """
         Reads in an instance catalog and returns an ImSim Galaxy catalog.
@@ -116,59 +58,48 @@ class ImageVerificationTest(BaseValidationTest):
         # load default imSim configuration
         config_path = os.path.dirname(desc.imsim.__file__)+'/data/default_imsim_configs'
         config = desc.imsim.read_config()
-        commands, phosim_objects = desc.imsim.parsePhoSimInstanceFile(
-            os.path.join(output_dir, 'catalog.txt'), None)
-        obs_md = desc.imsim.phosim_obs_metadata(commands)
 
-        # Complement the list of objects with the data from the parent catalog
-        phosim_objects['galaxyID'] = phosim_objects['uniqueId'] // 1024
-        protoDC2_data = pd.DataFrame.from_dict(
+        catalog_contents = desc.imsim.parsePhoSimInstanceFile(os.path.join(output_dir, 'catalog.txt'))
+
+        obs_md = catalog_contents.obs_metadata
+        phot_params = catalog_contents.phot_params
+        sources = catalog_contents.sources
+        gs_object_arr = sources[0]
+        gs_object_dict = sources[1]
+
+        df = pd.DataFrame.from_dict(
             catalog.get_quantities(['galaxyID', 'mag_i_lsst']))
-        phosim_objects = phosim_objects.join(
-            protoDC2_data.set_index('galaxyID'), on='galaxyID')
 
-        # Restrict objects to imag < 25
-        m = phosim_objects['mag_i_lsst'] < imag_cut
-        phosim_objects = phosim_objects[m]
+        # Loop over the objects to create GalSim objects
+        gsobjects = {}
+        for obj in gs_object_arr:
 
-        # Clean up catalog
-        phosim_objects = desc.imsim.validate_phosim_object_list(
-            phosim_objects).accepted
+            gid = obj.uniqueId // 1024
 
-        # Separate out sersic from random walk components
-        sersicDataBase = phosim_objects.query("galSimType=='sersic'")
-        knotsDataBase = phosim_objects.query("galSimType=='RandomWalk'")
+            # if the input magnitude is lower than the cut, we skip
+            if df.loc[df['galaxyID'] == gid]['mag_i_lsst'] > imag_cut:
+                continue
 
-        # Create imsim catalogs
-        config = desc.imsim.read_config(None)
-        # Switching to the i-band
-        commands['bandpass'] = 'i'
-        obs_md._bandpass = 'i'
+            if obj.galSimType == 'sersic':
+                gal = galsim.Sersic(obj.sindex, obj.halfLightRadiusArcsec)
+            elif obj.galSimType == 'RandomWalk':
+                rng = galsim.BaseDeviate(int(obj.uniqueId))
+                gal = galsim.RandomWalk(npoints=obj.npoints,
+                                        half_light_radius=obj.halfLightRadiusArcsec,
+                                        rng=rng)
+            # Define the flux
+            gal = gal.withFlux(obj.flux('i'))
 
-        # Define the photometric params for COSMOS
-        phot_params = desc.imsim.photometricParameters(commands)
-        phot_params._gain = 1.
-        phot_params._nexp = 1
-        phot_params._exptime = 1.
-        phot_params._effarea = 2.4**2 * (1.-0.33**2)
-        phot_params._exptime = 1.
+            # Apply ellipticity
+            gal = gal.shear(q=obj.minorAxisRadians / obj.majorAxisRadians,
+                            beta=(0.5 * np.pi + obj.positionAngleRadians) * galsim.radians)
 
-        # Create a catalog with ImSim to load the SEDs and stuf
-        sersicCatalog = desc.imsim.ImSimGalaxies(sersicDataBase, obs_md)
-        sersicCatalog.photParams = phot_params
-        sersicCatalog.camera = LsstSimMapper().camera
-        sersicCatalog.camera_wrapper = LSSTCameraWrapper()
-        sersicCatalog._initializeGalSimCatalog()
+            # Add the galaxy to the list
+            if gid in gsobjects:
+                gsobjects[gid] += gal
+            else:
+                gsobjects[gid] = gal
 
-        randomWalkCatalog = desc.imsim.ImSimRandomWalk(knotsDataBase, obs_md)
-        randomWalkCatalog.photParams = phot_params
-        randomWalkCatalog.camera = LsstSimMapper().camera
-        randomWalkCatalog.camera_wrapper = LSSTCameraWrapper()
-        randomWalkCatalog._initializeGalSimCatalog()
-
-        # Build galsim objects
-        gsobjects = self._build_galsim_objects(sersicCatalog)
-        gsobjects = self._build_galsim_objects(randomWalkCatalog, gsobjects)
         return gsobjects
 
     def _build_instance_catalog(self, catalog_name, output_dir):
