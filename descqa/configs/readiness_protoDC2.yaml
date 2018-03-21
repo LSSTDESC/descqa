@@ -32,9 +32,9 @@ quantities_to_check:
     median: [-0.05, 0.05]
     mean: [-0.05, 0.05]
     std: [0.1, 0.4]
-    f_nan: 0
+    f_nan: [0, 0.3]
     f_inf: 0
-    f_outlier: [0, 0.03]
+    f_outlier: [0, 0.06]
 
   - quantities: ['ellipticity', 'ellipticity_[!12]*']
     label: ellipticity_total
@@ -43,7 +43,7 @@ quantities_to_check:
     median: [0, 1]
     mean: [0, 1]
     std: [0.1, 0.4]
-    f_nan: 0
+    f_nan: [0, 0.3]
     f_inf: 0
     f_outlier: [0, 0.06]
 
