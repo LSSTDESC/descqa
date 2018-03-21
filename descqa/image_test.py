@@ -113,6 +113,9 @@ class ImageVerificationTest(BaseValidationTest):
         Reads in an instance catalog and returns an ImSim Galaxy catalog.
         Applies an iband magnitude.
         """
+        # load default imSim configuration
+        config_path = os.path.dirname(desc.imsim.__file__)+'/data/default_imsim_configs'
+        config = desc.imsim.read_config()
         commands, phosim_objects = desc.imsim.parsePhoSimInstanceFile(
             os.path.join(output_dir, 'catalog.txt'), None)
         obs_md = desc.imsim.phosim_obs_metadata(commands)
