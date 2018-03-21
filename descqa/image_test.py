@@ -23,9 +23,11 @@ class ImageVerificationTest(BaseValidationTest):
                  imag_cut=25.,
                  fov=0.25,
                  obsHistID=1418971,
-                 opsimdb='minion_1016_sqlite_new_dithers.db'):
+                 opsimdb='minion_1016_sqlite_new_dithers.db',
+                 galsim_cosmos_dir='/global/homes/f/flanusse/repo/GalSim/share'):
 
         self.imag_cut = imag_cut
+        self.galsim_cosmos_dir = galsim_cosmos_dir
 
         # Create obs metadata
         obs_gen = ObservationMetaDataGenerator(database=opsimdb, driver='sqlite')
@@ -45,7 +47,35 @@ class ImageVerificationTest(BaseValidationTest):
         galaxies = self._parse_instance_catalog(catalog_instance, output_dir,
                                                 imag_cut=self.imag_cut)
 
-        # Draws and analyse each galaxy
+        cosmos_cat = galsim.COSMOSCatalog(dir=self.galsim_cosmos_dir)
+
+        # Postage stamp at the COSMOS resolution
+        im_cosmos = galsim.ImageF(64, 64, scale=0.03)
+        im_sims = galsim.ImageF(64, 64, scale=0.03)
+
+        cosmos_noise = galsim.getCOSMOSNoise()
+        imc = []
+        ims = []
+
+        # Draw and measure each galaxy from sims and cosmos
+        for i,k in enumerate(galaxies):
+            print(i)
+            cosmos_gal = cosmos_cat.makeGalaxy(i)
+            psf = cosmos_gal.original_psf
+
+            sims_gal = galsim.Convolve(galaxies[k], psf)
+            sims_gal.drawImage(im_sims,method='no_pixel')
+            im_sims.addNoise(cosmos_noise)
+            ims.append(im_sims.array+0.)
+
+            cosmos_gal = galsim.Convolve(cosmos_gal, psf)
+            cosmos_gal.drawImage(im_cosmos, method='no_pixel')
+            imc.append(im_cosmos.array+0.)
+
+
+        return imc, ims
+
+
 
     def conclude_test(self, output_dir):
         pass
@@ -59,11 +89,22 @@ class ImageVerificationTest(BaseValidationTest):
         config_path = os.path.dirname(desc.imsim.__file__)+'/data/default_imsim_configs'
         config = desc.imsim.read_config()
 
-        catalog_contents = desc.imsim.parsePhoSimInstanceFile(os.path.join(output_dir, 'catalog.txt'))
+        commands = metadata_from_file(os.path.join(output_dir, 'catalog.txt'))
+        # Switching to the i-band, no matter what obsHistID was used
+        commands['bandpass'] = 'i'
+        obs_md = phosim_obs_metadata(commands)
+        phot_params = photometricParameters(commands)
+        # Define the photometric params for COSMOS
+        phot_params._gain = 1.
+        phot_params._nexp = 1
+        phot_params._exptime = 1.
+        phot_params._effarea = 2.4**2 * (1.-0.33**2)
+        phot_params._exptime = 1.
 
-        obs_md = catalog_contents.obs_metadata
-        phot_params = catalog_contents.phot_params
-        sources = catalog_contents.sources
+        sources = sources_from_file(os.path.join(output_dir, 'catalog.txt'),
+                                obs_md,
+                                phot_params)
+
         gs_object_arr = sources[0]
         gs_object_dict = sources[1]
 
@@ -129,3 +170,42 @@ class ImageVerificationTest(BaseValidationTest):
         cat_knots.write_catalog(os.path.join(output_dir, 'catalog.txt'),
                                 chunk_size=100000, write_header=False,
                                 write_mode='a')
+
+        def _moments(self, images):
+            """
+            Computes HSM moments for a set of galsim images
+            """
+            sigma = []
+            e  = []
+            e1 = []
+            e2 = []
+            g  = []
+            g1 = []
+            g2 = []
+            flag = []
+            amp = []
+
+            for i in range(len(images)):
+                shape = images[i].FindAdaptiveMom(guess_centroid=galsim.PositionD(32,32), strict=False)
+                amp.append(shape.moments_amp)
+                sigma.append(shape.moments_sigma)
+                e.append(shape.observed_shape.e)
+                e1.append(shape.observed_shape.e1)
+                e2.append(shape.observed_shape.e2)
+                g.append(shape.observed_shape.g)
+                g1.append(shape.observed_shape.g1)
+                g2.append(shape.observed_shape.g2)
+                if shape.error_message is not '':
+                    flag.append(False)
+                else:
+                    flag.append(True)
+
+            return Table({'amp': amp,
+                          'sigma_e': sigma,
+                          'e': e,
+                          'e1': e1,
+                          'e2': e2,
+                          'g': g,
+                          'g1': g1,
+                          'g2': g2,
+                          'flag': flag})
