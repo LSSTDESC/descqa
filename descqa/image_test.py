@@ -68,7 +68,7 @@ class ImageVerificationTest(BaseValidationTest):
         gs_object_dict = sources[1]
 
         df = pd.DataFrame.from_dict(
-            catalog.get_quantities(['galaxyID', 'mag_i_lsst']))
+            catalog.get_quantities(['galaxyID', 'Mag_true_i_lsst_z0']))
 
         # Loop over the objects to create GalSim objects
         gsobjects = {}
@@ -77,7 +77,7 @@ class ImageVerificationTest(BaseValidationTest):
             gid = obj.uniqueId // 1024
 
             # if the input magnitude is lower than the cut, we skip
-            if df.loc[df['galaxyID'] == gid]['mag_i_lsst'] > imag_cut:
+            if df.loc[df['galaxyID'] == gid]['Mag_true_i_lsst_z0'].iloc[0] > imag_cut:
                 continue
 
             if obj.galSimType == 'sersic':
