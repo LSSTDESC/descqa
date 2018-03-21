@@ -15,7 +15,7 @@ import galsim
 import desc.imsim
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
-
+from astropy.table import Table
 
 class ImageVerificationTest(BaseValidationTest):
 
@@ -24,7 +24,7 @@ class ImageVerificationTest(BaseValidationTest):
                  fov=0.25,
                  obsHistID=1418971,
                  opsimdb='minion_1016_sqlite_new_dithers.db',
-                 galsim_cosmos_dir='/global/homes/f/flanusse/repo/GalSim/share'):
+                 galsim_cosmos_dir='/global/homes/f/flanusse/repo/GalSim/share/COSMOS_25.2_training_sample'):
 
         self.imag_cut = imag_cut
         self.galsim_cosmos_dir = galsim_cosmos_dir
@@ -50,30 +50,34 @@ class ImageVerificationTest(BaseValidationTest):
         cosmos_cat = galsim.COSMOSCatalog(dir=self.galsim_cosmos_dir)
 
         # Postage stamp at the COSMOS resolution
-        im_cosmos = galsim.ImageF(64, 64, scale=0.03)
-        im_sims = galsim.ImageF(64, 64, scale=0.03)
 
         cosmos_noise = galsim.getCOSMOSNoise()
         imc = []
         ims = []
 
-        # Draw and measure each galaxy from sims and cosmos
+        # Draw each galaxy from sims and cosmos
         for i,k in enumerate(galaxies):
-            print(i)
+            if i %10 == 0:
+                print(i)
             cosmos_gal = cosmos_cat.makeGalaxy(i)
             psf = cosmos_gal.original_psf
 
+            im_sims = galsim.ImageF(64, 64, scale=0.03)
             sims_gal = galsim.Convolve(galaxies[k], psf)
             sims_gal.drawImage(im_sims,method='no_pixel')
             im_sims.addNoise(cosmos_noise)
-            ims.append(im_sims.array+0.)
+            ims.append(im_sims)
 
+            im_cosmos = galsim.ImageF(64, 64, scale=0.03)
             cosmos_gal = galsim.Convolve(cosmos_gal, psf)
             cosmos_gal.drawImage(im_cosmos, method='no_pixel')
-            imc.append(im_cosmos.array+0.)
+            imc.append(im_cosmos)
 
-
-        return imc, ims
+        # Computes moments of sims and real images
+        m_cosmos = self._moments(imc)
+        m_sims = self._moments(ims)
+            
+        return m_cosmos, m_sims, imc, ims
 
 
 
@@ -89,19 +93,18 @@ class ImageVerificationTest(BaseValidationTest):
         config_path = os.path.dirname(desc.imsim.__file__)+'/data/default_imsim_configs'
         config = desc.imsim.read_config()
 
-        commands = metadata_from_file(os.path.join(output_dir, 'catalog.txt'))
+        commands = desc.imsim.metadata_from_file(os.path.join(output_dir, 'catalog.txt'))
         # Switching to the i-band, no matter what obsHistID was used
         commands['bandpass'] = 'i'
-        obs_md = phosim_obs_metadata(commands)
-        phot_params = photometricParameters(commands)
+        obs_md = desc.imsim.phosim_obs_metadata(commands)
+        phot_params = desc.imsim.photometricParameters(commands)
         # Define the photometric params for COSMOS
         phot_params._gain = 1.
         phot_params._nexp = 1
         phot_params._exptime = 1.
-        phot_params._effarea = 2.4**2 * (1.-0.33**2)
-        phot_params._exptime = 1.
+        phot_params._effarea = 2.4**2 * (1.-0.33**2) * 100**2 # in cm2
 
-        sources = sources_from_file(os.path.join(output_dir, 'catalog.txt'),
+        sources = desc.imsim.sources_from_file(os.path.join(output_dir, 'catalog.txt'),
                                 obs_md,
                                 phot_params)
 
