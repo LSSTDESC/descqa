@@ -16,8 +16,9 @@ from .base import BaseValidationTest, TestResult
 from .plotting import plt
 from astropy.table import Table
 from multiprocessing import Pool
+from functools import partial
 
-def _draw_galaxies(inds, cosmos_cat, galaxies, cosmos_noise):
+def _draw_galaxies(inds, cosmos_cat=None, cosmos_index=None, galaxies=None, cosmos_noise=None):
     """ Function to draw the galaxies into postage stamps
     """
     i,k = inds
@@ -83,13 +84,16 @@ class ImageVerificationTest(BaseValidationTest):
         print("Processing %d galaxies"%len(galaxies))
         indices = [(i,k) for i,k in enumerate(galaxies)]
 
+        engine = partial(_draw_galaxies, cosmos_cat=cosmos_cat, cosmos_index=cosmos_index,
+                         galaxies=galaxies, cosmos_noise=cosmos_noise)
+        
         if self.pool_size is None:
             res = []
             for inds in indices:
-                res.append(_draw_galaxies(inds, cosmos_cat, galaxies, cosmos_noise))
+                res.append(_draw_galaxies(inds, cosmos_cat, cosmos_index, galaxies, cosmos_noise))
         else:
             with Pool(self.pool_size) as p:
-                res = p.map(lambda x: _draw_galaxies(x, cosmos_cat, galaxies, cosmos_noise), indices)
+                res = p.map(engine, indices)
 
         # Extract the postage stamps into separate lists, discarding the ones
         # that failed
@@ -216,8 +220,8 @@ class ImageVerificationTest(BaseValidationTest):
         flag = []
         amp = []
 
-        for i in range(len(images)):
-            shape = images[i].FindAdaptiveMom(guess_centroid=galsim.PositionD(32,32), strict=False)
+        for k in images:
+            shape = images[k].FindAdaptiveMom(guess_centroid=galsim.PositionD(32,32), strict=False)
             amp.append(shape.moments_amp)
             sigma.append(shape.moments_sigma)
             e.append(shape.observed_shape.e)
