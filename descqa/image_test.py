@@ -116,7 +116,7 @@ class ImageVerificationTest(BaseValidationTest):
         # First draw a comparison of a few images from COSMOS and DC2
         fig = plt.figure(figsize=(20,10))
         for i, j, k in zip(range(50),imc,ims):
-            ax = fig.add_subplot(10,5,i+1)
+            ax = fig.add_subplot(5,10,i+1)
             if (i / 5) % 2 == 0:
                 ax.imshow(imc[j].array,cmap='gray')
             else:
