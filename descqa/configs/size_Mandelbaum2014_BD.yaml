@@ -25,6 +25,8 @@ z_bins:
 fig_xlabel: '$(L/L_{\odot})_{I}$'
 fig_ylabel: '$\log_{10}(R_e)$ (kpc)'
 
+fig_subplot_row: 1
+fig_subplot_col: 3
 
 description: |
   Compare evolution of bulge and disk sizes as a function of i-band magnitude of LSST and redshift and comparing to Mandelbaum et al (2015) HST COSMOS F814W observations

@@ -36,6 +36,8 @@ class SizeStellarMassLuminosity(BaseValidationTest):
         self.label_template = kwargs['label_template']
         self.fig_xlabel = kwargs['fig_xlabel']
         self.fig_ylabel = kwargs['fig_ylabel']
+        self.fig_subplot_row = kwargs['fig_subplot_row']
+        self.fig_subplot_col = kwargs['fig_subplot_col']
 
         validation_filepath = os.path.join(self.data_dir, kwargs['data_filename'])
         self.validation_data = np.genfromtxt(validation_filepath)
@@ -91,12 +93,15 @@ class SizeStellarMassLuminosity(BaseValidationTest):
         catalog_data = catalog_instance.get_quantities(list(colnames.values()), filters=filters)
         catalog_data = {k: catalog_data[v] for k, v in colnames.items()}
 
-        fig, axes = plt.subplots(2,3, figsize=(9, 6), sharex=True, sharey=True)
+        fig, axes = plt.subplots(self.fig_subplot_row, self.fig_subplot_col, figsize=(self.fig_subplot_col*3, self.fig_subplot_row*3), sharex=True, sharey=True)
         try:
             col = 0
             row = 0
             for z_bin in self.z_bins:
-                ax = axes[row, col]
+                if self.fig_subplot_row == 1:
+                    ax = axes[col]
+                else:
+                    ax = axes[row, col]
                 # filter catalog data for this bin
                 filters = [
                     'z < {}'.format(z_bin['z_max']),
