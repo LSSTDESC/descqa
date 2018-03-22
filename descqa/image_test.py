@@ -52,7 +52,7 @@ class ImageVerificationTest(BaseValidationTest):
                  obsHistID=1418971,
                  opsimdb='minion_1016_sqlite_new_dithers.db',
                  galsim_cosmos_dir='/global/homes/f/flanusse/repo/GalSim/share/COSMOS_25.2_training_sample',
-                 pool_size=None):
+                 pool_size=None, **kwargs):
 
         self.imag_cut = imag_cut
         self.galsim_cosmos_dir = galsim_cosmos_dir
