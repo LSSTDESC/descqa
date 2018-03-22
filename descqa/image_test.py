@@ -113,6 +113,19 @@ class ImageVerificationTest(BaseValidationTest):
         m_cosmos = m_cosmos[m_cosmos['flag']]
         m_sims = m_sims[m_sims['flag']]
 
+        # First draw a comparison of a few images from COSMOS and DC2
+        fig = plt.figure(figsize=(20,10))
+        for i, j, k in zip(range(50),imc,ims):
+            ax = fig.add_subplot(10,5,i+1)
+            if (i / 5) % 2 == 0:
+                ax.imshow(imc[j].array,cmap='gray')
+            else:
+                ax.imshow(ims[k].array,cmap='gray')
+            axis('off')
+        plt.subplots_adjust(wspace=0, hspace=0)
+        fig.savefig(os.path.join(output_dir, 'image_test_stamps_{}.png'.format(catalog_name)))
+        plt.close(fig)
+
         fig = plt.figure(figsize=(7,7))
         ax = fig.add_subplot(221)
         ax.hist(m_cosmos['amp'],32,range=[0,50],alpha=0.5,label='COSMOS');
