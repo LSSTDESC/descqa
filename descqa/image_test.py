@@ -18,6 +18,8 @@ from astropy.table import Table
 from multiprocessing import Pool
 from functools import partial
 
+__all__ = ['ImageVerificationTest']
+
 def _draw_galaxies(inds, cosmos_cat=None, cosmos_index=None, galaxies=None, cosmos_noise=None):
     """ Function to draw the galaxies into postage stamps
     """
@@ -40,7 +42,6 @@ def _draw_galaxies(inds, cosmos_cat=None, cosmos_index=None, galaxies=None, cosm
         flag=False
 
     return (k, im_sims, i, im_cosmos, flag)
-
 
 
 class ImageVerificationTest(BaseValidationTest):
@@ -86,7 +87,7 @@ class ImageVerificationTest(BaseValidationTest):
 
         engine = partial(_draw_galaxies, cosmos_cat=cosmos_cat, cosmos_index=cosmos_index,
                          galaxies=galaxies, cosmos_noise=cosmos_noise)
-        
+
         if self.pool_size is None:
             res = []
             for inds in indices:
@@ -108,12 +109,30 @@ class ImageVerificationTest(BaseValidationTest):
         m_cosmos = self._moments(imc)
         m_sims = self._moments(ims)
 
-        return m_cosmos, m_sims, imc, ims
+        # Exclude failures from the sample
+        m_cosmos = m_cosmos[m_cosmos['flag']]
+        m_sims = m_sims[m_sims['flag']]
 
+        fig = plt.figure(figsize=(7,7))
+        ax = fig.add_subplot(221)
+        ax.hist(m_cosmos['amp'],32,range=[0,50],alpha=0.5,label='COSMOS');
+        ax.hist(m_sims['amp'],32,range=[0,50],alpha=0.5,label=catalog_name);
+        ax.legend()
+        ax.set_xlabel('HSM amplitude (flux)')
 
+        ax = fig.add_subplot(222)
+        ax.hist(m_cosmos['sigma_e'],32,range=[0,20],alpha=0.5,normed=True);
+        ax.hist(m_sims['sigma_e'],32,range=[0,20],alpha=0.5,normed=True);
+        ax.set_xlabel('HSM size $\sigma$')
 
-    def conclude_test(self, output_dir):
-        pass
+        ax = fig.add_subplot(223)
+        ax.hist(m_cosmos['e'],32,range=[0,1],alpha=0.5,normed=True);
+        ax.hist(m_sims['e'],32,range=[0,1],alpha=0.5,normed=True);
+        ax.set_xlabel('HSM ellipticity $e$')
+
+        fig.savefig(os.path.join(output_dir, 'image_test_moments_{}.png'.format(catalog_name)))
+        plt.close(fig)
+        return TestResult(score=1, passed=True)
 
     def _parse_instance_catalog(self, catalog, output_dir, imag_cut=25.0):
         """

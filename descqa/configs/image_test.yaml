@@ -1,0 +1,7 @@
+subclass_name: image_test.ImageVerificationTest
+imag_cut: 24.
+fov: 0.01
+obsHistID: 1418971
+opsimdb: /global/projecta/projectdirs/lsst/groups/SSim/DC1/minion_1016_sqlite_new_dithers.db
+galsim_cosmos_dir: /global/homes/f/flanusse/repo/GalSim/share/COSMOS_25.2_training_sample
+pool_size: 16
