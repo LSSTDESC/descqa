@@ -17,6 +17,31 @@ from .plotting import plt
 from astropy.table import Table
 from multiprocessing import Pool
 
+def _draw_galaxies(inds, cosmos_cat, galaxies, cosmos_noise):
+    """ Function to draw the galaxies into postage stamps
+    """
+    i,k = inds
+    im_sims = galsim.ImageF(64, 64, scale=0.03)
+    im_cosmos = galsim.ImageF(64, 64, scale=0.03)
+    flag=True
+
+    try:
+        cosmos_gal = cosmos_cat.makeGalaxy(cosmos_index[i])
+        psf = cosmos_gal.original_psf
+
+        sims_gal = galsim.Convolve(galaxies[k], psf)
+        sims_gal.drawImage(im_sims,method='no_pixel')
+        im_sims.addNoise(cosmos_noise)
+
+        cosmos_gal = galsim.Convolve(cosmos_gal, psf)
+        cosmos_gal.drawImage(im_cosmos, method='no_pixel')
+    except:
+        flag=False
+
+    return (k, im_sims, i, im_cosmos, flag)
+
+
+
 class ImageVerificationTest(BaseValidationTest):
 
     def __init__(self,
@@ -55,40 +80,16 @@ class ImageVerificationTest(BaseValidationTest):
 
         cosmos_noise = galsim.getCOSMOSNoise()
 
-        def _draw_galaxies(inds):
-            """ Function to draw the galaxies into postage stamps
-            """
-            i,k = inds
-            im_sims = galsim.ImageF(64, 64, scale=0.03)
-            im_cosmos = galsim.ImageF(64, 64, scale=0.03)
-            flag=True
-
-            try:
-                cosmos_gal = cosmos_cat.makeGalaxy(cosmos_index[i])
-                psf = cosmos_gal.original_psf
-
-                sims_gal = galsim.Convolve(galaxies[k], psf)
-                sims_gal.drawImage(im_sims,method='no_pixel')
-                im_sims.addNoise(cosmos_noise)
-
-                cosmos_gal = galsim.Convolve(cosmos_gal, psf)
-                cosmos_gal.drawImage(im_cosmos, method='no_pixel')
-            except:
-                flag=False
-
-            return (k, im_sims, i, im_cosmos, flag)
-
-
         print("Processing %d galaxies"%len(galaxies))
         indices = [(i,k) for i,k in enumerate(galaxies)]
 
         if self.pool_size is None:
             res = []
             for inds in indices:
-                res.append(_draw_galaxies(inds))
+                res.append(_draw_galaxies(inds, cosmos_cat, galaxies, cosmos_noise))
         else:
             with Pool(self.pool_size) as p:
-                res = p.map(_draw_galaxies, indices)
+                res = p.map(lambda x: _draw_galaxies(x, cosmos_cat, galaxies, cosmos_noise), indices)
 
         # Extract the postage stamps into separate lists, discarding the ones
         # that failed
