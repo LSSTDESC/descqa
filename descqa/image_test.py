@@ -145,7 +145,7 @@ class ImageVerificationTest(BaseValidationTest):
 
         fig.savefig(os.path.join(output_dir, 'image_test_moments_{}.png'.format(catalog_name)))
         plt.close(fig)
-        return TestResult(score=1, passed=True)
+        return TestResult(inspect_only=True)
 
     def _parse_instance_catalog(self, catalog, output_dir, imag_cut=25.0):
         """
