@@ -5,7 +5,6 @@ import pandas as pd
 from desc.sims.GCRCatSimInterface import *
 from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
 from lsst.obs.lsstSim import LsstSimMapper
-from lsst.sims.GalSimInterface import LSSTCameraWrapper
 from lsst.sims.GalSimInterface import GalSimCelestialObject
 from desc.sims.GCRCatSimInterface.InstanceCatalogWriter import PhoSimDESCQA_ICRS, PhoSimDESCQA
 from desc.sims.GCRCatSimInterface import bulgeDESCQAObject, diskDESCQAObject, knotsDESCQAObject
@@ -16,6 +15,7 @@ import desc.imsim
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
 from astropy.table import Table
+from multiprocessing import Pool
 
 class ImageVerificationTest(BaseValidationTest):
 
@@ -24,18 +24,18 @@ class ImageVerificationTest(BaseValidationTest):
                  fov=0.25,
                  obsHistID=1418971,
                  opsimdb='minion_1016_sqlite_new_dithers.db',
-                 galsim_cosmos_dir='/global/homes/f/flanusse/repo/GalSim/share/COSMOS_25.2_training_sample'):
+                 galsim_cosmos_dir='/global/homes/f/flanusse/repo/GalSim/share/COSMOS_25.2_training_sample',
+                 pool_size=None):
 
         self.imag_cut = imag_cut
         self.galsim_cosmos_dir = galsim_cosmos_dir
+        self.pool_size=pool_size
 
         # Create obs metadata
         obs_gen = ObservationMetaDataGenerator(database=opsimdb, driver='sqlite')
         self.obs_md = obs_gen.getObservationMetaData(obsHistID=obsHistID,
                                                          boundType='circle',
                                                          boundLength=fov)[0]
-
-        self.camera = LsstSimMapper().camera
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
 
@@ -48,43 +48,61 @@ class ImageVerificationTest(BaseValidationTest):
                                                 imag_cut=self.imag_cut)
 
         cosmos_cat = galsim.COSMOSCatalog(dir=self.galsim_cosmos_dir)
-        
+
         m = cosmos_cat.param_cat['mag_auto'][cosmos_cat.orig_index] < self.imag_cut
         cosmos_index = np.array(range(cosmos_cat.getNObjects()))[m]
         np.random.shuffle(cosmos_index)
-        
-        cosmos_noise = galsim.getCOSMOSNoise()
-        imc = []
-        ims = []
 
-        print("Processing %d galaxies"%len(galaxies))
-        # Draw each galaxy from sims and cosmos
-        for i,k in enumerate(galaxies):
-            if i %10 == 0:
-                print(i)
+        cosmos_noise = galsim.getCOSMOSNoise()
+
+        def _draw_galaxies(inds):
+            """ Function to draw the galaxies into postage stamps
+            """
+            i,k = inds
+            im_sims = galsim.ImageF(64, 64, scale=0.03)
+            im_cosmos = galsim.ImageF(64, 64, scale=0.03)
+            flag=True
+
             try:
                 cosmos_gal = cosmos_cat.makeGalaxy(cosmos_index[i])
                 psf = cosmos_gal.original_psf
 
-                im_sims = galsim.ImageF(64, 64, scale=0.03)
                 sims_gal = galsim.Convolve(galaxies[k], psf)
                 sims_gal.drawImage(im_sims,method='no_pixel')
                 im_sims.addNoise(cosmos_noise)
 
-                im_cosmos = galsim.ImageF(64, 64, scale=0.03)
                 cosmos_gal = galsim.Convolve(cosmos_gal, psf)
                 cosmos_gal.drawImage(im_cosmos, method='no_pixel')
             except:
-                continue
+                flag=False
 
-            ims.append(im_sims)
-            imc.append(im_cosmos)
+            return (k, im_sims, i, im_cosmos, flag)
 
+
+        print("Processing %d galaxies"%len(galaxies))
+        indices = [(i,k) for i,k in enumerate(galaxies)]
+
+        if self.pool_size is None:
+            res = []
+            for inds in indices:
+                res.append(_draw_galaxies(inds))
+        else:
+            with Pool(self.pool_size) as p:
+                res = p.map(_draw_galaxies, indices)
+
+        # Extract the postage stamps into separate lists, discarding the ones
+        # that failed
+        ims = {}
+        imc = {}
+        for k, im_sims, i, im_cosmos, flag in res:
+            if flag:
+                ims[k] = im_sims
+                imc[i] = im_cosmos
 
         # Computes moments of sims and real images
         m_cosmos = self._moments(imc)
         m_sims = self._moments(ims)
-            
+
         return m_cosmos, m_sims, imc, ims
 
 
@@ -111,7 +129,7 @@ class ImageVerificationTest(BaseValidationTest):
         phot_params._nexp = 1
         phot_params._exptime = 1.
         phot_params._effarea = 2.4**2 * (1.-0.33**2) * 100**2 # in cm2
-
+        print("Loading sources")
         sources = desc.imsim.sources_from_file(os.path.join(output_dir, 'catalog.txt'),
                                 obs_md,
                                 phot_params)
@@ -121,7 +139,7 @@ class ImageVerificationTest(BaseValidationTest):
 
         df = pd.DataFrame.from_dict(
             catalog.get_quantities(['galaxyID', 'LSST_filters/magnitude:LSST_i:observed']))
-
+        print("Building GalSim objects")
         # Loop over the objects to create GalSim objects
         gsobjects = {}
         for obj in gs_object_arr:
