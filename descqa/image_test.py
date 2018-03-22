@@ -20,7 +20,7 @@ from astropy.table import Table
 class ImageVerificationTest(BaseValidationTest):
 
     def __init__(self,
-                 imag_cut=25.,
+                 imag_cut=24.,
                  fov=0.25,
                  obsHistID=1418971,
                  opsimdb='minion_1016_sqlite_new_dithers.db',
@@ -48,30 +48,38 @@ class ImageVerificationTest(BaseValidationTest):
                                                 imag_cut=self.imag_cut)
 
         cosmos_cat = galsim.COSMOSCatalog(dir=self.galsim_cosmos_dir)
-
-        # Postage stamp at the COSMOS resolution
-
+        
+        m = cosmos_cat.param_cat['mag_auto'][cosmos_cat.orig_index] < self.imag_cut
+        cosmos_index = np.array(range(cosmos_cat.getNObjects()))[m]
+        np.random.shuffle(cosmos_index)
+        
         cosmos_noise = galsim.getCOSMOSNoise()
         imc = []
         ims = []
 
+        print("Processing %d galaxies"%len(galaxies))
         # Draw each galaxy from sims and cosmos
         for i,k in enumerate(galaxies):
             if i %10 == 0:
                 print(i)
-            cosmos_gal = cosmos_cat.makeGalaxy(i)
-            psf = cosmos_gal.original_psf
+            try:
+                cosmos_gal = cosmos_cat.makeGalaxy(cosmos_index[i])
+                psf = cosmos_gal.original_psf
 
-            im_sims = galsim.ImageF(64, 64, scale=0.03)
-            sims_gal = galsim.Convolve(galaxies[k], psf)
-            sims_gal.drawImage(im_sims,method='no_pixel')
-            im_sims.addNoise(cosmos_noise)
+                im_sims = galsim.ImageF(64, 64, scale=0.03)
+                sims_gal = galsim.Convolve(galaxies[k], psf)
+                sims_gal.drawImage(im_sims,method='no_pixel')
+                im_sims.addNoise(cosmos_noise)
+
+                im_cosmos = galsim.ImageF(64, 64, scale=0.03)
+                cosmos_gal = galsim.Convolve(cosmos_gal, psf)
+                cosmos_gal.drawImage(im_cosmos, method='no_pixel')
+            except:
+                continue
+
             ims.append(im_sims)
-
-            im_cosmos = galsim.ImageF(64, 64, scale=0.03)
-            cosmos_gal = galsim.Convolve(cosmos_gal, psf)
-            cosmos_gal.drawImage(im_cosmos, method='no_pixel')
             imc.append(im_cosmos)
+
 
         # Computes moments of sims and real images
         m_cosmos = self._moments(imc)
@@ -167,48 +175,49 @@ class ImageVerificationTest(BaseValidationTest):
                                chunk_size=100000, write_header=False,
                                write_mode='a')
 
-        cat_knots = PhoSimDESCQA_ICRS(knotsDESCQAObject(catalog_name),
-                                      obs_metadata=self.obs_md,
-                                      cannot_be_null=['hasKnots'])
-        cat_knots.write_catalog(os.path.join(output_dir, 'catalog.txt'),
-                                chunk_size=100000, write_header=False,
-                                write_mode='a')
+        if 'addon_knots' in catalog_name:
+            cat_knots = PhoSimDESCQA_ICRS(knotsDESCQAObject(catalog_name),
+                                          obs_metadata=self.obs_md,
+                                          cannot_be_null=['hasKnots'])
+            cat_knots.write_catalog(os.path.join(output_dir, 'catalog.txt'),
+                                    chunk_size=100000, write_header=False,
+                                    write_mode='a')
 
-        def _moments(self, images):
-            """
-            Computes HSM moments for a set of galsim images
-            """
-            sigma = []
-            e  = []
-            e1 = []
-            e2 = []
-            g  = []
-            g1 = []
-            g2 = []
-            flag = []
-            amp = []
+    def _moments(self, images):
+        """
+        Computes HSM moments for a set of galsim images
+        """
+        sigma = []
+        e  = []
+        e1 = []
+        e2 = []
+        g  = []
+        g1 = []
+        g2 = []
+        flag = []
+        amp = []
 
-            for i in range(len(images)):
-                shape = images[i].FindAdaptiveMom(guess_centroid=galsim.PositionD(32,32), strict=False)
-                amp.append(shape.moments_amp)
-                sigma.append(shape.moments_sigma)
-                e.append(shape.observed_shape.e)
-                e1.append(shape.observed_shape.e1)
-                e2.append(shape.observed_shape.e2)
-                g.append(shape.observed_shape.g)
-                g1.append(shape.observed_shape.g1)
-                g2.append(shape.observed_shape.g2)
-                if shape.error_message is not '':
-                    flag.append(False)
-                else:
-                    flag.append(True)
+        for i in range(len(images)):
+            shape = images[i].FindAdaptiveMom(guess_centroid=galsim.PositionD(32,32), strict=False)
+            amp.append(shape.moments_amp)
+            sigma.append(shape.moments_sigma)
+            e.append(shape.observed_shape.e)
+            e1.append(shape.observed_shape.e1)
+            e2.append(shape.observed_shape.e2)
+            g.append(shape.observed_shape.g)
+            g1.append(shape.observed_shape.g1)
+            g2.append(shape.observed_shape.g2)
+            if shape.error_message is not '':
+                flag.append(False)
+            else:
+                flag.append(True)
 
-            return Table({'amp': amp,
-                          'sigma_e': sigma,
-                          'e': e,
-                          'e1': e1,
-                          'e2': e2,
-                          'g': g,
-                          'g1': g1,
-                          'g2': g2,
-                          'flag': flag})
+        return Table({'amp': amp,
+                      'sigma_e': sigma,
+                      'e': e,
+                      'e1': e1,
+                      'e2': e2,
+                      'g': g,
+                      'g1': g1,
+                      'g2': g2,
+                      'flag': flag})
