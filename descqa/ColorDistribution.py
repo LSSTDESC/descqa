@@ -268,7 +268,7 @@ class ColorDistribution(BaseValidationTest):
 
             pdf, bin_edges = np.histogram((cat[band1]-cat[band2])[cat_mask],
                                           bins=self.bins, 
-                                          weights=(weights[cat_mask] if weights else None))
+                                          weights=(None if weights is None else weights[cat_mask]))
 
             pdf = pdf/np.sum(pdf)
             binctr = (bin_edges[1:] + bin_edges[:-1])/2.
