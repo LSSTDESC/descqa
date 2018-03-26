@@ -4,6 +4,7 @@ import numpy as np
 import numexpr as ne
 from astropy.table import Table
 from scipy.ndimage.filters import uniform_filter1d
+from GCR import GCRQuery
 
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
@@ -93,8 +94,9 @@ class ColorDistribution(BaseValidationTest):
             weights = None
         elif self.validation_catalog == 'DEEP2':
             weights = 1/np.array(obscat['p_onmask'])
+
         # Compute color distribution (PDF, CDF etc.)
-        self.obs_color_dist = self.get_color_dist(self.colors, obs_translate, obscat, weights)
+        self.obs_color_dist = self.get_color_dist(obscat, obs_translate, weights)
 
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
@@ -139,12 +141,10 @@ class ColorDistribution(BaseValidationTest):
             data = data_transformed
             del data_transformed
 
-        data = Table(data)
-        data = data[data['r'] < self.obs_r_mag_limit]
+        data = GCRQuery('r < {}'.format(self.obs_r_mag_limit)).filter(data)
 
         # Compute color distribution (PDF, CDF etc.)
-        mock_translate = {band: band for band in bands if band in data}
-        mock_color_dist = self.get_color_dist(self.colors, mock_translate, data)
+        mock_color_dist = self.get_color_dist(data)
 
         # Calculate Cramer-von Mises statistic
         color_shift = {}
@@ -248,32 +248,30 @@ class ColorDistribution(BaseValidationTest):
         plt.close(fig_cdf)
 
 
-    def get_color_dist(self, colors, translate, cat, weights=None):
+    def get_color_dist(self, cat, translate=None, weights=None):
         '''
         Return the color distribution information including PDF, smoothed PDF, and CDF.
         '''
-        color_dist = {}
+        if translate is None:
+            translate = {}
 
-        for color in colors:
-
-            if (color[0] in translate) and (color[2] in translate):
-                band1 = translate[color[0]]
-                band2 = translate[color[2]]
-            else:
+        color_dist = {} 
+        for color in self.colors:               
+            band1 = translate.get(color[0], color[0])
+            band2 = translate.get(color[-1], color[-1])
+ 
+            # Remove objects with invalid magnitudes from the analysis
+            try:
+                cat_mask = (cat[band1] > 0) & (cat[band1] < 50) & (cat[band2] > 0) & (cat[band2] < 50)
+            except KeyError:
                 continue
 
-            # Remove objects with invalid magnitudes from the analysis
-            cat_mask = (cat[band1] > 0) & (cat[band1] < 50) & (cat[band2] > 0) & (cat[band2] < 50)
+            pdf, bin_edges = np.histogram((cat[band1]-cat[band2])[cat_mask],
+                                          bins=self.bins, 
+                                          weights=(weights[cat_mask] if weights else None))
 
-            if weights is None:
-                pdf, bin_edges = np.histogram((cat[band1]-cat[band2])[cat_mask],
-                                              bins=self.bins, weights=None)
-            else:
-                pdf, bin_edges = np.histogram((cat[band1]-cat[band2])[cat_mask],
-                                              bins=self.bins, weights=weights[cat_mask])
             pdf = pdf/np.sum(pdf)
             binctr = (bin_edges[1:] + bin_edges[:-1])/2.
-            cdf = np.cumsum(pdf)
             pdf_smooth = uniform_filter1d(pdf, 20)
 
             color_dist[color] = {}
@@ -281,7 +279,7 @@ class ColorDistribution(BaseValidationTest):
             color_dist[color]['binctr'] = binctr
             color_dist[color]['pdf'] = pdf
             color_dist[color]['pdf_smooth'] = pdf_smooth
-            color_dist[color]['cdf'] = cdf
+            color_dist[color]['cdf'] = np.cumsum(pdf)
             color_dist[color]['median'] = np.median((cat[band1]-cat[band2])[cat_mask])
 
         return color_dist
