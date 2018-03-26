@@ -155,6 +155,7 @@ class SizeStellarMassLuminosity(BaseValidationTest):
                     ax.errorbar(default_L_bins, binned_size_kpc, binned_size_kpc_err, marker='o', ms=9, ls='', label=onecomp_labels[0])
                     onecomp_labels = ['', '']
                     ax.set_ylim(ylim)
+                    #ob = mpl.offsetbox.AnchoredText(self.label_template.format(z_bin['z_min'], z_bin['z_max']), loc=1, frameon=False)
                     ax.add_artist(ob)
 
                 elif self.observation == 'twocomp':
@@ -204,6 +205,7 @@ class SizeStellarMassLuminosity(BaseValidationTest):
                     ax2.tick_params(direction='in', which='both')
                     ax2.legend(loc=3, ncol=2, fontsize=10)
 
+                    #ob = mpl.offsetbox.AnchoredText(self.label_template.format(z_bin['z_min'], z_bin['z_max']), loc=1, frameon=False)
                     ax2.add_artist(ob)
 
                 del catalog_data_this
