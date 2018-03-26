@@ -1,5 +1,5 @@
 from __future__ import division
-from builtins import range
+from builtins import range # pylint: disable=W0622
 import numpy as np
 from scipy.stats import chi2
 
@@ -9,7 +9,7 @@ def get_subvolume_indices(x, y, z, box_size, n_side):
     return np.ravel_multi_index(np.floor(np.vstack((x, y, z))/side_size).astype(int), (n_side,)*3, 'wrap')
 
 
-def jackknife(data, jack_indices, n_jack, func, full_args=(), full_kwargs={}, jack_args=(), jack_kwargs={}):
+def jackknife(data, jack_indices, n_jack, func, full_args=(), full_kwargs={}, jack_args=(), jack_kwargs={}): # pylint: disable=W0102
     if len(data) != len(jack_indices):
         raise ValueError('`data` and `jack_indices` must have the same length')
     if not np.in1d(jack_indices, np.arange(n_jack)).all():
@@ -63,25 +63,6 @@ def AD_statistic(n1, n2, y1, y2, threshold):
         success = False
 
     return ads, success
-
-
-# def CvM_statistic(n1, n2, y1, y2, threshold):
-#     '''
-#     Calculate the two-sample Cramer-von Mises statistic from two CDFs;
-#     n1, n2: number of objects in the two samples;
-#     y1, y2: CDF y-values of the two distribution, and they should have
-#     the same x-axis.
-#     '''
-#     n = n1+n2
-#     h = (n1*y1+n2*y2)/n
-#     cvm_omega = np.sqrt(np.trapz((y2-y1)**2, h))
-
-#     if cvm_omega<threshold:
-#         success = True
-#     else:
-#         success = False
-
-#     return cvm_omega, success
 
 
 def CvM_statistic(n1, n2, x1, y1, x2, y2):
