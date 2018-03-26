@@ -122,11 +122,13 @@ class ColorDistribution(BaseValidationTest):
 
         # Color transformation
         if self.color_transformation_q:
+            color_trans = None
             if self.validation_catalog == 'DEEP2':
                 color_trans = color_transformation['{}2cfht'.format(filter_this)]
             elif self.validation_catalog == 'SDSS' and filter_this == 'des':
                 color_trans = color_transformation['des2sdss']
 
+        if color_trans:
             data_transformed = {}
             for band in bands:
                 try:
