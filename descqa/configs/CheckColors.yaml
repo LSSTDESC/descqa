@@ -1,4 +1,4 @@
 subclass_name: CheckColors.CheckColors
-xcolor = 'ri'
-ycolor = 'gr'
+xcolor: 'ri'
+ycolor: 'gr'
 description: Plot color combinations according to input  
