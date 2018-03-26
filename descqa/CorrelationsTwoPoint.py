@@ -76,7 +76,7 @@ class CorrelationUtilities(object):
                     col_value_maxs[col_key].append(test_samples[sample_key][col_key]['max'])
 
         if not all(v for v in colnames.values()):
-            return TestResult(skipped=True, summary='Missing requested quantities')
+            return None
 
         filters = [(np.isfinite, c) for c in colnames.values()]
 
@@ -232,6 +232,9 @@ class CorrelationsAngularTwoPoint(BaseValidationTest, CorrelationUtilities):
                                               requested_columns=self.requested_columns,
                                               test_samples=self.test_samples)
 
+        if not catalog_data:
+            return TestResult(skipped=True, summary='Missing requested quantities')
+
         rand_cat, rr = self.generate_processed_randoms(catalog_data)
 
         correlation_data = []
@@ -368,6 +371,9 @@ class CorrelationsProjectedTwoPoint(BaseValidationTest, CorrelationUtilities):
         catalog_data = self.load_catalog_data(catalog_instance=catalog_instance,
                                               requested_columns=self.requested_columns,
                                               test_samples=self.test_samples)
+
+        if not catalog_data:
+            return TestResult(skipped=True, summary='Missing requested quantities')
 
         rand_ra, rand_dec = generate_uniform_random_ra_dec_footprint(
             catalog_data['ra'].size*self.random_mult,
