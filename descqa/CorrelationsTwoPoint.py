@@ -439,6 +439,10 @@ class CorrelationsProjectedTwoPoint(BaseValidationTest, CorrelationUtilities):
             dec_units='deg',
             r=redshift2dist(catalog_data['z'], cosmology),
         )
+
+        cat_z_max = np.max(catalog_data['z'])
+        if cat_z_max < z_max:
+            z_max = cat_z_max
         rand_cat = treecorr.Catalog(
             ra=rand_ra,
             dec=rand_dec,
