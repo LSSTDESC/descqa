@@ -255,11 +255,11 @@ class ColorDistribution(BaseValidationTest):
         if translate is None:
             translate = {}
 
-        color_dist = {} 
-        for color in self.colors:               
+        color_dist = {}
+        for color in self.colors:
             band1 = translate.get(color[0], color[0])
             band2 = translate.get(color[-1], color[-1])
- 
+
             # Remove objects with invalid magnitudes from the analysis
             try:
                 cat_mask = (cat[band1] > 0) & (cat[band1] < 50) & (cat[band2] > 0) & (cat[band2] < 50)
@@ -267,7 +267,7 @@ class ColorDistribution(BaseValidationTest):
                 continue
 
             pdf, bin_edges = np.histogram((cat[band1]-cat[band2])[cat_mask],
-                                          bins=self.bins, 
+                                          bins=self.bins,
                                           weights=(None if weights is None else weights[cat_mask]))
 
             pdf = pdf/np.sum(pdf)
