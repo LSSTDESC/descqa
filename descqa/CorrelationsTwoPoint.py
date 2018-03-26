@@ -1,9 +1,9 @@
 from __future__ import print_function, division, unicode_literals, absolute_import
-from GCR import GCRQuery
-import numpy as np
 import os
+import numpy as np
 import scipy.special as scsp
 import treecorr
+from GCR import GCRQuery
 
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
@@ -136,6 +136,8 @@ class CorrelationUtilities(object):
         output_dir : string
             Full path of the directory to write results to.
         """
+        # pylint: disable=no-member
+        
         fig, ax = plt.subplots()
 
         for sample_name, sample_corr, color in zip(self.test_samples.keys(),
@@ -167,7 +169,8 @@ class CorrelationUtilities(object):
         fig.savefig(os.path.join(output_dir, '{:s}.png'.format(self.test_name)), bbox_inches='tight')
         plt.close(fig)
 
-    def score_and_test(self, corr_data):
+    @staticmethod
+    def score_and_test(corr_data): # pylint: disable=unused-argument
         """ Given the resultant correlations, compute the test score and return
         a TestResult
 
@@ -479,8 +482,8 @@ class DEEP2StellarMassTwoPoint(CorrelationsProjectedTwoPoint):
     band magnitudes are not stored in the simulated catalogs currently and
     converting the current fluxes to those is currently out of scope.
     """
-
-    def power_law(self, r, r0, g):
+    @staticmethod
+    def power_law(r, r0, g):
         """ Compute the power law of a simple 2 parameter projected correlation
         function.
 
@@ -500,7 +503,8 @@ class DEEP2StellarMassTwoPoint(CorrelationsProjectedTwoPoint):
         gamma_func_ratio = scsp.gamma(1/2.) * scsp.gamma((g - 1) / 2) / scsp.gamma(g / 2)
         return r * (r0 / r) ** g * gamma_func_ratio
 
-    def power_law_err(self, r, r0, g, r0_err, g_err):
+    @staticmethod
+    def power_law_err(r, r0, g, r0_err, g_err):
         """ Compute the error on the power law model given errors on r0 and g.
         function.
 
@@ -532,10 +536,9 @@ class DEEP2StellarMassTwoPoint(CorrelationsProjectedTwoPoint):
     def plot_data_comparison(self, corr_data, catalog_name, output_dir):
         fig, ax = plt.subplots()
 
-
         for sample_name, sample_corr, color in zip(self.test_samples.keys(),
                                                    corr_data,
-                                                   plt.cm.plasma_r(
+                                                   plt.cm.plasma_r( # pylint: disable=no-member
                                                        np.linspace(0.1, 1, len(self.test_samples)))):
 
             p_law = self.power_law(sample_corr[0],
