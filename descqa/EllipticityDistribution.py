@@ -311,8 +311,9 @@ class EllipticityDistribution(BaseValidationTest):
                 total = '(# of galaxies = {})'.format(sumN)
                 Nerrors = np.sqrt(N)
                 if self.normed:
-                    N = N/sumN
-                    Nerrors = Nerrors/sumN
+                    binwidths = self.ebins[1:] - self.ebins[:-1]
+                    N = N/sumN/binwidths
+                    Nerrors = Nerrors/sumN/binwidths
 
                 results[reskey] = {'catalog':{'e_ave':e_values, 'N':N, 'N+':N+Nerrors, 'N-':N-Nerrors,\
                                    'total':total, 'xtralabel':ancillary_label.replace('$', '')}}
@@ -364,8 +365,9 @@ class EllipticityDistribution(BaseValidationTest):
             errors = np.sqrt(N)
             if self.normed:
                 sumN = N.sum()
-                N = N/sumN
-                errors = errors/sumN
+                binwidths = self.ebins[1:] - self.ebins[:-1]
+                N = N/sumN/binwidths
+                errors = errors/sumN/binwidths
             ax.errorbar(e_ave, N, yerr=errors, color=self.validation_color, label=validation_label, marker=self.validation_marker)
             results['e_ave'] = e_ave
             results['data'] = N

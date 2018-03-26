@@ -32,9 +32,9 @@ quantities_to_check:
     median: [-0.05, 0.05]
     mean: [-0.05, 0.05]
     std: [0.1, 0.4]
-    f_nan: 0
+    f_nan: [0, 0.3]
     f_inf: 0
-    f_outlier: [0, 0.03]
+    f_outlier: [0, 0.06]
 
   - quantities: ['ellipticity', 'ellipticity_[!12]*']
     label: ellipticity_total
@@ -43,15 +43,15 @@ quantities_to_check:
     median: [0, 1]
     mean: [0, 1]
     std: [0.1, 0.4]
-    f_nan: 0
+    f_nan: [0, 0.3]
     f_inf: 0
-    f_outlier: [0, 0.02]
+    f_outlier: [0, 0.06]
 
   - quantities: 'size*'
     label: size
     log: true
-    min: [-6, -4]
-    max: [1, 3]
+    min: [-6, -1.5]
+    max: [0.5, 3]
     median: [-2, 0]
     mean: [-2, 0]
     std: [0.1, 0.5]
@@ -66,14 +66,14 @@ quantities_to_check:
     min: [0, null]
 
   - quantities: 'shear_*'
-    min: [-0.1, 0]
-    max: [0, 0.1]
+    min: [-0.2, 0]
+    max: [0, 0.2]
     median: [-0.01, 0.01]
     mean: [-0.01, 0.01]
     std: [0, 0.01]
     f_nan: 0
     f_inf: 0
-    f_outlier: [0, 0.03]
+    f_outlier: [0, 0.04]
 
   - quantities: 'position_angle*'
     min: [0, 0.001]
@@ -86,24 +86,24 @@ quantities_to_check:
     f_outlier: 0
 
   - quantities: 'convergence'
-    min: [-0.3, 0]
-    max: [0, 0.3]
+    min: [-0.4, 0]
+    max: [0, 0.45]
     median: [-0.01, 0.01]
     mean: [-0.01, 0.01]
     std: [0, 0.02]
     f_nan: 0
     f_inf: 0
-    f_outlier: [0, 0.03]
+    f_outlier: [0, 0.05]
 
   - quantities: 'magnification'
     min: [0.5, 1]
-    max: [1, 2]
+    max: [1, 3]
     median: [0.5, 1.5]
     mean: [0.5, 1.5]
     std: [0, 0.1]
     f_nan: 0
     f_inf: 0
-    f_outlier: [0, 0.03]
+    f_outlier: [0, 0.05]
 
   - quantities: 'sersic_disk'
     min: 1
@@ -131,8 +131,8 @@ quantities_to_check:
     label: mag
     min: [null, 15]
     max: [25, null]
-    mean: [20, 30]
-    median: [20, 30]
+    mean: [20, 32]
+    median: [20, 32]
     std: [0, 5]
     f_nan: 0
     f_inf: 0
@@ -143,20 +143,20 @@ quantities_to_check:
     log: true
     min: [null, 10]
     max: [10, 13]
-    median: [7.5, 9]
-    mean: [7.5, 9]
+    median: [6.5, 9]
+    mean: [6.5, 9]
     std: [0.5, 1.5]
     f_nan: 0
-    f_outlier: [0, 0.02]
+    f_outlier: [0, 0.025]
 
   - quantities: 'sed_*_*[0123456789]'
     label: SED
     log: true
-    min: [2, 7]
+    min: [0.5, 7]
     max: [9, 11]
-    mean: [5, 8]
-    median: [5, 8]
-    std: [0.5, 1.3]
+    mean: [3.5, 8]
+    median: [3.5, 8]
+    std: [0.5, 1.7]
     f_nan: 0
     f_inf: 0
     f_zero: 0
@@ -165,10 +165,10 @@ quantities_to_check:
   - quantities: 'sed_*_*_disk'
     label: Disk SED
     log: true
-    min: [-23.0, -20.0]
+    min: [-23.0, -8.0]
     max: [9, 10]
-    median: [5, 7]
-    mean: [5, 7]
+    median: [3, 7]
+    mean: [3, 7]
     std: [1, 2]
     f_nan: 0
     f_zero: 0
@@ -177,14 +177,14 @@ quantities_to_check:
   - quantities: 'sed_*_*_bulge'
     label: Bulge SED
     log: true
-    min: [-12.0, -7.0]
+    min: [-12.0, -2.0]
     max: [9, 11]
-    median: [3, 7]
-    mean: [3, 7]
+    median: [2, 7]
+    mean: [2, 7]
     std: [0.5, 1.5]
     f_nan: 0
     f_zero: 0
-    f_outlier: [0, 0.03]
+    f_outlier: [0, 0.05]
 
   - quantities: A_v
     min: [0.001, 3.1]
