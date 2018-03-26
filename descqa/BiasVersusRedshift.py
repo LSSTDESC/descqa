@@ -1,19 +1,20 @@
 from __future__ import print_function, division, unicode_literals, absolute_import
 import os
 import numpy as np
+import scipy.optimize as op
 from GCR import GCRQuery
 import treecorr
-import pyccl as ccl
+import pyccl as ccl # pylint: disable=import-error
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
-from .utils import generate_uniform_random_ra_dec_footprint, generate_uniform_random_dist, get_healpixel_footprint
-import scipy.optimize as op
-import pyccl as ccl
+from .utils import generate_uniform_random_ra_dec_footprint, get_healpixel_footprint
 
 __all__ = ['BiasValidation']
 
-def lnlike(b,x,y,yerr):
-    return -0.5*np.sum((b**2*x-y)**2/yerr**2) # We ignore the covariance
+
+def neglnlike(b, x, y, yerr):
+    return 0.5*np.sum((b**2*x-y)**2/yerr**2) # We ignore the covariance
+
 
 class BiasValidation(BaseValidationTest):
     """
@@ -68,7 +69,7 @@ class BiasValidation(BaseValidationTest):
                               h=catalog_instance.cosmology.h,
                               sigma8=0.8, # For now let's assume a value for 0.8
                               n_s=0.96 #We assume this value for the scalar index
-                         )
+                             )
         # create random
         rand_ra, rand_dec = generate_uniform_random_ra_dec_footprint(
             catalog_data['ra'].size*self.random_mult,
@@ -98,11 +99,11 @@ class BiasValidation(BaseValidationTest):
                     ra_units='deg',
                     dec_units='deg')
                 # Generate N(z) for this bin
-                nz , be = np.histogram(catalog_data_this['z'],range=(0,7),bins=700)
+                nz, be = np.histogram(catalog_data_this['z'], range=(0,7), bins=700)
                 z_cent = 0.5*(be[1:]+be[:-1])
                 # Generate CCL tracer object to compute Cls -> w(theta)
-                tracer = ccl.ClTracerNumberCounts(cosmo,has_rsd=False,has_magnification=False,
-                                                  bias=np.ones_like(z_cent),z=z_cent,n=nz)
+                tracer = ccl.ClTracerNumberCounts(cosmo, has_rsd=False, has_magnification=False,
+                                                  bias=np.ones_like(z_cent), z=z_cent, n=nz)
                 del catalog_data_this
                  
                 treecorr_config = self._treecorr_config.copy()
@@ -120,14 +121,12 @@ class BiasValidation(BaseValidationTest):
                 xi, var_xi = dd.calculateXi(rr, dr, rd)
                 xi_rad = np.exp(dd.meanlogr)
                 xi_sig = np.sqrt(var_xi)
-                ells = np.arange(0,5000)
-                cls = ccl.angular_cl(cosmo,tracer,tracer,ells)
-                w_th = ccl.correlation(cosmo,ells,cls,xi_rad)
-                nll = lambda *args: -lnlike(*args)
+                ells = np.arange(0, 5000)
+                cls = ccl.angular_cl(cosmo, tracer, tracer, ells)
+                w_th = ccl.correlation(cosmo, ells, cls, xi_rad)
                 angles = (xi_rad > z_bin['min_theta']) & (xi_rad < z_bin['max_theta']) # This is not really linear bias regime... 
-                result = op.minimize(nll,[1.0],args=(w_th[angles],xi[angles],xi_sig[angles]),bounds=[(0.5,10)])
+                result = op.minimize(neglnlike, [1.0], args=(w_th[angles], xi[angles], xi_sig[angles]), bounds=[(0.5,10)])
                 best_bias = result['x']
-##                ax.loglog(self.validation_data[:,0], self.validation_data[:,z_bin['data_col']], c=color, label=self.label_template.format(z_bin['z_min'], z_bin['z_max']))
                 ax[0].errorbar(xi_rad, xi, xi_sig, marker='o', ls='', c=color)
                 ax[0].loglog(xi_rad,best_bias**2*w_th, c=color, label=self.label_template.format(z_bin['z_min'], z_bin['z_max']))
                 print('Best fit bias = ', best_bias)
