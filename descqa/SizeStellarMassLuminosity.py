@@ -7,7 +7,8 @@ from scipy.stats import binned_statistic
 
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
-
+from .plotting import mpl
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 __all__ = ['SizeStellarMassLuminosity']
 
@@ -38,7 +39,9 @@ class SizeStellarMassLuminosity(BaseValidationTest):
         self.fig_ylabel = kwargs['fig_ylabel']
         self.fig_subplot_row = kwargs['fig_subplot_row']
         self.fig_subplot_col = kwargs['fig_subplot_col']
-
+        self.suptitle = kwargs['suptitle']
+        xlim = kwargs['xlim']
+        self.xlim = [float(xlim.split()[0]), float(xlim.split()[1])]
         validation_filepath = os.path.join(self.data_dir, kwargs['data_filename'])
         self.validation_data = np.genfromtxt(validation_filepath)
     
@@ -79,6 +82,7 @@ class SizeStellarMassLuminosity(BaseValidationTest):
         elif self.observation == 'twocomp':
             colnames['size_bulge'] = 'size_bulge_true'
             colnames['size_disk'] = 'size_disk_true'
+            colnames['bulge_to_total_ratio_i'] = 'bulge_to_total_ratio_i'
              
         if not all(v for v in colnames.values()):
             return TestResult(skipped=True, summary='Missing requested quantities')
@@ -93,7 +97,22 @@ class SizeStellarMassLuminosity(BaseValidationTest):
         catalog_data = catalog_instance.get_quantities(list(colnames.values()), filters=filters)
         catalog_data = {k: catalog_data[v] for k, v in colnames.items()}
 
-        fig, axes = plt.subplots(self.fig_subplot_row, self.fig_subplot_col, figsize=(self.fig_subplot_col*3, self.fig_subplot_row*3), sharex=True, sharey=True)
+
+        fig, axes = plt.subplots(self.fig_subplot_row, self.fig_subplot_col, figsize=(self.fig_subplot_col*4, self.fig_subplot_row*4), sharex=True, sharey=True)
+
+        if catalog_name.lower()[:5] == 'proto': 
+            self.fig_subplot_row = 1
+        if catalog_name.lower()[:5] == 'proto' and self.observation == 'onecomp':
+            ylim = [3e-1, 20]     
+        elif catalog_name.lower()[:7] == 'buzzard' and self.observation == 'onecomp':
+            ylim = [1, 20]
+        elif catalog_name.lower()[:5] == 'proto' and self.observation == 'twocomp':
+            ylim = [1e-1, 25]
+
+        twocomp_labels = [r'$R_B^{B/T > 0.5}$', r'$R_D^{B/T > 0.5}$', r'$R_B^{B/T < 0.5}$', r'$R_D^{B/T < 0.5}$']
+        twocomp_sim_labels = [r'Sims:$R_B^{B/T > 0.5}$', r'Sims:$R_D^{B/T > 0.5}$', r'Sims:$R_B^{B/T < 0.5}$', r'Sims:$R_D^{B/T < 0.5}$']
+        onecomp_labels = ['Simulation', 'Validation']
+
         try:
             col = 0
             row = 0
@@ -111,59 +130,95 @@ class SizeStellarMassLuminosity(BaseValidationTest):
                 catalog_data_this = GCRQuery(*filters).filter(catalog_data)
                 if len(catalog_data_this['z']) == 0:
                     continue 
+
                 z_mean = (z_bin['z_max'] + z_bin['z_min']) / 2.
                 output_filepath = os.path.join(output_dir, self.output_filename_template.format(z_bin['z_min'], z_bin['z_max']))
-                colors = ['r', 'b']
+                colors = plt.cm.jet(np.linspace(0.2, 1, 4))[::-1]
                 default_L_bin_edges = np.array([9, 9.5, 10, 10.5, 11, 11.5])
                 default_L_bins = (default_L_bin_edges[1:] + default_L_bin_edges[:-1]) / 2.
+                ob = mpl.offsetbox.AnchoredText(self.label_template.format(z_bin['z_min'], z_bin['z_max']), loc=1, frameon=False)
+
                 if self.observation == 'onecomp':
                     logL_G = self.ConvertAbsMagLuminosity(catalog_data_this['mag'], 'g')
                     size_kpc = catalog_data_this['size'] * self._ARCSEC_TO_RADIAN * interpolate.splev(catalog_data_this['z'], spl) / (1 + catalog_data_this['z'])
                     binned_size_kpc = binned_statistic(logL_G, size_kpc, bins=default_L_bin_edges, statistic='mean')[0]
                     binned_size_kpc_err = binned_statistic(logL_G, size_kpc, bins=default_L_bin_edges, statistic='std')[0]
+                    binned_size_N = binned_statistic(logL_G, size_kpc, bins=default_L_bin_edges, statistic='count')[0]
+                    binned_size_kpc_err = binned_size_kpc_err / np.sqrt(binned_size_N)
 
                     np.savetxt(output_filepath, np.transpose((default_L_bins, binned_size_kpc, binned_size_kpc_err)))
 
                     validation_this = self.validation_data[(self.validation_data[:,0] < z_mean + 0.25) & (self.validation_data[:,0] > z_mean - 0.25)]
 
-                    ax.semilogy(validation_this[:,1], 10**validation_this[:, 2], label=self.label_template.format(z_bin['z_min'], z_bin['z_max']))
+                    ax.semilogy(validation_this[:,1], 10**validation_this[:, 2], label=onecomp_labels[1])#, label=self.label_template.format(z_bin['z_min'], z_bin['z_max']))
                     ax.fill_between(validation_this[:,1], 10**validation_this[:,3], 10**validation_this[:,4], lw=0, alpha=0.2)
-                    ax.errorbar(default_L_bins, binned_size_kpc, binned_size_kpc_err, marker='o', ls='')
+                    ax.errorbar(default_L_bins, binned_size_kpc, binned_size_kpc_err, marker='o', ms=9, ls='', label=onecomp_labels[0])
+                    onecomp_labels = ['', '']
+                    ax.set_ylim(ylim)
+                    ax.add_artist(ob)
+
                 elif self.observation == 'twocomp':
                     logL_I = self.ConvertAbsMagLuminosity(catalog_data_this['mag'], 'i')
                     arcsec_to_kpc = self._ARCSEC_TO_RADIAN * interpolate.splev(catalog_data_this['z'], spl) / (1 + catalog_data_this['z'])
 
-                    binned_bulgesize_kpc = binned_statistic(logL_I, catalog_data_this['size_bulge'] * arcsec_to_kpc, bins=default_L_bin_edges, statistic='mean')[0]
-                    binned_bulgesize_kpc_err = binned_statistic(logL_I, catalog_data_this['size_bulge'] * arcsec_to_kpc, bins=default_L_bin_edges, statistic='std')[0]
-                    binned_disksize_kpc = binned_statistic(logL_I, catalog_data_this['size_disk'] * arcsec_to_kpc, bins=default_L_bin_edges, statistic='mean')[0]
-                    binned_disksize_kpc_err = binned_statistic(logL_I, catalog_data_this['size_disk'] * arcsec_to_kpc, bins=default_L_bin_edges, statistic='std')[0]
-                    binned_bulgesize_kpc = np.nan_to_num(binned_bulgesize_kpc)
-                    binned_bulgesize_kpc_err = np.nan_to_num(binned_bulgesize_kpc_err)
-                    binned_disksize_kpc = np.nan_to_num(binned_disksize_kpc)
-                    binned_disksize_kpc_err = np.nan_to_num(binned_disksize_kpc_err)
-                    np.savetxt(output_filepath, np.transpose((default_L_bins, binned_bulgesize_kpc, binned_bulgesize_kpc_err, binned_disksize_kpc, binned_disksize_kpc_err)))
+                    bt_cons = [(catalog_data_this['bulge_to_total_ratio_i'] >= 0.5), (catalog_data_this['bulge_to_total_ratio_i'] < 0.5)]
+                    ci = 0
+                    to_write = default_L_bins.copy() 
+                    divider = make_axes_locatable(ax)
+                    ax2 = divider.append_axes("top", size='100%', pad=0)
+                    for bti, axi in zip(bt_cons, [ax2, ax]):
+                        for si in ['size_bulge', 'size_disk']:
+                            #print(logL_I[bti].shape, catalog_data_this[si].shape, arcsec_to_kpc.shape, (catalog_data_this[si] * arcsec_to_kpc)[bti].shape)
+                            tsize_kpc = binned_statistic(logL_I[bti], (catalog_data_this[si] * arcsec_to_kpc)[bti], bins=default_L_bin_edges, statistic='mean')[0]
+                            tsize_kpc_err = binned_statistic(logL_I[bti], (catalog_data_this[si] * arcsec_to_kpc)[bti], bins=default_L_bin_edges, statistic='std')[0]
+                            tsize_N = binned_statistic(logL_I[bti], (catalog_data_this[si] * arcsec_to_kpc)[bti], bins=default_L_bin_edges, statistic='count')[0]
+                            tsize_kpc = np.nan_to_num(tsize_kpc)
+                            tsize_kpc_err = np.nan_to_num(tsize_kpc_err / np.sqrt(tsize_N))
+                            to_write = np.column_stack((to_write, tsize_kpc, tsize_kpc_err))
+                            axi.errorbar(default_L_bins, tsize_kpc, tsize_kpc_err, marker='o', ls='', label=twocomp_sim_labels[ci], c=colors[ci])
+                            ci += 1
+                    np.savetxt(output_filepath, to_write)
 
                     validation_this = self.validation_data[(self.validation_data[:,0] < z_mean + 0.25) & (self.validation_data[:,0] > z_mean - 0.25)]
 
-                    ax.text(11, 0.3, self.label_template.format(z_bin['z_min'], z_bin['z_max']))
-                    ax.semilogy(validation_this[:,1], validation_this[:, 2], label='Bulge', color=colors[0])
-                    ax.fill_between(validation_this[:,1], validation_this[:, 2] + validation_this[:,4], validation_this[:, 2] - validation_this[:,4], lw=0, alpha=0.2, facecolor=colors[0])
-                    ax.semilogy(validation_this[:,1] + 0.2, validation_this[:, 3], label='Disk', color=colors[1])
-                    ax.fill_between(validation_this[:,1] + 0.2, validation_this[:, 3] + validation_this[:,5], validation_this[:, 3] - validation_this[:,5], lw=0, alpha=0.2, facecolor=colors[1])
+                    ax2.semilogy(validation_this[:,1], validation_this[:, 2], label=twocomp_labels[0], color=colors[0])
+                    ax2.fill_between(validation_this[:,1], validation_this[:, 2] + validation_this[:,3], validation_this[:, 2] - validation_this[:,3], lw=0, alpha=0.2, facecolor=colors[0])
+                    ax2.semilogy(validation_this[:,1], validation_this[:, 4], label=twocomp_labels[1], color=colors[1])
+                    ax2.fill_between(validation_this[:,1], validation_this[:, 4] + validation_this[:,5], validation_this[:, 4] - validation_this[:,5], lw=0, alpha=0.2, facecolor=colors[1])
 
-                    ax.errorbar(default_L_bins, binned_bulgesize_kpc, binned_bulgesize_kpc_err, marker='o', ls='', c=colors[0])
-                    ax.errorbar(default_L_bins+0.2, binned_disksize_kpc, binned_disksize_kpc_err, marker='o', ls='', c=colors[1])
-                    ax.set_xlim([9, 13])
-                    ax.set_ylim([1e-1, 25])
+                    ax.semilogy(validation_this[:,6], validation_this[:, 7], label=twocomp_labels[2], color=colors[2])
+                    ax.fill_between(validation_this[:,6], validation_this[:, 7] + validation_this[:,8], validation_this[:, 7] - validation_this[:,8], lw=0, alpha=0.2, facecolor=colors[2])
+                    ax.semilogy(validation_this[:,6], validation_this[:, 9], label=twocomp_labels[3], color=colors[3])
+                    ax.fill_between(validation_this[:,6], validation_this[:, 9] + validation_this[:,10], validation_this[:, 9] - validation_this[:,10], lw=0, alpha=0.2, facecolor=colors[3])
+
+                    ax.set_ylim(ylim)
+                    ax2.set_ylim(ylim)
+                    ax2.set_xlim(self.xlim)
+
                     ax.set_yscale('log', nonposy='clip')
+                    ax2.set_yscale('log', nonposy='clip')
+                    ax2.xaxis.set_ticklabels([])
+                    if col > 0:
+                        ax2.yaxis.set_ticklabels([])
+
+                    ax2.tick_params(direction='in', which='both')
+                    ax2.legend(loc=3, ncol=2, fontsize=10)
+
+                    ax2.add_artist(ob)
+
                 del catalog_data_this
+                
+                ax.set_xlim(self.xlim)
+                ax.tick_params(direction='in', which='both')
+                ax.legend(loc=3, ncol=2, fontsize=10)
+
+                twocomp_labels = ['', '', '', '']
+                twocomp_sim_labels = ['', '', '', '']
 
                 col += 1
                 if col > 2:
                     col = 0
                     row += 1
-
-                ax.legend(loc='best')
 
             fig.add_subplot(111, frameon=False)
             # hide tick and tick label of the big axes
@@ -172,7 +227,7 @@ class SizeStellarMassLuminosity(BaseValidationTest):
             plt.xlabel(self.fig_xlabel)
             plt.ylabel(self.fig_ylabel)
             fig.subplots_adjust(hspace=0, wspace=0.2)
-            fig.suptitle('{} ($M_V$) vs. {}'.format(catalog_name, self.data_label), fontsize='medium', y=0.93)
+            fig.suptitle('{} ({}) vs. {}'.format(catalog_name, self.suptitle, self.data_label), fontsize='medium', y=0.98)
         finally:
             fig.savefig(os.path.join(output_dir, '{:s}.png'.format(self.test_name)), bbox_inches='tight')
             plt.close(fig)
