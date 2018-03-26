@@ -47,6 +47,7 @@ class CheckColors(BaseValidationTest):
             ax.set_xlabel('{} - {}'.format(mag_field.format(self.xcolor[0]), mag_field.format(self.xcolor[1])))	
             ax.set_ylabel('{} - {}'.format(mag_field.format(self.ycolor[0]), mag_field.format(self.ycolor[1])))
             ax.set_title('Color inspection for {}'.format(catalog_name))
+            fig.tight_layout()
             fig.savefig(os.path.join(output_dir, '{}_{}_{}.png'.format(self.xcolor, self.ycolor, mag_field.replace('_{}_', '_'))))
             plt.close(fig)
 
