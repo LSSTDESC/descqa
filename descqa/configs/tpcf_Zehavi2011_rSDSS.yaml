@@ -1,36 +1,72 @@
-subclass_name: CorrelationsTwoPoint.CorrelationsTwoPoint
+subclass_name: CorrelationsTwoPoint.CorrelationsProjectedTwoPoint
 
-possible_mag_fields:
-  - Mag_true_r_sdss_z0
-  - Mag_true_r_des_z0
-  - Mag_true_r_lsst_z0
-  - Mag_true_r_sdss_z01
-  - Mag_true_r_des_z01
-  - Mag_true_r_lsst_z01
+# Catalog columns to attempt to load. The simplified names (e.g. ra, dec) are
+# the names that we be used to cut on in test_samples. Make sure these match.
+requested_columns:
+  ra:
+    - ra
+    - ra_true
+  dec:
+    - dec
+    - dec_true
+  mag:
+    - Mag_true_r_sdss_z0
+    - Mag_true_r_des_z0
+    - Mag_true_r_lsst_z0
+    - Mag_true_r_sdss_z01
+    - Mag_true_r_des_z01
+    - Mag_true_r_lsst_z01
+  z:
+    - redshift
+    - redshift_true
 
-output_filename_template: 'wp_rp_Mr_{}_{}.dat'
-label_template: '${} < M_r < {}$'
+# Definition of samples and cuts to apply.  The names of these columns must
+# match the simple column name definitions above.
+test_samples:
+  Mr_-23_-22:
+    mag: {min: -23, max: -22}
+    z: {min: 0.1031, max: 0.2452}
+  Mr_-22_-21:
+    mag: {min: -22, max: -21}
+    z: {min: 0.0664, max: 0.1589}
+  Mr_-21_-20:
+    mag: {min: -21, max: -20}
+    z: {min: 0.0420, max: 0.1064}
+  Mr_-20_-19:
+    mag: {min: -20, max: -19}
+    z: {min: 0.0269, max: 0.0642}
 
+# Output file naming format for output of the resultant correlation values.
+output_filename_template: 'wp_rp_{}.dat'
+
+# Name of file and columns to load and compare against the test samples.
 data_filename: 'tpcf/Zehavi_2011_ApJ_736_59_Table7.txt'
 data_label: 'Zehavi+2011'
+# Specify the columns to load from the data for comparison. The names here
+# should match the sample names from test_samples.
+test_data:
+  Mr_-23_-22: {data_col: 1, data_err_col: 2}
+  Mr_-22_-21: {data_col: 3, data_err_col: 4}
+  Mr_-21_-20: {data_col: 5, data_err_col: 6}
+  Mr_-20_-19: {data_col: 7, data_err_col: 8}
 
-mag_bins:
-  - {mag_min: -23, mag_max: -22, cz_min: 30900, cz_max: 73500, pi_max: 60.0, data_col: 1, data_err_col: 2}
-  - {mag_min: -22, mag_max: -21, cz_min: 19900, cz_max: 47650, pi_max: 60.0, data_col: 3, data_err_col: 4}
-  - {mag_min: -21, mag_max: -20, cz_min: 12600, cz_max: 31900, pi_max: 60.0, data_col: 5, data_err_col: 6}
-  - {mag_min: -20, mag_max: -19, cz_min:  8050, cz_max: 19250, pi_max: 60.0, data_col: 7, data_err_col: 8}
-#  - {mag_min: -19, mag_max: -18, cz_min:  5200, cz_max: 12500, pi_max: 40.0, data_col: 9, data_err_col: 10}
-
-need_distance: true
+# Plotting configuration.
 fig_xlabel: '$r_p\quad[h^{-1}{\rm Mpc}]$'
 fig_ylabel: '$w_p(r_p)\quad[h^{-1}{\rm Mpc}]$'
 fig_ylim: [0.1, 5000]
+label_column: mag # Name of the column from requested columns to write in the legend.
+label_template: '${} < M_r < {}$'
+
+pi_maxes: # Line of sight, wp(rp) binning for each sample.
+  Mr_-23_-22: 60.0
+  Mr_-22_-21: 60.0
+  Mr_-21_-20: 60.0
+  Mr_-20_-19: 60.0
 
 #Treecorr parameters
 min_sep: 0.15
 max_sep: 40
 bin_size: 0.45
-
 random_mult: 6
 
 description: |
