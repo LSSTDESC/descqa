@@ -84,9 +84,11 @@ class ColorDistribution(BaseValidationTest):
         mask &= (obscat[obs_zcol] > self.zlo) & (obscat[obs_zcol] < self.zhi)
         obscat = obscat[mask]
 
-        # Remove unsecured redshifts from DEEP2
         if self.validation_catalog == 'DEEP2':
+            # Remove unsecured redshifts
             mask = obscat['zquality'] >= 3
+            # Remove CFHTLS-Wide objects
+            mask &= obscat['cfhtls_source']==0
             obscat = obscat[mask]
 
         # Selection weights
