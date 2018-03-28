@@ -88,7 +88,7 @@ class ColorDistribution(BaseValidationTest):
             # Remove unsecured redshifts
             mask = obscat['zquality'] >= 3
             # Remove CFHTLS-Wide objects
-            mask &= obscat['cfhtls_source']==0
+            mask &= obscat['cfhtls_source'] == 0
             obscat = obscat[mask]
 
         # Selection weights
