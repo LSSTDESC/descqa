@@ -6,6 +6,10 @@
 # make sure all commands are executed
 set -e
 
+# load needed modules
+module load gsl/2.1
+module load cray-fftw/3.3.6.2
+
 # activate python env
 PYTHON="/global/common/software/lsst/common/miniconda/py3-4.2.12/bin/python"
 
