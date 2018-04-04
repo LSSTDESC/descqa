@@ -1,0 +1,120 @@
+subclass_name: readiness_test.CheckQuantities
+description: 'Plot histograms of listed quantities and perform range, finiteness, mean and standard deviation checks.'
+included_by_default: true
+
+quantities_to_check:
+  - quantities: ['galaxy_ra', 'galaxy_dec']
+    label: 'deg'
+    min: [-2.51, -2.49]
+    max: [2.49, 2.51]
+    median: [-0.1, 0.1]
+    mean: [-0.05, 0.05]
+    std: [1, 2]
+    f_nan: 0
+    f_inf: 0
+    f_outlier: 0
+
+  - quantities: ['galaxy_redshift']
+    label: redshift
+    min: [-0.05, 0.05]
+    max: [0.95, 1.05]
+    median: [0.6, 0.8]
+    mean: [0.6, 0.8]
+    std: [0.1, 0.3]
+    f_nan: 0
+    f_inf: 0
+    f_outlier: [0, 0.001]
+
+  - quantities: 'galaxy_gamma_*'
+    label: 'gamma'
+    min: [-0.2, 0]
+    max: [0, 0.2]
+    median: [-0.01, 0.01]
+    mean: [-0.01, 0.01]
+    std: [0, 0.01]
+    f_nan: 0
+    f_inf: 0
+    f_outlier: [0, 0.04]
+
+  - quantities: 'galaxy_theta'
+    label: 'position angle'
+    min: [0, 0.001]
+    max: [179.99, 180]
+    median: [89.9, 90.1]
+    mean: [89.9, 90.1]
+    std: [0, 90.0]
+    f_nan: 0
+    f_inf: 0
+    f_outlier: 0
+
+  - quantities: 'galaxy_kappa'
+    label: 'convergence'
+    min: [-0.4, 0]
+    max: [0, 0.45]
+    median: [-0.01, 0.01]
+    mean: [-0.01, 0.01]
+    std: [0, 0.02]
+    f_nan: 0
+    f_inf: 0
+    f_outlier: [0, 0.05]
+
+  - quantities: 'magnification'
+    min: [0.5, 1]
+    max: [1, 3]
+    median: [0.5, 1.5]
+    mean: [0.5, 1.5]
+    std: [0, 0.1]
+    f_nan: 0
+    f_inf: 0
+    f_outlier: [0, 0.05]
+
+  - quantities: 'galaxy_mag_*'
+    label: mag
+    min: [null, 15]
+    max: [25, null]
+    mean: [20, 32]
+    median: [20, 32]
+    std: [0, 5]
+    f_nan: 0
+    f_inf: 0
+    f_zero: 0
+    f_outlier: [0, 0.05]
+
+  - quantities: galaxy_A_v
+    min: [0.001, 3.1]
+    max: [0.001, 3.1]
+    median: [0.001, 3.1]
+    mean: [0.001, 3.1]
+    f_nan: 0
+    f_inf: 0
+
+  - quantities: galaxy_R_v
+    min: [1, 5]
+    max: [1, 5]
+    median: [1, 5]
+    mean: [1, 5]
+    f_nan: 0
+    f_inf: 0
+
+  - quantities: bulge_to_total_ratio*
+    min: [0, 1]
+    max: [0, 1]
+    median: [0, 1]
+    mean: [0, 1]
+    f_nan: 0
+    f_inf: 0
+
+relations_to_check:
+  - 'size_minor_bulge_true <= size_bulge_true'
+  - 'size_minor_disk_true <= size_disk_true'
+  - 'size_minor_true <= size_true'
+  - '(size_bulge_true != 0) | (stellar_mass_bulge == 0)'
+  - 'stellar_mass_bulge <= stellar_mass'
+  - 'stellar_mass_disk <= stellar_mass'
+  - '1.0 / magnification ~== (1.0 - convergence)**2.0 - shear_1**2.0 - shear_2**2.0'
+  - 'size_minor_true / size_true ~== (1.0 - ellipticity_true) / (1.0 + ellipticity_true)'
+  - 'size_minor_disk_true / size_disk_true ~== (1.0 - ellipticity_disk_true) / (1.0 + ellipticity_disk_true)'
+  - 'size_minor_bulge_true / size_bulge_true ~== (1.0 - ellipticity_bulge_true) / (1.0 + ellipticity_bulge_true)'
+  - 'ellipticity_1_true ** 2.0 + ellipticity_2_true ** 2.0 ~== ellipticity_true ** 2.0'
+  - 'ellipticity_1_disk_true ** 2.0 + ellipticity_2_disk_true ** 2.0 ~== ellipticity_disk_true ** 2.0'
+  - 'ellipticity_1_bulge_true ** 2.0 + ellipticity_2_bulge_true ** 2.0 ~== ellipticity_bulge_true ** 2.0'
