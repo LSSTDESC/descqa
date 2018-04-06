@@ -1,0 +1,3 @@
+subclass_name: alignment_validation.AlignmentValidationTest
+step: 247
+haloMassCut: 12.1
