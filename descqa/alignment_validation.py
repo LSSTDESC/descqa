@@ -1,5 +1,5 @@
 import numpy as np
-
+import os
 import GCRCatalogs
 from halotools.mock_observables.alignments import ed_3d_one_two_halo_decomp, ed_3d
 from astropy.table import Table
@@ -26,35 +26,35 @@ class AlignmentValidationTest(BaseValidationTest):
                             'hostHaloEigenValue1', 'hostHaloEigenValue2','hostHaloEigenValue3']))
 
         # Apply selection
-        m = (log10(cat['hostHaloMass']) > self.haloMassCut) & (cat['step'] == self.step)
+        m = (np.log10(cat['hostHaloMass']) > self.haloMassCut) & (cat['step'] == self.step)
         m &= (cat['is_central'] == 1)
         vals = cat[m]
         # Creates sample for correlation
         sample = np.zeros((len(vals),3))
         sample[:,0] = vals['x']; sample[:,1] = vals['y']; sample[:,2] = vals['z']
-        orientations = zeros((len(vals),3))
+        orientations = np.zeros((len(vals),3))
         orientations[:,0] = vals['hostHaloEigenVector3X'] ; orientations[:,1] = vals['hostHaloEigenVector3Y']
         orientations[:,2] = vals['hostHaloEigenVector3Z']
         # Remove halos for which we might not have a shape
-        m = sqrt(sum(orientations**2,axis=-1)) > 0.1
+        m = np.sqrt(np.sum(orientations**2,axis=-1)) > 0.1
         sample = sample[m]
         orientations = orientations[m]
         # Compute orientation-direction correlation function
-        r = logspace(-1,2,16)
+        r = np.logspace(-1,2,16)
         res = ed_3d(sample, orientations, sample, r)
 
         # Now do the same thing with MB2
         mb2 = Table.read('/global/homes/f/flanusse/mb2_z1_central.hdf5')
-        m = (log10(mb2['halos.m_dm']*1e10) > self.haloMassCut) & (mb2['halos.central'] == 1.)
-        vals = d[m]
+        m = (np.log10(mb2['halos.m_dm']*1e10) > self.haloMassCut) & (mb2['halos.central'] == 1.)
+        vals = mb2[m]
         # Creates sample for correlation
         sample = np.zeros((len(vals),3))
         sample[:,0] = vals['halos.x']; sample[:,1] = vals['halos.y']; sample[:,2] = vals['halos.z']
-        orientations = zeros((len(vals),3))
+        orientations = np.zeros((len(vals),3))
         orientations[:,0] = vals['shapesDM.a3d_x'] ; orientations[:,1] = vals['shapesDM.a3d_y']
         orientations[:,2] = vals['shapesDM.a3d_z']
         # Remove halos for which we might not have a shape
-        m = sqrt(sum(orientations**2,axis=-1)) > 0.1
+        m = np.sqrt(np.sum(orientations**2,axis=-1)) > 0.1
         sample = sample[m] *1e-3 # Convert distances into h^1Mpc
         orientations = orientations[m]
         # Compute orientation-direction correlation function
