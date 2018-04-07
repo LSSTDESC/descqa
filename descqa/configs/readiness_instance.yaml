@@ -25,8 +25,8 @@ quantities_to_check:
     f_inf: 0
     f_outlier: [0, 0.001]
 
-  - quantities: 'galaxy_gamma_*'
-    label: 'gamma'
+  - quantities: 'galaxy_ellipticity_*'
+    label: 'Ellipticity'
     min: [-0.2, 0]
     max: [0, 0.2]
     median: [-0.01, 0.01]
@@ -46,28 +46,7 @@ quantities_to_check:
     f_nan: 0
     f_inf: 0
     f_outlier: 0
-
-  - quantities: 'galaxy_kappa'
-    label: 'convergence'
-    min: [-0.4, 0]
-    max: [0, 0.45]
-    median: [-0.01, 0.01]
-    mean: [-0.01, 0.01]
-    std: [0, 0.02]
-    f_nan: 0
-    f_inf: 0
-    f_outlier: [0, 0.05]
-
-  - quantities: 'magnification'
-    min: [0.5, 1]
-    max: [1, 3]
-    median: [0.5, 1.5]
-    mean: [0.5, 1.5]
-    std: [0, 0.1]
-    f_nan: 0
-    f_inf: 0
-    f_outlier: [0, 0.05]
-
+    
   - quantities: 'galaxy_mag_*'
     label: mag
     min: [null, 15]
@@ -96,7 +75,7 @@ quantities_to_check:
     f_nan: 0
     f_inf: 0
 
-  - quantities: bulge_to_total_ratio*
+  - quantities: galaxy_bulge_fraction
     min: [0, 1]
     max: [0, 1]
     median: [0, 1]
@@ -105,16 +84,4 @@ quantities_to_check:
     f_inf: 0
 
 relations_to_check:
-  - 'size_minor_bulge_true <= size_bulge_true'
-  - 'size_minor_disk_true <= size_disk_true'
-  - 'size_minor_true <= size_true'
-  - '(size_bulge_true != 0) | (stellar_mass_bulge == 0)'
-  - 'stellar_mass_bulge <= stellar_mass'
-  - 'stellar_mass_disk <= stellar_mass'
-  - '1.0 / magnification ~== (1.0 - convergence)**2.0 - shear_1**2.0 - shear_2**2.0'
-  - 'size_minor_true / size_true ~== (1.0 - ellipticity_true) / (1.0 + ellipticity_true)'
-  - 'size_minor_disk_true / size_disk_true ~== (1.0 - ellipticity_disk_true) / (1.0 + ellipticity_disk_true)'
-  - 'size_minor_bulge_true / size_bulge_true ~== (1.0 - ellipticity_bulge_true) / (1.0 + ellipticity_bulge_true)'
-  - 'ellipticity_1_true ** 2.0 + ellipticity_2_true ** 2.0 ~== ellipticity_true ** 2.0'
-  - 'ellipticity_1_disk_true ** 2.0 + ellipticity_2_disk_true ** 2.0 ~== ellipticity_disk_true ** 2.0'
-  - 'ellipticity_1_bulge_true ** 2.0 + ellipticity_2_bulge_true ** 2.0 ~== ellipticity_bulge_true ** 2.0'
+  - 'galaxy_bulge_fraction <= 1'
