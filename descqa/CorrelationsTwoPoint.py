@@ -41,6 +41,7 @@ class CorrelationUtilities(BaseValidationTest):
     for this tests. See the following file for an example:
     descqa/configs/tpcf_Zehavi2011_rSDSS.yaml
     """
+    # pylint: disable=super-init-not-called,abstract-method
     def __init__(self, **kwargs):
         self.test_name = kwargs['test_name']
 
