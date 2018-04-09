@@ -169,7 +169,7 @@ class RedSequence(BaseValidationTest):
         return rs_mean, rs_scat, red_frac_sat, red_frac_cen
 
     def make_plot(self, red_seq, name, save_to):
-        fig, ax = plt.subplots(2, self.n_bands-1, sharex=True, sharey=True, figsize=(12,10), dpi=100)
+        fig, ax = plt.subplots(2, self.n_bands-1, sharex=True, sharey=False, figsize=(12,10), dpi=100)
 
         for i in range(self.n_bands-1):
             ax[0,i].plot(self.z_mean, red_seq['rs_mean'][:,i])
