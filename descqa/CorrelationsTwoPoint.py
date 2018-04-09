@@ -263,6 +263,12 @@ class CorrelationsAngularTwoPoint(CorrelationUtilities):
             tmp_catalog_data = self.create_test_sample(
                 catalog_data, sample_conditions)
 
+            with open(os.path.join(output_dir, 'galaxy_count.dat'), 'a') as f:
+                f.write('{} {}\n'.format(sample_name, len(tmp_catalog_data['ra'])))
+
+            if not len(tmp_catalog_data['ra']):
+                continue
+
             output_treecorr_filepath = os.path.join(
                 output_dir, self.output_filename_template.format(sample_name))
 
@@ -386,7 +392,10 @@ class CorrelationsProjectedTwoPoint(CorrelationUtilities):
             tmp_catalog_data = self.create_test_sample(
                 catalog_data, sample_conditions)
 
-            if not len(tmp_catalog_data['z']):
+            with open(os.path.join(output_dir, 'galaxy_count.dat'), 'a') as f:
+                f.write('{} {}\n'.format(sample_name, len(tmp_catalog_data['ra'])))
+
+            if not len(tmp_catalog_data['ra']):
                 continue
 
             xi_rad, xi, xi_sig = self.run_treecorr_projected(
