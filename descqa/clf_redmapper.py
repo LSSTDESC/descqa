@@ -43,6 +43,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         return magnitude_field, quantities_needed
         
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
+
         prepared = self.prepare_galaxy_catalog(catalog_instance)
         if prepared is None:
             TestResult(skipped=True)
@@ -73,6 +74,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         return TestResult(inspect_only=True)
 
     def make_plot(self, clf, covar,name,save_to):
+
         fig, ax = plt.subplots(self.nlambd_bins, self.n_z_bins, sharex=True, sharey=True, figsize=(12,10), dpi=100)
 
         for i in range(self.n_z_bins):
@@ -97,7 +99,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         fig.savefig(save_to)
         plt.close(fig)
 
-    def get_central_mag_id(self, cat_mem_match_id, mem_mem_match_id,ra_cluster,dec_cluster,ra,dec,mag):
+    def get_central_mag_id(self, cat_mem_match_id, mem_mem_match_id, ra_cluster, dec_cluster, ra, dec, mag):
         ncluster = len(cat_mem_match_id)
         ngals = len(mem_mem_match_id)
         cenmag = np.zeros([ncluster,1])
@@ -146,7 +148,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
              jacklist[i]=np.where(_km.labels!=uniquelabel[i])[0]
         return jacklist
     
-    def getjackgal(self,jackclusterList,c_mem_id,g_mem_id, match_index=None):
+    def getjackgal(self, jackclusterList, c_mem_id, g_mem_id, match_index=None):
         nclusters = len(c_mem_id)
         ngals = len(g_mem_id)
 
@@ -185,7 +187,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                 gboot_single.extend([])
 
         return gboot_single
-    def count_galaxies_p(self,c_mem_id,scaleval,g_mem_id,p,mag,lumbins):
+    def count_galaxies_p(self, c_mem_id, scaleval, g_mem_id, p, mag, lumbins):
         nclusters = len(c_mem_id)
         nlum = len(lumbins)
         dlum = lumbins[1]-lumbins[0]
@@ -213,7 +215,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
 
         return count_arr
     
-    def count_galaxies_p_cen(self,cenmag,lumbins,p_cen):
+    def count_galaxies_p_cen(self, cenmag, lumbins, p_cen):
         nlum = len(lumbins)
         nclusters = len(cenmag)
         dlum = lumbins[1]-lumbins[0]
@@ -234,7 +236,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
             newNewbin=np.sum(masknew*weight,axis=1)
             chto_countArray[:,i]=newNewbin[:]
         return chto_countArray
-    def cluster_Lcount(self,lumbins,limmag):
+    def cluster_Lcount(self, lumbins, limmag):
         nclusters_lum = np.zeros_like(lumbins)
         binlist = np.zeros_like(limmag).astype(int)
         dlum = lumbins[1]-lumbins[0]
@@ -253,8 +255,8 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                 binlist[i] = mybin
         return nclusters_lum, binlist
     
-    def make_single_clf(self,lm,z,lumbins,count_arr,lm_min,lm_max,zmin,zmax,
-                    limmag=[]):
+    def make_single_clf(self, lm, z, lumbins, count_arr, lm_min, lm_max, zmin, zmax,
+                        limmag=[]):
         dlum = lumbins[1]-lumbins[0]
         clf = np.zeros_like(lumbins).astype(int)
 
@@ -273,9 +275,9 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         return clf
     
     def redm_clf(self, Mag,cenMag,cengalindex,
-                           pcen_all,jacklist,cluster_id, cluster_id_member,
-                           match_index,
-                           limmag,scaleval,pmem, pcen, cluster_lm, cluster_z):
+                 pcen_all,jacklist,cluster_id, cluster_id_member,
+                 match_index,
+                 limmag,scaleval,pmem, pcen, cluster_lm, cluster_z):
         lumbins = self.magnitude_bins[1:]
         nlum = len(lumbins)
         zmin = self.z_bins[:-1]
