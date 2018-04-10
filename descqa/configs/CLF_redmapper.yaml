@@ -1,0 +1,5 @@
+subclass_name: clf_redmapper.ConditionalLuminosityFunction_redmapper
+band1: r
+njack: 20
+description: Conditional luminosity function (in r band) for central and satellite galaxies
+included_by_default: true
