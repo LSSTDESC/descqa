@@ -91,7 +91,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         ax = fig.add_subplot(111, frameon=False)
         ax.tick_params(labelcolor='none', top='off', bottom='off', left='off', right='off')
         ax.grid(False)
-        ax.set_ylabel(r'$\phi(M_{{{}}}\,|\,M_{{\rm vir}},z)\quad[{{\rm Mag}}^{{-1}}]$'.format(self.band))
+        ax.set_ylabel(r'$\phi(M_{{{}}}\,|\,\lambda,z)\quad[{{\rm Mag}}^{{-1}}]$'.format(self.band))
         ax.set_xlabel(r'$M_{{{}}}\quad[{{\rm Mag}}]$'.format(self.band))
         ax.set_title(name)
 
