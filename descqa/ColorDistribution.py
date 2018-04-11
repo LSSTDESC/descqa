@@ -129,10 +129,9 @@ class ColorDistribution(BaseValidationTest):
         if self.color_transformation_q:
             if self.validation_catalog == 'DEEP2':
                 color_trans_name = '{}2cfht'.format(filter_this)
-                color_trans = color_transformation[color_trans_name]
             elif self.validation_catalog == 'SDSS' and filter_this == 'des':
                 color_trans_name = 'des2sdss'
-                color_trans = color_transformation[color_trans_name]
+            color_trans = color_transformation[color_trans_name]
 
         if color_trans:
             data_transformed = {}
