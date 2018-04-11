@@ -34,7 +34,7 @@ def compute_bkg(image):
     return mean_bkg, median_bkg, bkg_noise
 
 def get_predicted_bkg(visit,validation_dataset,db_file,band):
-    if validation_dataset == 'Opsim':
+    if validation_dataset.lower() == 'opsim':
         return get_opsim_bkg(visit,db_file,band)
     # TODO add imSim option
     #if validation_dataset == 'imSim':
@@ -70,7 +70,7 @@ def get_airmass_raw_seeing(visit,db_file):
     return rows[0][0], rows[0][1], rows[0][2], rows[0][3], rows[0][4], rows[0][5]
 
 def get_opsim_bkg(visit,db_file,band):
-    skybrightness = get_airmass_raw_seeing(visit,db_file)[1]
+    skybrightness = get_airmass_raw_seeing(int(visit),db_file)[1]
     mean_bkg = compute_sky_counts(skybrightness,band,1)
     median_bkg = mean_bkg
     bkg_noise = np.sqrt(mean_bkg)
@@ -86,6 +86,7 @@ class QuickBkgTest(BaseValidationTest):
         self.label = label
         self.visit = visit
         self.band = band
+        self.bkg_validation_dataset = bkg_validation_dataset
     def post_process_plot(self, ax):
         ymin, ymax = ax[0].get_ylim()
         ax[0].plot(np.ones(3)*self.validation_data[0], np.linspace(ymin, ymax, 3),
@@ -112,7 +113,7 @@ class QuickBkgTest(BaseValidationTest):
                 median_bkg.update({'%s-%s' % (rname, sname) : aux2})
                 bkg_noise.update({'%s-%s' % (rname, sname) : aux3})
         
-        fig, ax = plt.subplots(1,2)
+        fig, ax = plt.subplots(2,1)
         ax[0].hist(list(mean_bkg.values()), histtype='step', label='Mean')
         ax[0].hist(list(median_bkg.values()), histtype='step', label='Median')
         ax[0].set_xlabel('{} [ADU]'.format(self.label))
@@ -120,10 +121,10 @@ class QuickBkgTest(BaseValidationTest):
         ax[1].hist(list(bkg_noise.values()), histtype='step')
         ax[1].set_xlabel('{} noise [ADU]'.format(self.label))
         ax[1].set_ylabel('Number of sensors') 
-        #score = np.mean(np.array(list(median_bkg.values())))/self.validation_data[0]-1.
-        score = 0.
+        score = np.mean(np.array(list(median_bkg.values())))/self.validation_data[0]-1.
+        score = np.fabs(score)
         self.post_process_plot(ax)
         fig.savefig(os.path.join(output_dir, 'plot_png'))
         plt.close(fig)
-        return TestResult(score, passed=score<0.5) 
+        return TestResult(score, passed=score<0.2) 
 
