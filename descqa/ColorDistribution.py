@@ -125,12 +125,13 @@ class ColorDistribution(BaseValidationTest):
         data = {k: data[v] for k, v in labels.items()}
 
         # Color transformation
+        color_trans = None
         if self.color_transformation_q:
-            color_trans = None
             if self.validation_catalog == 'DEEP2':
-                color_trans = color_transformation['{}2cfht'.format(filter_this)]
+                color_trans_name = '{}2cfht'.format(filter_this)
             elif self.validation_catalog == 'SDSS' and filter_this == 'des':
-                color_trans = color_transformation['des2sdss']
+                color_trans_name = 'des2sdss'
+            color_trans = color_transformation[color_trans_name]
 
         if color_trans:
             data_transformed = {}
@@ -139,6 +140,7 @@ class ColorDistribution(BaseValidationTest):
                     data_transformed[band] = ne.evaluate(color_trans[band], local_dict=data, global_dict={})
                 except KeyError:
                     continue
+
             data_transformed['redshift'] = data['redshift']
             data = data_transformed
             del data_transformed
@@ -170,6 +172,10 @@ class ColorDistribution(BaseValidationTest):
         # Write to summary file
         fn = os.path.join(output_dir, self.summary_output_file)
         with open(fn, 'a') as f:
+            if color_trans:
+                f.write('Color transformation: {}\n'.format(color_trans_name))
+            else:
+                f.write('No color transformation\n')
             f.write('%2.3f < z < %2.3f\n'%(self.zlo, self.zhi))
             f.write('r_mag < %2.3f\n\n'%(self.obs_r_mag_limit))
             for color in self.colors:
