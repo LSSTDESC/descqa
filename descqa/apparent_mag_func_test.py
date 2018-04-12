@@ -11,11 +11,12 @@ possible_observations = {
         'usecols': (0, 1, 2),
         'colnames': ('mag', 'n(<mag)', 'err'),
         'skiprows': 1,
-        'label': 'HSC (D. Campbell, Sprint Week-Dec 2017)',
+        'label': 'HSC (D. Campbell, desqagen 2018)',
     }
 }
 
 __all__ = ['ApparentMagFuncTest']
+
 
 class ApparentMagFuncTest(BaseValidationTest):
     """
@@ -36,19 +37,18 @@ class ApparentMagFuncTest(BaseValidationTest):
 
         """
 
-        #catalog quantities needed
+        # catalog quantities needed
         possible_mag_fields = ('mag_{}_lsst',
                                'mag_{}_sdss',
                                'mag_{}_des',
-                               'mag_{}_hsc',
-                              )
+                               'mag_{}_hsc')
         self.possible_mag_fields = [f.format(band) for f in possible_mag_fields]
-        
-        #attach some attributes to the test
+
+        # attach some attributes to the test
         self.band = band
         self.band_lim = band_lim
 
-        #check for validation observation
+        # check for validation observation
         if not observation:
             print('Warning: no data file supplied, no observation requested; only catalog data will be shown.')
         elif observation not in possible_observations:
@@ -58,7 +58,7 @@ class ApparentMagFuncTest(BaseValidationTest):
 
         # prepare summary plot
         self.summary_fig, self.summary_ax = plt.subplots()
-    
+
     def get_validation_data(self, band, observation):
         """
         load (observational) data to use for validation test
@@ -79,14 +79,12 @@ class ApparentMagFuncTest(BaseValidationTest):
 
         return validation_data
 
-
     def post_process_plot(self, ax):
-        
+
         ax.legend(loc='upper left')
         ax.set_ylabel('n(< {\rm mag}) ~[{\rm deg^{-2}}]')
         ax.set_xlabel(self.band + ' magnitude')
 
-    
     @staticmethod
     def get_catalog_data(gc, quantities, filters=None):
         data = {}
@@ -94,23 +92,23 @@ class ApparentMagFuncTest(BaseValidationTest):
             return TestResult(skipped=True, summary='Missing requested quantities')
 
         data = gc.get_quantities(quantities, filters=filters)
-        #make sure data entries are all finite
+        # make sure data entries are all finite
         data = GCRQuery(*((np.isfinite, col) for col in data)).filter(data)
 
         return data
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
-        
+
         mag_field_key = catalog_instance.first_available(*self.possible_mag_fields)
         if not mag_field_key:
             return TestResult(skipped=True, summary='Catalog is missing requested quantity: {}'.format(self.possible_mag_fields))
-        
-        #retreive data from mock catalog
+
+        # retreive data from mock catalog
         d = catalog_instance.get_quantities([mag_field_key])
         m = d[mag_field_key]
-        m = np.sort(m) #put into order--bright to faint
+        m = np.sort(m)  # put into order--bright to faint
 
-        #caclulate cumulative number of galaxies less than band_lim
+        # caclulate cumulative number of galaxies less than band_lim
         if not catalog_instance.lightcone:
             return TestResult(skipped=True, summary="Catalog is not a light cone.")
 
@@ -118,27 +116,27 @@ class ApparentMagFuncTest(BaseValidationTest):
             sky_area = catalog_instance.sky_area
         except AttributeError:
             return TestResult(skipped=True, summary="Catalog needs an attribute 'sky_area'.")
-        
-        #get total number of galaxies
+
+        # get total number of galaxies
         N_tot = len(m)
         N = np.cumsum(np.ones(N_tot))/sky_area
-        
-        #define apparent magnitude bins for plotting purposes
-        self.dmag = 0.1
-        self.max_mag = self.band_lim + 1.0 #go one mag beyond the limit
-        self.min_mag = 17.7 #start at bright galaxies
-        mag_bins = np.arange(self.min_mag ,self.max_mag, self.dmag)
 
-        #calculate N at the specified points
-        inds = np.searchsorted(m,mag_bins)
+        # define apparent magnitude bins for plotting purposes
+        self.dmag = 0.1
+        self.max_mag = self.band_lim + 1.0  # go one mag beyond the limit
+        self.min_mag = 17.7  # start at bright galaxies
+        mag_bins = np.arange(self.min_mag, self.max_mag, self.dmag)
+
+        # calculate N at the specified points
+        inds = np.searchsorted(m, mag_bins)
         mask = (inds >= len(m))
         inds[mask] = -1
         sampled_N = N[inds]
-        
-        #plot cumulative apparent magnitude function
+
+        # plot cumulative apparent magnitude function
         fig, ax = plt.subplots()
 
-        for ax_this in (ax, self.summary_ax): #plot on both this and summary plots
+        for ax_this in (ax, self.summary_ax):  # plot on both this and summary plots
             ax_this.plot(mag_bins, sampled_N, '-', label=catalog_name)
             ax_this.plot(self.band_lim, N_tot)
             ax_this.set_yscale('log')
@@ -147,7 +145,7 @@ class ApparentMagFuncTest(BaseValidationTest):
             ax_this.set_xlim([17,30])
             ax_this.set_ylim([1,10**8])
 
-        #plot validation data
+        # plot validation data
         for ax_this in ax:
             n = self.validation_data['n(<mag)']
             m = self.validation_data['mag']
@@ -157,17 +155,16 @@ class ApparentMagFuncTest(BaseValidationTest):
         fig.savefig(os.path.join(output_dir, 'cumulative_app_mag_plot.png'))
         plt.close(fig)
 
-        score = 0 #calculate your summary statistics
+        score = 0  # calculate your summary statistics
         return TestResult(score, passed=True)
 
-
     def conclude_test(self, output_dir):
-        
-        #plot verifaction data on summary plot
+
+        # plot verifaction data on summary plot
         n = self.validation_data['n(<mag)']
         m = self.validation_data['mag']
         self.summary_ax.plot(m, n, 'o', label=self.validation_data['label'])
-        
+
         self.post_process_plot(self.summary_ax)
         self.summary_fig.savefig(os.path.join(output_dir, 'summary.png'))
         plt.close(self.summary_fig)
