@@ -12,7 +12,7 @@ possible_observations = {
         'usecols': (0, 1, 2),
         'colnames': ('mag', 'n(<mag)', 'err'),
         'skiprows': 1,
-        'label': 'HSC (desqagen 2018)',
+        'label': 'HSC extrapolated (desqagen 2018)',
     }
 }
 
@@ -167,7 +167,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         y_max = interp1d(m, np.log10(n+self.rtol*n))
         y_min = interp1d(m, np.log10(n-self.rtol*n))
         # interpolate mock data
-        y = interp1d(m, np.log10(n))
+        y = interp1d(mag_bins, np.log10(sampled_N))
 
         m_sample = np.linspace(self.band_lim[0], self.band_lim[0], 10000)
         passed = (np.all(y(m_sample) <= y_max(m_sample))) & (np.all(y(m_sample) >= y_min(m_sample)))
