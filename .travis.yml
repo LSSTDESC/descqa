@@ -6,15 +6,21 @@ python:
 - "2.7"
 - "3.6"
 
+before_install: # camb requires gfortran to be at least gfortran-4.9
+- sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+- sudo apt-get update -qq
+- sudo apt-get install gfortran-4.9 -y
+- sudo ln -s /usr/bin/gfortran-4.9 /usr/bin/gfortran
+
 install:
 - pip install .[full]
 - pip install pylint nose
 
 before_script:
-- export CHANGED=$(git diff --name-only $TRAVIS_COMMIT_RANGE | grep '^\(descqa.*\|tests\)/.\+\.py$')
+- export CHANGED=$(git diff --diff-filter=d --name-only $TRAVIS_COMMIT_RANGE | grep '^\(descqa.*\|tests\)/.\+\.py$')
 
 script:
 - nosetests
 - python -c "import descqaweb"
 - python -c "import descqarun"
-- '[ -z "$CHANGED" ] || pylint --disable=C0103,C0301 --extension-pkg-whitelist=numpy $CHANGED; EXITCODE=$?; if [ $(($EXITCODE&7)) -gt 0 ]; then exit $EXITCODE; fi;'
+- '[ -z "$CHANGED" ] || pylint --disable=C0103,C0301,W0511 --extension-pkg-whitelist=numpy $CHANGED; EXITCODE=$?; if [ $(($EXITCODE&7)) -gt 0 ]; then exit $EXITCODE; fi;'

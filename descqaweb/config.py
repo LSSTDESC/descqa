@@ -1,11 +1,12 @@
 from __future__ import unicode_literals
 
-__all__ = ['site_title', 'root_dir', 'general_info', 'static_dir', 'run_per_page', 'logo_filename', 'github_url']
+__all__ = ['site_title', 'root_dir', 'general_info', 'static_dir', 'run_per_page', 'logo_filename', 'github_url', 'months_to_search']
 
 root_dir = '/global/projecta/projectdirs/lsst/groups/CS/descqa/run/v2'
 site_title = 'DESCQA (v2): LSST DESC Quality Assurance for Galaxy Catalogs'
 
 run_per_page = 20
+months_to_search = 3
 
 static_dir = 'web-static'
 logo_filename = 'desc-logo-small.png'

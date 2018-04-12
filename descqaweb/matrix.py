@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
-import os
 import time
-import cgi
+import html
 from . import config
 from .interface import iter_all_runs, DescqaRun
 
@@ -10,7 +9,7 @@ __all__ = ['prepare_matrix']
 
 def find_last_descqa_run():
     last_run = None
-    for run in iter_all_runs(config.root_dir, 180):
+    for run in iter_all_runs(config.root_dir):
         descqa_run = DescqaRun(run, config.root_dir, validated=True)
         if last_run is None:
             last_run = descqa_run
@@ -34,9 +33,16 @@ def format_description(description_dict):
     for k in sorted(description_dict):
         v = description_dict.get(k)
         if v:
-            output.append('<tr><td>{}</td><td>{}</td></tr>'.format(k, cgi.escape(v)))
+            output.append('<tr><td>{}</td><td>{}</td></tr>'.format(k, html.escape(v)))
     if output:
         return '\n'.join(output)
+
+
+def get_short_status(status):
+    short_status = status.rpartition('_')[-1]
+    if short_status == 'FAILED':
+        short_status = 'NOT QUITE'
+    return short_status
 
 
 def prepare_matrix(run=None, catalog_prefix=None, test_prefix=None):
@@ -53,7 +59,7 @@ def prepare_matrix(run=None, catalog_prefix=None, test_prefix=None):
 
     data['general_info'] = config.general_info
     data['run'] = descqa_run.name
-    data['comment'] = cgi.escape(descqa_run.status.get('comment', ''))
+    data['comment'] = html.escape(descqa_run.status.get('comment', ''))
     data['user'] = descqa_run.status.get('user', 'UNKNOWN')
     data['versions'] = ' | '.join(('{}: {}'.format(k, v) for k, v in descqa_run.status.get('versions', dict()).items()))
 
@@ -74,7 +80,7 @@ def prepare_matrix(run=None, catalog_prefix=None, test_prefix=None):
 
     catalogs_this = descqa_run.get_catalogs(catalog_prefix)
 
-    table_width = (len(catalogs_this) + 1)*130
+    table_width = len(catalogs_this)*120 + 200
     if table_width > 1280:
         data['table_width'] = "100%"
     else:
@@ -91,7 +97,7 @@ def prepare_matrix(run=None, catalog_prefix=None, test_prefix=None):
         for catalog in catalogs_this:
             item = descqa_run[test, catalog]
             matrix.append('<td class="{}"><a class="celllink" href="?run={}&test={}&catalog={}">{}<br>{}</a></td>'.format(\
-                    item.status_color, descqa_run.name, test, catalog, item.status.rpartition('_')[-1], item.score))
+                    item.status_color, descqa_run.name, test, catalog, get_short_status(item.status), item.score))
         matrix.append('</tr>')
     data['matrix'] = '\n'.join(matrix)
 

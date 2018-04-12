@@ -4,3 +4,4 @@ log_Mhi: 12.
 Nbins: 25
 observation: 'PRIMUS_2013'
 description: 'Plot Stellar-Mass Function for various redshift bins and compare with PRIMUS data from Moustakas et. al. (2013)'
+included_by_default: true

@@ -8,8 +8,7 @@ import base64
 __all__ = ['b64encode', 'iter_all_runs', 'DescqaRun']
 
 ALLOWED_EXT = {'txt', 'dat', 'csv', 'log', 'json', 'yaml', 'pdf', 'png', 'html'}
-STATUS_COLORS = {'PASSED': 'green', 'SKIPPED': 'gold', 'FAILED': 'orangered', 'ERROR': 'darkred'}
-
+STATUS_COLORS = {'PASSED': 'green', 'SKIPPED': 'gold', 'INSPECT': 'blue', 'FAILED': 'orangered', 'ERROR': 'darkred'}
 
 def b64encode(content):
     return base64.b64encode(content).decode('ascii')
@@ -40,13 +39,15 @@ class File(object):
 
 class DescqaItem(object):
     def __init__(self, test, catalog, run, base_dir):
-        if catalog is None:
-            self.relpath = os.path.join(run, test)
-            self.is_test_summary = True
-        else:
-            self.relpath = os.path.join(run, test, catalog)
+        self.path = os.path.join(base_dir, run, test)
+        self.relpath = os.path.join(os.path.basename(os.path.normpath(base_dir)), run, test)
+        self.is_test_summary = True
+
+        if catalog is not None:
+            self.path = os.path.join(self.path, catalog)
+            self.relpath = os.path.join(self.relpath, catalog)
             self.is_test_summary = False
-        self.path = os.path.join(base_dir, self.relpath)
+
         self.test = test
         self.catalog = catalog
         self.run = run
@@ -119,8 +120,8 @@ class DescqaItem(object):
         return self._files
 
 
-def validate_descqa_run_name(run_name, base_dir, earliest_datetime=None):
-    path = os.path.join(base_dir, run_name)
+def validate_descqa_run_name(run_name, sub_base_dir):
+    path = os.path.join(sub_base_dir, run_name)
     if not os.path.isdir(path):
         return
     if not os.access(path, os.R_OK + os.X_OK):
@@ -132,13 +133,13 @@ def validate_descqa_run_name(run_name, base_dir, earliest_datetime=None):
         return
     m = m.groups()
     t = datetime.datetime(*(int(i) for i in m[0].split('-')), microsecond=int(m[1] or 0))
-    if earliest_datetime and t < earliest_datetime:
-        return
     return t
 
 
 class DescqaRun(object):
     def __init__(self, run_name, base_dir, validated=False):
+        if not run_name.startswith(os.path.basename(os.path.normpath(base_dir))):
+            base_dir = os.path.join(base_dir, run_name.rpartition('-')[0])
         if not validated:
             assert validate_descqa_run_name(run_name, base_dir) is not None
         self.base_dir = base_dir
@@ -154,7 +155,7 @@ class DescqaRun(object):
 
     @staticmethod
     def _find_subdirs(path):
-        return tuple(sorted((d for d in os.listdir(path) if os.path.isdir(os.path.join(path, d)) and not d.startswith('_'))))
+        return tuple(sorted((d for d in os.listdir(path) if os.path.isdir(os.path.join(path, d)) and os.access(os.path.join(path, d), os.R_OK + os.X_OK) and not d.startswith('_'))))
 
     def _find_tests(self):
         return self._find_subdirs(self.path)
@@ -229,16 +230,18 @@ class DescqaRun(object):
         return self._status
 
 
-def iter_all_runs_unsorted(base_dir, days_to_search=None):
-    if days_to_search:
-        earliest_datetime = datetime.datetime.today() - datetime.timedelta(days=days_to_search)
-    else:
-        earliest_datetime = None
+def iter_all_runs_unsorted(base_dir):
     for run_name in os.listdir(base_dir):
-        run_key = validate_descqa_run_name(run_name, base_dir, earliest_datetime)
+        run_key = validate_descqa_run_name(run_name, base_dir)
         if run_key:
             yield (run_name, run_key)
 
 
-def iter_all_runs(base_dir, days_to_search=None):
-    return (r[0] for r in sorted(iter_all_runs_unsorted(base_dir, days_to_search), key=lambda r: r[1], reverse=True))
+def iter_all_runs(base_dir, months_to_search=None):
+    for i, month_dir in enumerate(sorted((d for d in os.listdir(base_dir) 
+            if re.match(r'\d{4}-[01]\d$', d) and os.path.isdir(os.path.join(base_dir, d))), reverse=True)):
+        if months_to_search is not None and i >= int(months_to_search):
+            break
+        sub_base_dir = os.path.join(base_dir, month_dir)
+        for run_name, _ in sorted(iter_all_runs_unsorted(sub_base_dir), key=lambda r: r[1], reverse=True):
+            yield run_name

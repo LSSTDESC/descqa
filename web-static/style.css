@@ -54,7 +54,7 @@ h3           {font-size: 110%; line-height: 1.25;}
 }
 .matrix td:first-child {
     text-align: right;
-    width: 130px;
+    width: 200px;
     font-weight: bold;
     padding-right: 0.4em;
 }
@@ -74,6 +74,9 @@ h3           {font-size: 110%; line-height: 1.25;}
 }
 .matrix td.green {
     background-color:#009E73;
+}
+.matrix td.blue{
+    background-color: #56B4E9;
 }
 
 .homeinfo{
@@ -112,10 +115,13 @@ span.orangered {
     color:#D55E00;
 }
 span.gold {
-    color:#56B4E9;
+    color:#F0E442;
 }
 span.green {
     color:#009E73;
+}
+span.blue{
+    color: #56B4E9;
 }
 
 a.celllink {

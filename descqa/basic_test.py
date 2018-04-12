@@ -1,12 +1,11 @@
 from __future__ import division, unicode_literals, absolute_import
 import os
-from builtins import str
+from builtins import str #pylint: disable=W0622
 import yaml
 import numpy as np
 import healpy as hp
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
-from collections import defaultdict
 
 __all__ = ['ListAvailableQuantities', 'SkyArea']
 
@@ -14,13 +13,12 @@ class ListAvailableQuantities(BaseValidationTest):
     """
     validation test to list all available quantities
     """
-    def __init__(self, **kwargs):
-        
+    def __init__(self, **kwargs): #pylint: disable=W0231
         self.kwargs = kwargs
         self.calc_min_max = kwargs.get('calc_min_max', False)
 
 
-    def _save_quantities(self, catalog_name, quantities, filename, ranges=None):
+    def _save_quantities(self, catalog_name, quantities, filename):
         is_dict = isinstance(quantities, dict)
         maxlen = max((len(q) for q in quantities))
         with open(filename, 'w') as f:
@@ -63,7 +61,7 @@ class ListAvailableQuantities(BaseValidationTest):
                 if data[qx].dtype.char in 'bBiulfd':
                     d_min[q] = min(np.nanmin(data[qx]), d_min.get(q, np.inf))
                     d_max[q] = max(np.nanmax(data[qx]), d_max.get(q, -np.inf))
-                
+
         #clean_up q_native added quantities
         for qx in quantities_needed:
             if qx.endswith('_native'):
@@ -79,14 +77,14 @@ class ListAvailableQuantities(BaseValidationTest):
         with open(os.path.join(output_dir, 'config.yaml'), 'w') as f:
             f.write(yaml.dump(catalog_instance.get_catalog_info(), default_flow_style=False))
             f.write('\n')
-        return TestResult(0, passed=True)
+        return TestResult(inspect_only=True)
 
 
 class SkyArea(BaseValidationTest):
     """
     validation test to show sky area
     """
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs): #pylint: disable=W0231
         self.nside = kwargs.get('nside', 64)
         assert hp.isnsideok(self.nside), '`nside` value {} not correct'.format(self.nside)
 
@@ -98,7 +96,7 @@ class SkyArea(BaseValidationTest):
         pixels = set()
         for d in catalog_instance.get_quantities(['ra_true', 'dec_true'], return_iterator=True):
             pixels.update(hp.ang2pix(self.nside, d['ra_true'], d['dec_true'], lonlat=True))
-        
+
         frac = len(pixels) / hp.nside2npix(self.nside)
         skyarea = frac * np.rad2deg(np.rad2deg(4.0*np.pi))
 
@@ -109,5 +107,4 @@ class SkyArea(BaseValidationTest):
         hp.mollview(hp_map, title=catalog_name, coord='C', cbar=None)
         plt.savefig(os.path.join(output_dir, 'skymap.png'))
         plt.close()
-        return TestResult(0, passed=True, summary='approx. {:.7g} sq. deg.'.format(skyarea))
-
+        return TestResult(inspect_only=True, summary='approx. {:.7g} sq. deg.'.format(skyarea))
