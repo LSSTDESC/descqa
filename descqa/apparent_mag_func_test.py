@@ -1,6 +1,7 @@
 from __future__ import unicode_literals, absolute_import, division
 import os
 import numpy as np
+from scipy.interpolate import interp1d
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
 
@@ -22,7 +23,7 @@ class ApparentMagFuncTest(BaseValidationTest):
     """
     apparent magnitude function test
     """
-    def __init__(self, band='i', band_lim=27.5, observation='HSC', **kwargs):
+    def __init__(self, band='i', band_lim=[24, 27.5], rtol=0.2, observation='HSC', **kwargs):
         """
         parameters
         ----------
@@ -30,7 +31,10 @@ class ApparentMagFuncTest(BaseValidationTest):
             photometric band
 
         band_lim : float
-            apparent magnitude upper limit
+            apparent magnitude lower and upper limits
+
+        rtol : float
+            relative tolerance alowed between mock and test data
 
         observation : string
             string indicating which obsrvational data to use for validating
@@ -47,6 +51,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         # attach some attributes to the test
         self.band = band
         self.band_lim = band_lim
+        self.rtol = rtol
 
         # check for validation observation
         if not observation:
@@ -149,14 +154,26 @@ class ApparentMagFuncTest(BaseValidationTest):
         for ax_this in [ax]:
             n = self.validation_data['n(<mag)']
             m = self.validation_data['mag']
-            ax_this.plot(m, n, 'o', label=self.validation_data['label'])
+            ax_this.plot(m, n, '-', label=self.validation_data['label'], color='black')
+            ax_this.fill_between.plot(m, n-self.rtol*n, n+self.rtol*n, color='black', alpha=0.5)
 
         self.post_process_plot(ax)
         fig.savefig(os.path.join(output_dir, 'cumulative_app_mag_plot.png'))
         plt.close(fig)
 
-        score = 0  # calculate your summary statistics
-        return TestResult(score, passed=True)
+        # interpolate upper and lower bounds of test data
+        y0 = interp1d(m, np.log10(n))
+        y_max = interp1d(m, np.log10(n+self.rtol*n))
+        y_min = interp1d(m, np.log10(n-self.rtol*n))
+        # interpolate mock data
+        y = interp1d(m, np.log10(n))
+
+        m_sample = np.linspace(self.band_lim[0], self.band_lim[0], 10000)
+        passed = (np.any(y(m_sample) <= y_max(m_sample))) & (np.any(y(m_sample) >= y_min(m_sample)))
+
+        score = (y(m_sample) - y0(m_sample))/y0(m_sample)
+
+        return TestResult(score, passed=passed)
 
     def conclude_test(self, output_dir):
 
