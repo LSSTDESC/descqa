@@ -18,6 +18,7 @@ class ImgPkTest(BaseValidationTest):
         self.validation_data = astropy.table.Table.read(self.input_path)
         self.label = val_label
         self.raft = raft
+
     def post_process_plot(self, ax): 
         ax.plot(self.validation_data['k'],self.validation_data['Pk'],
             label=self.label)
@@ -32,16 +33,16 @@ class ImgPkTest(BaseValidationTest):
         xdim, ydim = list(test_raft.sensors.values())[0].get_data().shape
         total_data = np.zeros((xdim*3,ydim*3))
         # Assemble the 3 x 3 raft's image: Need to use LSST's software to
-        # handle the edges properly
+        # handle the gaps properly
         for i in range(0,3):
             for j in range(0,3):
-                total_data[xdim*i:xdim*(i+1),ydim*j:ydim*(j+1)] = list(test_raft.sensors.values())[3*i+j].get_data()
+                total_data[xdim*i:xdim*(i+1),ydim*j:ydim*(j+1)] = test_raft.sensors['S%d%d' %(i,j)].get_data()
 
         # FFT of the density contrast
         F1 = fftpack.fft2((total_data/np.mean(total_data)-1))
         F2 = fftpack.fftshift( F1 )
         psd2D = np.abs( F2 )**2 # 2D power
-        pix_scale = 0.2/60*rebinning #pixel scale in arcmin
+        pix_scale = 0.2/60*rebinning #pixel scale in arcmin 
         kx = 1./pix_scale*np.arange(-F2.shape[0]/2,F2.shape[0]/2)*1./F2.shape[0]
         ky = 1./pix_scale*np.arange(-F2.shape[1]/2,F2.shape[1]/2)*1./F2.shape[1]
         kxx, kyy = np.meshgrid(kx,ky)
@@ -51,7 +52,7 @@ class ImgPkTest(BaseValidationTest):
         ps1d = np.zeros(len(bins))
         for i,b in enumerate(bins):
             ps1d[i] = np.mean(psd2D.T[(rad>b-0.5*bin_space) & (rad<b+0.5*bin_space)])/(F2.shape[0]*F2.shape[1])
-
+        bins = bins/(2*np.pi)
         fig, ax = plt.subplots(2,1)
         for i in range(0,9):
             image = list(test_raft.sensors.values())[i].get_data()
@@ -65,6 +66,7 @@ class ImgPkTest(BaseValidationTest):
         ax[1].set_ylabel('P(k)')
         ax[1].set_xscale('log')
         ax[1].set_yscale('log')
+        ax[1].set_ylim(1,1000)
         self.post_process_plot(ax[1])
         fig.savefig(os.path.join(output_dir, 'plot.png'))
         score=0
