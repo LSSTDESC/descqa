@@ -180,7 +180,8 @@ class ApparentMagFuncTest(BaseValidationTest):
         # plot verifaction data on summary plot
         n = self.validation_data['n(<mag)']
         m = self.validation_data['mag']
-        self.summary_ax.plot(m, n, 'o', label=self.validation_data['label'])
+        self.summary_ax.plot(m, n, '-', label=self.validation_data['label'], color='black')
+        self.summary_ax.fill_between(m, n-self.rtol*n, n+self.rtol*n, color='black', alpha=0.5)
 
         self.post_process_plot(self.summary_ax)
         self.summary_fig.savefig(os.path.join(output_dir, 'summary.png'))
