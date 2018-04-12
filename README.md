@@ -1,6 +1,7 @@
 # DESCQA
 
 [![DOI](https://zenodo.org/badge/47784041.svg)](https://zenodo.org/badge/latestdoi/47784041)
+[![Paper DOI](https://img.shields.io/badge/Paper%20DOI-10.3847%2F1538--4365%2Faaa6c3-brightgreen.svg)](https://doi.org/10.3847/1538-4365/aaa6c3)
 [![arXiv:1709.09665](https://img.shields.io/badge/astro--ph.IM-arXiv%3A1709.09665-B31B1B.svg)](https://arxiv.org/abs/1709.09665)
 
 This repository contains the DESCQA framework that validates simulated galaxy catalogs. For more information about this framework, please check out the [DESCQA paper](https://arxiv.org/abs/1709.09665).
@@ -37,15 +38,9 @@ A [web interface](https://portal.nersc.gov/project/lsst/descqa/) hosted on NERSC
 
 ## Dependencies
 
-- numpy
-- scipy
-- matplotlib >= 2.0.0
-- astropy
-- healpy
-- pyyaml
-- future
-- jinja2
-- https://github.com/LSSTDESC/gcr-catalogs
+See `install_requires` and `extras_require` in [setup.py](setup.py) for the full installation dependencies. 
+
+Note, to *run* DESCQA (v2), [GCRCatalogs](https://github.com/LSSTDESC/gcr-catalogs) is also required.
 
 
 ### Additional dependencies For v1
