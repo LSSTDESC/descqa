@@ -1,0 +1,7 @@
+subclass_name: EllipticityDistribution.EllipticityDistribution
+zlo: 0.
+zhi: 2.
+N_ebins: 40
+observation: 'COSMOS_2013'
+normed: True
+description: 'Plot ellipticity distributions and compare with distributions from Joachimi et al 2013 COSMOS data'
