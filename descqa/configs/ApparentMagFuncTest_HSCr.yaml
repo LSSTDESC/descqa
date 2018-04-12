@@ -1,5 +1,5 @@
 subclass_name: apparent_mag_func_test.ApparentMagFuncTest
-band: z
+band: r
 band_lim: [24, 27.5]
 observation: 'HSC'
 included_by_default: true
