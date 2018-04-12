@@ -45,7 +45,11 @@ class ApparentMagFuncTest(BaseValidationTest):
         possible_mag_fields = ('mag_{}_lsst',
                                'mag_{}_sdss',
                                'mag_{}_des',
-                               'mag_{}_hsc')
+                               'mag_{}_hsc',
+                               'mag_true_{}_lsst',
+                               'mag_true_{}_sdss',
+                               'mag_true_{}_des',
+                               'mag_true_{}_hsc')
         self.possible_mag_fields = [f.format(band) for f in possible_mag_fields]
 
         # attach some attributes to the test
@@ -90,6 +94,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         ax.set_ylabel(r'$n(< {\rm mag}) ~[{\rm deg^{-2}}]$')
         ax.set_xlabel(self.band + ' magnitude')
         ax.set_ylim([1000,10**7])
+        ax.set_yscale('log')
         ax.set_title(str(self.band_lim[0]) + ' < '+self.band + ' < ' + str(self.band_lim[1]))
 
     @staticmethod
