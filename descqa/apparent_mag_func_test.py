@@ -143,7 +143,7 @@ class ApparentMagFuncTest(BaseValidationTest):
 
         for ax_this in (ax, self.summary_ax):  # plot on both this and summary plots
             ax_this.plot(mag_bins, sampled_N, '-', label=catalog_name)
-            ax_this.plot(self.band_lim, N_tot)
+            #ax_this.plot(self.band_lim, N_tot)
             ax_this.set_yscale('log')
             ax_this.set_ylabel(r'$\rm mag$')
             ax_this.set_ylabel(r'$N(<{\rm mag})~[{\rm deg}^{-2}]$')
