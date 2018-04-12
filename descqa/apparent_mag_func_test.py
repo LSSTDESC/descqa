@@ -43,12 +43,12 @@ class ApparentMagFuncTest(BaseValidationTest):
 
         # catalog quantities needed
         possible_mag_fields = ('mag_{}_lsst',
-                               'mag_{}_sdss',
-                               'mag_{}_des',
-                               'mag_{}_hsc',
                                'mag_true_{}_lsst',
+                               'mag_{}_sdss',
                                'mag_true_{}_sdss',
+                               'mag_{}_des',
                                'mag_true_{}_des',
+                               'mag_{}_hsc',
                                'mag_true_{}_hsc')
         self.possible_mag_fields = [f.format(band) for f in possible_mag_fields]
 
@@ -93,7 +93,8 @@ class ApparentMagFuncTest(BaseValidationTest):
         ax.legend(loc='upper left')
         ax.set_ylabel(r'$n(< {\rm mag}) ~[{\rm deg^{-2}}]$')
         ax.set_xlabel(self.band + ' magnitude')
-        ax.set_ylim([1000,10**7])
+        ax.set_ylim([1000, 10**7])
+        ax.fill_between([self.band_lim[0], self.band_lim[1]], [0, 0], [10**9, 10**9], alpha=0.1, color='grey')
         ax.set_yscale('log')
         ax.set_title(str(self.band_lim[0]) + ' < '+self.band + ' < ' + str(self.band_lim[1]))
 
@@ -175,10 +176,10 @@ class ApparentMagFuncTest(BaseValidationTest):
         # interpolate mock data
         y = interp1d(mag_bins, np.log10(sampled_N))
 
-        m_sample = np.linspace(self.band_lim[0], self.band_lim[0], 10000)
+        m_sample = np.linspace(self.band_lim[0], self.band_lim[1], 10000)
         passed = (np.all(y(m_sample) <= y_max(m_sample))) & (np.all(y(m_sample) >= y_min(m_sample)))
 
-        score = np.max(np.fabs((y(m_sample) - y0(m_sample))/y0(m_sample)))
+        score = np.max(np.fabs((y(m_sample) - y0(m_sample)))/y0(m_sample))/self.rtol
 
         return TestResult(score, passed=passed)
 
