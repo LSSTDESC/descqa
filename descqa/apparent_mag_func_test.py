@@ -128,8 +128,8 @@ class ApparentMagFuncTest(BaseValidationTest):
 
         # define apparent magnitude bins for plotting purposes
         self.dmag = 0.1
-        self.max_mag = self.band_lim + 1.0  # go one mag beyond the limit
-        self.min_mag = 17.7  # start at bright galaxies
+        self.max_mag = self.band_lim[1] + 1.0  # go one mag beyond the limit
+        self.min_mag = self.band_lim[0] - 1.0  # start at bright galaxies
         mag_bins = np.arange(self.min_mag, self.max_mag, self.dmag)
 
         # calculate N at the specified points
