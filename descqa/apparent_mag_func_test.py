@@ -12,7 +12,7 @@ possible_observations = {
         'usecols': (0, 1, 2),
         'colnames': ('mag', 'n(<mag)', 'err'),
         'skiprows': 1,
-        'label': 'HSC (D. Campbell, desqagen 2018)',
+        'label': 'HSC (desqagen 2018)',
     }
 }
 
@@ -89,6 +89,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         ax.legend(loc='upper left')
         ax.set_ylabel(r'$n(< {\rm mag}) ~[{\rm deg^{-2}}]$')
         ax.set_xlabel(self.band + ' magnitude')
+        ax.set_ylim([1000,10**7])
 
     @staticmethod
     def get_catalog_data(gc, quantities, filters=None):
@@ -169,7 +170,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         y = interp1d(m, np.log10(n))
 
         m_sample = np.linspace(self.band_lim[0], self.band_lim[0], 10000)
-        passed = (np.any(y(m_sample) <= y_max(m_sample))) & (np.any(y(m_sample) >= y_min(m_sample)))
+        passed = (np.all(y(m_sample) <= y_max(m_sample))) & (np.all(y(m_sample) >= y_min(m_sample)))
 
         score = np.max(np.fabs((y(m_sample) - y0(m_sample))/y0(m_sample)))
 
