@@ -87,7 +87,7 @@ class ApparentMagFuncTest(BaseValidationTest):
     def post_process_plot(self, ax):
 
         ax.legend(loc='upper left')
-        ax.set_ylabel('n(< {\rm mag}) ~[{\rm deg^{-2}}]')
+        ax.set_ylabel(r'$n(< {\rm mag}) ~[{\rm deg^{-2}}]$')
         ax.set_xlabel(self.band + ' magnitude')
 
     @staticmethod
@@ -171,7 +171,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         m_sample = np.linspace(self.band_lim[0], self.band_lim[0], 10000)
         passed = (np.any(y(m_sample) <= y_max(m_sample))) & (np.any(y(m_sample) >= y_min(m_sample)))
 
-        score = (y(m_sample) - y0(m_sample))/y0(m_sample)
+        score = np.max(np.fabs((y(m_sample) - y0(m_sample))/y0(m_sample)))
 
         return TestResult(score, passed=passed)
 
