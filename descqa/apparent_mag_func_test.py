@@ -90,6 +90,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         ax.set_ylabel(r'$n(< {\rm mag}) ~[{\rm deg^{-2}}]$')
         ax.set_xlabel(self.band + ' magnitude')
         ax.set_ylim([1000,10**7])
+        ax.set_title(str(self.band_lim[0]) + ' < '+self.band + ' < ' + str(self.band_lim[1]))
 
     @staticmethod
     def get_catalog_data(gc, quantities, filters=None):
