@@ -155,7 +155,7 @@ class ApparentMagFuncTest(BaseValidationTest):
             n = self.validation_data['n(<mag)']
             m = self.validation_data['mag']
             ax_this.plot(m, n, '-', label=self.validation_data['label'], color='black')
-            ax_this.fill_between.plot(m, n-self.rtol*n, n+self.rtol*n, color='black', alpha=0.5)
+            ax_this.fill_between(m, n-self.rtol*n, n+self.rtol*n, color='black', alpha=0.5)
 
         self.post_process_plot(ax)
         fig.savefig(os.path.join(output_dir, 'cumulative_app_mag_plot.png'))
