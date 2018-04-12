@@ -3,5 +3,5 @@ description: 'Compute power spectrum of the background'
 included_by_default: true
 
 input_path: '/global/homes/j/jsanch87/quick_pk_bkg/Pk_30.fits.gz'
-val_label: 'Test 33'
-raft: 'R34'
+val_label: 'Test 30'
+raft: 'R22'
