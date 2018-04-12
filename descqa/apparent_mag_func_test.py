@@ -145,8 +145,7 @@ class ApparentMagFuncTest(BaseValidationTest):
             ax_this.set_xlim([17,30])
             ax_this.set_ylim([1,10**8])
 
-        # plot validation data
-        for ax_this in ax:
+            # plot validation data
             n = self.validation_data['n(<mag)']
             m = self.validation_data['mag']
             ax_this.plot(m, n, 'o', label=self.validation_data['label'])
