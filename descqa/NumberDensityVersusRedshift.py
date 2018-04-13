@@ -262,13 +262,13 @@ class NumberDensityVersusRedshift(BaseValidationTest):
                 key = cut_label.replace('$', '')
                 results[key] = {'meanz': meanz, 'total':total, 'N':N, 'N+-':Nerrors}
                 self.catalog_subplot(ax_this, meanz, N, Nerrors, catalog_color, catalog_marker, catalog_label)
-                if z0 and z0 > 0.:
+                if z0 and z0 > 0: # has validation data
                     fits = self.validation_subplot(ax_this, meanz, z0, z0err, validation_label, rescale=rescale)
-                results[key].update(fits)
+                    results[key].update(fits)
+                    scores[n] = self.get_score(N, fits['fit'], covariance, use_diagonal_only=self.use_diagonal_only)
+                    results[key]['score'] = 'Chi_sq/dof = {:11.4g}'.format(scores[n])
                 self.decorate_subplot(ax_this, n)
 
-                scores[n] = self.get_score(N, fits['fit'], covariance, use_diagonal_only=self.use_diagonal_only)
-                results[key]['score'] = 'Chi_sq/dof = {:11.4g}'.format(scores[n])
                 #add curve for this catalog to summary plot
                 self.catalog_subplot(summary_ax_this, meanz, N, Nerrors, catalog_color, catalog_marker, catalog_label)
                 if self.first_pass and z0 and z0 > 0:
