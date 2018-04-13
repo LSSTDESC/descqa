@@ -39,8 +39,6 @@ class ConditionalLuminosityFunction(BaseValidationTest):
 
         self.dmag = self.magnitude_bins[1:] - self.magnitude_bins[:-1]
         self.mag_center = (self.magnitude_bins[1:] + self.magnitude_bins[:-1])*0.5
-        
-        self.color_cut = lambda g, r, z: g-r>np.percentile((g-r)[z<0.2],self.color_cut_percent*100)
 
 
     def prepare_galaxy_catalog(self, gc):
@@ -75,14 +73,6 @@ class ConditionalLuminosityFunction(BaseValidationTest):
         bins = (self.magnitude_bins, self.mass_bins, self.z_bins)
         hist_cen = np.zeros((self.n_magnitude_bins, self.n_mass_bins, self.n_z_bins))
         hist_sat = np.zeros_like(hist_cen)
-        
-        red_query = GCRQuery((self.color_cut, 
-                              absolute_magnitude1_field, 
-                              absolute_magnitude2_field, 'redshift_true'))
-            
-        cen_query = GCRQuery('is_central') & red_query
-        sat_query = ~GCRQuery('is_central') & red_query
-
 
         red_query = GCRQuery((self.color_cut,
                               absolute_magnitude1_field,
