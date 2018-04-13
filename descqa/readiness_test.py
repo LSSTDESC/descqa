@@ -118,7 +118,7 @@ class CheckQuantities(BaseValidationTest):
         for i, checks in enumerate(self.quantities_to_check):
 
             quantity_patterns = checks['quantities'] if isinstance(checks['quantities'], (tuple, list)) else [checks['quantities']]
-            assert quantity_patterns, 'yaml file not specify correctly!'
+            assert quantity_patterns, 'yaml file not correctly specified!'
 
             quantities_this = set()
             quantity_pattern = None
@@ -191,6 +191,10 @@ class CheckQuantities(BaseValidationTest):
 
             ax.set_xlabel(('log ' if checks.get('log') else '') + quantity_group_label)
             ax.yaxis.set_ticklabels([])
+            if checks.get('plot_min') is not None: #zero values fail otherwise
+                ax.set_xlim(left=checks.get('plot_min'))
+            if checks.get('plot_max') is not None:
+                ax.set_xlim(right=checks.get('plot_max'))
             ax.set_title('{} {}'.format(catalog_name, getattr(catalog_instance, 'version', '')), fontsize='small')
             fig.tight_layout()
             if len(quantities_this) <= 9:
