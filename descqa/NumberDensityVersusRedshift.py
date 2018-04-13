@@ -369,7 +369,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         cov = cov[mask].T[mask]
         try:
             inverse_cov = np.matrix(cov).I
-        except LinAlgError:
+        except np.linalg.LinAlgError:
             print('Covariance matrix inversion failed: diagonal errors only will be used')
             use_diagonal_only = True
 
