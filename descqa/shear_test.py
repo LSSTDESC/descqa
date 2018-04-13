@@ -219,26 +219,14 @@ class ShearTest(BaseValidationTest):
         '''
         Post-processing routines on plot
         '''
-        #ax.text(0.05, 0.95, "add text here")
-        plt.xscale('log')
-        ax[0].legend()
-        ax[1].legend()
-        max_height1 = 80
-        max_height2 = 15
-        min_height1 = -5
-        min_height2 = -1
-
-        #very rough DES-like limits (maximum and minimum scales)
-        ax[0].vlines(2.5, min_height1, max_height1, linestyles='--')
-        ax[0].vlines(200., min_height1, max_height1, linestyles='--')
-        ax[1].vlines(35., min_height2, max_height2, linestyles='--')
-        ax[1].vlines(200., min_height2, max_height2, linestyles='--')
-
-        plt.xlabel(r'$\theta \rm{(arcmin)}$')
-        ax[0].set_ylabel(r'$\chi_{+} (10^{-6}) $')
-        ax[1].set_ylabel(r'$\chi_{-} (10^{-6}) $')
-        ax[0].set_ylim([min_height1, max_height1])
-        ax[1].set_ylim([min_height2, max_height2])
+        # vmin and vmax are very rough DES-like limits (maximum and minimum scales)
+        for ax_this, vmin, vmax, sign in zip(ax, (2.5, 35), (200, 200), '+-'):
+            ax_this.set_xscale('log')
+            ax_this.set_ylabel(r'$\chi_{{{}}} \; (10^{{-6}})$'.format(sign))
+            ax_this.axvline(vmin, ls='--', c='k')
+            ax_this.axvline(vmax, ls='--', c='k')
+            ax_this.legend()
+        ax_this.set_xlabel(r'$\theta \; {\rm (arcmin)}$')
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         ''' 
