@@ -1,10 +1,13 @@
 from __future__ import unicode_literals, absolute_import, division
 import os
 import numpy as np
+try:
+   import kmeans_radec
+except ImportError:
+   sys.exit("You need kmeans_radec install it from https://github.com/esheldon/kmeans_radec")
 from GCR import GCRQuery
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
-import kmeans_radec
 __all__ = ['ConditionalLuminosityFunction_redmapper']
 
 
