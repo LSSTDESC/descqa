@@ -75,7 +75,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
             jackList[0], quant['cluster_id'][mask], quant['cluster_id_member'])
         ##
         # calculating clf
-        cenclf, satclf, covar_cen, covar_sat = self.redm_clf(Mag, cenMag, cengalindex, pcen_all,
+        cenclf, satclf, covar_cen, covar_sat = self.redm_clf(Mag, cenMag, pcen_all,
                                                              jackList, quant['cluster_id'][mask], quant['cluster_id_member'],
                                                              match_index=match_index_jack, limmag=limmag,
                                                              scaleval=quant['scaleval'][mask], pmem=quant['p_mem'],
@@ -144,7 +144,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                 if len(ra_cluster.shape) == 1:
                     place = np.where((np.abs(ra_cluster[i]-ra[count_lo:count_hi]) < 1E-5) &
                                      (np.abs(dec_cluster[i]-dec[count_lo:count_hi]) < 1E-5))[0]
-                if len(place) == 0:
+                if not place:
                     print("WARNING:  Possible ID issue in get_central_mag")
                     cenmag[i][j] = 0
                     cengalindex[i][j] = -1
@@ -202,7 +202,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
             if endgal < mygal:
                 print("Something has gone wrong, ")
             glist = galpos[mygal:endgal]
-            if len(glist) > 0:
+            if glist.size!=0:
                 gboot_single.extend(glist)
             else:
                 gboot_single.extend([])
@@ -267,8 +267,8 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         nlumbins = len(lumbins)
         p = np.zeros_like(limmag)+1
 
-        for i in range(len(limmag)):
-            mybin = int(np.floor((limmag[i] - minlum)/dlum))
+        for i, limmag_in in enumerate(limmag):
+            mybin = int(np.floor((limmag_in - minlum)/dlum))
             binlist[i] = 0
             if mybin > nlumbins:
                 nclusters_lum = nclusters_lum + p[i]
@@ -279,14 +279,14 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         return nclusters_lum, binlist
 
     def make_single_clf(self, lm, z, lumbins, count_arr, lm_min, lm_max, zmin, zmax,
-                        limmag=[]):
+                        limmag=None):
         dlum = lumbins[1]-lumbins[0]
         clf = np.zeros_like(lumbins).astype(int)
 
         clist = np.where((z >= zmin) & (z < zmax) &
                          (lm >= lm_min) & (lm < lm_max))[0]
 
-        if len(clist) == 0:
+        if clist.size==0:
             print("WARNING: no clusters found for limits of: {0} {1} {2} {3}".format(
                 lm_min, lm_max, zmin, zmax))
             return clf
@@ -299,7 +299,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
 
         return clf
 
-    def redm_clf(self, Mag, cenMag, cengalindex,
+    def redm_clf(self, Mag, cenMag,
                  pcen_all, jacklist, cluster_id, cluster_id_member,
                  match_index,
                  limmag, scaleval, pmem, pcen, cluster_lm, cluster_z):
@@ -348,10 +348,10 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                 for k in range(nlambda):
                     cenclf_jack[i, j, k, :] = self.make_single_clf(cluster_lm[jack], cluster_z[jack],
                                                                    lumbins, cen_count_arr_b, lm_min[j, k], lm_max[j, k],
-                                                                   zmin[j], zmax[j], limmag=limmag)
+                                                                   zmin[j], zmax[j], limmag=my_limmag)
                     satclf_jack[i, j, k, :] = self.make_single_clf(cluster_lm[jack], cluster_z[jack],
                                                                    lumbins, sat_count_arr_b, lm_min[j, k], lm_max[j, k],
-                                                                   zmin[j], zmax[j], limmag=limmag)
+                                                                   zmin[j], zmax[j], limmag=my_limmag)
         covar_cen = np.zeros([nz, nlambda, nlum, nlum])
         covar_sat = np.zeros([nz, nlambda, nlum, nlum])
         meanjack_cen = np.zeros([nz, nlambda, nlum])
