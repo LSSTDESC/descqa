@@ -1,11 +1,12 @@
 from __future__ import unicode_literals, absolute_import, division
 import os
 import numpy as np
+import sys
 try:
    import kmeans_radec
 except ImportError:
    sys.exit("You need kmeans_radec install it from https://github.com/esheldon/kmeans_radec")
-from GCR import GCRQuery
+#from GCR import GCRQuery
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
 __all__ = ['ConditionalLuminosityFunction_redmapper']
@@ -80,8 +81,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                                                              scaleval=quant['scaleval'][mask], pmem=quant['p_mem'],
                                                              pcen=quant['p_cen'][mask],
                                                              cluster_lm=quant['richness'][mask],
-                                                             cluster_z=quant['redshift_cluster'][mask]
-                                                             )
+                                                             cluster_z=quant['redshift_cluster'][mask])
         ##
 
         clf = {'satellites': satclf, 'centrals': cenclf}
@@ -253,7 +253,6 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
 
         ys = np.outer(np.ones(p_cen.shape[0]), np.arange(p_cen.shape[1]))
         mask = ((mybin >= 0) & (mybin < nlum) & (ys < ncen)).astype(np.float64)
-        newbin = mybin*mask
         for i in range(nlum):
             masknew = (mybin == i).astype(np.float64)*mask
             newNewbin = np.sum(masknew*weight, axis=1)
@@ -317,7 +316,6 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         nlambda = len(lm_min[0])
         nz = len(zmin)
         njack = len(jacklist)
-        nclusters = len(cenMag)
         cenclf = np.zeros([nz, nlambda, nlum])
         satclf = np.zeros([nz, nlambda, nlum])
 
@@ -329,10 +327,10 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
             for j in range(nlambda):
                 cenclf[i, j] = self.make_single_clf(cluster_lm, cluster_z,
                                                     lumbins, cen_count_arr, 
-                                                    lm_min[i,j], lm_max[i,j],
+                                                    lm_min[i, j], lm_max[i, j],
                                                     zmin[i], zmax[i], limmag=limmag)
                 satclf[i, j] = self.make_single_clf(cluster_lm, cluster_z,
-                                                    lumbins, sat_count_arr, lm_min[i,j], lm_max[i,j],
+                                                    lumbins, sat_count_arr, lm_min[i, j], lm_max[i, j],
                                                     zmin[i], zmax[i], limmag=limmag)
         njack = len(jacklist)
         cenclf_jack = np.zeros([njack, nz, nlambda, nlum])
@@ -349,10 +347,10 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
             for j in range(nz):
                 for k in range(nlambda):
                     cenclf_jack[i, j, k, :] = self.make_single_clf(cluster_lm[jack], cluster_z[jack],
-                                                                   lumbins, cen_count_arr_b, lm_min[j,k], lm_max[j,k],
+                                                                   lumbins, cen_count_arr_b, lm_min[j, k], lm_max[j, k],
                                                                    zmin[j], zmax[j], limmag=limmag)
                     satclf_jack[i, j, k, :] = self.make_single_clf(cluster_lm[jack], cluster_z[jack],
-                                                                   lumbins, sat_count_arr_b, lm_min[j,k], lm_max[j,k],
+                                                                   lumbins, sat_count_arr_b, lm_min[j, k], lm_max[j, k],
                                                                    zmin[j], zmax[j], limmag=limmag)
         covar_cen = np.zeros([nz, nlambda, nlum, nlum])
         covar_sat = np.zeros([nz, nlambda, nlum, nlum])
