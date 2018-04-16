@@ -31,8 +31,8 @@ setup(
     packages=['descqa'],
     install_requires=['future', 'pyyaml', 'jinja2'],
     extras_require={
-        'full': ['numpy', 'scipy', 'matplotlib', 'GCR>=0.6.2', 'healpy', 'treecorr', 'camb', 'scikit-learn', 'kmeans_radec'],
+        'full': ['kmeans_radec==0.1','numpy', 'scipy', 'matplotlib', 'GCR>=0.6.2', 'healpy', 'treecorr', 'camb', 'scikit-learn'],
     },
     package_data={'descqa': ['configs/*.yaml', 'data/*']},
-    dependency_links=['git+https://github.com/esheldon/kmeans_radec.git#egg=kmeans_radec'],
+    dependency_links=['git+https://github.com/esheldon/kmeans_radec.git#egg=kmeans_radec-0.1'],
 )
