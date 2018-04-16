@@ -13,7 +13,7 @@ before_install: # camb requires gfortran to be at least gfortran-4.9
 - sudo ln -s /usr/bin/gfortran-4.9 /usr/bin/gfortran
 
 install:
-- pip install .[full]
+- pip install .[full] --process-dependency-links
 - pip install pylint nose
 
 before_script:
