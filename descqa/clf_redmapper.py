@@ -202,7 +202,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
             if endgal < mygal:
                 print("Something has gone wrong, ")
             glist = galpos[mygal:endgal]
-            if glist.size!=0:
+            if glist.size != 0:
                 gboot_single.extend(glist)
             else:
                 gboot_single.extend([])
@@ -286,7 +286,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         clist = np.where((z >= zmin) & (z < zmax) &
                          (lm >= lm_min) & (lm < lm_max))[0]
 
-        if clist.size==0:
+        if clist.size == 0:
             print("WARNING: no clusters found for limits of: {0} {1} {2} {3}".format(
                 lm_min, lm_max, zmin, zmax))
             return clf
@@ -326,7 +326,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         for i in range(nz):
             for j in range(nlambda):
                 cenclf[i, j] = self.make_single_clf(cluster_lm, cluster_z,
-                                                    lumbins, cen_count_arr, 
+                                                    lumbins, cen_count_arr,
                                                     lm_min[i, j], lm_max[i, j],
                                                     zmin[i], zmax[i], limmag=limmag)
                 satclf[i, j] = self.make_single_clf(cluster_lm, cluster_z,
