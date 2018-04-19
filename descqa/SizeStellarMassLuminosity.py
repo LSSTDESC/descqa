@@ -25,7 +25,7 @@ class SizeStellarMassLuminosity(BaseValidationTest):
     Validation test of 2pt correlation function
     """
     _ARCSEC_TO_RADIAN = np.pi / 180. / 3600.
-
+    #pylint: disable=W0231
     def __init__(self, **kwargs):
         self.kwargs = kwargs
         self.observation = kwargs['observation']
@@ -48,7 +48,7 @@ class SizeStellarMassLuminosity(BaseValidationTest):
     @staticmethod
     def ConvertAbsMagLuminosity(AbsM, band):
         '''AbsM: absolute magnitude, band: filter'''
-        if type(AbsM) is list or type(AbsM) is np.ndarray:
+        if isinstance(AbsM, (list, np.ndarray)):
             AbsM = np.array(AbsM)
 
         bands = {'U':5.61, 'B':5.48, 'V':4.83, 'R':4.42, 'I':4.08, 
@@ -64,7 +64,6 @@ class SizeStellarMassLuminosity(BaseValidationTest):
             raise ValueError('Filter not implemented')
 
         logL = (AbsSun - AbsM) / 2.5 #unit of sun
-        L = 10**logL
         return logL
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
@@ -75,14 +74,14 @@ class SizeStellarMassLuminosity(BaseValidationTest):
         spl = redshift2dist(catalog_instance.cosmology)
         
         colnames = dict()
-        colnames['z'] = 'redshift'
+        colnames['z'] = catalog_instance.first_available('redshift', 'redshift_true')
         colnames['mag'] = catalog_instance.first_available(*self.possible_mag_fields)
         if self.observation == 'onecomp':
-            colnames['size'] = 'size_true'
+            colnames['size'] = catalog_instance.first_available('size', 'size_true')
         elif self.observation == 'twocomp':
-            colnames['size_bulge'] = 'size_bulge_true'
-            colnames['size_disk'] = 'size_disk_true'
-            colnames['bulge_to_total_ratio_i'] = 'bulge_to_total_ratio_i'
+            colnames['size_bulge'] = catalog_instance.first_available('size_bulge', 'size_bulge_true')
+            colnames['size_disk'] = catalog_instance.first_available('size_disk', 'size_disk_true')
+            colnames['bulge_to_total_ratio_i'] = catalog_instance.first_available('bulge_to_total_ratio_i')
              
         if not all(v for v in colnames.values()):
             return TestResult(skipped=True, summary='Missing requested quantities')
@@ -169,6 +168,8 @@ class SizeStellarMassLuminosity(BaseValidationTest):
                     ax2 = divider.append_axes("top", size='100%', pad=0)
                     for bti, axi in zip(bt_cons, [ax2, ax]):
                         for si in ['size_bulge', 'size_disk']:
+                            print(arcsec_to_kpc.shape, catalog_data_this[bti].shape, catalog_data_this[si].shape)
+                            print(catalog_data_this[bti][0:3], catalog_data_this[si][bti][0:3])
                             #print(logL_I[bti].shape, catalog_data_this[si].shape, arcsec_to_kpc.shape, (catalog_data_this[si] * arcsec_to_kpc)[bti].shape)
                             tsize_kpc = binned_statistic(logL_I[bti], (catalog_data_this[si] * arcsec_to_kpc)[bti], bins=default_L_bin_edges, statistic='mean')[0]
                             tsize_kpc_err = binned_statistic(logL_I[bti], (catalog_data_this[si] * arcsec_to_kpc)[bti], bins=default_L_bin_edges, statistic='std')[0]
@@ -235,4 +236,4 @@ class SizeStellarMassLuminosity(BaseValidationTest):
             plt.close(fig)
         
         #TODO: calculate summary statistics
-        return TestResult(0, passed=True)
+        return TestResult(inspect_only=True)
