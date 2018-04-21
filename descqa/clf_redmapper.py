@@ -1,11 +1,13 @@
 from __future__ import unicode_literals, absolute_import, division
 import os
-import numpy as np
 import sys
+import numpy as np
+import pickle
 try:
-   import kmeans_radec
+    import kmeans_radec
 except ImportError:
-   sys.exit("You need kmeans_radec install it from https://github.com/esheldon/kmeans_radec")
+    sys.exit(
+        "You need kmeans_radec install it from https://github.com/esheldon/kmeans_radec")
 #from GCR import GCRQuery
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
@@ -13,24 +15,27 @@ __all__ = ['ConditionalLuminosityFunction_redmapper']
 
 
 class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
-
+    old_lambd_bins = None
     def __init__(self, **kwargs):
-        self.band = kwargs.get('band1', 'r')
+        self.band = kwargs.get('band1', 'i')
         possible_mag_fields = ('mag_{0}_lsst',)
         self.possible_mag_fields = [
             f.format(self.band) for f in possible_mag_fields]
         self.njack = kwargs.get('njack', 20)
-        self.lambd_bins = np.linspace(*kwargs.get('lambd_bins', (5, 100, 6)))
-        self.z_bins = np.linspace(*kwargs.get('z_bins', (0.2, 1.0, 5)))
+        self.z_bins = kwargs.get('z_bins', np.array([0.1, 0.2, 0.3]))
+        self.n_z_bins = len(self.z_bins) - 1
+        defaultbins = np.array([5.0, 10.0, 15.0, 100.0]).reshape(-1, 1)
+        self.is_abundance_matching = kwargs.get('abundance_matching', False)
+        self.lambd_bins = np.tile(defaultbins, (1, self.n_z_bins)).T
         self.magnitude_bins = np.linspace(
             *kwargs.get('magnitude_bins', (-26, -18, 29)))
         self.n_magnitude_bins = len(self.magnitude_bins) - 1
-        self.nlambd_bins = len(self.lambd_bins) - 1
-        self.n_z_bins = len(self.z_bins) - 1
+        self.nlambd_bins = len(self.lambd_bins[0]) - 1
         self.dmag = self.magnitude_bins[1:] - self.magnitude_bins[:-1]
         self.lambd_center = (self.lambd_bins[1:] + self.lambd_bins[:-1])*0.5
         self.mag_center = (
             self.magnitude_bins[1:] + self.magnitude_bins[:-1])*0.5
+        self.compared_survey = kwargs.get('survey', "SDSS")
         self._other_kwargs = kwargs
 
     def prepare_galaxy_catalog(self, gc):
@@ -52,6 +57,11 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
             TestResult(skipped=True)
         magnitude_field, quantities_needed = prepared
         quant = catalog_instance.get_quantities(quantities_needed)
+        # Abundance matching
+        data = self.read_compared_data()
+        if self.is_abundance_matching:
+            self.abundance_matching(
+                quant['richness'], catalog_instance.get_catalog_info()['sky_area'])
         # Preprocess for all quantity
         mag = catalog_instance.get_quantities(magnitude_field)[magnitude_field]
         Mag = mag-catalog_instance.cosmology.distmod(quant['redshift']).value
@@ -86,25 +96,73 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
 
         clf = {'satellites': satclf, 'centrals': cenclf}
         covar = {'satellites': covar_sat, 'centrals': covar_cen}
-        self.make_plot(clf, covar, catalog_name, os.path.join(
+        self.make_plot(clf, covar, data, catalog_name, os.path.join(
             output_dir, 'clf_redmapper.png'))
         return TestResult(inspect_only=True)
 
-    def make_plot(self, clf, covar, name, save_to):
+    def read_compared_data(self):
+        zmin = self.z_bins[:-1]
+        zmax = self.z_bins[1:]
+        galaxytype = ["centrals", "satellites"]
+        data = {}
+        for galtype in galaxytype:
+            data[galtype] = []
+        for i, zrange in enumerate(zip(zmin, zmax)):
+            lambds = self.lambd_bins[i]
+            for lambdlow, lambdhigh in zip(lambds[:-1], lambds[1:]):
+                for galtype in galaxytype:
+                    if galtype == "centrals":
+                        name = "cen"
+                    else:
+                        name = "sat"
+                    try:
+                        data[galtype].append(
+                            np.loadtxt(self.data_dir + "/clf/{5}/clf_{4}_z_{0}_{1}_lm_{2}_{3}.dat".format(zrange[0], zrange[1], lambdlow, lambdhigh, name, self.compared_survey)))
+                    except:
+                        data[galtype].append(None)
+        return data
+
+    def abundance_matching(self, richness, area):
+        sortedrichness = np.sort(richness)[::-1]
+        newlambda_bins = []
+        zbin_low = self.z_bins[:-1]
+        zbin_high = self.z_bins[1:]
+        with open(self.data_dir+"/clf/{0}/abundance_cluster_perdegsq_matching.pkl".format(self.compared_survey), 'rb') as f:
+            sdssabundance = pickle.load(f)
+        for i, zrange in enumerate(zip(zbin_low, zbin_high)):
+            richness_temp = []
+            for lambd in self.lambd_bins[i]:
+                abundance_sdss = sdssabundance["z_{0:.2f}_{1:.2f}_lambdgt_{2:.10f}".format(
+                    zrange[0], zrange[1], lambd)]
+                richness_temp.append(
+                    sortedrichness[round(abundance_sdss*area)])
+            newlambda_bins.append(richness_temp)
+        self.old_lambd_bins = self.lambd_bins
+        self.lambd_bins = newlambda_bins
+        return
+
+    def make_plot(self, clf, covar, data, name, save_to):
         fig, ax = plt.subplots(self.nlambd_bins, self.n_z_bins,
                                sharex=True, sharey=True, figsize=(12, 10), dpi=100)
-
         for i in range(self.n_z_bins):
             for j in range(self.nlambd_bins):
                 ax_this = ax[j, i]
                 for k, fmt in zip(('satellites', 'centrals'), ('^', 'o')):
                     ax_this.errorbar(self.mag_center, clf[k][i, j], yerr=np.sqrt(
                         np.diag(covar[k][i, j])), label=k, fmt=fmt)
+                    newdata = data[k][i*self.nlambd_bins+j]
+                    if newdata is not None:
+                        ax_this.errorbar(
+                            newdata[:, 0], newdata[:, 1], yerr=newdata[:, 2], label=k+"_"+self.compared_survey, fmt=fmt)
                 ax_this.set_ylim(0.05, 50)
-                bins = self.lambd_bins[j], self.lambd_bins[j +
-                                                           1], self.z_bins[i], self.z_bins[i+1]
+                if self.old_lambd_bins is not None:
+                   bins = self.old_lambd_bins[i][j], self.old_lambd_bins[i][j +
+                                                                 1], self.z_bins[i], self.z_bins[i+1]
+                else:
+                   bins = self.lambd_bins[i][j], self.lambd_bins[i][j +
+                                                                 1], self.z_bins[i], self.z_bins[i+1]
                 ax_this.text(-25, 10,
-                             '${:.1E}\\leq \lambda <{:.1E}$\n${:g}\\leq z<{:g}$'.format(*bins))
+                             '${:.1E} \leq \lambda <{:.1E}$\n${:g} \leq z<{:g}$'.format(*bins))
                 ax_this.set_yscale("log")
         ax_this.legend(loc='lower right', frameon=False, fontsize='medium')
 
@@ -221,7 +279,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         index = np.zeros(max_id+1) - 100
         index[c_mem_id] = range(len(c_mem_id))
         mylist = np.where((mag <= maxlum) & (mag >= minlum))[0]
-        if len(mylist) == 0:
+        if mylist.size == 0:
             print("WARNING:  No galaxies found in range {0}, {1}".format(
                 minlum, maxlum))
             return count_arr
@@ -293,7 +351,8 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
 
         [nclusters_lum, binlist] = self.cluster_Lcount(lumbins, limmag[clist])
         for i in range(len(clist)):
-            clf[:binlist[i]] = clf[:binlist[i]] + count_arr[clist[i], :binlist[i]]
+            clf[:binlist[i]] = clf[:binlist[i]] + \
+                count_arr[clist[i], :binlist[i]]
 
         clf = clf/nclusters_lum/dlum
 
@@ -308,10 +367,8 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         zmin = self.z_bins[:-1]
         zmax = self.z_bins[1:]
         my_nz = len(zmin)
-        lm_min = self.lambd_bins[:-1]
-        lm_max = self.lambd_bins[1:]
-        lm_min = np.repeat([lm_min], my_nz, axis=0)
-        lm_max = np.repeat([lm_max], my_nz, axis=0)
+        lm_min = np.array([lambdbins[:-1] for lambdbins in self.lambd_bins])
+        lm_max = np.array([lambdbins[1:] for lambdbins in self.lambd_bins])
 
         nlambda = len(lm_min[0])
         nz = len(zmin)
@@ -330,7 +387,8 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                                                     lm_min[i, j], lm_max[i, j],
                                                     zmin[i], zmax[i], limmag=limmag)
                 satclf[i, j] = self.make_single_clf(cluster_lm, cluster_z,
-                                                    lumbins, sat_count_arr, lm_min[i, j], lm_max[i, j],
+                                                    lumbins, sat_count_arr, lm_min[i,
+                                                                                   j], lm_max[i, j],
                                                     zmin[i], zmax[i], limmag=limmag)
         njack = len(jacklist)
         cenclf_jack = np.zeros([njack, nz, nlambda, nlum])
@@ -342,15 +400,18 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
             sat_count_arr_b = self.count_galaxies_p(cluster_id[jack],
                                                     scaleval[jack], cluster_id_member[gjack],
                                                     (pmem*(1-pcen_all))[gjack], Mag[gjack], lumbins)
-            cen_count_arr_b = self.count_galaxies_p_cen(cenMag[jack], lumbins, pcen[jack])
+            cen_count_arr_b = self.count_galaxies_p_cen(
+                cenMag[jack], lumbins, pcen[jack])
             my_limmag = limmag[jack]
             for j in range(nz):
                 for k in range(nlambda):
                     cenclf_jack[i, j, k, :] = self.make_single_clf(cluster_lm[jack], cluster_z[jack],
-                                                                   lumbins, cen_count_arr_b, lm_min[j, k], lm_max[j, k],
+                                                                   lumbins, cen_count_arr_b, lm_min[j,
+                                                                                                    k], lm_max[j, k],
                                                                    zmin[j], zmax[j], limmag=my_limmag)
                     satclf_jack[i, j, k, :] = self.make_single_clf(cluster_lm[jack], cluster_z[jack],
-                                                                   lumbins, sat_count_arr_b, lm_min[j, k], lm_max[j, k],
+                                                                   lumbins, sat_count_arr_b, lm_min[j,
+                                                                                                    k], lm_max[j, k],
                                                                    zmin[j], zmax[j], limmag=my_limmag)
         covar_cen = np.zeros([nz, nlambda, nlum, nlum])
         covar_sat = np.zeros([nz, nlambda, nlum, nlum])
