@@ -13,6 +13,78 @@ from .base import BaseValidationTest, TestResult
 from .plotting import plt
 __all__ = ['ConditionalLuminosityFunction_redmapper']
 
+def cluster_Lcount(lumbins, limmag):
+     #count number of cluster for mag bins
+     nclusters_lum = np.zeros_like(lumbins)
+     binlist = np.zeros_like(limmag).astype(int)
+     dlum = lumbins[1]-lumbins[0]
+     minlum = lumbins[0]-dlum/2.
+     nlumbins = len(lumbins)
+     p = np.zeros_like(limmag)+1
+
+     for i, limmag_in in enumerate(limmag):
+         mybin = int(np.floor((limmag_in - minlum)/dlum))
+         binlist[i] = 0
+         if mybin > nlumbins:
+             nclusters_lum = nclusters_lum + p[i]
+             binlist[i] = nlumbins
+         if (mybin > 0) & (mybin <= nlumbins):
+             nclusters_lum[:mybin] = nclusters_lum[:mybin] + p[i]
+             binlist[i] = mybin
+     return nclusters_lum, binlist
+
+
+def count_galaxies_p_cen(cenmag, lumbins, p_cen):
+     #counting central galaxies
+     nlum = len(lumbins)
+     dlum = lumbins[1]-lumbins[0]
+     minlum = lumbins[0]-dlum/2.
+     chto_countArray = np.zeros([len(cenmag), nlum])
+     mybin = np.floor((cenmag[:, :]-minlum)/dlum).astype(np.int)
+     p_cen = p_cen.reshape(-1, 1)
+     ncen = np.zeros(p_cen.shape)
+     ncen = np.hstack(
+         ((np.ones(p_cen.shape[0])).reshape(-1, 1), ncen[:, :-1])).astype(np.int)
+     weight = p_cen
+
+     ys = np.outer(np.ones(p_cen.shape[0]), np.arange(p_cen.shape[1]))
+     mask = ((mybin >= 0) & (mybin < nlum) & (ys < ncen)).astype(np.float64)
+     for i in range(nlum):
+         masknew = (mybin == i).astype(np.float64)*mask
+         newNewbin = np.sum(masknew*weight, axis=1)
+         chto_countArray[:, i] = newNewbin[:]
+     return chto_countArray
+
+
+def count_galaxies_p(c_mem_id, scaleval, g_mem_id, p, mag, lumbins):
+     #counting all galaxies
+     nclusters = len(c_mem_id)
+     nlum = len(lumbins)
+     dlum = lumbins[1]-lumbins[0]
+     minlum = lumbins[0]-dlum/2.
+     maxlum = lumbins[-1]+dlum/2.
+     count_arr = np.zeros([nclusters, nlum])
+
+     max_id = np.max(c_mem_id)
+     index = np.zeros(max_id+1) - 100
+     index[c_mem_id] = range(len(c_mem_id))
+     mylist = np.where((mag <= maxlum) & (mag >= minlum))[0]
+     if mylist.size == 0:
+         print("WARNING:  No galaxies found in range {0}, {1}".format(
+             minlum, maxlum))
+         return count_arr
+
+     for gal in mylist:
+         if g_mem_id[gal] > max_id:
+             continue
+         mycluster = int(index[g_mem_id[gal]])
+         mybin = np.floor((mag[gal]-minlum)/dlum)
+         mybin = mybin.astype(int)
+         if (mybin < 0) | (mybin >= nlum) | (mycluster == -100):
+             continue
+         count_arr[mycluster, mybin] += p[gal]*scaleval[mycluster]
+
+     return count_arr
 
 class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
     old_lambd_bins = None
@@ -275,76 +347,6 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
 
         return gboot_single
 
-    def count_galaxies_p(self, c_mem_id, scaleval, g_mem_id, p, mag, lumbins):
-        #counting all galaxies
-        nclusters = len(c_mem_id)
-        nlum = len(lumbins)
-        dlum = lumbins[1]-lumbins[0]
-        minlum = lumbins[0]-dlum/2.
-        maxlum = lumbins[-1]+dlum/2.
-        count_arr = np.zeros([nclusters, nlum])
-
-        max_id = np.max(c_mem_id)
-        index = np.zeros(max_id+1) - 100
-        index[c_mem_id] = range(len(c_mem_id))
-        mylist = np.where((mag <= maxlum) & (mag >= minlum))[0]
-        if mylist.size == 0:
-            print("WARNING:  No galaxies found in range {0}, {1}".format(
-                minlum, maxlum))
-            return count_arr
-
-        for gal in mylist:
-            if g_mem_id[gal] > max_id:
-                continue
-            mycluster = int(index[g_mem_id[gal]])
-            mybin = np.floor((mag[gal]-minlum)/dlum)
-            mybin = mybin.astype(int)
-            if (mybin < 0) | (mybin >= nlum) | (mycluster == -100):
-                continue
-            count_arr[mycluster, mybin] += p[gal]*scaleval[mycluster]
-
-        return count_arr
-
-    def count_galaxies_p_cen(self, cenmag, lumbins, p_cen):
-        #counting central galaxies
-        nlum = len(lumbins)
-        dlum = lumbins[1]-lumbins[0]
-        minlum = lumbins[0]-dlum/2.
-        chto_countArray = np.zeros([len(cenmag), nlum])
-        mybin = np.floor((cenmag[:, :]-minlum)/dlum).astype(np.int)
-        p_cen = p_cen.reshape(-1, 1)
-        ncen = np.zeros(p_cen.shape)
-        ncen = np.hstack(
-            ((np.ones(p_cen.shape[0])).reshape(-1, 1), ncen[:, :-1])).astype(np.int)
-        weight = p_cen
-
-        ys = np.outer(np.ones(p_cen.shape[0]), np.arange(p_cen.shape[1]))
-        mask = ((mybin >= 0) & (mybin < nlum) & (ys < ncen)).astype(np.float64)
-        for i in range(nlum):
-            masknew = (mybin == i).astype(np.float64)*mask
-            newNewbin = np.sum(masknew*weight, axis=1)
-            chto_countArray[:, i] = newNewbin[:]
-        return chto_countArray
-
-    def cluster_Lcount(self, lumbins, limmag):
-        #count number of cluster for mag bins
-        nclusters_lum = np.zeros_like(lumbins)
-        binlist = np.zeros_like(limmag).astype(int)
-        dlum = lumbins[1]-lumbins[0]
-        minlum = lumbins[0]-dlum/2.
-        nlumbins = len(lumbins)
-        p = np.zeros_like(limmag)+1
-
-        for i, limmag_in in enumerate(limmag):
-            mybin = int(np.floor((limmag_in - minlum)/dlum))
-            binlist[i] = 0
-            if mybin > nlumbins:
-                nclusters_lum = nclusters_lum + p[i]
-                binlist[i] = nlumbins
-            if (mybin > 0) & (mybin <= nlumbins):
-                nclusters_lum[:mybin] = nclusters_lum[:mybin] + p[i]
-                binlist[i] = mybin
-        return nclusters_lum, binlist
 
     def make_single_clf(self, lm, z, lumbins, count_arr, lm_min, lm_max, zmin, zmax,
                         limmag=None):
@@ -360,7 +362,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                 lm_min, lm_max, zmin, zmax))
             return clf
 
-        [nclusters_lum, binlist] = self.cluster_Lcount(lumbins, limmag[clist])
+        [nclusters_lum, binlist] = cluster_Lcount(lumbins, limmag[clist])
         for i, c in enumerate(clist):
             clf[:binlist[i]] = clf[:binlist[i]] + \
                 count_arr[c, :binlist[i]]
@@ -387,9 +389,9 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         cenclf = np.zeros([nz, nlambda, nlum])
         satclf = np.zeros([nz, nlambda, nlum])
 
-        sat_count_arr = self.count_galaxies_p(cluster_id, scaleval, cluster_id_member,
+        sat_count_arr = count_galaxies_p(cluster_id, scaleval, cluster_id_member,
                                               pmem*(1-pcen_all), Mag, lumbins)
-        cen_count_arr = self.count_galaxies_p_cen(cenMag, lumbins, pcen)
+        cen_count_arr = count_galaxies_p_cen(cenMag, lumbins, pcen)
 
         for i in range(nz):
             for j in range(nlambda):
@@ -408,10 +410,10 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         for i, jack in enumerate(jacklist):
             gjack = self.getjackgal(
                 jack, cluster_id, cluster_id_member, match_index)
-            sat_count_arr_b = self.count_galaxies_p(cluster_id[jack],
+            sat_count_arr_b = count_galaxies_p(cluster_id[jack],
                                                     scaleval[jack], cluster_id_member[gjack],
                                                     (pmem*(1-pcen_all))[gjack], Mag[gjack], lumbins)
-            cen_count_arr_b = self.count_galaxies_p_cen(
+            cen_count_arr_b = count_galaxies_p_cen(
                 cenMag[jack], lumbins, pcen[jack])
             my_limmag = limmag[jack]
             for j in range(nz):
