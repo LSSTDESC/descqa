@@ -1,4 +1,4 @@
-from __future__ import unicode_literals, absolute_import, division
+from __future__ import unicode_literals, absolute_import, division, print_function
 import os
 import sys
 import pickle
@@ -16,7 +16,7 @@ __all__ = ['ConditionalLuminosityFunction_redmapper']
 
 class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
     old_lambd_bins = None
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs):#pylint: disable=W0231
         self.band = kwargs.get('band1', 'i')
         possible_mag_fields = ('mag_{0}_lsst',)
         self.possible_mag_fields = [
@@ -39,6 +39,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         self._other_kwargs = kwargs
 
     def prepare_galaxy_catalog(self, gc):
+        #list all quantities that is needed
         quantities_needed = {'cluster_id_member', 'cluster_id', 'ra', 'dec', 'ra_cluster', 'dec_cluster',
                              'richness', 'redshift', 'lim_limmag_dered', 'p_mem', 'scaleval', 'p_cen', 'redshift_cluster'}
         try:
@@ -52,6 +53,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         return magnitude_field, quantities_needed
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
+        #loop over all catalog
         prepared = self.prepare_galaxy_catalog(catalog_instance)
         if prepared is None:
             TestResult(skipped=True)
@@ -101,6 +103,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         return TestResult(inspect_only=True)
 
     def read_compared_data(self):
+        #read the data to be compared to 
         zmin = self.z_bins[:-1]
         zmax = self.z_bins[1:]
         galaxytype = ["centrals", "satellites"]
@@ -123,6 +126,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         return data
 
     def abundance_matching(self, richness, area):
+        #do abundance matching for =richness
         sortedrichness = np.sort(richness)[::-1]
         newlambda_bins = []
         zbin_low = self.z_bins[:-1]
@@ -142,6 +146,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         return
 
     def make_plot(self, clf, covar, data, name, save_to):
+        #plot the result
         fig, ax = plt.subplots(self.nlambd_bins, self.n_z_bins,
                                sharex=True, sharey=True, figsize=(12, 10), dpi=100)
         for i in range(self.n_z_bins):
@@ -157,12 +162,12 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                 ax_this.set_ylim(0.05, 50)
                 if self.old_lambd_bins is not None:
                     bins = self.old_lambd_bins[i][j], self.old_lambd_bins[i][j +
-                                                                 1], self.z_bins[i], self.z_bins[i+1]
+                                                                             1], self.z_bins[i], self.z_bins[i+1]
                 else:
                     bins = self.lambd_bins[i][j], self.lambd_bins[i][j +
-                                                                 1], self.z_bins[i], self.z_bins[i+1]
+                                                                     1], self.z_bins[i], self.z_bins[i+1]
                 ax_this.text(-25, 10,
-                             '${:.1E} \leq \lambda <{:.1E}$\n${:g} \leq z<{:g}$'.format(*bins))
+                             (r'${:.1E} \leq \lambda <{:.1E}$'+"\n"+r'${:g} \leq z<{:g}$').format(*bins))
                 ax_this.set_yscale("log")
         ax_this.legend(loc='lower right', frameon=False, fontsize='medium')
 
@@ -180,6 +185,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         plt.close(fig)
 
     def get_central_mag_id(self, cat_mem_match_id, mem_mem_match_id, ra_cluster, dec_cluster, ra, dec, mag):
+        #get the central galaxy's magnitude
         ncluster = len(cat_mem_match_id)
         ngals = len(mem_mem_match_id)
         cenmag = np.zeros([ncluster, 1])
@@ -214,6 +220,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         return cenmag, cengalindex
 
     def make_jack_samples_simple(self, RA, DEC):
+        #do jackknife
         radec = np.zeros((len(RA), 2))
         radec[:, 0] = RA.flatten()
         radec[:, 1] = DEC.flatten()
@@ -228,6 +235,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         return jacklist
 
     def getjackgal(self, jackclusterList, c_mem_id, g_mem_id, match_index=None):
+        #get galaxy mask for jackknife
         nclusters = len(c_mem_id)
         ngals = len(g_mem_id)
 
@@ -268,6 +276,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         return gboot_single
 
     def count_galaxies_p(self, c_mem_id, scaleval, g_mem_id, p, mag, lumbins):
+        #counting all galaxies
         nclusters = len(c_mem_id)
         nlum = len(lumbins)
         dlum = lumbins[1]-lumbins[0]
@@ -297,8 +306,8 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         return count_arr
 
     def count_galaxies_p_cen(self, cenmag, lumbins, p_cen):
+        #counting central galaxies
         nlum = len(lumbins)
-        nclusters = len(cenmag)
         dlum = lumbins[1]-lumbins[0]
         minlum = lumbins[0]-dlum/2.
         chto_countArray = np.zeros([len(cenmag), nlum])
@@ -318,6 +327,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         return chto_countArray
 
     def cluster_Lcount(self, lumbins, limmag):
+        #count number of cluster for mag bins
         nclusters_lum = np.zeros_like(lumbins)
         binlist = np.zeros_like(limmag).astype(int)
         dlum = lumbins[1]-lumbins[0]
@@ -338,6 +348,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
 
     def make_single_clf(self, lm, z, lumbins, count_arr, lm_min, lm_max, zmin, zmax,
                         limmag=None):
+        #calculate clf for single bins
         dlum = lumbins[1]-lumbins[0]
         clf = np.zeros_like(lumbins).astype(int)
 
@@ -362,6 +373,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                  pcen_all, jacklist, cluster_id, cluster_id_member,
                  match_index,
                  limmag, scaleval, pmem, pcen, cluster_lm, cluster_z):
+        #Main method of calculating clf
         lumbins = self.magnitude_bins[1:]
         nlum = len(lumbins)
         zmin = self.z_bins[:-1]
