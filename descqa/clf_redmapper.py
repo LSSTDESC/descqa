@@ -1,8 +1,8 @@
 from __future__ import unicode_literals, absolute_import, division
 import os
 import sys
-import numpy as np
 import pickle
+import numpy as np
 try:
     import kmeans_radec
 except ImportError:
@@ -156,10 +156,10 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                             newdata[:, 0], newdata[:, 1], yerr=newdata[:, 2], label=k+"_"+self.compared_survey, fmt=fmt)
                 ax_this.set_ylim(0.05, 50)
                 if self.old_lambd_bins is not None:
-                   bins = self.old_lambd_bins[i][j], self.old_lambd_bins[i][j +
+                    bins = self.old_lambd_bins[i][j], self.old_lambd_bins[i][j +
                                                                  1], self.z_bins[i], self.z_bins[i+1]
                 else:
-                   bins = self.lambd_bins[i][j], self.lambd_bins[i][j +
+                    bins = self.lambd_bins[i][j], self.lambd_bins[i][j +
                                                                  1], self.z_bins[i], self.z_bins[i+1]
                 ax_this.text(-25, 10,
                              '${:.1E} \leq \lambda <{:.1E}$\n${:g} \leq z<{:g}$'.format(*bins))
@@ -350,9 +350,9 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
             return clf
 
         [nclusters_lum, binlist] = self.cluster_Lcount(lumbins, limmag[clist])
-        for i in range(len(clist)):
+        for i c in enumerate(clist)):
             clf[:binlist[i]] = clf[:binlist[i]] + \
-                count_arr[clist[i], :binlist[i]]
+                count_arr[c, :binlist[i]]
 
         clf = clf/nclusters_lum/dlum
 
@@ -366,7 +366,6 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         nlum = len(lumbins)
         zmin = self.z_bins[:-1]
         zmax = self.z_bins[1:]
-        my_nz = len(zmin)
         lm_min = np.array([lambdbins[:-1] for lambdbins in self.lambd_bins])
         lm_max = np.array([lambdbins[1:] for lambdbins in self.lambd_bins])
 
