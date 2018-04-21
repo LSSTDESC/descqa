@@ -350,7 +350,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
             return clf
 
         [nclusters_lum, binlist] = self.cluster_Lcount(lumbins, limmag[clist])
-        for i c in enumerate(clist)):
+        for i, c in enumerate(clist)):
             clf[:binlist[i]] = clf[:binlist[i]] + \
                 count_arr[c, :binlist[i]]
 
