@@ -4,6 +4,10 @@ possible_size_fields:
   - size
   - size_true
 
+possible_mag_fields:
+  - mag_i_lsst
+  - mag_true_i_lsst
+
 data_filename: 'size_dist/COSMOS_Great3_sample_size_distribution.txt'
 
 description: Compare slope of N(size) to the same slope in the Great3 COSMOS postage stamps
