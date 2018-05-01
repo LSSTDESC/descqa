@@ -1,0 +1,5 @@
+subclass_name: EllipticityDistribution.EllipticityDistribution
+zlo: 0.
+zhi: 2.
+N_ebins: 40
+description: 'Plot ellipticity distributions'
