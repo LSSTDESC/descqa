@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 DESCQA: LSST DESC QA Framework for mock galaxy catalogs
-Copyright (c) 2017 LSST DESC
+Copyright (c) 2018 LSST DESC
 http://opensource.org/licenses/MIT
 """
 

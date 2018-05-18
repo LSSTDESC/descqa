@@ -59,11 +59,15 @@ quantities_to_check:
     f_zero: 0
     f_inf: [0, 0.3]
     f_outlier: [0, 0.01]
+    plot_min: -3
+    plot_max: 1
 
   - quantities: size*_bulge*
     f_nan: 0
     f_inf: 0
     min: [0, null]
+    plot_min: 0
+    plot_max: 3
 
   - quantities: 'shear_*'
     min: [-0.2, 0]
@@ -139,6 +143,18 @@ quantities_to_check:
     f_zero: 0
     f_outlier: [0, 0.05]
 
+  - quantities: 'Mag_*lsst*'
+    label: Mag
+    min: [null, -23]
+    max: [-12, null]
+    mean: [-17, -8]
+    median: [-17, -8]
+    std: [0, 5]
+    f_nan: 0
+    f_inf: 0
+    f_zero: 0
+    f_outlier: [0, 0.05]
+
   - quantities: 'stellar_mass*'
     log: true
     min: [null, 10]
@@ -193,6 +209,8 @@ quantities_to_check:
     mean: [0.001, 3.1]
     f_nan: 0
     f_inf: 0
+    plot_min: -0.2
+    plot_max: 3
 
   - quantities: R_v
     min: [1, 5]
@@ -201,6 +219,7 @@ quantities_to_check:
     mean: [1, 5]
     f_nan: 0
     f_inf: 0
+    plot_min: -0.5
 
   - quantities: bulge_to_total_ratio*
     min: [0, 1]
@@ -211,6 +230,7 @@ quantities_to_check:
     f_inf: 0
 
 relations_to_check:
+  - 'galaxyID <= 9e10'
   - 'size_minor_bulge_true <= size_bulge_true'
   - 'size_minor_disk_true <= size_disk_true'
   - 'size_minor_true <= size_true'
@@ -220,7 +240,7 @@ relations_to_check:
   - '1.0 / magnification ~== (1.0 - convergence)**2.0 - shear_1**2.0 - shear_2**2.0'
   - 'size_minor_true / size_true ~== (1.0 - ellipticity_true) / (1.0 + ellipticity_true)'
   - 'size_minor_disk_true / size_disk_true ~== (1.0 - ellipticity_disk_true) / (1.0 + ellipticity_disk_true)'
-  - 'size_minor_bulge_true / size_bulge_true ~== (1.0 - ellipticity_bulge_true) / (1.0 + ellipticity_bulge_true)'
+  - 'size_minor_bulge_true ~== size_bulge_true * (1.0 - ellipticity_bulge_true) / (1.0 + ellipticity_bulge_true)'
   - 'ellipticity_1_true ** 2.0 + ellipticity_2_true ** 2.0 ~== ellipticity_true ** 2.0'
   - 'ellipticity_1_disk_true ** 2.0 + ellipticity_2_disk_true ** 2.0 ~== ellipticity_disk_true ** 2.0'
   - 'ellipticity_1_bulge_true ** 2.0 + ellipticity_2_bulge_true ** 2.0 ~== ellipticity_bulge_true ** 2.0'
