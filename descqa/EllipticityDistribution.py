@@ -7,6 +7,7 @@ except ImportError:
 from itertools import count
 
 import numpy as np
+from scipy.interpolate import interp1d
 from GCR import GCRQuery
 
 from .base import BaseValidationTest, TestResult
@@ -48,6 +49,11 @@ class EllipticityDistribution(BaseValidationTest):
                 'ancillary_keys':['B/T'],
             },
         },
+    }
+    
+    validation_percentiles = {
+        'percentiles': [10, 50, 90, 100],
+        'ranges': [(0, 0.2), (0.35, 0.65), (0.8, 1.0)]
     }
 
     #define ellipticity functions
@@ -247,7 +253,11 @@ class EllipticityDistribution(BaseValidationTest):
         N_array = np.zeros((self.nrows, self.ncolumns, len(self.ebins)-1), dtype=np.int)
         sume_array = np.zeros((self.nrows, self.ncolumns, len(self.ebins)-1))
         sume2_array = np.zeros((self.nrows, self.ncolumns, len(self.ebins)-1))
-
+        
+        #initialize boolean values for checking ellipticity endpoints
+        any_low = False
+        any_high = False
+        
         #get catalog data by looping over data iterator (needed for large catalogs) and aggregate histograms
         for catalog_data in catalog_instance.get_quantities(all_quantities, filters=self.filters, return_iterator=True):
             catalog_data = GCRQuery(*((np.isfinite, col) for col in catalog_data)).filter(catalog_data)
@@ -276,6 +286,14 @@ class EllipticityDistribution(BaseValidationTest):
                     N += np.histogram(e_this, bins=self.ebins)[0]
                     sume += np.histogram(e_this, bins=self.ebins, weights=e_this)[0]
                     sume2 += np.histogram(e_this, bins=self.ebins, weights=e_this**2)[0]
+                    
+                    #check borders
+                    if np.min(e_this)<0:
+                        any_low = True
+                        print('Value<0 found for morphology {} in catalog {}'.format(morphology, catalog_name))
+                    if np.max(e_this)>0:
+                        any_high = True
+                        print('Value<0 found for morphology {} in catalog {}'.format(morphology, catalog_name))
 
         #check that catalog has entries for quantity to be plotted
         if not np.asarray([N.sum() for N in N_array]).sum():
@@ -283,6 +301,7 @@ class EllipticityDistribution(BaseValidationTest):
 
         #make plots
         results = {}
+        n_fails = 0 + any_low + any_high
         for n, (ax_this, summary_ax_this, morphology, N, sume, sume2) in enumerate(zip_longest(
                 ax.flat,
                 self.summary_ax.flat,
@@ -326,11 +345,28 @@ class EllipticityDistribution(BaseValidationTest):
                 if self.first_pass: #add validation data if evaluating first catalog
                     self.validation_subplot(summary_ax_this, self.validation_data.get(morphology), validation_label)
                 self.decorate_subplot(summary_ax_this, n, label=cutlabel)
+                
+                #check ellipticity distributions
+                number_passed = self.validate_percentiles(N)
+                if number_passed>0:
+                    print("Ellipticity percentile check failed for morphology {}".format(morphology))
+                n_fails += number_passed
+                
 
             else:
                 #make empty subplots invisible
                 ax_this.set_visible(False)
                 summary_ax_this.set_visible(False)
+        
+        #check overall ellipticity distribution
+        global_N = np.sum(np.sum(N_array, axis=1), axis=0)
+        print(len(global_N), self.N_ebins)
+        number_passed = self.validate_percentiles(global_N)
+        if number_passed>0:
+            print("Ellipticity percentile check failed for global distribution")
+        n_fails += number_passed
+        
+
 
         #save results for catalog and validation data in txt files
         for filename, dkey, dtype, info in zip_longest((catalog_name, self.observation), ('catalog', 'validation'), ('N', 'data'), ('total',)):
@@ -347,7 +383,7 @@ class EllipticityDistribution(BaseValidationTest):
         self.post_process_plot(fig)
         fig.savefig(os.path.join(output_dir, ''.join(['Nvs', self.file_label, '_', filelabel+'.png'])))
         plt.close(fig)
-        return TestResult(inspect_only=True)
+        return TestResult(score=n_fails, passed=(n_fails==0))
 
 
     def catalog_subplot(self, ax, e_values, N, catalog_color, catalog_label, errors=None):
@@ -394,6 +430,20 @@ class EllipticityDistribution(BaseValidationTest):
             for axlabel in ax.get_xticklabels():
                 axlabel.set_visible(True)
         ax.legend(loc='lower left', fancybox=True, framealpha=0.5, numpoints=1, fontsize='x-small')
+
+
+    def validate_percentiles(self, data):
+        cdf = np.zeros(self.N_ebins+1)
+        for i in range(self.N_ebins):
+            cdf[i+1:] += data[i]
+        cdf /= cdf[-1]
+        interpolator = interp1d(cdf, self.ebins)
+        percentiles = interpolator(self.validation_percentiles['percentile'])
+        return np.sum([(p>=pmin) & (p<=pmax) for p, (pmin, pmax) in zip(
+                            percentiles, self.validation_percentiles['ranges'])])
+            
+        
+        
 
 
     @staticmethod
