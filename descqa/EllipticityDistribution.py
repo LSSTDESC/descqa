@@ -290,10 +290,10 @@ class EllipticityDistribution(BaseValidationTest):
                     #check borders
                     if np.min(e_this)<0:
                         any_low = True
-                        print('Value<0 found for morphology {} in catalog {}'.format(morphology, catalog_name))
-                    if np.max(e_this)>0:
+                        print('Value<0 found for morphology {} in catalog {}: {}'.format(morphology, catalog_name, np.min(e_this)))
+                    if np.max(e_this)>1:
                         any_high = True
-                        print('Value<0 found for morphology {} in catalog {}'.format(morphology, catalog_name))
+                        print('Value>1 found for morphology {} in catalog {}: {}'.format(morphology, catalog_name, np.max(e_this)))
 
         #check that catalog has entries for quantity to be plotted
         if not np.asarray([N.sum() for N in N_array]).sum():
@@ -437,14 +437,13 @@ class EllipticityDistribution(BaseValidationTest):
         for i in range(self.N_ebins):
             cdf[i+1:] += data[i]
         cdf /= cdf[-1]
+        cdf *= 100 # because numpy percentile wants percentages
         interpolator = interp1d(cdf, self.ebins)
-        percentiles = interpolator(self.validation_percentiles['percentile'])
+        percentiles = interpolator(self.validation_percentiles['percentiles'])
+        print(percentiles, "percentiles")
         return np.sum([(p>=pmin) & (p<=pmax) for p, (pmin, pmax) in zip(
                             percentiles, self.validation_percentiles['ranges'])])
             
-        
-        
-
 
     @staticmethod
     def post_process_plot(fig):
