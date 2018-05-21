@@ -19,10 +19,10 @@ requested_columns:
 # match the simple column name definitions above.
 test_samples:
   Ms_gt10.5:
-    mstellar: {min: 31622776601.683792, max: 10000000000000000}
+    mstellar: {min: 31622776601.683792}
     z: {min: 0.74, max: 1.05}
   Ms_gt10.8:
-    mstellar: {min: 63095734448.019424, max: 10000000000000000}
+    mstellar: {min: 63095734448.019424}
     z: {min: 0.74, max: 1.05}
 
 # Output file naming format for output of the resultant correlation values.
@@ -35,13 +35,13 @@ test_data:
   Ms_gt10.5: {row: 0, r0: 0, r0_err: 1, g: 2, g_err: 3}
   Ms_gt10.8: {row: 1, r0: 0, r0_err: 1, g: 2, g_err: 3}
 
-
 # Plotting configuration.
 fig_xlabel: '$r_p\quad[h^{-1}{\rm Mpc}]$'
 fig_ylabel: '$w_p(r_p)\quad[h^{-1}{\rm Mpc}]$'
 fig_ylim: [0.1, 5000]
-label_template: '${} < log(M_s) < {}$'
-label_column: mstellar
+test_sample_labels:
+  Ms_gt10.5: '$\log(M_s) > 10.5$'
+  Ms_gt10.8: '$\log(M_s) > 10.8$'
 
 pi_maxes: # Line of sight, wp(rp) binning for each sample.
   Ms_gt10.5: 20.0
