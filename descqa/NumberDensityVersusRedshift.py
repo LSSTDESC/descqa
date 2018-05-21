@@ -60,7 +60,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
 
     def __init__(self, z='redshift_true', band='i', N_zbins=44, zlo=0., zhi=1.1,
                  observation='', mag_lo=27, mag_hi=18, ncolumns=2, normed=True,
-                 jackknife=False, N_jack=10, ra='ra', dec='dec',
+                 jackknife=False, N_jack=10, ra='ra', dec='dec', pass_limit=2., use_diagonal_only=True,
                  **kwargs): #pylint: disable=W0231
 
         #catalog quantities
@@ -87,6 +87,10 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         self.N_jack = N_jack
         self.ra = ra
         self.dec = dec
+        self.use_diagonal_only = use_diagonal_only
+
+        #scores
+        self.pass_limit = pass_limit
 
         #validation data
         self.validation_data = {}
@@ -173,11 +177,11 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         #setup plots
         fig, ax = plt.subplots(self.nrows, self.ncolumns, figsize=(self.figx_p, self.figy_p), sharex='col')
         catalog_color = next(self.colors)
-        catalog_marker= next(self.markers)
+        catalog_marker = next(self.markers)
 
         #initialize arrays for storing histogram sums
         N_array = np.zeros((self.nrows, self.ncolumns, len(self.zbins)-1), dtype=np.int)
-        sumz_array = np.zeros((self.nrows, self.ncolumns,len(self.zbins)-1))
+        sumz_array = np.zeros((self.nrows, self.ncolumns, len(self.zbins)-1))
 
         jackknife_data = {}
         #get catalog data by looping over data iterator (needed for large catalogs) and aggregate histograms
@@ -201,7 +205,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
                             jackknife_data[str(n)] = dict(zip(required_quantities, [np.asarray([]) for jq in jackknife_quantities]))
                         for jkey in jackknife_data[str(n)].keys():
                             jackknife_data[str(n)][jkey] = np.hstack((jackknife_data[str(n)][jkey], catalog_data[jkey][mask]))
-                    
+
                     del mask
 
                     #bin catalog_data and accumulate subplot histograms
@@ -211,6 +215,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
 
         #loop over magnitude cuts and make plots
         results = {}
+        scores = np.array([self.pass_limit]*self.nplots)
         for n, (ax_this, summary_ax_this, cut_lo, cut_hi, N, sumz, z0, z0err) in enumerate(zip_longest(
                 ax.flat,
                 self.summary_ax.flat,
@@ -249,17 +254,19 @@ class NumberDensityVersusRedshift(BaseValidationTest):
                     Nerrors = np.sqrt(N)
                     if self.normed:
                         Nerrors = Nerrors/sumN/binwidths
-                    covariance = np.diag(1./Nerrors**2)
-                
+                    covariance = np.diag(Nerrors**2)
+
                 #make subplot
                 catalog_label = ' '.join((catalog_name, cut_label.replace(self.band, filtername + ' ' + self.band)))
                 validation_label = ' '.join((self.validation_data.get('label', ''), cut_label))
                 key = cut_label.replace('$', '')
                 results[key] = {'meanz': meanz, 'total':total, 'N':N, 'N+-':Nerrors}
                 self.catalog_subplot(ax_this, meanz, N, Nerrors, catalog_color, catalog_marker, catalog_label)
-                if z0 and z0 > 0.:
+                if z0 and z0 > 0: # has validation data
                     fits = self.validation_subplot(ax_this, meanz, z0, z0err, validation_label, rescale=rescale)
-                results[key].update(fits)
+                    results[key].update(fits)
+                    scores[n] = self.get_score(N, fits['fit'], covariance, use_diagonal_only=self.use_diagonal_only)
+                    results[key]['score'] = 'Chi_sq/dof = {:11.4g}'.format(scores[n])
                 self.decorate_subplot(ax_this, n)
 
                 #add curve for this catalog to summary plot
@@ -268,14 +275,13 @@ class NumberDensityVersusRedshift(BaseValidationTest):
                     self.validation_subplot(summary_ax_this, meanz, z0, z0err, validation_label) #add validation data if evaluating first catalog
                 self.decorate_subplot(summary_ax_this, n)
 
-
         #save results for catalog and validation data in txt files
-        for filename, dtype, comment, info in zip_longest((filelabel, self.observation), ('N', 'fit'), (filtername,), ('total',)):
+        for filename, dtype, comment, info, info2 in zip_longest((filelabel, self.observation), ('N', 'fit'), (filtername,), ('total',), ('score',)):
             if filename:
                 with open(os.path.join(output_dir, 'Nvsz_' + filename + '.txt'), 'ab') as f_handle: #open file in append mode
                     #loop over magnitude cuts in results dict
                     for key, value in results.items():
-                        self.save_quantities(dtype, value, f_handle, comment=' '.join(((comment or ''), key, value.get(info, ''))))
+                        self.save_quantities(dtype, value, f_handle, comment=' '.join(((comment or ''), key, value.get(info, ''), value.get(info2, ''))))
 
         if self.first_pass: #turn off validation data plot in summary for remaining catalogs
             self.first_pass = False
@@ -284,7 +290,12 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         self.post_process_plot(fig)
         fig.savefig(os.path.join(output_dir, 'Nvsz_' + filelabel + '.png'))
         plt.close(fig)
-        return TestResult(inspect_only=True)
+
+        #compute final score
+        #final_scores = (scores < self.pass_limit)
+        #pass or fail on average score rather than demanding that all distributions pass
+        score_ave = np.mean(scores)
+        return TestResult(score_ave, passed=score_ave < self.pass_limit)
 
 
     def get_jackknife_errors(self, N_jack, jackknife_data, N, normed=False):
@@ -294,14 +305,14 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         #make histograms for jackknife regions
         Njack_array = np.zeros((N_jack, len(self.zbins)-1), dtype=np.int)
         for nj in range(N_jack):
-            Njack_array[nj] = np.histogram(jackknife_data[self.zlabel][jack_labels != nj], self.zbins, normed= normed)[0]
+            Njack_array[nj] = np.histogram(jackknife_data[self.zlabel][jack_labels != nj], self.zbins, normed=normed)[0]
 
         covariance = np.zeros((self.N_zbins, self.N_zbins))
         for i in range(self.N_zbins):
             for j in range(self.N_zbins):
                 for njack in Njack_array:
                     covariance[i][j] += (N_jack - 1.)/N_jack * (N[i] - njack[i]) * (N[j] - njack[j])
-            
+
         return covariance
 
     def catalog_subplot(self, ax, meanz, data, errors, catalog_color, catalog_marker, catalog_label):
@@ -349,6 +360,28 @@ class NumberDensityVersusRedshift(BaseValidationTest):
 
 
     @staticmethod
+    def get_score(catalog, validation, cov, use_diagonal_only=True):
+        #remove bad values
+        mask = np.isfinite(catalog)
+        mask &= np.isfinite(validation)
+        catalog = catalog[mask]
+        validation = validation[mask]
+        cov = cov[mask].T[mask]
+        try:
+            inverse_cov = np.matrix(cov).I
+        except np.linalg.LinAlgError:
+            print('Covariance matrix inversion failed: diagonal errors only will be used')
+            use_diagonal_only = True
+
+        if use_diagonal_only:
+            chi2 = np.sum([(catalog[i] - validation[i])**2 / cov[i][i] for i in range(len(catalog))])
+        else:
+            chi2 = np.matrix(catalog - validation) * inverse_cov * np.matrix(catalog - validation).T
+        diff = chi2 / float(len(catalog))                                                            
+        return diff 
+
+
+    @staticmethod
     def nz_norm(z, z0):
         return z0*math.exp(-z/z0)*(-z*z-2.*z*z0-2.*z0*z0)
 
@@ -366,7 +399,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
                 header = ', '.join(('Data columns are: <z>', keyname, keyname+'-', keyname+'+', ' '))
             elif keyname+'+-' in results:
                 fields = ('meanz', keyname, keyname+'+-')
-                header = ', '.join(('Data columns are: <z>', keyname, keyname+'+-',' '))
+                header = ', '.join(('Data columns are: <z>', keyname, keyname+'+-', ' '))
             else:
                 fields = ('meanz', keyname)
                 header = ', '.join(('Data columns are: <z>', keyname, ' '))
