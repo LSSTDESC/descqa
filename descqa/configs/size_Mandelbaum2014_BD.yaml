@@ -1,8 +1,10 @@
 subclass_name: SizeStellarMassLuminosity.SizeStellarMassLuminosity
 
-catalogs: ['protoDC2']
 #observation: either protodc or buzzard
 observation: twocomp
+
+catalogs: ['protoDC2', 'proto-dc2_v4.4', 'proto-dc2_v4.5', 'proto-dc2_v4.5_rescale']
+ylims: [[0.1, 25], [0.1, 25], [0.1, 25], [0.1, 25]]
 
 possible_mag_fields:
   - Mag_true_i_lsst_z0
@@ -30,7 +32,6 @@ fig_subplot_row: 1
 fig_subplot_col: 3
 
 xlim: [9, 12]
-ylims: [[0.1, 25]]
 suptitle: '$M_I$'
 
 description: |

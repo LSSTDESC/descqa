@@ -101,16 +101,10 @@ class SizeStellarMassLuminosity(BaseValidationTest):
 
         fig, axes = plt.subplots(self.fig_subplot_row, self.fig_subplot_col, figsize=(self.fig_subplot_col*4, self.fig_subplot_row*4), sharex=True, sharey=True)
 
-        if self.observation == 'onecomp':
-            if catalog_name == self.catalogs[0]: # and self.observation == 'onecomp':
-                catalog = self.catalogs[0]
-                ylim = self.ylims[0] #[3e-1, 20]     
-            elif catalog_name == self.catalogs[1]: # and self.observation == 'onecomp':
-                catalog = self.catalogs[1]
-                ylim = self.ylims[1] #[1, 20]
-        elif catalog_name == self.catalogs[0] and self.observation == 'twocomp':
-            catalog = self.catalogs[0]
-            ylim = self.ylims[0] #[1e-1, 25]
+        for n in range(len(self.catalogs)):
+            if catalog_name == self.catalogs[n]: # and self.observation == 'onecomp':
+                catalog = self.catalogs[n]
+                ylim = self.ylims[n] #[3e-1, 20]     
 
         twocomp_labels = [r'$R_B^{B/T > 0.5}$', r'$R_D^{B/T > 0.5}$', r'$R_B^{B/T < 0.5}$', r'$R_D^{B/T < 0.5}$']
         twocomp_sim_labels = [r'Sims:$R_B^{B/T > 0.5}$', r'Sims:$R_D^{B/T > 0.5}$', r'Sims:$R_B^{B/T < 0.5}$', r'Sims:$R_D^{B/T < 0.5}$']
