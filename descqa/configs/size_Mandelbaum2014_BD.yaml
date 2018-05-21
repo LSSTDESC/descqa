@@ -1,5 +1,6 @@
 subclass_name: SizeStellarMassLuminosity.SizeStellarMassLuminosity
 
+catalogs: ['protoDC2']
 #observation: either protodc or buzzard
 observation: twocomp
 
@@ -28,7 +29,8 @@ fig_ylabel: '$\log_{10}(R_e)$ (kpc)'
 fig_subplot_row: 1
 fig_subplot_col: 3
 
-xlim: 9 12
+xlim: [9, 12]
+ylims: [[0.1, 25]]
 suptitle: '$M_I$'
 
 description: |

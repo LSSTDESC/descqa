@@ -1,5 +1,6 @@
 subclass_name: SizeStellarMassLuminosity.SizeStellarMassLuminosity
 
+catalogs: ['protoDC2', 'buzzard_test']
 observation: onecomp
 
 possible_mag_fields:
@@ -26,15 +27,17 @@ z_bins:
   - {z_min: 0.0, z_max: 0.5}
   - {z_min: 0.5, z_max: 1.0}
   - {z_min: 1.0, z_max: 1.5}
-  - {z_min: 1.5, z_max: 2.0}
-  - {z_min: 2.0, z_max: 2.5}
-  - {z_min: 2.5, z_max: 3.0}
 
 fig_xlabel: '$\log_{10}(L/L_{\odot}) [{\rm V-band}]$'
 fig_ylabel: '$\log_{10}(R_e) [{\rm kpc}]$'
 
-xlim: 9 12
+xlim: [9, 12]
+ylims: [[0.3, 20], [1, 20]]
 suptitle: '$M_V$'
+
+fig_subplot_row: 1
+fig_subplot_col: 3
+
 
 description: |
   Compare evolution of size as a function of luminosity and redshift and van der Wel et al (2014) HST-3D and CANDELS observations

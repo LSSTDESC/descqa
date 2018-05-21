@@ -28,6 +28,7 @@ class SizeStellarMassLuminosity(BaseValidationTest):
     #pylint: disable=W0231
     def __init__(self, **kwargs):
         self.kwargs = kwargs
+        self.catalogs = kwargs['catalogs']
         self.observation = kwargs['observation']
         self.possible_mag_fields = kwargs['possible_mag_fields']
         self.test_name = kwargs['test_name']
@@ -40,8 +41,9 @@ class SizeStellarMassLuminosity(BaseValidationTest):
         self.fig_subplot_row = kwargs['fig_subplot_row']
         self.fig_subplot_col = kwargs['fig_subplot_col']
         self.suptitle = kwargs['suptitle']
-        xlim = kwargs['xlim']
-        self.xlim = [float(xlim.split()[0]), float(xlim.split()[1])]
+        self.xlim = kwargs['xlim']
+        #self.xlim = [float(xlim.split()[0]), float(xlim.split()[1])]
+        self.ylims = kwargs['ylims']
         validation_filepath = os.path.join(self.data_dir, kwargs['data_filename'])
         self.validation_data = np.genfromtxt(validation_filepath)
     
@@ -99,14 +101,16 @@ class SizeStellarMassLuminosity(BaseValidationTest):
 
         fig, axes = plt.subplots(self.fig_subplot_row, self.fig_subplot_col, figsize=(self.fig_subplot_col*4, self.fig_subplot_row*4), sharex=True, sharey=True)
 
-        if catalog_name.lower()[:5] == 'proto': 
-            self.fig_subplot_row = 1
-        if catalog_name.lower()[:5] == 'proto' and self.observation == 'onecomp':
-            ylim = [3e-1, 20]     
-        elif catalog_name.lower()[:7] == 'buzzard' and self.observation == 'onecomp':
-            ylim = [1, 20]
-        elif catalog_name.lower()[:5] == 'proto' and self.observation == 'twocomp':
-            ylim = [1e-1, 25]
+        if self.observation == 'onecomp':
+            if catalog_name == self.catalogs[0]: # and self.observation == 'onecomp':
+                catalog = self.catalogs[0]
+                ylim = self.ylims[0] #[3e-1, 20]     
+            elif catalog_name == self.catalogs[1]: # and self.observation == 'onecomp':
+                catalog = self.catalogs[1]
+                ylim = self.ylims[1] #[1, 20]
+        elif catalog_name == self.catalogs[0] and self.observation == 'twocomp':
+            catalog = self.catalogs[0]
+            ylim = self.ylims[0] #[1e-1, 25]
 
         twocomp_labels = [r'$R_B^{B/T > 0.5}$', r'$R_D^{B/T > 0.5}$', r'$R_B^{B/T < 0.5}$', r'$R_D^{B/T < 0.5}$']
         twocomp_sim_labels = [r'Sims:$R_B^{B/T > 0.5}$', r'Sims:$R_D^{B/T > 0.5}$', r'Sims:$R_B^{B/T < 0.5}$', r'Sims:$R_D^{B/T < 0.5}$']
@@ -168,8 +172,9 @@ class SizeStellarMassLuminosity(BaseValidationTest):
                     ax2 = divider.append_axes("top", size='100%', pad=0)
                     for bti, axi in zip(bt_cons, [ax2, ax]):
                         for si in ['size_bulge', 'size_disk']:
-                            print(arcsec_to_kpc.shape, catalog_data_this[bti].shape, catalog_data_this[si].shape)
-                            print(catalog_data_this[bti][0:3], catalog_data_this[si][bti][0:3])
+                            #print(bti, si)
+                            #print(arcsec_to_kpc.shape, bti.shape, catalog_data_this[si].shape)
+                            #print(catalog_data_this[si][bti][0:3])
                             #print(logL_I[bti].shape, catalog_data_this[si].shape, arcsec_to_kpc.shape, (catalog_data_this[si] * arcsec_to_kpc)[bti].shape)
                             tsize_kpc = binned_statistic(logL_I[bti], (catalog_data_this[si] * arcsec_to_kpc)[bti], bins=default_L_bin_edges, statistic='mean')[0]
                             tsize_kpc_err = binned_statistic(logL_I[bti], (catalog_data_this[si] * arcsec_to_kpc)[bti], bins=default_L_bin_edges, statistic='std')[0]
@@ -230,7 +235,7 @@ class SizeStellarMassLuminosity(BaseValidationTest):
             plt.xlabel(self.fig_xlabel)
             plt.ylabel(self.fig_ylabel)
             fig.subplots_adjust(hspace=0, wspace=0.2)
-            fig.suptitle('{} ({}) vs. {}'.format(catalog_name, self.suptitle, self.data_label), fontsize='medium', y=0.98)
+            fig.suptitle('{} ({}) vs. {}'.format(catalog, self.suptitle, self.data_label), fontsize='medium', y=0.98)
         finally:
             fig.savefig(os.path.join(output_dir, '{:s}.png'.format(self.test_name)), bbox_inches='tight')
             plt.close(fig)
