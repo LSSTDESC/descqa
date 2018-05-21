@@ -226,7 +226,7 @@ class ShearTest(BaseValidationTest):
             ax_this.axvline(vmin, ls='--', c='k')
             ax_this.axvline(vmax, ls='--', c='k')
             ax_this.legend()
-        ax_this.set_xlabel(r'$\theta \; {\rm (arcmin)}$')
+        ax[-1].set_xlabel(r'$\theta \; {\rm (arcmin)}$')
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         ''' 
