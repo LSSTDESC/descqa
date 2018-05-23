@@ -23,7 +23,7 @@ class ApparentMagFuncTest(BaseValidationTest):
     """
     apparent magnitude function test
     """
-    def __init__(self, band='i', band_lim=[24, 27.5], rtol=0.2, observation='HSC', **kwargs):
+    def __init__(self, band='i', band_lim=(24, 27.5), rtol=0.2, observation='HSC', **kwargs):
         """
         parameters
         ----------
@@ -40,6 +40,7 @@ class ApparentMagFuncTest(BaseValidationTest):
             string indicating which obsrvational data to use for validating
 
         """
+        # pylint: disable=super-init-not-called
 
         # catalog quantities needed
         possible_mag_fields = ('mag_{}_lsst',
@@ -54,7 +55,7 @@ class ApparentMagFuncTest(BaseValidationTest):
 
         # attach some attributes to the test
         self.band = band
-        self.band_lim = band_lim
+        self.band_lim = list(band_lim)
         self.rtol = rtol
 
         # check for validation observation
@@ -98,18 +99,6 @@ class ApparentMagFuncTest(BaseValidationTest):
         ax.set_yscale('log')
         ax.set_title(str(self.band_lim[0]) + ' < '+self.band + ' < ' + str(self.band_lim[1]))
 
-    @staticmethod
-    def get_catalog_data(gc, quantities, filters=None):
-        data = {}
-        if not gc.has_quantities(quantities):
-            return TestResult(skipped=True, summary='Missing requested quantities')
-
-        data = gc.get_quantities(quantities, filters=filters)
-        # make sure data entries are all finite
-        data = GCRQuery(*((np.isfinite, col) for col in data)).filter(data)
-
-        return data
-
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
 
         mag_field_key = catalog_instance.first_available(*self.possible_mag_fields)
@@ -135,10 +124,10 @@ class ApparentMagFuncTest(BaseValidationTest):
         N = np.cumsum(np.ones(N_tot))/sky_area
 
         # define apparent magnitude bins for plotting purposes
-        self.dmag = 0.1
-        self.max_mag = self.band_lim[1] + 1.0  # go one mag beyond the limit
-        self.min_mag = self.band_lim[0] - 1.0  # start at bright galaxies
-        mag_bins = np.arange(self.min_mag, self.max_mag, self.dmag)
+        dmag = 0.1
+        max_mag = self.band_lim[1] + 1.0  # go one mag beyond the limit
+        min_mag = self.band_lim[0] - 1.0  # start at bright galaxies
+        mag_bins = np.arange(min_mag, max_mag, dmag)
 
         # calculate N at the specified points
         inds = np.searchsorted(m, mag_bins)
@@ -155,8 +144,8 @@ class ApparentMagFuncTest(BaseValidationTest):
             ax_this.set_yscale('log')
             ax_this.set_ylabel(r'$\rm mag$')
             ax_this.set_ylabel(r'$N(<{\rm mag})~[{\rm deg}^{-2}]$')
-            ax_this.set_xlim([17,30])
-            ax_this.set_ylim([1,10**8])
+            ax_this.set_xlim([17, 30])
+            ax_this.set_ylim([1, 10**8])
 
         # plot validation data
         for ax_this in [ax]:
