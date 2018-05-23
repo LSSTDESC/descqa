@@ -32,7 +32,6 @@ fig_xlabel: '$\log_{10}(L/L_{\odot}) [{\rm V-band}]$'
 fig_ylabel: '$\log_{10}(R_e) [{\rm kpc}]$'
 
 xlim: [9, 12]
-ylims: [[0.3, 20], [1, 20]]
 suptitle: '$M_V$'
 
 fig_subplot_row: 1

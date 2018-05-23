@@ -4,7 +4,6 @@ subclass_name: SizeStellarMassLuminosity.SizeStellarMassLuminosity
 observation: twocomp
 
 catalogs: ['protoDC2', 'proto-dc2_v4.4', 'proto-dc2_v4.5', 'proto-dc2_v4.5_rescale']
-ylims: [[0.1, 25], [0.1, 25], [0.1, 25], [0.1, 25]]
 
 possible_mag_fields:
   - Mag_true_i_lsst_z0

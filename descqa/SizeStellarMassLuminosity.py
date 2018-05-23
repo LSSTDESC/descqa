@@ -43,7 +43,6 @@ class SizeStellarMassLuminosity(BaseValidationTest):
         self.suptitle = kwargs['suptitle']
         self.xlim = kwargs['xlim']
         #self.xlim = [float(xlim.split()[0]), float(xlim.split()[1])]
-        self.ylims = kwargs['ylims']
         validation_filepath = os.path.join(self.data_dir, kwargs['data_filename'])
         self.validation_data = np.genfromtxt(validation_filepath)
     
