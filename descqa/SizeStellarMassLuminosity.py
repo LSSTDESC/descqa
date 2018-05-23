@@ -104,7 +104,7 @@ class SizeStellarMassLuminosity(BaseValidationTest):
         for n in range(len(self.catalogs)):
             if catalog_name == self.catalogs[n]: # and self.observation == 'onecomp':
                 catalog = self.catalogs[n]
-                ylim = self.ylims[n] #[3e-1, 20]     
+                #ylim = self.ylims[n] #[3e-1, 20]     
 
         twocomp_labels = [r'$R_B^{B/T > 0.5}$', r'$R_D^{B/T > 0.5}$', r'$R_B^{B/T < 0.5}$', r'$R_D^{B/T < 0.5}$']
         twocomp_sim_labels = [r'Sims:$R_B^{B/T > 0.5}$', r'Sims:$R_D^{B/T > 0.5}$', r'Sims:$R_B^{B/T < 0.5}$', r'Sims:$R_D^{B/T < 0.5}$']
@@ -113,6 +113,8 @@ class SizeStellarMassLuminosity(BaseValidationTest):
         try:
             col = 0
             row = 0
+            ylo = 9999
+            yhi = -9999
             for z_bin in self.z_bins:
                 if self.fig_subplot_row == 1:
                     ax = axes[col]
@@ -136,6 +138,7 @@ class SizeStellarMassLuminosity(BaseValidationTest):
                 ob = mpl.offsetbox.AnchoredText(self.label_template.format(z_bin['z_min'], z_bin['z_max']), loc=1, frameon=False)
 
                 if self.observation == 'onecomp':
+                    num_axes = 1
                     logL_G = self.ConvertAbsMagLuminosity(catalog_data_this['mag'], 'g')
                     size_kpc = catalog_data_this['size'] * self._ARCSEC_TO_RADIAN * interpolate.splev(catalog_data_this['z'], spl) / (1 + catalog_data_this['z'])
                     binned_size_kpc = binned_statistic(logL_G, size_kpc, bins=default_L_bin_edges, statistic='mean')[0]
@@ -151,11 +154,24 @@ class SizeStellarMassLuminosity(BaseValidationTest):
                     ax.fill_between(validation_this[:,1], 10**validation_this[:,3], 10**validation_this[:,4], lw=0, alpha=0.2)
                     ax.errorbar(default_L_bins, binned_size_kpc, binned_size_kpc_err, marker='o', ms=9, ls='', label=onecomp_labels[0])
                     onecomp_labels = ['', '']
-                    ax.set_ylim(ylim)
+                    #ax.set_ylim(ylim)
                     #ob = mpl.offsetbox.AnchoredText(self.label_template.format(z_bin['z_min'], z_bin['z_max']), loc=1, frameon=False)
                     ax.add_artist(ob)
+                    tylo, tyhi = np.percentile(size_kpc, [5, 95])
+                    tylo_arr = [ylo, 10**validation_this[:,4].min()]
+                    if np.any(tylo_arr == 0):
+                        ylo = np.partition(tylo_arr, 1)[1]
+                    else:
+                        ylo = np.min(tylo_arr)
+
+                    #print(1, tylo_arr, ylo)
+                    tyhi = np.max([yhi, tyhi, 10**validation_this[:,3].max()])
+                    if tyhi > yhi:
+                        yhi = tyhi
 
                 elif self.observation == 'twocomp':
+                    axes2 = []
+                    num_axes = 2
                     logL_I = self.ConvertAbsMagLuminosity(catalog_data_this['mag'], 'i')
                     arcsec_to_kpc = self._ARCSEC_TO_RADIAN * interpolate.splev(catalog_data_this['z'], spl) / (1 + catalog_data_this['z'])
 
@@ -164,6 +180,7 @@ class SizeStellarMassLuminosity(BaseValidationTest):
                     to_write = default_L_bins.copy() 
                     divider = make_axes_locatable(ax)
                     ax2 = divider.append_axes("top", size='100%', pad=0)
+                    axes2.append(ax2)
                     for bti, axi in zip(bt_cons, [ax2, ax]):
                         for si in ['size_bulge', 'size_disk']:
                             #print(bti, si)
@@ -175,6 +192,16 @@ class SizeStellarMassLuminosity(BaseValidationTest):
                             tsize_N = binned_statistic(logL_I[bti], (catalog_data_this[si] * arcsec_to_kpc)[bti], bins=default_L_bin_edges, statistic='count')[0]
                             tsize_kpc = np.nan_to_num(tsize_kpc)
                             tsize_kpc_err = np.nan_to_num(tsize_kpc_err / np.sqrt(tsize_N))
+                            
+                            #tylo = np.percentile(tsize_kpc-tsize_kpc_err, 5)
+                            #tyhi = np.percentile(tsize_kpc+tsize_kpc_err, 95)
+                            tylo, tyhi = np.percentile(tsize_kpc-tsize_kpc_err, [5, 95])
+                            if tylo < ylo:
+                                ylo = tylo
+                            if tyhi > yhi:
+                                yhi = tyhi
+                            ylo, yhi = 9999., -9999.
+
                             to_write = np.column_stack((to_write, tsize_kpc, tsize_kpc_err))
                             axi.errorbar(default_L_bins, tsize_kpc, tsize_kpc_err, marker='o', ls='', label=twocomp_sim_labels[ci], c=colors[ci])
                             ci += 1
@@ -182,18 +209,36 @@ class SizeStellarMassLuminosity(BaseValidationTest):
 
                     validation_this = self.validation_data[(self.validation_data[:,0] < z_mean + 0.25) & (self.validation_data[:,0] > z_mean - 0.25)]
 
+                    vali_bb_max = validation_this[:, 2] + validation_this[:,3]
+                    vali_bb_min = validation_this[:, 2] - validation_this[:,3]
+                    
+                    vali_bd_max = validation_this[:, 4] + validation_this[:,5]
+                    vali_bd_min = validation_this[:, 4] - validation_this[:,5]
+
                     ax2.semilogy(validation_this[:,1], validation_this[:, 2], label=twocomp_labels[0], color=colors[0])
-                    ax2.fill_between(validation_this[:,1], validation_this[:, 2] + validation_this[:,3], validation_this[:, 2] - validation_this[:,3], lw=0, alpha=0.2, facecolor=colors[0])
+                    ax2.fill_between(validation_this[:,1], vali_bb_max, vali_bb_min, lw=0, alpha=0.2, facecolor=colors[0])
                     ax2.semilogy(validation_this[:,1], validation_this[:, 4], label=twocomp_labels[1], color=colors[1])
-                    ax2.fill_between(validation_this[:,1], validation_this[:, 4] + validation_this[:,5], validation_this[:, 4] - validation_this[:,5], lw=0, alpha=0.2, facecolor=colors[1])
+                    ax2.fill_between(validation_this[:,1], vali_bd_max, vali_bd_min, lw=0, alpha=0.2, facecolor=colors[1])
 
+                    vali_db_max = validation_this[:, 7] + validation_this[:,8]
+                    vali_db_min = validation_this[:, 7] - validation_this[:,8]
+                    
+                    vali_dd_max = validation_this[:, 9] + validation_this[:,10]
+                    vali_dd_min = validation_this[:, 9] - validation_this[:,10]
+ 
                     ax.semilogy(validation_this[:,6], validation_this[:, 7], label=twocomp_labels[2], color=colors[2])
-                    ax.fill_between(validation_this[:,6], validation_this[:, 7] + validation_this[:,8], validation_this[:, 7] - validation_this[:,8], lw=0, alpha=0.2, facecolor=colors[2])
+                    ax.fill_between(validation_this[:,6], vali_db_max, vali_db_min, lw=0, alpha=0.2, facecolor=colors[2])
                     ax.semilogy(validation_this[:,6], validation_this[:, 9], label=twocomp_labels[3], color=colors[3])
-                    ax.fill_between(validation_this[:,6], validation_this[:, 9] + validation_this[:,10], validation_this[:, 9] - validation_this[:,10], lw=0, alpha=0.2, facecolor=colors[3])
+                    ax.fill_between(validation_this[:,6], vali_dd_max, vali_dd_min, lw=0, alpha=0.2, facecolor=colors[3])
 
-                    ax.set_ylim(ylim)
-                    ax2.set_ylim(ylim)
+                    ylo_arr = [ylo, vali_db_min.min(), vali_dd_min.min(), vali_bd_min.min(), vali_bb_min.min()]
+                    if np.any(ylo_arr == 0):
+                        ylo = np.partition(ylo_arr, 1)[1] 
+                    else:
+                        ylo = np.min(ylo_arr)
+                    yhi = np.max([yhi, vali_db_max.max(), vali_dd_max.max(), vali_bd_max.max(), vali_bb_max.max()])
+                    #ax.set_ylim(ylim)
+                    #ax2.set_ylim(ylim)
                     ax2.set_xlim(self.xlim)
 
                     ax.set_yscale('log', nonposy='clip')
@@ -210,6 +255,7 @@ class SizeStellarMassLuminosity(BaseValidationTest):
 
                 del catalog_data_this
                 
+                
                 ax.set_xlim(self.xlim)
                 ax.tick_params(direction='in', which='both')
                 ax.legend(loc=3, ncol=2, fontsize=10)
@@ -221,6 +267,14 @@ class SizeStellarMassLuminosity(BaseValidationTest):
                 if col > 2:
                     col = 0
                     row += 1
+                if num_axes == 1:
+                    for ax in axes:
+                        ax.set_ylim([ylo, yhi])
+                        #print(ylo, yhi)
+                if num_axes == 2:
+                    for ax, ax2 in zip(axes, axes2):
+                        ax.set_ylim([ylo, yhi])
+                        ax2.set_ylim([ylo, yhi])
 
             fig.add_subplot(111, frameon=False)
             # hide tick and tick label of the big axes
