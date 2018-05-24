@@ -11,7 +11,7 @@ possible_observations = {
         'usecols': (0, 1, 2),
         'colnames': ('mag', 'n(<mag)', 'err'),
         'skiprows': 1,
-        'label': 'HSC (D. Campbell, Sprint Week-Dec 2017)',
+        'label': 'HSC (D. Campbell, 2/8/18)',
     }
 }
 
