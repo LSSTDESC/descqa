@@ -50,8 +50,12 @@ test_data:
 fig_xlabel: '$\theta\quad[{\rm deg}]}$'
 fig_ylabel: '$w(\theta)$'
 fig_ylim: [0.0001, 5.0]
-label_template: '${} < r < {}$'
-label_column: mag # Name of the column from requested columns to write in the legend.
+test_sample_labels:
+  r_17_18: '$17 < r < 18$'
+  r_18_19: '$18 < r < 19$'
+  r_19_20: '$19 < r < 20$'
+  r_20_21: '$20 < r < 21$'
+  r_17_21: '$17 < r < 21$'
 
 #Treecorr parameters
 min_sep: 0.01

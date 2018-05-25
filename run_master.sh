@@ -11,7 +11,7 @@ module load gsl/2.1
 module load cray-fftw/3.3.6.2
 
 # activate python env
-PYTHON="/global/common/software/lsst/common/miniconda/py3-4.2.12/bin/python"
+PYTHON="/global/common/software/lsst/common/miniconda/current/bin/python"
 
 # set output directory
 OUTPUTDIR="/global/projecta/projectdirs/lsst/groups/CS/descqa/run/v2"
