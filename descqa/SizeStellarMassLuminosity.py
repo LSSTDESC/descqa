@@ -91,6 +91,7 @@ class SizeStellarMassLuminosity(BaseValidationTest):
         catalog_data = {k: catalog_data[v] for k, v in colnames.items()}
 
         fig, axes = plt.subplots(2, 3, figsize=(9, 6), sharex=True, sharey=True)
+        list_of_validation_values = []
         try:
             col = 0
             row = 0
@@ -123,6 +124,10 @@ class SizeStellarMassLuminosity(BaseValidationTest):
                     ax.semilogy(validation_this[:,1], 10**validation_this[:,2], label=self.label_template.format(z_bin['z_min'], z_bin['z_max']))
                     ax.fill_between(validation_this[:,1], 10**validation_this[:,3], 10**validation_this[:,4], lw=0, alpha=0.2)
                     ax.errorbar(default_L_bins, binned_size_kpc, binned_size_kpc_err, marker='o', ls='')
+                    
+                    validation = self.compute_chisq(default_L_bins, binned_size_kpc, binned_size_kpc_err,
+                                                    validation_this[:,1], 10**validation_this[:,2])
+                    list_of_validation_values.append(validation)                                
                 elif self.observation == 'twocomp':
                     logL_I = self.ConvertAbsMagLuminosity(catalog_data_this['mag'], 'i')
                     arcsec_to_kpc = self._ARCSEC_TO_RADIAN * interpolate.splev(catalog_data_this['z'], spl) / (1 + catalog_data_this['z'])
@@ -150,6 +155,12 @@ class SizeStellarMassLuminosity(BaseValidationTest):
                     ax.set_xlim([9, 13])
                     ax.set_ylim([1e-1, 25])
                     ax.set_yscale('log', nonposy='clip')
+
+                    validation_bulge = self.compute_chisq(default_L_bins, binned_bulgesize_kpc, binned_bulgesize_kpc_err,
+                                                    validation_this[:,1], validation_this[:,2])
+                    validation_disk = self.compute_chisq(default_L_bins, binned_disksize_kpc, binned_disksize_kpc_err,
+                                                    validation_this[:,1]+0.2, validation_this[:,3])
+                    list_of_validation_values.append([validation_bulge, validation_disk])                                
                 del catalog_data_this
 
                 col += 1
@@ -170,6 +181,28 @@ class SizeStellarMassLuminosity(BaseValidationTest):
         finally:
             fig.savefig(os.path.join(output_dir, '{:s}.png'.format(self.test_name)), bbox_inches='tight')
             plt.close(fig)
+        allpass = True
+        for validation_val, zbin in zip(list_of_validation_values, self.z_bins):
+            if hasattr(validation_val, '__iter__'):
+                if validation_val[0] > 1.2:
+                    print("Chi-square with respect to validation data is too large, {} for bulges in redshift bin {}-{}".format(
+                            validation_val[0], zbin['z_min'], zbin['z_max']))
+                    allpass = False
+                if validation_val[1] > 1.2:
+                    print("Chi-square with respect to validation data is too large, {} for disks in redshift bin {}-{}".format(
+                            validation_val[0], zbin['z_min'], zbin['z_max']))
+                    allpass = False
+            else:
+                if validation_val > 1.2:
+                    print("Chi-square with respect to validation data is too large, {} for redshift bin {}-{}".format(
+                            validation_val, zbin['z_min'], zbin['z_max']))
+                    allpass = False
 
         #TODO: calculate summary statistics
-        return TestResult(inspect_only=True)
+        return TestResult(score=np.mean(list_of_validation_values), passed=allpass)
+        
+    def compute_chisq(bins, binned_data, binned_err, validation_points, validation_data):
+        validation_at_binpoints = interpolate.CubicSpline(validation_points, validation_data)(bins)
+        weights = 1./binned_err**2
+        return np.sum(weights*(validation_at_binpoints-binpoints)**2)/len(weights)
+                                  
