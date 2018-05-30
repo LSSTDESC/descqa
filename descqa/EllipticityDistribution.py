@@ -52,8 +52,8 @@ class EllipticityDistribution(BaseValidationTest):
     }
     
     validation_percentiles = {
-        'percentiles': [10, 50, 90, 100],
-        'ranges': [(0, 0.2), (0.35, 0.65), (0.8, 1.0)]
+        'percentiles': [10, 50, 90],
+        'ranges': [(0, 0.4), (0.3, 0.7), (0.6, 1.0)]
     }
 
     #define ellipticity functions
@@ -347,9 +347,10 @@ class EllipticityDistribution(BaseValidationTest):
                 self.decorate_subplot(summary_ax_this, n, label=cutlabel)
                 
                 #check ellipticity distributions
-                number_passed = self.validate_percentiles(N)
+                number_passed, percentiles = self.validate_percentiles(N)
                 if number_passed>0:
-                    print("Ellipticity percentile check failed for morphology {}".format(morphology))
+                    print("Ellipticity percentile check failed for morphology {}:".format(morphology))
+                    print("Percentiles are:"+(" {:.3f}"*len(percentiles)).format(*percentiles))
                 n_fails += number_passed
                 
 
@@ -360,10 +361,10 @@ class EllipticityDistribution(BaseValidationTest):
         
         #check overall ellipticity distribution
         global_N = np.sum(np.sum(N_array, axis=1), axis=0)
-        print(len(global_N), self.N_ebins)
-        number_passed = self.validate_percentiles(global_N)
+        number_passed, percentiles = self.validate_percentiles(global_N)
         if number_passed>0:
             print("Ellipticity percentile check failed for global distribution")
+            print("Percentiles are:"+(" {:.3f}"*len(percentiles)).format(*percentiles))
         n_fails += number_passed
         
 
@@ -440,9 +441,8 @@ class EllipticityDistribution(BaseValidationTest):
         cdf *= 100 # because numpy percentile wants percentages
         interpolator = interp1d(cdf, self.ebins)
         percentiles = interpolator(self.validation_percentiles['percentiles'])
-        print(percentiles, "percentiles")
-        return np.sum([(p>=pmin) & (p<=pmax) for p, (pmin, pmax) in zip(
-                            percentiles, self.validation_percentiles['ranges'])])
+        return np.sum([(p<=pmin) | (p>=pmax) for p, (pmin, pmax) in zip(
+                            percentiles, self.validation_percentiles['ranges'])]), percentiles
             
 
     @staticmethod
