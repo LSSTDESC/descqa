@@ -8,5 +8,11 @@ description: Conditional luminosity function (in i band) for central and satelli
 included_by_default: true
 z_bins: 
    - 0.1
+   - 0.4
    - 0.9
-   - 3
+data_z_mins:
+   - 0.2
+   - 0.2
+data_z_maxs:
+   - 0.3
+   - 0.3

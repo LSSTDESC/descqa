@@ -101,8 +101,9 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         self.possible_magerr_fields = ('magerr_{0}_lsst',)
         self.bandshift = kwargs.get('bandshift', 0.3)
         self.njack = kwargs.get('njack',20)
-        self.z_bins = np.linspace(*kwargs.get('z_bins', (0.1,0.9,3)))
-        self.data_z_bins = kwargs.get('data_z_bins', np.array([0.2, 0.3]))
+        self.z_bins = np.array(kwargs.get('z_bins', (0.1, 0.3, 1.0)))
+        self.data_z_mins = kwargs.get('data_z_mins', (0.2, 0.2))
+        self.data_z_maxs = kwargs.get('data_z_maxs', (0.3, 0.3))
         self.n_z_bins = len(self.z_bins) - 1
         defaultbins = np.array([5.0, 10.0, 15.0, 100.0]).reshape(-1, 1)
         self.is_abundance_matching = kwargs.get('abundance_matching', False)
@@ -116,6 +117,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         self.mag_center = (
             self.magnitude_bins[1:] + self.magnitude_bins[:-1])*0.5
         self.compared_survey = kwargs.get('survey', "SDSS")
+        self.filters = kwargs.get('filters', "buzzard_filters.dat")
         self._other_kwargs = kwargs
 
     def prepare_galaxy_catalog(self, gc):
@@ -162,7 +164,13 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         magerr = np.array(magerr).T
         # get k correction
         z = quant['redshift_true']
-        kcorr = kcorrect(mag, magerr, z, self.bandshift, filters="buzzard_filters.dat")
+        kcorrect_path = self.data_dir+"/clf/kcorrect/"+catalog_name+"_kcorr.cache"
+        if not os.path.exists(kcorrect_path):
+            kcorr = kcorrect(mag, magerr, z, self.bandshift, filters=self.filters)
+            np.savetxt(kcorrect_path, kcorr)
+        else:
+            kcorr = np.loadtxt(kcorrect_path)
+
         # Preprocess for all quantity
         #get analysis band and do kcorrection
         analindex = self.band_kcorrect.index(self.band)
@@ -199,17 +207,36 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                                                              cluster_lm=quant['richness'][mask],
                                                              cluster_z=quant['redshift_cluster'][mask])
         ##
+         
+        scores_shift = []
+        scores_scatter = []
+        for i in range(self.n_z_bins):
+            for j in range(self.nlambd_bins):
+               #calculate the relative brightness of centrals and satellites
+               meancen_ref = np.average(data['centrals'][i, j, :, 0], weights=data['centrals'][i, j, :, 1])
+               meansat_ref = np.average(data['satellites'][i, j, :, 0], weights=data['satellites'][i, j, :, 1])
+               meancen = np.average(self.mag_center, weights=cenclf[i, j])
+               meansat = np.average(self.mag_center, weights=satclf[i, j])
+               scores_shift.append(np.abs(meancen - meansat - (meancen_ref - meansat_ref)))
 
+               #calculate the std of central luminosity given richness
+               std_cen_ref = np.sqrt(np.average((data['centrals'][i, j, :, 0]-meancen_ref)**2, weights=data['centrals'][i, j, :, 1]))
+               std_cen = np.sqrt(np.average((self.mag_center-meancen)**2, weights=cenclf[i, j]))
+               scores_scatter.append(np.abs(std_cen-std_cen_ref))
+        scores = [np.max(scores_shift), np.max(scores_scatter)]
         clf = {'satellites': satclf, 'centrals': cenclf}
         covar = {'satellites': covar_sat, 'centrals': covar_cen}
         self.make_plot(clf, covar, data, catalog_name+" kcorrect z={0}".format(self.bandshift), os.path.join(
             output_dir, 'clf_redmapper.png'))
-        return TestResult(inspect_only=True)
+        if (scores[0] < 0.5) & (scores[1] < 0.5):
+            return TestResult(np.max(scores), passed=True)
+        else:
+            return TestResult(np.max(scores), passed=False)
 
     def read_compared_data(self, h):
         # read the data to be compared to
-        zmin = self.data_z_bins[:-1]
-        zmax = self.data_z_bins[1:]
+        zmin = np.array(self.data_z_mins)
+        zmax = np.array(self.data_z_maxs)
         galaxytype = ["centrals", "satellites"]
         data = {}
         for galtype in galaxytype:
@@ -228,7 +255,10 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                         data[galtype].append(loaded_data)
                     except:
                         data[galtype].append(None)
-        return data
+        newdata={}
+        for item in data.keys():
+           newdata[item] = np.array(data[item]).reshape(self.n_z_bins, self.nlambd_bins, -1, 3)
+        return newdata
 
     def abundance_matching(self, richness, area):
         # do abundance matching for =richness
@@ -262,17 +292,17 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                 for k, fmt in zip(('satellites', 'centrals'), ('^', 'o')):
                     ax_this.errorbar(self.mag_center, clf[k][i, j], yerr=np.sqrt(
                         np.diag(covar[k][i, j])), label=k, fmt=fmt)
-                    newdata = data[k][i*self.nlambd_bins+j]
+                    newdata = data[k][i,j]
                     if newdata is not None:
                         ax_this.errorbar(
                             newdata[:, 0], newdata[:, 1], yerr=newdata[:, 2], label=k+"_"+self.compared_survey, fmt=fmt)
                 ax_this.set_ylim(0.05, 50)
                 if self.old_lambd_bins is not None:
                     bins = self.old_lambd_bins[i][j], self.old_lambd_bins[i][j +
-                                                                             1], self.z_bins[i], self.z_bins[i+1], self.data_z_bins[i], self.data_z_bins[i+1]
+                                                                             1], self.z_bins[i], self.z_bins[i+1], self.data_z_mins[i], self.data_z_maxs[i]
                 else:
                     bins = self.lambd_bins[i][j], self.lambd_bins[i][j +
-                                                                     1], self.z_bins[i], self.z_bins[i+1], self.data_z_bins[i], self.data_z_bins[i+1]
+                                                                     1], self.z_bins[i], self.z_bins[i+1], self.data_z_mins[i], self.data_z_maxs[i]
                 ax_this.text(-25, 10,
                              (r'${:.1E} \leq \lambda <{:.1E}$'+"\n"+r'${:g} \leq z<{:g}$'+"\n"+self.compared_survey+r': ${:g} \leq z<{:g}$' ).format(*bins))
                 ax_this.set_yscale("log")
