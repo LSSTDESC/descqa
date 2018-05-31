@@ -3,6 +3,7 @@
 [![DOI](https://zenodo.org/badge/47784041.svg)](https://zenodo.org/badge/latestdoi/47784041)
 [![Paper DOI](https://img.shields.io/badge/Paper%20DOI-10.3847%2F1538--4365%2Faaa6c3-brightgreen.svg)](https://doi.org/10.3847/1538-4365/aaa6c3)
 [![arXiv:1709.09665](https://img.shields.io/badge/astro--ph.IM-arXiv%3A1709.09665-B31B1B.svg)](https://arxiv.org/abs/1709.09665)
+[![ascl:1804.011](https://img.shields.io/badge/ascl-1804.011-blue.svg?colorB=262255)](http://ascl.net/1804.011)
 
 This repository contains the DESCQA framework that validates simulated galaxy catalogs. For more information about this framework, please check out the [DESCQA paper](https://arxiv.org/abs/1709.09665).
 

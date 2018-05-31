@@ -1,6 +1,7 @@
 from __future__ import unicode_literals, absolute_import, division
 import os
 import numpy as np
+from scipy.interpolate import interp1d
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
 from scipy.interpolate import interp1d
@@ -12,28 +13,26 @@ possible_observations = {
         'usecols': (0, 1, 2),
         'colnames': ('mag', 'n(<mag)', 'err', 'data', 'data_err', 'power_law'),
         'skiprows': 1,
-        'label': 'HSC (D. Campbell, 2/8/18)',
+        'label': 'HSC extrapolated (desqagen 2018)',
     }
 }
 
 __all__ = ['ApparentMagFuncTest']
 
+
 class ApparentMagFuncTest(BaseValidationTest):
     """
     cumulative apparent magnitude function test
     """
-    def __init__(self, band='r', min_band_lim=24.5, max_band_lim=27.0, fractional_tol=0.4, observation='HSC', **kwargs):
+    def __init__(self, band='r', band_lim=(24, 27.5), fractional_tol=0.4, observation='HSC', **kwargs):
         """
         parameters
         ----------
         band : string
             photometric band
 
-        min_band_lim : float
-            apparent magnitude lower limit for test
-
-        max_band_lim : float
-            apparent magnitude upper limit for test
+        band_lim : float
+            apparent magnitude lower and upper limits
 
         fractional_tol : float
             fractional tolerance allowed between mock and apparent mag func for test to pass
@@ -42,32 +41,23 @@ class ApparentMagFuncTest(BaseValidationTest):
             string indicating which obsrvational data to use for validating
 
         """
+        # pylint: disable=super-init-not-called
 
         # catalog quantities needed
         possible_mag_fields = ('mag_{}_lsst',
+                               'mag_true_{}_lsst',
                                'mag_{}_sdss',
+                               'mag_true_{}_sdss',
                                'mag_{}_des',
+                               'mag_true_{}_des',
                                'mag_{}_hsc',
-                              )
+                               'mag_true_{}_hsc')
         self.possible_mag_fields = [f.format(band) for f in possible_mag_fields]
 
         # attach some attributes to the test
         self.band = band
-        self.max_band_lim = max_band_lim
-        self.min_band_lim = min_band_lim
+        self.band_lim = list(band_lim)
         self.fractional_tol = fractional_tol
-
-        # check for validation observations
-        if not observation:
-            print('Warning: no data file supplied, no observation requested; only catalog data will be shown.')
-        elif observation not in possible_observations:
-            raise ValueError('Observation: {} not available for this test.'.format(observation))
-        else:
-            self.validation_data = self.get_validation_data(band, observation)
-
-        # prepare summary plot
-        self.summary_fig, self.summary_ax = plt.subplots()
-
 
     def get_validation_data(self, band, observation):
         """
@@ -89,15 +79,6 @@ class ApparentMagFuncTest(BaseValidationTest):
 
         return validation_data
 
-
-    def post_process_plot(self, ax):
-        """
-        """
-        ax.legend(loc = 'upper left')
-        ax.set_ylabel('n(< {\rm mag}) ~[{\rm deg^{-2}}]')
-        ax.set_xlabel(self.band + ' magnitude')
-
-
     @staticmethod
     def get_catalog_data(gc, quantities, filters=None):
         """
@@ -113,10 +94,21 @@ class ApparentMagFuncTest(BaseValidationTest):
 
         return data
 
+    def post_process_plot(self, ax):
+        """
+        """
+        ax.legend(loc='upper left')
+        ax.set_ylabel(r'$n(< {\rm mag}) ~[{\rm deg^{-2}}]$')
+        ax.set_xlabel(self.band + ' magnitude')
+        ax.set_ylim([1000, 10**7])
+        ax.fill_between([self.band_lim[0], self.band_lim[1]], [0, 0], [10**9, 10**9], alpha=0.1, color='grey')
+        ax.set_yscale('log')
+        ax.set_title(str(self.band_lim[0]) + ' < '+self.band + ' < ' + str(self.band_lim[1]))
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         """
         """
+
         mag_field_key = catalog_instance.first_available(*self.possible_mag_fields)
         if not mag_field_key:
             return TestResult(skipped=True, summary='Catalog is missing requested quantity: {}'.format(self.possible_mag_fields))
@@ -128,7 +120,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         # retreive data from mock catalog
         d = catalog_instance.get_quantities([mag_field_key])
         m = d[mag_field_key]
-        m = np.sort(m) #put into order--bright to faint
+        m = np.sort(m)  # put into order--bright to faint
 
         # check to see if catalog is a light cone
         # this is required since we must be able to calculate the angular area
@@ -147,14 +139,14 @@ class ApparentMagFuncTest(BaseValidationTest):
 
         # define the apparent magnitude bins for plotting purposes
         self.dmag = 0.1 # bin widths
-        self.max_mag = self.max_band_lim + 1.0 # go one mag beyond the testing limit
-        self.min_mag = 17.7 # default bright galaxy limit
+        max_mag = self.band_lim[1] + 1.0  # go one mag beyond the limit
+        min_mag = self.band_lim[0] - 1.0  # start at bright galaxies
         mag_bins = np.arange(self.min_mag ,self.max_mag, self.dmag)
 
         # calculate N(<mag) at the specified points
         inds = np.searchsorted(m,mag_bins)
         mask = (inds >= len(m))
-        inds[mask] = -1
+        inds[mask] = -1 # take care of edge case
         sampled_N = N[inds]
         
         #################################################
@@ -169,19 +161,19 @@ class ApparentMagFuncTest(BaseValidationTest):
             # plot mock catalog data
             ax_this.plot(mag_bins, sampled_N, '-', label=catalog_name)
             ax_this.plot(self.band_lim, N_tot)
-            
-            # format plot
+
             ax_this.set_yscale('log')
             ax_this.set_ylabel(r'$\rm mag$')
             ax_this.set_ylabel(r'$N(<{\rm mag})~[{\rm deg}^{-2}]$')
-            ax_this.set_xlim([17,30])
-            ax_this.set_ylim([1,10**8])
+            ax_this.set_xlim([17, 30])
+            ax_this.set_ylim([1, 10**8])
 
         # plot validation data
-        for ax_this in ax:
+        for ax_this in [ax]:
             n = self.validation_data['n(<mag)']
             m = self.validation_data['mag']
-            ax_this.plot(m, n, 'o', label=self.validation_data['label'])
+            ax_this.plot(m, n, '-', label=self.validation_data['label'], color='black')
+            ax_this.fill_between(m, n-self.rtol*n, n+self.rtol*n, color='black', alpha=0.5)
 
         self.post_process_plot(ax)
         fig.savefig(os.path.join(output_dir, 'cumulative_app_mag_plot.png'))
@@ -215,16 +207,16 @@ class ApparentMagFuncTest(BaseValidationTest):
 
         return TestResult(score, passed=passed)
 
-
     def conclude_test(self, output_dir):
         """
         """
 
-        # plot verification data on summary plot
+        # plot verifaction data on summary plot
         n = self.validation_data['n(<mag)']
         m = self.validation_data['mag']
+        self.summary_ax.plot(m, n, '-', label=self.validation_data['label'], color='black')
+        self.summary_ax.fill_between(m, n-self.fractional_tol*n, n+self.fractional_tol*n, color='black', alpha=0.5)
 
-        self.summary_ax.plot(m, n, 'o', label=self.validation_data['label'])
         self.post_process_plot(self.summary_ax)
         self.summary_fig.savefig(os.path.join(output_dir, 'summary.png'))
 
