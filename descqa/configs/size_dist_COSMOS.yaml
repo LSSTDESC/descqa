@@ -1,0 +1,9 @@
+subclass_name: SizeDistribution.SizeDistribution
+
+possible_size_fields:
+  - size
+  - size_true
+
+data_filename: 'size_dist/COSMOS_Great3_sample_size_distribution.txt'
+
+description: Compare slope of N(size) to the same slope in the Great3 COSMOS postage stamps

@@ -1,5 +1,5 @@
 """
 DESCQA Execution Script
 """
-from .master import *
-__version__ = '2.0.0'
+from .master import main
+__version__ = '2.1.0'

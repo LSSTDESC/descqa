@@ -8,10 +8,10 @@ except ImportError:
 
 import numpy as np
 from GCR import GCRQuery
+from sklearn.cluster import k_means
 
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
-from itertools import cycle
 
 __all__ = ['NumberDensityVersusRedshift']
 
@@ -60,13 +60,17 @@ class NumberDensityVersusRedshift(BaseValidationTest):
 
     def __init__(self, z='redshift_true', band='i', N_zbins=44, zlo=0., zhi=1.1,
                  observation='', mag_lo=27, mag_hi=18, ncolumns=2, normed=True,
-                 **kwargs):
+                 jackknife=False, N_jack=10, ra='ra', dec='dec',
+                 **kwargs): #pylint: disable=W0231
 
         #catalog quantities
         self.zlabel = z
         possible_mag_fields = ('mag_{}_lsst',
                                'mag_{}_sdss',
                                'mag_{}_des',
+                               'mag_true_{}_lsst',
+                               'mag_true_{}_sdss',
+                               'mag_true_{}_des',
                               )
         self.possible_mag_fields = [f.format(band) for f in possible_mag_fields]
         self.band = band
@@ -77,6 +81,12 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         self.N_zbins = N_zbins
         self.zbins = np.linspace(zlo, zhi, N_zbins+1)
         self.filters = [(lambda z: (z > zlo) & (z < zhi), self.zlabel)]
+
+        #errors
+        self.jackknife = jackknife
+        self.N_jack = N_jack
+        self.ra = ra
+        self.dec = dec
 
         #validation data
         self.validation_data = {}
@@ -151,8 +161,12 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         mag_field = catalog_instance.first_available(*self.possible_mag_fields)
         if not mag_field:
             return TestResult(skipped=True, summary='Missing required mag_field option')
-        if not catalog_instance.has_quantity(self.zlabel):
-            return TestResult(skipped=True, summary='Missing required {} quantity'.format(self.zlabel))
+        jackknife_quantities = [self.zlabel, self.ra, self.dec] if self.jackknife else [self.zlabel]
+        for jq in jackknife_quantities:
+            if not catalog_instance.has_quantity(jq):
+                return TestResult(skipped=True, summary='Missing required {} quantity'.format(jq))
+
+        required_quantities = jackknife_quantities + [mag_field]
         filtername = mag_field.rpartition('_')[-1].upper()
         filelabel = '_'.join((filtername, self.band))
 
@@ -164,26 +178,36 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         #initialize arrays for storing histogram sums
         N_array = np.zeros((self.nrows, self.ncolumns, len(self.zbins)-1), dtype=np.int)
         sumz_array = np.zeros((self.nrows, self.ncolumns,len(self.zbins)-1))
-                
+
+        jackknife_data = {}
         #get catalog data by looping over data iterator (needed for large catalogs) and aggregate histograms
-        for catalog_data in catalog_instance.get_quantities([self.zlabel, mag_field], filters=self.filters, return_iterator=True):
+        for catalog_data in catalog_instance.get_quantities(required_quantities, filters=self.filters, return_iterator=True):
             catalog_data = GCRQuery(*((np.isfinite, col) for col in catalog_data)).filter(catalog_data)
-            for cut_lo, cut_hi, N, sumz in zip_longest(
+            for n, (cut_lo, cut_hi, N, sumz) in enumerate(zip_longest(
                     self.mag_lo,
-                    self.mag_hi, 
+                    self.mag_hi,
                     N_array.reshape(-1, N_array.shape[-1]), #flatten all but last dimension of array
                     sumz_array.reshape(-1, sumz_array.shape[-1]),
-            ):
+            )):
                 if cut_lo:
                     mask = (catalog_data[mag_field] < cut_lo)
                     if cut_hi:
                         mask &= (catalog_data[mag_field] >= cut_hi)
                     z_this = catalog_data[self.zlabel][mask]
+
+                    #save data for jackknife errors
+                    if self.jackknife:   #store all the jackknife data in numpy arrays for later processing
+                        if str(n) not in jackknife_data.keys(): #initialize sub-dict
+                            jackknife_data[str(n)] = dict(zip(required_quantities, [np.asarray([]) for jq in jackknife_quantities]))
+                        for jkey in jackknife_data[str(n)].keys():
+                            jackknife_data[str(n)][jkey] = np.hstack((jackknife_data[str(n)][jkey], catalog_data[jkey][mask]))
+                    
                     del mask
 
                     #bin catalog_data and accumulate subplot histograms
                     N += np.histogram(z_this, bins=self.zbins)[0]
                     sumz += np.histogram(z_this, bins=self.zbins, weights=z_this)[0]
+
 
         #loop over magnitude cuts and make plots
         results = {}
@@ -203,7 +227,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
             else:
                 cut_label = '{} $< {}$'.format(self.band, cut_lo)
                 if cut_hi:
-                    cut_label = '${} <=$ '.format(cut_hi) + cut_label #also appears in txt file so don't use \leq 
+                    cut_label = '${} <=$ '.format(cut_hi) + cut_label #also appears in txt file so don't use \leq
 
                 if z0 is None and 'z0const' in self.validation_data:  #alternate format for some validation data
                     z0 = self.validation_data['z0const'] + self.validation_data['z0linear'] * cut_lo
@@ -211,30 +235,40 @@ class NumberDensityVersusRedshift(BaseValidationTest):
                 meanz = sumz/N
                 sumN = N.sum()
                 total = '(# of galaxies = {})'.format(sumN)
-                Nerrors = np.sqrt(N)
                 if self.normed:
                     binwidths = self.zbins[1:] - self.zbins[:-1]
                     N = N/sumN/binwidths
-                    Nerrors = Nerrors/sumN/binwidths
+                    rescale = 1.
+                else:
+                    rescale = sumN*(self.zbins[1] - self.zbins[0]) #factor by which to rescale validation plot if not normed
 
+                if self.jackknife:
+                    covariance = self.get_jackknife_errors(self.N_jack, jackknife_data[str(n)], N, normed=self.normed)
+                    Nerrors = np.sqrt(np.diagonal(covariance))
+                else:
+                    Nerrors = np.sqrt(N)
+                    if self.normed:
+                        Nerrors = Nerrors/sumN/binwidths
+                    covariance = np.diag(1./Nerrors**2)
+                
                 #make subplot
                 catalog_label = ' '.join((catalog_name, cut_label.replace(self.band, filtername + ' ' + self.band)))
                 validation_label = ' '.join((self.validation_data.get('label', ''), cut_label))
                 key = cut_label.replace('$', '')
                 results[key] = {'meanz': meanz, 'total':total, 'N':N, 'N+-':Nerrors}
                 self.catalog_subplot(ax_this, meanz, N, Nerrors, catalog_color, catalog_marker, catalog_label)
-                if z0 and z0 > 0.:   
-                    fits = self.validation_subplot(ax_this, meanz, z0, z0err, validation_label)
+                if z0 and z0 > 0.:
+                    fits = self.validation_subplot(ax_this, meanz, z0, z0err, validation_label, rescale=rescale)
                 results[key].update(fits)
                 self.decorate_subplot(ax_this, n)
 
                 #add curve for this catalog to summary plot
                 self.catalog_subplot(summary_ax_this, meanz, N, Nerrors, catalog_color, catalog_marker, catalog_label)
-                if self.first_pass and z0 and z0 > 0: 
+                if self.first_pass and z0 and z0 > 0:
                     self.validation_subplot(summary_ax_this, meanz, z0, z0err, validation_label) #add validation data if evaluating first catalog
                 self.decorate_subplot(summary_ax_this, n)
 
-                
+
         #save results for catalog and validation data in txt files
         for filename, dtype, comment, info in zip_longest((filelabel, self.observation), ('N', 'fit'), (filtername,), ('total',)):
             if filename:
@@ -250,21 +284,37 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         self.post_process_plot(fig)
         fig.savefig(os.path.join(output_dir, 'Nvsz_' + filelabel + '.png'))
         plt.close(fig)
-        return TestResult(0, passed=True)
+        return TestResult(inspect_only=True)
 
+
+    def get_jackknife_errors(self, N_jack, jackknife_data, N, normed=False):
+        nn = np.stack((jackknife_data[self.ra], jackknife_data[self.dec]), axis=1)
+        _, jack_labels, _ = k_means(n_clusters=N_jack, random_state=0, X=nn, n_jobs=-1)
+
+        #make histograms for jackknife regions
+        Njack_array = np.zeros((N_jack, len(self.zbins)-1), dtype=np.int)
+        for nj in range(N_jack):
+            Njack_array[nj] = np.histogram(jackknife_data[self.zlabel][jack_labels != nj], self.zbins, normed= normed)[0]
+
+        covariance = np.zeros((self.N_zbins, self.N_zbins))
+        for i in range(self.N_zbins):
+            for j in range(self.N_zbins):
+                for njack in Njack_array:
+                    covariance[i][j] += (N_jack - 1.)/N_jack * (N[i] - njack[i]) * (N[j] - njack[j])
+            
+        return covariance
 
     def catalog_subplot(self, ax, meanz, data, errors, catalog_color, catalog_marker, catalog_label):
 
         ax.errorbar(meanz, data, yerr=errors, label=catalog_label, color=catalog_color, fmt=catalog_marker, ms=self.msize)
 
 
-    def validation_subplot(self, ax, meanz, z0, z0err, validation_label):
+    def validation_subplot(self, ax, meanz, z0, z0err, validation_label, rescale=1.):
         #plot validation data if available
-        if not self.normed:
-            raise ValueError("Only fits to normed plots are implemented so far")
-
         ndata = meanz**2*np.exp(-meanz/z0)
         norm = self.nz_norm(self.zhi, z0) - self.nz_norm(self.zlo, z0)
+        if not self.normed:
+            norm = norm/rescale
         ax.plot(meanz, ndata/norm, label=validation_label, ls='--', color=self.validation_color, lw=self.lw2)
         fits = {'fit': ndata/norm}
 

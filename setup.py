@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 DESCQA: LSST DESC QA Framework for mock galaxy catalogs
-Copyright (c) 2017 LSST DESC
+Copyright (c) 2018 LSST DESC
 http://opensource.org/licenses/MIT
 """
 
@@ -9,7 +9,7 @@ import os
 from setuptools import setup
 
 with open(os.path.join(os.path.dirname(__file__), 'descqa', 'version.py')) as f:
-    exec(f.read())
+    exec(f.read()) #pylint: disable=W0122
 
 setup(
     name='descqa',
@@ -31,7 +31,7 @@ setup(
     packages=['descqa'],
     install_requires=['future', 'pyyaml', 'jinja2'],
     extras_require={
-        'full': ['numpy', 'scipy', 'matplotlib', 'healpy', 'GCR>=0.6.2', 'treecorr'],
+        'full': ['numpy', 'scipy', 'matplotlib', 'GCR>=0.6.2', 'healpy', 'treecorr', 'camb', 'scikit-learn'],
     },
     package_data={'descqa': ['configs/*.yaml', 'data/*']},
 )

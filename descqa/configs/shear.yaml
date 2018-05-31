@@ -1,0 +1,16 @@
+subclass_name: shear_test.ShearTest
+z: 'redshift_true'
+ra: 'ra'
+dec: 'dec'
+e1: 'shear_1'
+e2: 'shear_2'
+kappa: 'convergence'
+nbins: 6
+min_sep: 2.5
+max_sep: 200
+sep_units: 'arcmin'
+bin_slop: 0.07
+zlo: 0.7
+zhi: 0.8
+do_jackknife: False
+N_clust: 10
