@@ -1,4 +1,5 @@
 from __future__ import unicode_literals, absolute_import, division, print_function
+import itertools
 import os
 import sys
 import pickle
@@ -8,6 +9,7 @@ try:
 except ImportError:
     sys.exit(
         "You need kmeans_radec install it from https://github.com/esheldon/kmeans_radec")
+from .kcorrect_wrapper import kcorrect
 #from GCR import GCRQuery
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
@@ -93,11 +95,14 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
 
     def __init__(self, **kwargs):  # pylint: disable=W0231
         self.band = kwargs.get('band1', 'i')
-        possible_mag_fields = ('mag_{0}_lsst',)
-        self.possible_mag_fields = [
-            f.format(self.band) for f in possible_mag_fields]
-        self.njack = kwargs.get('njack', 20)
-        self.z_bins = kwargs.get('z_bins', np.array([0.1, 0.2, 0.3]))
+        self.band_kcorrect = kwargs.get('band_kcorrect', 'u, g, r, i, z')
+        self.band_kcorrect = [x.strip() for x in self.band_kcorrect.split(',')]
+        self.possible_mag_fields = ('mag_{0}_lsst',)
+        self.possible_magerr_fields = ('magerr_{0}_lsst',)
+        self.bandshift = kwargs.get('bandshift', 0.3)
+        self.njack = kwargs.get('njack',20)
+        self.z_bins = np.linspace(*kwargs.get('z_bins', (0.1,0.9,3)))
+        self.data_z_bins = kwargs.get('data_z_bins', np.array([0.2, 0.3]))
         self.n_z_bins = len(self.z_bins) - 1
         defaultbins = np.array([5.0, 10.0, 15.0, 100.0]).reshape(-1, 1)
         self.is_abundance_matching = kwargs.get('abundance_matching', False)
@@ -116,32 +121,53 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
     def prepare_galaxy_catalog(self, gc):
         # list all quantities that is needed
         quantities_needed = {'cluster_id_member', 'cluster_id', 'ra', 'dec', 'ra_cluster', 'dec_cluster',
-                             'richness', 'redshift', 'lim_limmag_dered', 'p_mem', 'scaleval', 'p_cen', 'redshift_cluster'}
+                             'richness', 'redshift_true', 'lim_limmag_dered', 'p_mem', 'scaleval', 'p_cen', 'redshift_cluster'}
         try:
-            magnitude_field = gc.first_available(*self.possible_mag_fields)
+            magnitude_fields = []
+            magnitude_err_fields = []
+            for band in self.band_kcorrect:
+               possible_mag_fields = [magfield.format(band) for magfield in self.possible_mag_fields]
+               possible_magerr_fields = [magfield.format(band) for magfield in self.possible_magerr_fields]
+               magnitude_fields.append(gc.first_available(*possible_mag_fields))
+               magnitude_err_fields.append(gc.first_available(*possible_magerr_fields))
         except ValueError:
             return
-        quantities_needed.add(magnitude_field)
+        for field in zip(magnitude_fields,magnitude_err_fields):
+            quantities_needed.add(field[0])
+            quantities_needed.add(field[1])
         if not gc.has_quantities(quantities_needed):
             print(quantities_needed)
             return
-        return magnitude_field, quantities_needed
+        return magnitude_fields, magnitude_err_fields, quantities_needed
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         # loop over all catalog
         prepared = self.prepare_galaxy_catalog(catalog_instance)
         if prepared is None:
             TestResult(skipped=True)
-        magnitude_field, quantities_needed = prepared
+        magnitude_fields, magnitude_err_fields, quantities_needed = prepared
         quant = catalog_instance.get_quantities(quantities_needed)
+        data = self.read_compared_data(catalog_instance.cosmology.h)
         # Abundance matching
-        data = self.read_compared_data()
         if self.is_abundance_matching:
             self.abundance_matching(
                 quant['richness'], catalog_instance.get_catalog_info()['sky_area'])
+        # get magnitude
+        mag = []
+        magerr = []
+        for magzip in zip(magnitude_fields, magnitude_err_fields):
+            mag.append(quant[magzip[0]])
+            magerr.append(quant[magzip[1]])
+        mag = np.array(mag).T
+        magerr = np.array(magerr).T
+        # get k correction
+        z = quant['redshift_true']
+        kcorr = kcorrect(mag, magerr, z, self.bandshift, filters="buzzard_filters.dat")
         # Preprocess for all quantity
-        mag = catalog_instance.get_quantities(magnitude_field)[magnitude_field]
-        Mag = mag-catalog_instance.cosmology.distmod(quant['redshift']).value
+        #get analysis band and do kcorrection
+        analindex = self.band_kcorrect.index(self.band)
+        Mag = mag[:, analindex] - catalog_instance.cosmology.distmod(z).value - kcorr[:, analindex]
+#
         # Mask for central galaxy
         mask = (quant['richness'] > 1)
         limmag = quant['lim_limmag_dered'][mask]
@@ -150,6 +176,9 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                 quant['redshift_cluster']).value[mask]
         cenMag, cengalindex = self.get_central_mag_id(
             quant['cluster_id'][mask], quant['cluster_id_member'], quant['ra_cluster'][mask], quant['dec_cluster'][mask], quant['ra'], quant['dec'], Mag)
+        np.save("cenMag.npy", cenMag,)
+        np.save("Mag.npy", Mag,)
+#        assert False
         # For halo run pcen are 1
         pcen_all = np.zeros(len(quant['ra']))
         pcen_all[cengalindex.flatten().astype(int)] = quant['p_cen'][mask]
@@ -173,14 +202,14 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
 
         clf = {'satellites': satclf, 'centrals': cenclf}
         covar = {'satellites': covar_sat, 'centrals': covar_cen}
-        self.make_plot(clf, covar, data, catalog_name, os.path.join(
+        self.make_plot(clf, covar, data, catalog_name+" kcorrect z={0}".format(self.bandshift), os.path.join(
             output_dir, 'clf_redmapper.png'))
         return TestResult(inspect_only=True)
 
-    def read_compared_data(self):
+    def read_compared_data(self, h):
         # read the data to be compared to
-        zmin = self.z_bins[:-1]
-        zmax = self.z_bins[1:]
+        zmin = self.data_z_bins[:-1]
+        zmax = self.data_z_bins[1:]
         galaxytype = ["centrals", "satellites"]
         data = {}
         for galtype in galaxytype:
@@ -194,8 +223,9 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                     else:
                         name = "sat"
                     try:
-                        data[galtype].append(
-                            np.loadtxt(self.data_dir + "/clf/{5}/clf_{4}_z_{0}_{1}_lm_{2}_{3}.dat".format(zrange[0], zrange[1], lambdlow, lambdhigh, name, self.compared_survey)))
+                        loaded_data = np.loadtxt(self.data_dir + "/clf/{5}/clf_{4}_z_{0}_{1}_lm_{2}_{3}.dat".format(zrange[0], zrange[1], lambdlow, lambdhigh, name, self.compared_survey))
+                        loaded_data[:, 0] += 5*np.log10(h) #kcorrect distmodule assume h=1, so we need to adjust it to match h in simulation
+                        data[galtype].append(loaded_data)
                     except:
                         data[galtype].append(None)
         return data
@@ -224,6 +254,8 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         # plot the result
         fig, ax = plt.subplots(self.nlambd_bins, self.n_z_bins,
                                sharex=True, sharey=True, figsize=(12, 10), dpi=100)
+        if len(ax.shape)==1:
+           ax = ax.reshape(-1,1)
         for i in range(self.n_z_bins):
             for j in range(self.nlambd_bins):
                 ax_this = ax[j, i]
@@ -237,22 +269,24 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                 ax_this.set_ylim(0.05, 50)
                 if self.old_lambd_bins is not None:
                     bins = self.old_lambd_bins[i][j], self.old_lambd_bins[i][j +
-                                                                             1], self.z_bins[i], self.z_bins[i+1]
+                                                                             1], self.z_bins[i], self.z_bins[i+1], self.data_z_bins[i], self.data_z_bins[i+1]
                 else:
                     bins = self.lambd_bins[i][j], self.lambd_bins[i][j +
-                                                                     1], self.z_bins[i], self.z_bins[i+1]
+                                                                     1], self.z_bins[i], self.z_bins[i+1], self.data_z_bins[i], self.data_z_bins[i+1]
                 ax_this.text(-25, 10,
-                             (r'${:.1E} \leq \lambda <{:.1E}$'+"\n"+r'${:g} \leq z<{:g}$').format(*bins))
+                             (r'${:.1E} \leq \lambda <{:.1E}$'+"\n"+r'${:g} \leq z<{:g}$'+"\n"+self.compared_survey+r': ${:g} \leq z<{:g}$' ).format(*bins))
                 ax_this.set_yscale("log")
         ax_this.legend(loc='lower right', frameon=False, fontsize='medium')
 
         ax = fig.add_subplot(111, frameon=False)
-        ax.tick_params(labelcolor='none', top='off',
-                       bottom='off', left='off', right='off')
+        ax.tick_params(labelcolor='none', top=False,
+                       bottom=False, left=False, right=False, direction="in")
+        ax.yaxis.set_major_locator(plt.NullLocator())
+        ax.xaxis.set_major_locator(plt.NullLocator())
         ax.grid(False)
         ax.set_ylabel(
-            r'$\phi(M_{{{}}}\,|\,\lambda,z)\quad[{{\rm Mag}}^{{-1}}]$'.format(self.band))
-        ax.set_xlabel(r'$M_{{{}}}\quad[{{\rm Mag}}]$'.format(self.band))
+            r'$\phi(M_{{{}}}\,|\,\lambda,z)\quad[{{\rm Mag}}^{{-1}}]$'.format(self.band), labelpad=30)
+        ax.set_xlabel(r'$M_{{{}}}\quad[{{\rm Mag}}]$'.format(self.band), labelpad=30)
         ax.set_title(name)
 
         fig.tight_layout()
@@ -283,7 +317,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                 if len(ra_cluster.shape) == 1:
                     place = np.where((np.abs(ra_cluster[i]-ra[count_lo:count_hi]) < 1E-5) &
                                      (np.abs(dec_cluster[i]-dec[count_lo:count_hi]) < 1E-5))[0]
-                if not place:
+                if len(place)==0:
                     print("WARNING:  Possible ID issue in get_central_mag")
                     cenmag[i][j] = 0
                     cengalindex[i][j] = -1
