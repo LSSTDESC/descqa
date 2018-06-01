@@ -140,7 +140,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         self.dmag = 0.1 # bin widths
         max_mag = self.band_lim[1] + 1.0  # go one mag beyond the limit
         min_mag = self.band_lim[0] - 1.0  # start at bright galaxies
-        mag_bins = np.arange(self.min_mag ,self.max_mag, self.dmag)
+        mag_bins = np.arange(self.band_lim[0] ,self.band_lim[1], self.dmag)
 
         # calculate N(<mag) at the specified points
         inds = np.searchsorted(m,mag_bins)
