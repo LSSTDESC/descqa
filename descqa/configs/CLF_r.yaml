@@ -4,3 +4,11 @@ band1: g
 color_cut_fraction: 0.2
 description: Conditional luminosity function (in r band) for central and satellite galaxies
 included_by_default: true
+z_bins:
+   - 0.1
+   - 1.0
+   - 3
+mass_bins:
+   - 13.5
+   - 13.7
+   - 15.5
