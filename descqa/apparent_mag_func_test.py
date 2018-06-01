@@ -4,13 +4,14 @@ import numpy as np
 from scipy.interpolate import interp1d
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
+from scipy.interpolate import interp1d
 
 
 possible_observations = {
     'HSC': {
         'filename_template': 'apparent_mag_func/HSC/hsc_{}_n.dat',
         'usecols': (0, 1, 2),
-        'colnames': ('mag', 'n(<mag)', 'err'),
+        'colnames': ('mag', 'n(<mag)', 'err', 'data', 'data_err', 'power_law'),
         'skiprows': 1,
         'label': 'HSC extrapolated (desqagen 2018)',
     }
@@ -21,9 +22,9 @@ __all__ = ['ApparentMagFuncTest']
 
 class ApparentMagFuncTest(BaseValidationTest):
     """
-    apparent magnitude function test
+    cumulative apparent magnitude function test
     """
-    def __init__(self, band='i', band_lim=[24, 27.5], rtol=0.2, observation='HSC', **kwargs):
+    def __init__(self, band='r', band_lim=(24, 27.5), fractional_tol=0.4, observation='HSC', **kwargs):
         """
         parameters
         ----------
@@ -33,13 +34,14 @@ class ApparentMagFuncTest(BaseValidationTest):
         band_lim : float
             apparent magnitude lower and upper limits
 
-        rtol : float
-            relative tolerance alowed between mock and test data
+        fractional_tol : float
+            fractional tolerance allowed between mock and apparent mag func for test to pass
 
         observation : string
             string indicating which obsrvational data to use for validating
 
         """
+        # pylint: disable=super-init-not-called
 
         # catalog quantities needed
         possible_mag_fields = ('mag_{}_lsst',
@@ -54,19 +56,8 @@ class ApparentMagFuncTest(BaseValidationTest):
 
         # attach some attributes to the test
         self.band = band
-        self.band_lim = band_lim
-        self.rtol = rtol
-
-        # check for validation observation
-        if not observation:
-            print('Warning: no data file supplied, no observation requested; only catalog data will be shown.')
-        elif observation not in possible_observations:
-            raise ValueError('Observation: {} not available for this test.'.format(observation))
-        else:
-            self.validation_data = self.get_validation_data(band, observation)
-
-        # prepare summary plot
-        self.summary_fig, self.summary_ax = plt.subplots()
+        self.band_lim = list(band_lim)
+        self.fractional_tol = fractional_tol
 
     def get_validation_data(self, band, observation):
         """
@@ -88,8 +79,24 @@ class ApparentMagFuncTest(BaseValidationTest):
 
         return validation_data
 
-    def post_process_plot(self, ax):
+    @staticmethod
+    def get_catalog_data(gc, quantities, filters=None):
+        """
+        """
+        data = {}
+        if not gc.has_quantities(quantities):
+            return TestResult(skipped=True, summary='Missing requested quantities')
 
+        data = gc.get_quantities(quantities, filters=filters)
+
+        #make sure all data entries are finite
+        data = GCRQuery(*((np.isfinite, col) for col in data)).filter(data)
+
+        return data
+
+    def post_process_plot(self, ax):
+        """
+        """
         ax.legend(loc='upper left')
         ax.set_ylabel(r'$n(< {\rm mag}) ~[{\rm deg^{-2}}]$')
         ax.set_xlabel(self.band + ' magnitude')
@@ -98,65 +105,68 @@ class ApparentMagFuncTest(BaseValidationTest):
         ax.set_yscale('log')
         ax.set_title(str(self.band_lim[0]) + ' < '+self.band + ' < ' + str(self.band_lim[1]))
 
-    @staticmethod
-    def get_catalog_data(gc, quantities, filters=None):
-        data = {}
-        if not gc.has_quantities(quantities):
-            return TestResult(skipped=True, summary='Missing requested quantities')
-
-        data = gc.get_quantities(quantities, filters=filters)
-        # make sure data entries are all finite
-        data = GCRQuery(*((np.isfinite, col) for col in data)).filter(data)
-
-        return data
-
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
+        """
+        """
 
         mag_field_key = catalog_instance.first_available(*self.possible_mag_fields)
         if not mag_field_key:
             return TestResult(skipped=True, summary='Catalog is missing requested quantity: {}'.format(self.possible_mag_fields))
+
+        #####################################################
+        # caclulate the cumulative number density of galaxies
+        #####################################################
 
         # retreive data from mock catalog
         d = catalog_instance.get_quantities([mag_field_key])
         m = d[mag_field_key]
         m = np.sort(m)  # put into order--bright to faint
 
-        # caclulate cumulative number of galaxies less than band_lim
+        # check to see if catalog is a light cone
+        # this is required since we must be able to calculate the angular area
         if not catalog_instance.lightcone:
             return TestResult(skipped=True, summary="Catalog is not a light cone.")
 
+        # check to see the angular area if an attribute of the catalog
         try:
             sky_area = catalog_instance.sky_area
         except AttributeError:
             return TestResult(skipped=True, summary="Catalog needs an attribute 'sky_area'.")
-
-        # get total number of galaxies
+        
+        # get the total number of galaxies in catalog
         N_tot = len(m)
         N = np.cumsum(np.ones(N_tot))/sky_area
 
-        # define apparent magnitude bins for plotting purposes
-        self.dmag = 0.1
-        self.max_mag = self.band_lim[1] + 1.0  # go one mag beyond the limit
-        self.min_mag = self.band_lim[0] - 1.0  # start at bright galaxies
-        mag_bins = np.arange(self.min_mag, self.max_mag, self.dmag)
+        # define the apparent magnitude bins for plotting purposes
+        self.dmag = 0.1 # bin widths
+        max_mag = self.band_lim[1] + 1.0  # go one mag beyond the limit
+        min_mag = self.band_lim[0] - 1.0  # start at bright galaxies
+        mag_bins = np.arange(self.min_mag ,self.max_mag, self.dmag)
 
-        # calculate N at the specified points
-        inds = np.searchsorted(m, mag_bins)
+        # calculate N(<mag) at the specified points
+        inds = np.searchsorted(m,mag_bins)
         mask = (inds >= len(m))
-        inds[mask] = -1
+        inds[mask] = -1 # take care of edge case
         sampled_N = N[inds]
+        
+        #################################################
+        # plot the cumulative apparent magnitude function
+        #################################################
 
-        # plot cumulative apparent magnitude function
         fig, ax = plt.subplots()
 
-        for ax_this in (ax, self.summary_ax):  # plot on both this and summary plots
+        # plot on both this plot and any summary plots
+        for ax_this in (ax, self.summary_ax):
+            
+            # plot mock catalog data
             ax_this.plot(mag_bins, sampled_N, '-', label=catalog_name)
-            #ax_this.plot(self.band_lim, N_tot)
+            ax_this.plot(self.band_lim, N_tot)
+
             ax_this.set_yscale('log')
             ax_this.set_ylabel(r'$\rm mag$')
             ax_this.set_ylabel(r'$N(<{\rm mag})~[{\rm deg}^{-2}]$')
-            ax_this.set_xlim([17,30])
-            ax_this.set_ylim([1,10**8])
+            ax_this.set_xlim([17, 30])
+            ax_this.set_ylim([1, 10**8])
 
         # plot validation data
         for ax_this in [ax]:
@@ -169,28 +179,45 @@ class ApparentMagFuncTest(BaseValidationTest):
         fig.savefig(os.path.join(output_dir, 'cumulative_app_mag_plot.png'))
         plt.close(fig)
 
-        # interpolate upper and lower bounds of test data
-        y0 = interp1d(m, np.log10(n))
-        y_max = interp1d(m, np.log10(n+self.rtol*n))
-        y_min = interp1d(m, np.log10(n-self.rtol*n))
-        # interpolate mock data
-        y = interp1d(mag_bins, np.log10(sampled_N))
+        #################################
+        # determine if the catalog passes
+        #################################
 
-        m_sample = np.linspace(self.band_lim[0], self.band_lim[1], 10000)
-        passed = (np.all(y(m_sample) <= y_max(m_sample))) & (np.all(y(m_sample) >= y_min(m_sample)))
+        # interpolate the validation data in order to compare to the mock catalog at same points
+        non_zero_mask = (self.validation_data['n(<mag)']>0.0)
+        x = self.validation_data['mag'][non_zero_mask]
+        y = np.log10(self.validation_data['n(<mag)'])[non_zero_mask]
+        f_xy = interp1d(x, y, fill_value='extrapolate')
+        nn = f_xy(mag_bins)
 
-        score = np.max(np.fabs((y(m_sample) - y0(m_sample)))/y0(m_sample))/self.rtol
+        # calculate the fractional diffrence between the mock catalog and validation data
+        delta = (sampled_N-nn)/nn
+
+        # find maximum fractional difference in test range
+        test_range_mask = (mag_bins >= self.min_band_lim) & (mag_bins <= self.max_band_lim)
+        max_frac_diff = np.max(delta[test_range_mask])
+
+        # apply 'passing' criterion
+        if max_frac_diff>self.fractional_tol:
+            score = max_frac_diff
+            passed = False
+        else:
+            score = max_frac_diff
+            passed = True
 
         return TestResult(score, passed=passed)
 
     def conclude_test(self, output_dir):
+        """
+        """
 
         # plot verifaction data on summary plot
         n = self.validation_data['n(<mag)']
         m = self.validation_data['mag']
         self.summary_ax.plot(m, n, '-', label=self.validation_data['label'], color='black')
-        self.summary_ax.fill_between(m, n-self.rtol*n, n+self.rtol*n, color='black', alpha=0.5)
+        self.summary_ax.fill_between(m, n-self.fractional_tol*n, n+self.fractional_tol*n, color='black', alpha=0.5)
 
         self.post_process_plot(self.summary_ax)
         self.summary_fig.savefig(os.path.join(output_dir, 'summary.png'))
+
         plt.close(self.summary_fig)

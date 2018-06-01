@@ -122,16 +122,17 @@ def make_output_dir(root_output_dir):
         raise OSError('{} does not exist'.format(root_output_dir))
 
     new_dir_name = time.strftime('%Y-%m-%d')
-    parent_dir_name = new_dir_name.rpartition('-')[0]
-    output_dir = pjoin(root_output_dir, parent_dir_name, new_dir_name)
+    parent_dir = pjoin(root_output_dir, new_dir_name.rpartition('-')[0])
+    if not os.path.exists(parent_dir):
+        os.mkdir(parent_dir)
+        subprocess.check_call(['chmod', 'a+rx,o-w', parent_dir])
 
+    output_dir = pjoin(parent_dir, new_dir_name)
     if os.path.exists(output_dir):
-        i = max((int(s.partition('_')[-1] or 0)
-                for s in os.listdir(pjoin(root_output_dir, parent_dir_name))
-                if s.startswith(new_dir_name)))
+        i = max((int(s.partition('_')[-1] or 0) for s in os.listdir(parent_dir) if s.startswith(new_dir_name)))
         output_dir += '_{}'.format(i+1)
 
-    os.makedirs(output_dir)
+    os.mkdir(output_dir)
     return output_dir
 
 
