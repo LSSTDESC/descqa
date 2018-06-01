@@ -59,15 +59,15 @@ class ApparentMagFuncTest(BaseValidationTest):
         self.fractional_tol = fractional_tol
 
         # check for validation observation
-         if not observation:
-             print('Warning: no data file supplied, no observation requested; only catalog data will be shown.')
-         elif observation not in possible_observations:
-             raise ValueError('Observation: {} not available for this test.'.format(observation))
-         else:
-             self.validation_data = self.get_validation_data(band, observation)
+        if not observation:
+            print('Warning: no data file supplied, no observation requested; only catalog data will be shown.')
+        elif observation not in possible_observations:
+            raise ValueError('Observation: {} not available for this test.'.format(observation))
+        else:
+            self.validation_data = self.get_validation_data(band, observation)
  
-         # prepare summary plot
-         self.summary_fig, self.summary_ax = plt.subplots()
+        # prepare summary plot
+        self.summary_fig, self.summary_ax = plt.subplots()
 
     def get_validation_data(self, band, observation):
         """
