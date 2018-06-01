@@ -148,10 +148,10 @@ class ApparentMagFuncTest(BaseValidationTest):
         N = np.cumsum(np.ones(N_tot))/sky_area
 
         # define the apparent magnitude bins for plotting purposes
-        self.dmag = 0.1 # bin widths
+        dmag = 0.1 # bin widths
         max_mag = self.band_lim[1] + 1.0  # go one mag beyond the limit
         min_mag = self.band_lim[0] - 1.0  # start at bright galaxies
-        mag_bins = np.arange(self.band_lim[0] ,self.band_lim[1], self.dmag)
+        mag_bins = np.arange(min_mag, max_mag, dmag)
 
         # calculate N(<mag) at the specified points
         inds = np.searchsorted(m,mag_bins)
@@ -170,7 +170,6 @@ class ApparentMagFuncTest(BaseValidationTest):
             
             # plot mock catalog data
             ax_this.plot(mag_bins, sampled_N, '-', label=catalog_name)
-            ax_this.plot(self.band_lim, N_tot)
 
             ax_this.set_yscale('log')
             ax_this.set_ylabel(r'$\rm mag$')
