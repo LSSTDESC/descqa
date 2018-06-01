@@ -24,7 +24,7 @@ class ApparentMagFuncTest(BaseValidationTest):
     """
     cumulative apparent magnitude function test
     """
-    def __init__(self, band='r', band_lim=(24, 27.5), fractional_tol=0.4, observation='HSC', **kwargs):
+    def __init__(self, band='r', band_lim=(24.0, 27.5), fractional_tol=0.4, observation='HSC', **kwargs):
         """
         parameters
         ----------
@@ -39,7 +39,6 @@ class ApparentMagFuncTest(BaseValidationTest):
 
         observation : string
             string indicating which obsrvational data to use for validating
-
         """
         # pylint: disable=super-init-not-called
 
