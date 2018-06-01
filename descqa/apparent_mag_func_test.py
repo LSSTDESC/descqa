@@ -203,7 +203,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         delta = (sampled_N-nn)/nn
 
         # find maximum fractional difference in test range
-        test_range_mask = (mag_bins >= self.min_band_lim) & (mag_bins <= self.max_band_lim)
+        test_range_mask = (mag_bins >= self.band_lim[0]) & (mag_bins <= self.band_lim[1])
         max_frac_diff = np.max(delta[test_range_mask])
 
         # apply 'passing' criterion
