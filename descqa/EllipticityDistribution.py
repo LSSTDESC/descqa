@@ -51,11 +51,6 @@ class EllipticityDistribution(BaseValidationTest):
         },
     }
     
-    validation_percentiles = {
-        'percentiles': [10, 50, 90],
-        'ranges': [(0, 0.4), (0.3, 0.7), (0.6, 1.0)]
-    }
-
     #define ellipticity functions
     @staticmethod
     def e_default(e):
@@ -166,6 +161,10 @@ class EllipticityDistribution(BaseValidationTest):
         #could plot summary validation data here if available but would need to evaluate labels, bin values etc.
         #otherwise setup a check so that validation data is plotted only once on summary plot
         self.first_pass = True
+
+        self.validation_percentiles = {
+            'percentiles': kwargs['validation_percentile_points'],
+            'ranges': kwargs['validation_percentile_ranges']}
 
         self._other_kwargs = kwargs
 
@@ -348,9 +347,9 @@ class EllipticityDistribution(BaseValidationTest):
                 
                 #check ellipticity distributions
                 number_passed, percentiles = self.validate_percentiles(N)
+                print("Percentiles for morphology {} are: ".format(morphology)+', '.join([" {:.3f} ({})".format(p, v) for p,v in zip(percentiles, self.validation_percentiles['percentiles'])]))
                 if number_passed>0:
-                    print("Ellipticity percentile check failed for morphology {}:".format(morphology))
-                    print("Percentiles are:"+(" {:.3f}"*len(percentiles)).format(*percentiles))
+                    print("Ellipticity percentile check failed for morphology {}".format(morphology))
                 n_fails += number_passed
                 
 
@@ -362,9 +361,9 @@ class EllipticityDistribution(BaseValidationTest):
         #check overall ellipticity distribution
         global_N = np.sum(np.sum(N_array, axis=1), axis=0)
         number_passed, percentiles = self.validate_percentiles(global_N)
+        print("Percentiles for global distribution are:".format(morphology)+', '.join([" {:.3f} ({})".format(p, v) for p,v in zip(percentiles, self.validation_percentiles['percentiles'])]))
         if number_passed>0:
             print("Ellipticity percentile check failed for global distribution")
-            print("Percentiles are:"+(" {:.3f}"*len(percentiles)).format(*percentiles))
         n_fails += number_passed
         
 
