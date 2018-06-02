@@ -37,6 +37,7 @@ class SizeStellarMassLuminosity(BaseValidationTest):
         self.label_template = kwargs['label_template']
         self.fig_xlabel = kwargs['fig_xlabel']
         self.fig_ylabel = kwargs['fig_ylabel']
+        self.chisq_max = kwargs['chisq_max']
 
         validation_filepath = os.path.join(self.data_dir, kwargs['data_filename'])
         self.validation_data = np.genfromtxt(validation_filepath)
@@ -184,25 +185,36 @@ class SizeStellarMassLuminosity(BaseValidationTest):
         allpass = True
         for validation_val, zbin in zip(list_of_validation_values, self.z_bins):
             if hasattr(validation_val, '__iter__'):
-                if validation_val[0] > 1.2:
-                    print("Chi-square with respect to validation data is too large, {} for bulges in redshift bin {}-{}".format(
-                            validation_val[0], zbin['z_min'], zbin['z_max']))
+                print("Redshift bin {}-{}: bulge chi-square/dof: {}, disk chi-square/dof: {}.".format(
+                        zbin['z_min'], zbin['z_max'], validation_val[0], validation_val[1]))
+                if validation_val[0] > self.chisq_max:
+                    print("Chi-square/dof with respect to validation data is too large for bulges in redshift bin {}-{}".format(
+                            zbin['z_min'], zbin['z_max']))
                     allpass = False
-                if validation_val[1] > 1.2:
-                    print("Chi-square with respect to validation data is too large, {} for disks in redshift bin {}-{}".format(
-                            validation_val[0], zbin['z_min'], zbin['z_max']))
+                if validation_val[1] > self.chisq_max:
+                    print("Chi-square/dof with respect to validation data is too large for disks in redshift bin {}-{}".format(
+                            zbin['z_min'], zbin['z_max']))
                     allpass = False
             else:
-                if validation_val > 1.2:
-                    print("Chi-square with respect to validation data is too large, {} for redshift bin {}-{}".format(
-                            validation_val, zbin['z_min'], zbin['z_max']))
+                print("Redshift bin {}-{}: chi-square/dof: {}.".format(
+                        zbin['z_min'], zbin['z_max'], validation_val))
+                if validation_val > self.chisq_max:
+                    print("Chi-square/dof with respect to validation data is too large for redshift bin {}-{}".format(
+                            zbin['z_min'], zbin['z_max']))
                     allpass = False
 
         #TODO: calculate summary statistics
         return TestResult(score=np.mean(list_of_validation_values), passed=allpass)
         
-    def compute_chisq(bins, binned_data, binned_err, validation_points, validation_data):
+    def compute_chisq(self, bins, binned_data, binned_err, validation_points, validation_data):
+        if np.any(validation_data==0):
+            mask = validation_data!=0
+            validation_points = validation_points[mask]
+            validation_data = validation_data[mask]
+        if validation_points[-1]<validation_points[0]:
+            validation_points = validation_points[::-1]
+            validation_data = validation_data[::-1]
         validation_at_binpoints = interpolate.CubicSpline(validation_points, validation_data)(bins)
         weights = 1./binned_err**2
-        return np.sum(weights*(validation_at_binpoints-binpoints)**2)/len(weights)
+        return np.sum(weights*(validation_at_binpoints-binned_data)**2)/len(weights)
                                   
