@@ -14,8 +14,8 @@ class ConditionalLuminosityFunction(BaseValidationTest):
         self.kwargs = kwargs
         self.band1 = kwargs.get('band1', 'g')
         self.band2 = kwargs.get('band2', 'r')
-        self.magnitude_bins = np.linspace(*kwargs.get('magnitude_bins', (-26, -18, 29)))
-        self.mass_bins = np.logspace(*kwargs.get('mass_bins', (13.5, 15, 5)))
+        self.magnitude_bins = np.linspace(*kwargs.get('magnitude_bins', (-27, -18, 29)))
+        self.mass_bins = 10**np.array((kwargs.get('mass_bins', [13.5, 14.0, 14.5, 15.0, 15.5])))
         self.z_bins = np.linspace(*kwargs.get('z_bins', (0.2, 1.0, 4)))
         self.color_cut_fraction = float(kwargs.get('color_cut_fraction', 0.2))
 
