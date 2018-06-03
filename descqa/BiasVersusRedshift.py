@@ -1,6 +1,7 @@
 from __future__ import print_function, division, unicode_literals, absolute_import
 import os
 import numpy as np
+import scipy.optimize as op
 from GCR import GCRQuery
 import pyccl as ccl
 from .base import TestResult
@@ -11,9 +12,8 @@ import pyccl as ccl
 
 __all__ = ['BiasValidation']
 
-def lnlike(b,x,y,yerr):
-    mask = yerr!=0
-    return -0.5*np.sum((b**2*x[mask]-y[mask])**2/yerr[mask]**2) # We ignore the covariance
+def neglnlike(b, x, y, yerr):
+    return 0.5*np.sum((b**2*x-y)**2/yerr**2) # We ignore the covariance
 
 class BiasValidation(CorrelationsAngularTwoPoint):
     """
@@ -90,7 +90,7 @@ class BiasValidation(CorrelationsAngularTwoPoint):
                 catalog_data, sample_conditions)
             with open(os.path.join(output_dir, 'galaxy_count.dat'), 'a') as f:
                 f.write('{} {}\n'.format(sample_name, len(tmp_catalog_data['ra'])))
-
+                             )
             if not len(tmp_catalog_data['ra']):
                 continue
             z_mean.append(np.mean(tmp_catalog_data['redshift']))
@@ -117,14 +117,11 @@ class BiasValidation(CorrelationsAngularTwoPoint):
             cls = ccl.angular_cl(cosmo,tracer,tracer,ells)
             print(xi_rad)
             w_th = ccl.correlation(cosmo,ells,cls,xi_rad)
-            nll = lambda *args: -lnlike(*args)
             angles = (xi_rad > self.fit_range[sample_name]['min_theta']) & \
                      (xi_rad < self.fit_range[sample_name]['max_theta']) # Select the fitting range 
-            result = op.minimize(nll,[1.0],args=(w_th[angles],xi[angles],xi_sig[angles]),bounds=[(0.1,10)])
+            result = op.minimize(neglnlike,[1.0],args=(w_th[angles],xi[angles],xi_sig[angles]),bounds=[(0.1,10)])
             best_bias = result['x']
             correlation_theory[sample_name] = best_bias**2*w_th
-         
-            
             best_fit_bias.append(best_bias)
         z_mean = np.array(z_mean)
         best_fit_bias = np.array(best_fit_bias)
