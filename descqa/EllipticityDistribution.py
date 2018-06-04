@@ -361,7 +361,7 @@ class EllipticityDistribution(BaseValidationTest):
         #check overall ellipticity distribution
         global_N = np.sum(np.sum(N_array, axis=1), axis=0)
         number_passed, percentiles = self.validate_percentiles(global_N)
-        print("Percentiles for global distribution are:".format(morphology)+', '.join([" {:.3f} ({})".format(p, v) for p,v in zip(percentiles, self.validation_percentiles['percentiles'])]))
+        print("Percentiles for global distribution are: "+', '.join([" {:.3f} ({})".format(p, v) for p,v in zip(percentiles, self.validation_percentiles['percentiles'])]))
         if number_passed>0:
             print("Ellipticity percentile check failed for global distribution")
         n_fails += number_passed
