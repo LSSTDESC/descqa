@@ -105,8 +105,8 @@ class SizeStellarMassLuminosity(BaseValidationTest):
                 catalog = self.catalogs[n]
                 #ylim = self.ylims[n] #[3e-1, 20]     
 
-        twocomp_labels = [r'$R_B^{B/T > 0.5}$', r'$R_D^{B/T > 0.5}$', r'$R_B^{B/T < 0.5}$', r'$R_D^{B/T < 0.5}$']
-        twocomp_sim_labels = [r'Sims:$R_B^{B/T > 0.5}$', r'Sims:$R_D^{B/T > 0.5}$', r'Sims:$R_B^{B/T < 0.5}$', r'Sims:$R_D^{B/T < 0.5}$']
+        twocomp_labels = [r'$R_B^{B/T > 0.5}$', r'$R_B^{B/T < 0.5}$']
+        twocomp_sim_labels = [r'Sims:$R_B^{B/T > 0.5}$', r'Sims:$R_D^{B/T < 0.5}$']
         onecomp_labels = ['Simulation', 'Validation']
 
         try:
@@ -131,7 +131,8 @@ class SizeStellarMassLuminosity(BaseValidationTest):
 
                 z_mean = (z_bin['z_max'] + z_bin['z_min']) / 2.
                 output_filepath = os.path.join(output_dir, self.output_filename_template.format(z_bin['z_min'], z_bin['z_max']))
-                colors = plt.cm.jet(np.linspace(0.2, 1, 4))[::-1]
+                val_colors = plt.cm.jet(np.linspace(0.25, 0.95, 2))[::-1]
+                sim_colors = plt.cm.jet(np.linspace(0.2, 1., 2))[::-1]
                 default_L_bin_edges = np.array([9, 9.5, 10, 10.5, 11, 11.5])
                 default_L_bins = (default_L_bin_edges[1:] + default_L_bin_edges[:-1]) / 2.
                 ob = mpl.offsetbox.AnchoredText(self.label_template.format(z_bin['z_min'], z_bin['z_max']), loc=1, frameon=False)
@@ -180,62 +181,70 @@ class SizeStellarMassLuminosity(BaseValidationTest):
                     divider = make_axes_locatable(ax)
                     ax2 = divider.append_axes("top", size='100%', pad=0)
                     axes2.append(ax2)
-                    for bti, axi in zip(bt_cons, [ax2, ax]):
-                        for si in ['size_bulge', 'size_disk']:
-                            #print(bti, si)
-                            #print(arcsec_to_kpc.shape, bti.shape, catalog_data_this[si].shape)
-                            #print(catalog_data_this[si][bti][0:3])
-                            #print(logL_I[bti].shape, catalog_data_this[si].shape, arcsec_to_kpc.shape, (catalog_data_this[si] * arcsec_to_kpc)[bti].shape)
-                            tsize_kpc = binned_statistic(logL_I[bti], (catalog_data_this[si] * arcsec_to_kpc)[bti], bins=default_L_bin_edges, statistic='mean')[0]
-                            tsize_kpc_err = binned_statistic(logL_I[bti], (catalog_data_this[si] * arcsec_to_kpc)[bti], bins=default_L_bin_edges, statistic='std')[0]
-                            tsize_N = binned_statistic(logL_I[bti], (catalog_data_this[si] * arcsec_to_kpc)[bti], bins=default_L_bin_edges, statistic='count')[0]
-                            tsize_kpc = np.nan_to_num(tsize_kpc)
-                            tsize_kpc_err = np.nan_to_num(tsize_kpc_err / np.sqrt(tsize_N))
+                    for bti, si,  axi in zip(bt_cons, ['size_bulge', 'size_disk'], [ax2, ax]):
+                        print(bti, si)
+                        #for si in ['size_bulge', 'size_disk']:
+                        #print(bti, si)
+                        #print(arcsec_to_kpc.shape, bti.shape, catalog_data_this[si].shape)
+                        #print(catalog_data_this[si][bti][0:3])
+                        #print(logL_I[bti].shape, catalog_data_this[si].shape, arcsec_to_kpc.shape, (catalog_data_this[si] * arcsec_to_kpc)[bti].shape)
+                        tsize_kpc = binned_statistic(logL_I[bti], (catalog_data_this[si] * arcsec_to_kpc)[bti], bins=default_L_bin_edges, statistic='mean')[0]
+                        tsize_kpc_err = binned_statistic(logL_I[bti], (catalog_data_this[si] * arcsec_to_kpc)[bti], bins=default_L_bin_edges, statistic='std')[0]
+                        tsize_N = binned_statistic(logL_I[bti], (catalog_data_this[si] * arcsec_to_kpc)[bti], bins=default_L_bin_edges, statistic='count')[0]
+                        tsize_kpc = np.nan_to_num(tsize_kpc)
+                        tsize_kpc_err = np.nan_to_num(tsize_kpc_err / np.sqrt(tsize_N))
+                        
+                        #tylo = np.percentile(tsize_kpc-tsize_kpc_err, 5)
+                        #tyhi = np.percentile(tsize_kpc+tsize_kpc_err, 95)
+                        tylo, tyhi = np.percentile(tsize_kpc-tsize_kpc_err, [5, 95])
+                        if tylo < ylo:
+                            ylo = tylo
+                        if tyhi > yhi:
+                            yhi = tyhi
+                        ylo, yhi = 9999., -9999.
+
+                        to_write = np.column_stack((to_write, tsize_kpc, tsize_kpc_err))
+                        axi.errorbar(default_L_bins, tsize_kpc, tsize_kpc_err, marker='o', ls='', label=twocomp_sim_labels[ci], c=sim_colors[ci])
+                        np.savetxt(output_filepath, to_write)
+                        
+                        
+                        validation_this = self.validation_data[(self.validation_data[:,0] < z_mean + 0.25) & (self.validation_data[:,0] > z_mean - 0.25)]
+                        if si == 'size_bulge':
+
+                            vali_bb_max = validation_this[:, 2] + validation_this[:,3]
+                            vali_bb_min = validation_this[:, 2] - validation_this[:,3]
                             
-                            #tylo = np.percentile(tsize_kpc-tsize_kpc_err, 5)
-                            #tyhi = np.percentile(tsize_kpc+tsize_kpc_err, 95)
-                            tylo, tyhi = np.percentile(tsize_kpc-tsize_kpc_err, [5, 95])
-                            if tylo < ylo:
-                                ylo = tylo
-                            if tyhi > yhi:
-                                yhi = tyhi
-                            ylo, yhi = 9999., -9999.
+                            #vali_bd_max = validation_this[:, 4] + validation_this[:,5]
+                            #vali_bd_min = validation_this[:, 4] - validation_this[:,5]
 
-                            to_write = np.column_stack((to_write, tsize_kpc, tsize_kpc_err))
-                            axi.errorbar(default_L_bins, tsize_kpc, tsize_kpc_err, marker='o', ls='', label=twocomp_sim_labels[ci], c=colors[ci])
-                            ci += 1
-                    np.savetxt(output_filepath, to_write)
+                            ax2.semilogy(validation_this[:,1], validation_this[:, 2], label=twocomp_labels[0], color=val_colors[0])
+                            ax2.fill_between(validation_this[:,1], vali_bb_max, vali_bb_min, lw=0, alpha=0.2, facecolor=val_colors[0])
+                            vali_dd_min = np.array([0])
+                            vali_dd_max = np.array([0])
+                        #ax2.semilogy(validation_this[:,1], validation_this[:, 4], label=twocomp_labels[1], color=colors[1])
+                        #ax2.fill_between(validation_this[:,1], vali_bd_max, vali_bd_min, lw=0, alpha=0.2, facecolor=colors[1])
 
-                    validation_this = self.validation_data[(self.validation_data[:,0] < z_mean + 0.25) & (self.validation_data[:,0] > z_mean - 0.25)]
+                        #vali_db_max = validation_this[:, 7] + validation_this[:,8]
+                        #vali_db_min = validation_this[:, 7] - validation_this[:,8]
+                        if si == 'size_disk': 
+                            vali_dd_max = validation_this[:, 9] + validation_this[:,10]
+                            vali_dd_min = validation_this[:, 9] - validation_this[:,10]
+         
+                            #ax.semilogy(validation_this[:,6], validation_this[:, 7], label=twocomp_labels[2], color=colors[2])
+                            #ax.fill_between(validation_this[:,6], vali_db_max, vali_db_min, lw=0, alpha=0.2, facecolor=colors[2])
+                            ax.semilogy(validation_this[:,6], validation_this[:, 9], label=twocomp_labels[1], color=val_colors[1])
+                            ax.fill_between(validation_this[:,6], vali_dd_max, vali_dd_min, lw=0, alpha=0.2, facecolor=val_colors[1])
+                            vali_bb_min = np.array([0])
+                            vali_bb_max = np.array([0])
 
-                    vali_bb_max = validation_this[:, 2] + validation_this[:,3]
-                    vali_bb_min = validation_this[:, 2] - validation_this[:,3]
-                    
-                    vali_bd_max = validation_this[:, 4] + validation_this[:,5]
-                    vali_bd_min = validation_this[:, 4] - validation_this[:,5]
-
-                    ax2.semilogy(validation_this[:,1], validation_this[:, 2], label=twocomp_labels[0], color=colors[0])
-                    ax2.fill_between(validation_this[:,1], vali_bb_max, vali_bb_min, lw=0, alpha=0.2, facecolor=colors[0])
-                    ax2.semilogy(validation_this[:,1], validation_this[:, 4], label=twocomp_labels[1], color=colors[1])
-                    ax2.fill_between(validation_this[:,1], vali_bd_max, vali_bd_min, lw=0, alpha=0.2, facecolor=colors[1])
-
-                    vali_db_max = validation_this[:, 7] + validation_this[:,8]
-                    vali_db_min = validation_this[:, 7] - validation_this[:,8]
-                    
-                    vali_dd_max = validation_this[:, 9] + validation_this[:,10]
-                    vali_dd_min = validation_this[:, 9] - validation_this[:,10]
- 
-                    ax.semilogy(validation_this[:,6], validation_this[:, 7], label=twocomp_labels[2], color=colors[2])
-                    ax.fill_between(validation_this[:,6], vali_db_max, vali_db_min, lw=0, alpha=0.2, facecolor=colors[2])
-                    ax.semilogy(validation_this[:,6], validation_this[:, 9], label=twocomp_labels[3], color=colors[3])
-                    ax.fill_between(validation_this[:,6], vali_dd_max, vali_dd_min, lw=0, alpha=0.2, facecolor=colors[3])
-
-                    ylo_arr = [ylo, vali_db_min.min(), vali_dd_min.min(), vali_bd_min.min(), vali_bb_min.min()]
-                    if np.any(ylo_arr == 0):
-                        ylo = np.partition(ylo_arr, 1)[1] 
-                    else:
-                        ylo = np.min(ylo_arr)
-                    yhi = np.max([yhi, vali_db_max.max(), vali_dd_max.max(), vali_bd_max.max(), vali_bb_max.max()])
+                        #ylo_arr = [ylo, vali_db_min.min(), vali_dd_min.min(), vali_bd_min.min(), vali_bb_min.min()]
+                        ylo_arr = [ylo, vali_dd_min.min(), vali_bb_min.min()]
+                        if np.any(ylo_arr == 0):
+                            ylo = np.partition(ylo_arr, 1)[1] 
+                        else:
+                            ylo = np.min(ylo_arr)
+                        yhi = np.max([yhi, vali_dd_max.max(), vali_bb_max.max()])
+                        ci += 1
                     #ax.set_ylim(ylim)
                     #ax2.set_ylim(ylim)
                     ax2.set_xlim(self.xlim)

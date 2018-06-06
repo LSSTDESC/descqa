@@ -1,4 +1,4 @@
-# zavg LumF814W_bulge bulge_bhlr_kpc bulge_avgstd_bhlr bulge_dhlr_kpc bulge_avgstd_dhlr LumF814W_disk disk_avg_bhlr disk_avgstd_bhlr disk_avg_bhlr disk_avgstd_bhlr 
+# zavg LumF814W_bulge bulge_bhlr_kpc bulge_avgstd_bhlr bulge_dhlr_kpc bulge_avgstd_dhlr LumF814W_disk disk_avg_bhlr disk_avgstd_bhlr disk_avg_dhlr disk_avgstd_dhlr 
 0.250 10.875 3.439 0.253 9.157 0.773 10.802 1.679 0.275 16.250 5.368
 0.250 10.163 2.119 0.352 4.855 0.320 10.115 1.370 0.075 5.044 0.390
 0.250 9.474 1.189 0.155 1.915 0.137 9.407 0.997 0.038 2.811 0.091
