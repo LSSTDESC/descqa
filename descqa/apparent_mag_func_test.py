@@ -128,6 +128,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         upper_ax.set_xlim([15,30])
 
         #lower panel
+        upper_ax.fill_between([self.band_lim[0], self.band_lim[1]], [-1, -1], [1, 1], alpha=0.1, color='grey')
         lower_ax.set_xlabel(self.band + ' magnitude')
         lower_ax.set_ylabel(r'$\Delta n/n$')
         lower_ax.set_ylim([-1,1])
@@ -218,8 +219,8 @@ class ApparentMagFuncTest(BaseValidationTest):
         max_frac_diff = np.max(delta[test_range_mask])
 
         # plot on both this plot and any summary plots
-        lower_ax.fill_between(mag_bins, 0.0*mag_bins-self.fractional_tol, 0.0*mag_bins+self.fractional_tol, color='black', alpha=0.5)
-        lower_ax.plot(mag_bins, delta*0.0, '-', color='black')
+        lower_ax.fill_between(m, 0.0*m-self.fractional_tol, 0.0*m+self.fractional_tol, color='black', alpha=0.5)
+        lower_ax.plot(m, m*0.0, '-', color='black')
         lower_ax.plot(mag_bins, delta, '-')
 
         # apply 'passing' criterion
