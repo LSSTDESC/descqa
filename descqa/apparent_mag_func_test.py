@@ -188,10 +188,6 @@ class ApparentMagFuncTest(BaseValidationTest):
         upper_ax.plot(m, n, '-', label=self.validation_data['label'], color='black')
         upper_ax.fill_between(m, n-self.fractional_tol*n, n+self.fractional_tol*n, color='black', alpha=0.5)
 
-        self.post_process_plot(upper_ax, lower_ax)
-        fig.savefig(os.path.join(output_dir, 'cumulative_app_mag_plot.png'))
-        plt.close(fig)
-
         #################################
         # determine if the catalog passes
         #################################
@@ -221,6 +217,10 @@ class ApparentMagFuncTest(BaseValidationTest):
         else:
             score = max_frac_diff
             passed = True
+
+        self.post_process_plot(upper_ax, lower_ax)
+        fig.savefig(os.path.join(output_dir, 'cumulative_app_mag_plot.png'))
+        plt.close(fig)
 
         return TestResult(score, passed=passed)
 
