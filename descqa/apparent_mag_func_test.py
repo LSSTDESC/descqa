@@ -128,7 +128,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         upper_ax.set_xlim([15,30])
 
         #lower panel
-        upper_ax.fill_between([self.band_lim[0], self.band_lim[1]], [-1, -1], [1, 1], alpha=0.1, color='grey')
+        lower_ax.fill_between([self.band_lim[0], self.band_lim[1]], [-1, -1], [1, 1], alpha=0.1, color='grey')
         lower_ax.set_xlabel(self.band + ' magnitude')
         lower_ax.set_ylabel(r'$\Delta n/n$')
         lower_ax.set_ylim([-1,1])
