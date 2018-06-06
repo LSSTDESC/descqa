@@ -90,7 +90,6 @@ class BiasValidation(CorrelationsAngularTwoPoint):
                 catalog_data, sample_conditions)
             with open(os.path.join(output_dir, 'galaxy_count.dat'), 'a') as f:
                 f.write('{} {}\n'.format(sample_name, len(tmp_catalog_data['ra'])))
-                             )
             if not len(tmp_catalog_data['ra']):
                 continue
             z_mean.append(np.mean(tmp_catalog_data['redshift']))
