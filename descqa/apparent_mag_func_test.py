@@ -58,6 +58,15 @@ class ApparentMagFuncTest(BaseValidationTest):
         self.band_lim = list(band_lim)
         self.fractional_tol = fractional_tol
 
+        # set color of lines in plots
+        colors = plt.cm.jet(np.linspace(0,1,5))
+        if band == 'g': self.line_color = colors[0]
+        elif band == 'r': self.line_color = colors[1]
+        elif band == 'i': self.line_color = colors[2]
+        elif band == 'z': self.line_color = colors[3]
+        elif band == 'y': self.line_color = colors[4]
+        else: self.line_color='black'
+
         # check for validation observation
         if not observation:
             print('Warning: no data file supplied, no observation requested; only catalog data will be shown.')
@@ -116,12 +125,14 @@ class ApparentMagFuncTest(BaseValidationTest):
         upper_ax.fill_between([self.band_lim[0], self.band_lim[1]], [0, 0], [10**9, 10**9], alpha=0.1, color='grey')
         upper_ax.set_yscale('log')
         upper_ax.set_title(str(self.band_lim[0]) + ' < '+self.band + ' < ' + str(self.band_lim[1]))
+        upper_ax.set_xlim([15,30])
 
         #lower panel
         lower_ax.set_xlabel(self.band + ' magnitude')
         lower_ax.set_ylabel(r'$\Delta n/n$')
         lower_ax.set_ylim([-1,1])
         lower_ax.set_yticks([-0.6,0.0,0.6])
+        lower_ax.set_xlim([15,30])
 
 
 
@@ -180,7 +191,7 @@ class ApparentMagFuncTest(BaseValidationTest):
 
         # plot on both this plot and any summary plots
         upper_ax.plot(mag_bins, sampled_N, '-', label=catalog_name)
-        self.summary_ax.plot(mag_bins, sampled_N, '-', label=catalog_name)
+        self.summary_ax.plot(mag_bins, sampled_N, '-', label=catalog_name, color=self.line_color)
 
         # plot validation data
         n = self.validation_data['n(<mag)']
@@ -207,6 +218,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         max_frac_diff = np.max(delta[test_range_mask])
 
         # plot on both this plot and any summary plots
+        lower_ax.fill_between(mag_bins, 0.0-self.fractional_tol*mag_bins, 0.0+self.fractional_tol*mag_bins, color='black', alpha=0.5)
         lower_ax.plot(mag_bins, delta*0.0, '-', color='black')
         lower_ax.plot(mag_bins, delta, '-')
 
@@ -231,8 +243,8 @@ class ApparentMagFuncTest(BaseValidationTest):
         # plot verifaction data on summary plot
         n = self.validation_data['n(<mag)']
         m = self.validation_data['mag']
-        self.summary_ax.plot(m, n, '-', label=self.validation_data['label'], color='black')
-        self.summary_ax.fill_between(m, n-self.fractional_tol*n, n+self.fractional_tol*n, color='black', alpha=0.5)
+        self.summary_ax.plot(m, n, '-', label=self.validation_data['label'], color=self.line_color)
+        self.summary_ax.fill_between(m, n-self.fractional_tol*n, n+self.fractional_tol*n, color=self.line_color, alpha=0.5)
 
         self.post_process_plot(self.summary_ax)
         self.summary_fig.savefig(os.path.join(output_dir, 'summary.png'))
