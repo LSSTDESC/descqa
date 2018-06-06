@@ -104,16 +104,26 @@ class ApparentMagFuncTest(BaseValidationTest):
 
         return data
 
-    def post_process_plot(self, ax):
+    def post_process_plot(self, upper_ax, lower_ax):
         """
         """
-        ax.legend(loc='upper left')
-        ax.set_ylabel(r'$n(< {\rm mag}) ~[{\rm deg^{-2}}]$')
-        ax.set_xlabel(self.band + ' magnitude')
-        ax.set_ylim([1000, 10**7])
-        ax.fill_between([self.band_lim[0], self.band_lim[1]], [0, 0], [10**9, 10**9], alpha=0.1, color='grey')
-        ax.set_yscale('log')
-        ax.set_title(str(self.band_lim[0]) + ' < '+self.band + ' < ' + str(self.band_lim[1]))
+
+        #upper panel
+        upper_ax.legend(loc='upper left')
+        upper_ax.set_ylabel(r'$n(< {\rm mag}) ~[{\rm deg^{-2}}]$')
+        upper_ax.xaxis.set_visible(False)
+        upper_ax.set_ylim([1000, 10**7])
+        upper_ax.fill_between([self.band_lim[0], self.band_lim[1]], [0, 0], [10**9, 10**9], alpha=0.1, color='grey')
+        upper_ax.set_yscale('log')
+        upper_ax.set_title(str(self.band_lim[0]) + ' < '+self.band + ' < ' + str(self.band_lim[1]))
+
+        #lower panel
+        lower_ax.set_xlabel(self.band + ' magnitude')
+        lower_ax.set_ylabel(r'$\Delta n/n$')
+        lower_ax.set_ylim([-1,1])
+        lower_ax.set_yticks([-0.6,0.0,0.6])
+
+
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         """
@@ -158,27 +168,27 @@ class ApparentMagFuncTest(BaseValidationTest):
         mask = (inds >= len(m))
         inds[mask] = -1 # take care of edge case
         sampled_N = N[inds]
-        
+
         #################################################
         # plot the cumulative apparent magnitude function
         #################################################
 
-        fig, ax = plt.subplots()
+        fig = plt.figure()
+        upper_rect = 0.2,0.4,0.7,0.55
+        lower_rect = 0.2,0.125,0.7,0.275
+        upper_ax, lower_ax = fig.add_axes(upper_rect), fig.add_axes(lower_rect)
 
         # plot on both this plot and any summary plots
-        for ax_this in (ax, self.summary_ax):
-            
-            # plot mock catalog data
-            ax_this.plot(mag_bins, sampled_N, '-', label=catalog_name)
+        upper_ax.plot(mag_bins, sampled_N, '-', label=catalog_name)
+        self.summary_ax.plot(mag_bins, sampled_N, '-', label=catalog_name)
 
         # plot validation data
-        for ax_this in [ax]:
-            n = self.validation_data['n(<mag)']
-            m = self.validation_data['mag']
-            ax_this.plot(m, n, '-', label=self.validation_data['label'], color='black')
-            ax_this.fill_between(m, n-self.fractional_tol*n, n+self.fractional_tol*n, color='black', alpha=0.5)
+        n = self.validation_data['n(<mag)']
+        m = self.validation_data['mag']
+        upper_ax.plot(m, n, '-', label=self.validation_data['label'], color='black')
+        upper_ax.fill_between(m, n-self.fractional_tol*n, n+self.fractional_tol*n, color='black', alpha=0.5)
 
-        self.post_process_plot(ax)
+        self.post_process_plot(upper_ax, lower_ax)
         fig.savefig(os.path.join(output_dir, 'cumulative_app_mag_plot.png'))
         plt.close(fig)
 
@@ -199,6 +209,10 @@ class ApparentMagFuncTest(BaseValidationTest):
         # find maximum fractional difference in test range
         test_range_mask = (mag_bins >= self.band_lim[0]) & (mag_bins <= self.band_lim[1])
         max_frac_diff = np.max(delta[test_range_mask])
+
+        # plot on both this plot and any summary plots
+        lower_ax.plot(mag_bins, delta*0.0, '-', color='black')
+        lower_ax.plot(mag_bins, delta, '-')
 
         # apply 'passing' criterion
         if max_frac_diff>self.fractional_tol:
