@@ -2,4 +2,12 @@ subclass_name: EllipticityDistribution.EllipticityDistribution
 zlo: 0.
 zhi: 2.
 N_ebins: 40
+validation_percentile_points:
+  - 10
+  - 50
+  - 90
+validation_percentile_ranges:
+  - [0, 0.4]
+  - [0.3, 0.7]
+  - [0.6, 1]
 description: 'Plot ellipticity distributions'
