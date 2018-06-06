@@ -171,12 +171,6 @@ class ApparentMagFuncTest(BaseValidationTest):
             # plot mock catalog data
             ax_this.plot(mag_bins, sampled_N, '-', label=catalog_name)
 
-            ax_this.set_yscale('log')
-            ax_this.set_ylabel(r'$\rm mag$')
-            ax_this.set_ylabel(r'$N(<{\rm mag})~[{\rm deg}^{-2}]$')
-            ax_this.set_xlim([17, 30])
-            ax_this.set_ylim([1, 10**8])
-
         # plot validation data
         for ax_this in [ax]:
             n = self.validation_data['n(<mag)']
