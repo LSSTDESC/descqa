@@ -218,7 +218,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         max_frac_diff = np.max(delta[test_range_mask])
 
         # plot on both this plot and any summary plots
-        lower_ax.fill_between(mag_bins, 0.0-self.fractional_tol*mag_bins, 0.0+self.fractional_tol*mag_bins, color='black', alpha=0.5)
+        lower_ax.fill_between(mag_bins, 0.0*mag_bins-self.fractional_tol, 0.0*mag_bins+self.fractional_tol, color='black', alpha=0.5)
         lower_ax.plot(mag_bins, delta*0.0, '-', color='black')
         lower_ax.plot(mag_bins, delta, '-')
 
