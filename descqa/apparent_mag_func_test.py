@@ -216,7 +216,7 @@ class ApparentMagFuncTest(BaseValidationTest):
 
         # find maximum fractional difference in test range
         test_range_mask = (mag_bins >= self.band_lim[0]) & (mag_bins <= self.band_lim[1])
-        max_frac_diff = np.max(delta[test_range_mask])
+        max_frac_diff = np.max(np.fabs(delta[test_range_mask]))
 
         # plot on both this plot and any summary plots
         lower_ax.fill_between(m, 0.0*m-self.fractional_tol, 0.0*m+self.fractional_tol, color='black', alpha=0.25)
