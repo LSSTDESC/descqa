@@ -79,7 +79,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         self.summary_fig = plt.figure()
         upper_rect = 0.2,0.4,0.7,0.55
         lower_rect = 0.2,0.125,0.7,0.275
-        self.summary_upper_ax, self.summary_lower_ax = fig.add_axes(upper_rect), fig.add_axes(lower_rect)
+        self.summary_upper_ax, self.summary_lower_ax = self.summary_fig.add_axes(upper_rect), self.summary_fig.add_axes(lower_rect)
 
     def get_validation_data(self, band, observation):
         """
