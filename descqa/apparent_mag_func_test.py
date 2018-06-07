@@ -198,7 +198,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         n = self.validation_data['n(<mag)']
         m = self.validation_data['mag']
         upper_ax.plot(m, n, '-', label=self.validation_data['label'], color='black')
-        upper_ax.fill_between(m, n-self.fractional_tol*n, n+self.fractional_tol*n, color='black', alpha=0.5)
+        upper_ax.fill_between(m, n-self.fractional_tol*n, n+self.fractional_tol*n, color='black', alpha=0.25)
 
         #################################
         # determine if the catalog passes
@@ -209,7 +209,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         x = self.validation_data['mag'][non_zero_mask]
         y = np.log10(self.validation_data['n(<mag)'])[non_zero_mask]
         f_xy = interp1d(x, y, fill_value='extrapolate')
-        nn = f_xy(mag_bins)
+        nn = 10**f_xy(mag_bins)
 
         # calculate the fractional diffrence between the mock catalog and validation data
         delta = (sampled_N-nn)/nn
@@ -219,7 +219,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         max_frac_diff = np.max(delta[test_range_mask])
 
         # plot on both this plot and any summary plots
-        lower_ax.fill_between(m, 0.0*m-self.fractional_tol, 0.0*m+self.fractional_tol, color='black', alpha=0.5)
+        lower_ax.fill_between(m, 0.0*m-self.fractional_tol, 0.0*m+self.fractional_tol, color='black', alpha=0.25)
         lower_ax.plot(m, m*0.0, '-', color='black')
         lower_ax.plot(mag_bins, delta, '-')
 
@@ -245,7 +245,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         n = self.validation_data['n(<mag)']
         m = self.validation_data['mag']
         self.summary_ax.plot(m, n, '-', label=self.validation_data['label'], color=self.line_color)
-        self.summary_ax.fill_between(m, n-self.fractional_tol*n, n+self.fractional_tol*n, color=self.line_color, alpha=0.5)
+        self.summary_ax.fill_between(m, n-self.fractional_tol*n, n+self.fractional_tol*n, color=self.line_color, alpha=0.25)
 
         self.post_process_plot(self.summary_ax)
         self.summary_fig.savefig(os.path.join(output_dir, 'summary.png'))
