@@ -74,9 +74,12 @@ class ApparentMagFuncTest(BaseValidationTest):
             raise ValueError('Observation: {} not available for this test.'.format(observation))
         else:
             self.validation_data = self.get_validation_data(band, observation)
- 
+
         # prepare summary plot
-        self.summary_fig, self.summary_ax = plt.subplots()
+        self.summary_fig = plt.figure()
+        upper_rect = 0.2,0.4,0.7,0.55
+        lower_rect = 0.2,0.125,0.7,0.275
+        self.summary_upper_ax, self.summary_lower_ax = fig.add_axes(upper_rect), fig.add_axes(lower_rect)
 
     def get_validation_data(self, band, observation):
         """
@@ -192,7 +195,7 @@ class ApparentMagFuncTest(BaseValidationTest):
 
         # plot on both this plot and any summary plots
         upper_ax.plot(mag_bins, sampled_N, '-', label=catalog_name)
-        self.summary_ax.plot(mag_bins, sampled_N, '-', label=catalog_name, color=self.line_color)
+        self.summary_upper_ax.plot(mag_bins, sampled_N, '-', label=catalog_name)
 
         # plot validation data
         n = self.validation_data['n(<mag)']
@@ -223,6 +226,8 @@ class ApparentMagFuncTest(BaseValidationTest):
         lower_ax.plot(m, m*0.0, '-', color='black')
         lower_ax.plot(mag_bins, delta, '-')
 
+        self.summary_lower_ax(mag_bins, delta, '-', label=catalog_name)
+
         # apply 'passing' criterion
         if max_frac_diff>self.fractional_tol:
             score = max_frac_diff
@@ -244,10 +249,13 @@ class ApparentMagFuncTest(BaseValidationTest):
         # plot verifaction data on summary plot
         n = self.validation_data['n(<mag)']
         m = self.validation_data['mag']
-        self.summary_ax.plot(m, n, '-', label=self.validation_data['label'], color=self.line_color)
-        self.summary_ax.fill_between(m, n-self.fractional_tol*n, n+self.fractional_tol*n, color=self.line_color, alpha=0.25)
+        self.summary_upper_ax.plot(m, n, '-', label=self.validation_data['label'])
+        self.summary_upper_ax.fill_between(m, n-self.fractional_tol*n, n+self.fractional_tol*n, alpha=0.25)
 
-        self.post_process_plot(self.summary_ax)
+        self.summary_lower_ax.fill_between(m, 0.0*m-self.fractional_tol, 0.0*m+self.fractional_tol, color='black', alpha=0.25)
+        self.summary_lower_ax.plot(m, m*0.0, '-', color='black')
+
+        self.post_process_plot(self.summary_upper_ax, self.summary_lower_ax)
         self.summary_fig.savefig(os.path.join(output_dir, 'summary.png'))
 
         plt.close(self.summary_fig)
