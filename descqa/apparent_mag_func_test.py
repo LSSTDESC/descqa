@@ -226,7 +226,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         lower_ax.plot(m, m*0.0, '-', color='black')
         lower_ax.plot(mag_bins, delta, '-')
 
-        self.summary_lower_ax(mag_bins, delta, '-', label=catalog_name)
+        self.summary_lower_ax.plot(mag_bins, delta, '-', label=catalog_name)
 
         # apply 'passing' criterion
         if max_frac_diff>self.fractional_tol:
