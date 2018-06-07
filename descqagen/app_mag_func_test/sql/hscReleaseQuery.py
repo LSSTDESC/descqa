@@ -150,7 +150,7 @@ def blockUntilJobFinishes(credential, job_id, max_time=60.0*60.0):
         job = jobStatus(credential, job_id)
         print(job)
         if job['status'] == 'error':
-            raise QueryError, 'query error: ' + job['error']
+            raise QueryError('query error: ' + job['error'])
         if job['status'] == 'done':
             break
 
