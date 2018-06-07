@@ -4,7 +4,6 @@ import numpy as np
 from scipy.interpolate import interp1d
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
-from scipy.interpolate import interp1d
 
 
 possible_observations = {
@@ -59,7 +58,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         self.fractional_tol = fractional_tol
 
         # set color of lines in plots
-        colors = plt.cm.jet(np.linspace(0,1,5))
+        colors = plt.cm.jet(np.linspace(0,1,5)) # pylint: disable=no-member
         if band == 'g': self.line_color = colors[0]
         elif band == 'r': self.line_color = colors[1]
         elif band == 'i': self.line_color = colors[2]
@@ -101,20 +100,6 @@ class ApparentMagFuncTest(BaseValidationTest):
 
         return validation_data
 
-    @staticmethod
-    def get_catalog_data(gc, quantities, filters=None):
-        """
-        """
-        data = {}
-        if not gc.has_quantities(quantities):
-            return TestResult(skipped=True, summary='Missing requested quantities')
-
-        data = gc.get_quantities(quantities, filters=filters)
-
-        #make sure all data entries are finite
-        data = GCRQuery(*((np.isfinite, col) for col in data)).filter(data)
-
-        return data
 
     def post_process_plot(self, upper_ax, lower_ax):
         """
