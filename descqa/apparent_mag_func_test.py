@@ -249,8 +249,8 @@ class ApparentMagFuncTest(BaseValidationTest):
         # plot verifaction data on summary plot
         n = self.validation_data['n(<mag)']
         m = self.validation_data['mag']
-        self.summary_upper_ax.plot(m, n, '-', label=self.validation_data['label'])
-        self.summary_upper_ax.fill_between(m, n-self.fractional_tol*n, n+self.fractional_tol*n, alpha=0.25)
+        self.summary_upper_ax.plot(m, n, '-', label=self.validation_data['label'], color='black')
+        self.summary_upper_ax.fill_between(m, n-self.fractional_tol*n, n+self.fractional_tol*n, color='black', alpha=0.25)
 
         self.summary_lower_ax.fill_between(m, 0.0*m-self.fractional_tol, 0.0*m+self.fractional_tol, color='black', alpha=0.25)
         self.summary_lower_ax.plot(m, m*0.0, '-', color='black')
