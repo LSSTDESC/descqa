@@ -63,7 +63,7 @@ class DeltaSigmaTest(BaseValidationTest):
         coords_s = coords[mask_source]
 
         # Search for neighbours
-        idx1, idx2, sep2d, dist3d= search_around_sky(coords_l, coords_s, 1.5*u.deg)
+        idx1, idx2, sep2d, dist3d= search_around_sky(coords_l, coords_s, 2.*u.deg)
 
         # Computing sigma crit for each pair
         zl = res['redshift_true'][mask_lowz][idx1]
@@ -102,9 +102,12 @@ class DeltaSigmaTest(BaseValidationTest):
         fig = plt.figure()
         ax = plt.subplot(111)
         plt.loglog(rp, gt, label='LOWZ-like sample from '+catalog_name)
+        plt.errorbar(self.validation_data[:,0], self.validation_data[:,1], yerr=self.validation_data[:,2], label='SDSS LOWZ from Singh et al. (2015)' )
         ax.set_xlabel('$r_p$ [Mpc/h]')
         ax.set_ylabel('$\Delta \Sigma [h \ M_\odot / pc^2]$')
-
+        ax.legend()
+        ax.set_xlim(0.05,10)
+        ax.set_ylim(0.5,100)
         fig.savefig(os.path.join(output_dir, 'delta_sigma_{}.png'.format(catalog_name)))
         plt.close(fig)
         return TestResult(inspect_only=True)
