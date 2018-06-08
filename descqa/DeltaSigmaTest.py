@@ -27,7 +27,7 @@ class DeltaSigmaTest(BaseValidationTest):
         self._color_iterator = ('C{}'.format(i) for i in count())
 
         # Create interpolation tables for efficient computation of sigma crit
-        z = linspace(0,zmax,zmax*100)
+        z = np.linspace(0,zmax,zmax*100)
         d1 = WMAP7.angular_diameter_distance(z) # in Mpc
         self.angular_diameter_distance = interp1d(z,d1, kind='quadratic')
 
@@ -75,30 +75,31 @@ class DeltaSigmaTest(BaseValidationTest):
         dm2 = self.comoving_transverse_distance(zs)
         angular_diameter_distance_z1z2 = u.Quantity((dm2 - dm1)/(1. + zs), u.Mpc)
 
-        sigcrit = cst.c**2/(4.*pi*cst.G) * (self.angular_diameter_distance(zs)/((1. + zl)**2. *
+        sigcrit = cst.c**2/(4.*np.pi*cst.G) * (self.angular_diameter_distance(zs)/((1. + zl)**2. *
                                             angular_diameter_distance_z1z2 *
                                             self.angular_diameter_distance(zl)))
         # Apply unit conversion to obtain sigma crit in h Msol /pc^2
         cms = u.Msun /u.pc**2
-        sigcrit = sigcrit*(u.kg/(u.Mpc* u.m))).to(cms)/0.7
+        sigcrit = sigcrit*(u.kg/(u.Mpc* u.m)).to(cms)/0.7
 
         # Computing the projected separation for each pairs, in Mpc/h
         r = sep2d.rad*self.angular_diameter_distance(zl)*(1. + zl) * 0.7
 
         # Computing the tangential shear
-        thetac = np.arctan2((coords_s[idx2].dec.rad - coords_l[idx1].dec.rad)/cos((coords_s[idx2].dec.rad + coords_l[idx1].dec.rad) /2.0),
+        thetac = np.arctan2((coords_s[idx2].dec.rad - coords_l[idx1].dec.rad)/np.cos((coords_s[idx2].dec.rad + coords_l[idx1].dec.rad) /2.0),
                  coords_s[idx2].ra.rad - coords_l[idx1].ra.rad)
-        gammat = -(res['shear_1'][mask_source][idx2] * cos(2*thetac) + res['shear_2'][mask_source][idx2] * sin(2*thetac))
+        gammat = -(res['shear_1'][mask_source][idx2] * np.cos(2*thetac) + res['shear_2'][mask_source][idx2] * np.sin(2*thetac))
 
         # Binning the tangential shear
-        counts,a = histogram(r, 100, range=[0,10])
-        gt,b = histogram(r, 100, range=[0,10], weights=gammat*sigcrit)
+        counts,a = np.histogram(r, 100, range=[0,10])
+        gt,b = np.histogram(r, 100, range=[0,10], weights=gammat*sigcrit)
         rp = 0.5*(b[1:]+b[:-1])
 
         counts[counts <1] = 1
         gt /= counts
 
-        fig, ax = plt.subplot(111)
+        fig = plt.figure()
+        ax = plt.subplot(111)
         plt.loglog(rp, gt)
         ax.set_xlabel('$r_p$ [Mpc/h]')
         ax.set_ylabel('$\Delta \Sigma [h \ M_\odot / pc^2]$')

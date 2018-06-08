@@ -1,2 +1,3 @@
 subclass_name: DeltaSigmaTest.DeltaSigmaTest
+data_filename: /global/homes/f/flanusse/repo/descqa/lowz_DS.dat
 zmax: 3.0
