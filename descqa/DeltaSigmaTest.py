@@ -91,7 +91,7 @@ class DeltaSigmaTest(BaseValidationTest):
         gammat = -(res['shear_1'][mask_source][idx2] * np.cos(2*thetac) + res['shear_2'][mask_source][idx2] * np.sin(2*thetac))
 
         # Binning the tangential shear
-        bins = np.logscale(log10(0.05),1, 17, endpoint=True)
+        bins = np.logspace(np.log10(0.05),1, 17, endpoint=True)
         counts,a = np.histogram(r, bins=bins)
         gt,b = np.histogram(r, bins=bins, weights=gammat*sigcrit)
         rp = 0.5*(b[1:]+b[:-1])
