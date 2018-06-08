@@ -63,7 +63,7 @@ class DeltaSigmaTest(BaseValidationTest):
         coords_s = coords[mask_source]
 
         # Search for neighbours
-        idx1, idx2, sep2d, dist3d= search_around_sky(coords_l, coords_s, 1*u.deg)
+        idx1, idx2, sep2d, dist3d= search_around_sky(coords_l, coords_s, 1.5*u.deg)
 
         # Computing sigma crit for each pair
         zl = res['redshift_true'][mask_lowz][idx1]
@@ -91,8 +91,9 @@ class DeltaSigmaTest(BaseValidationTest):
         gammat = -(res['shear_1'][mask_source][idx2] * np.cos(2*thetac) + res['shear_2'][mask_source][idx2] * np.sin(2*thetac))
 
         # Binning the tangential shear
-        counts,a = np.histogram(r, 100, range=[0,10])
-        gt,b = np.histogram(r, 100, range=[0,10], weights=gammat*sigcrit)
+        bins = np.logscale(log10(0.05),1, 17, endpoint=True)
+        counts,a = np.histogram(r, bins=bins)
+        gt,b = np.histogram(r, bins=bins, weights=gammat*sigcrit)
         rp = 0.5*(b[1:]+b[:-1])
 
         counts[counts <1] = 1
@@ -100,7 +101,7 @@ class DeltaSigmaTest(BaseValidationTest):
 
         fig = plt.figure()
         ax = plt.subplot(111)
-        plt.loglog(rp, gt)
+        plt.loglog(rp, gt, label='LOWZ-like sample from '+catalog_name)
         ax.set_xlabel('$r_p$ [Mpc/h]')
         ax.set_ylabel('$\Delta \Sigma [h \ M_\odot / pc^2]$')
 
