@@ -50,6 +50,11 @@ class DeltaSigmaTest(BaseValidationTest):
         mask_lowz &= res['mag_true_r_sdss'] < (13.5 + cpar/0.3) # sliding magnitude cut
         mask_lowz &= (res['mag_true_r_sdss'] > 16) &(res['mag_true_r_sdss'] < 19.6)
 
+        # Counting the number density of LOWZ galaxies
+        nlens = len(np.where(mask_lowz)[0]) / catalog_instance.sky_area
+        with open(os.path.join(output_dir, 'galaxy_density.dat'), 'a') as f:
+            f.write('{} \n'.format(nlens))
+
         #  Additional redshift cuts used in Singh et al. (2015)
         mask_lowz &= (res['redshift_true'] > 0.16) & (res['redshift_true'] < 0.36)
 
@@ -103,6 +108,7 @@ class DeltaSigmaTest(BaseValidationTest):
         ax = plt.subplot(111)
         plt.loglog(rp, gt, label='LOWZ-like sample from '+catalog_name)
         plt.errorbar(self.validation_data[:,0], self.validation_data[:,1], yerr=self.validation_data[:,2], label='SDSS LOWZ from Singh et al. (2015)' )
+        plt.title('Number density {}/deg$^2$ vs 57/deg$^2$ for LOWZ'.format(nlens))
         ax.set_xlabel('$r_p$ [Mpc/h]')
         ax.set_ylabel('$\Delta \Sigma [h \ M_\odot / pc^2]$')
         ax.legend()
