@@ -237,22 +237,23 @@ class NumberDensityVersusRedshift(BaseValidationTest):
                 if z0 is None and 'z0const' in self.validation_data:  #alternate format for some validation data
                     z0 = self.validation_data['z0const'] + self.validation_data['z0linear'] * cut_lo
 
+                N = N.astype(np.float64)
+
                 if self.jackknife:
                     covariance = self.get_jackknife_errors(self.N_jack, jackknife_data[str(n)], N)
-                    Nerrors = np.sqrt(np.diag(covariance))
                 else:
-                    covariance = np.diag(N.astype(np.float64))
-                    Nerrors = np.sqrt(N)
+                    covariance = np.diag(N)
 
-                meanz = sumz/N
+                meanz = sumz / N
                 sumN = N.sum()
                 total = '(# of galaxies = {})'.format(sumN)
 
                 if self.normed:
                     scale = sumN * (self.zbins[1:] - self.zbins[:-1])
                     N /= scale
-                    Nerrors /= scale
                     covariance /= np.outer(scale, scale)
+
+                Nerrors = np.sqrt(np.diag(covariance))
 
                 #make subplot
                 catalog_label = ' '.join((catalog_name, cut_label.replace(self.band, filtername + ' ' + self.band)))
