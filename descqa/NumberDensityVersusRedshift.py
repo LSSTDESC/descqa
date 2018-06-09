@@ -58,9 +58,9 @@ class NumberDensityVersusRedshift(BaseValidationTest):
     validation_color = 'black'
     default_markers = ['o', 'v', 's', 'd', 'H', '^', 'D', 'h', '<', '>', '.']
 
-    def __init__(self, z='redshift_true', band='i', N_zbins=44, zlo=0., zhi=1.1,
+    def __init__(self, z='redshift_true', band='i', N_zbins=10, zlo=0., zhi=1.1,
                  observation='', mag_lo=27, mag_hi=18, ncolumns=2, normed=True,
-                 jackknife=False, N_jack=10, ra='ra', dec='dec', pass_limit=2., use_diagonal_only=True,
+                 jackknife=False, N_jack=20, ra='ra', dec='dec', pass_limit=2., use_diagonal_only=True,
                  **kwargs): #pylint: disable=W0231
 
         #catalog quantities
@@ -232,29 +232,27 @@ class NumberDensityVersusRedshift(BaseValidationTest):
             else:
                 cut_label = '{} $< {}$'.format(self.band, cut_lo)
                 if cut_hi:
-                    cut_label = '${} <=$ '.format(cut_hi) + cut_label #also appears in txt file so don't use \leq
+                    cut_label = '${} <=$ {}'.format(cut_hi, cut_label) #also appears in txt file so don't use \leq
 
                 if z0 is None and 'z0const' in self.validation_data:  #alternate format for some validation data
                     z0 = self.validation_data['z0const'] + self.validation_data['z0linear'] * cut_lo
 
+                if self.jackknife:
+                    covariance = self.get_jackknife_errors(self.N_jack, jackknife_data[str(n)], N)
+                    Nerrors = np.sqrt(np.diag(covariance))
+                else:
+                    covariance = np.diag(N.astype(np.float64))
+                    Nerrors = np.sqrt(N)
+
                 meanz = sumz/N
                 sumN = N.sum()
                 total = '(# of galaxies = {})'.format(sumN)
-                if self.normed:
-                    binwidths = self.zbins[1:] - self.zbins[:-1]
-                    N = N/sumN/binwidths
-                    rescale = 1.
-                else:
-                    rescale = sumN*(self.zbins[1] - self.zbins[0]) #factor by which to rescale validation plot if not normed
 
-                if self.jackknife:
-                    covariance = self.get_jackknife_errors(self.N_jack, jackknife_data[str(n)], N, normed=self.normed)
-                    Nerrors = np.sqrt(np.diagonal(covariance))
-                else:
-                    Nerrors = np.sqrt(N)
-                    if self.normed:
-                        Nerrors = Nerrors/sumN/binwidths
-                    covariance = np.diag(Nerrors**2)
+                if self.normed:
+                    scale = sumN * (self.zbins[1:] - self.zbins[:-1])
+                    N /= scale
+                    Nerrors /= scale
+                    covariance /= np.outer(scale, scale)
 
                 #make subplot
                 catalog_label = ' '.join((catalog_name, cut_label.replace(self.band, filtername + ' ' + self.band)))
@@ -263,7 +261,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
                 results[key] = {'meanz': meanz, 'total':total, 'N':N, 'N+-':Nerrors}
                 self.catalog_subplot(ax_this, meanz, N, Nerrors, catalog_color, catalog_marker, catalog_label)
                 if z0 and z0 > 0: # has validation data
-                    fits = self.validation_subplot(ax_this, meanz, z0, z0err, validation_label, rescale=rescale)
+                    fits = self.validation_subplot(ax_this, meanz, z0, z0err, validation_label)
                     results[key].update(fits)
                     scores[n] = self.get_score(N, fits['fit'], covariance, use_diagonal_only=self.use_diagonal_only)
                     results[key]['score'] = 'Chi_sq/dof = {:11.4g}'.format(scores[n])
@@ -298,14 +296,14 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         return TestResult(score_ave, passed=score_ave < self.pass_limit)
 
 
-    def get_jackknife_errors(self, N_jack, jackknife_data, N, normed=False):
+    def get_jackknife_errors(self, N_jack, jackknife_data, N):
         nn = np.stack((jackknife_data[self.ra], jackknife_data[self.dec]), axis=1)
         _, jack_labels, _ = k_means(n_clusters=N_jack, random_state=0, X=nn, n_jobs=-1)
 
         #make histograms for jackknife regions
         Njack_array = np.zeros((N_jack, len(self.zbins)-1), dtype=np.int)
         for nj in range(N_jack):
-            Njack_array[nj] = np.histogram(jackknife_data[self.zlabel][jack_labels != nj], self.zbins, normed=normed)[0]
+            Njack_array[nj] = np.histogram(jackknife_data[self.zlabel][jack_labels != nj], self.zbins)[0]
 
         covariance = np.zeros((self.N_zbins, self.N_zbins))
         for i in range(self.N_zbins):
@@ -315,17 +313,15 @@ class NumberDensityVersusRedshift(BaseValidationTest):
 
         return covariance
 
-    def catalog_subplot(self, ax, meanz, data, errors, catalog_color, catalog_marker, catalog_label):
 
+    def catalog_subplot(self, ax, meanz, data, errors, catalog_color, catalog_marker, catalog_label):
         ax.errorbar(meanz, data, yerr=errors, label=catalog_label, color=catalog_color, fmt=catalog_marker, ms=self.msize)
 
 
-    def validation_subplot(self, ax, meanz, z0, z0err, validation_label, rescale=1.):
+    def validation_subplot(self, ax, meanz, z0, z0err, validation_label):
         #plot validation data if available
         ndata = meanz**2*np.exp(-meanz/z0)
         norm = self.nz_norm(self.zhi, z0) - self.nz_norm(self.zlo, z0)
-        if not self.normed:
-            norm = norm/rescale
         ax.plot(meanz, ndata/norm, label=validation_label, ls='--', color=self.validation_color, lw=self.lw2)
         fits = {'fit': ndata/norm}
 
@@ -377,8 +373,8 @@ class NumberDensityVersusRedshift(BaseValidationTest):
             chi2 = np.sum([(catalog[i] - validation[i])**2 / cov[i][i] for i in range(len(catalog))])
         else:
             chi2 = np.matrix(catalog - validation) * inverse_cov * np.matrix(catalog - validation).T
-        diff = chi2 / float(len(catalog))                                                            
-        return diff 
+        diff = chi2 / float(len(catalog))
+        return diff
 
 
     @staticmethod
