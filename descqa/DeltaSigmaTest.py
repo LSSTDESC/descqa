@@ -39,8 +39,8 @@ class DeltaSigmaTest(BaseValidationTest):
         catalog_color = next(self._color_iterator)
 
         res = catalog_instance.get_quantities(['redshift_true', 'ra','dec','shear_1', 'shear_2',
-                                  'convergence', 'mag_true_i_sdss', 'mag_true_z_sdss',
-                                  'mag_true_g_sdss', 'mag_true_r_sdss'])
+                                               'convergence', 'mag_true_i_sdss', 'mag_true_z_sdss',
+                                               'mag_true_g_sdss', 'mag_true_r_sdss'])
 
         # Compute mask for lowz sample
         cperp = (res['mag_true_r_sdss'] - res['mag_true_i_sdss']) - (res['mag_true_g_sdss'] - res['mag_true_r_sdss'])/4.0 - 0.18
