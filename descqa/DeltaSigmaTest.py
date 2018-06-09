@@ -93,7 +93,7 @@ class DeltaSigmaTest(BaseValidationTest):
         # Computing the tangential shear
         thetac = np.arctan2((coords_s[idx2].dec.rad - coords_l[idx1].dec.rad)/np.cos((coords_s[idx2].dec.rad + coords_l[idx1].dec.rad) /2.0),
                  coords_s[idx2].ra.rad - coords_l[idx1].ra.rad)
-        gammat = -(res['shear_1'][mask_source][idx2] * np.cos(2*thetac) + res['shear_2'][mask_source][idx2] * np.sin(2*thetac))
+        gammat = -(res['shear_1'][mask_source][idx2] * np.cos(2*thetac) - res['shear_2'][mask_source][idx2] * np.sin(2*thetac))
 
         # Binning the tangential shear
         bins = np.logspace(np.log10(0.05),1, 17, endpoint=True)
