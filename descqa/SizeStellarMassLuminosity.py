@@ -25,8 +25,9 @@ class SizeStellarMassLuminosity(BaseValidationTest):
     Validation test of 2pt correlation function
     """
     _ARCSEC_TO_RADIAN = np.pi / 180. / 3600.
-    #pylint: disable=W0231
+
     def __init__(self, **kwargs):
+        #pylint: disable=W0231
         self.kwargs = kwargs
         self.catalogs = kwargs['catalogs']
         self.observation = kwargs['observation']
@@ -42,7 +43,7 @@ class SizeStellarMassLuminosity(BaseValidationTest):
         self.fig_subplot_col = kwargs['fig_subplot_col']
         self.suptitle = kwargs['suptitle']
         self.xlim = kwargs['xlim']
-        #self.xlim = [float(xlim.split()[0]), float(xlim.split()[1])]
+        self.chisq_max = kwargs['chisq_max']
         validation_filepath = os.path.join(self.data_dir, kwargs['data_filename'])
         self.validation_data = np.genfromtxt(validation_filepath)
     
@@ -97,17 +98,11 @@ class SizeStellarMassLuminosity(BaseValidationTest):
         catalog_data = catalog_instance.get_quantities(list(colnames.values()), filters=filters)
         catalog_data = {k: catalog_data[v] for k, v in colnames.items()}
 
-
         fig, axes = plt.subplots(self.fig_subplot_row, self.fig_subplot_col, figsize=(self.fig_subplot_col*4, self.fig_subplot_row*4), sharex=True, sharey=True)
-
-        for n in range(len(self.catalogs)):
-            if catalog_name == self.catalogs[n]: # and self.observation == 'onecomp':
-                catalog = self.catalogs[n]
-                #ylim = self.ylims[n] #[3e-1, 20]     
-
         twocomp_labels = [r'$R_B^{B/T > 0.5}$', r'$R_B^{B/T < 0.5}$']
         twocomp_sim_labels = [r'Sims:$R_B^{B/T > 0.5}$', r'Sims:$R_D^{B/T < 0.5}$']
         onecomp_labels = ['Simulation', 'Validation']
+        list_of_validation_values = []
 
         try:
             col = 0
@@ -154,8 +149,6 @@ class SizeStellarMassLuminosity(BaseValidationTest):
                     ax.fill_between(validation_this[:,1], 10**validation_this[:,3], 10**validation_this[:,4], lw=0, alpha=0.2)
                     ax.errorbar(default_L_bins, binned_size_kpc, binned_size_kpc_err, marker='o', ms=9, ls='', label=onecomp_labels[0])
                     onecomp_labels = ['', '']
-                    #ax.set_ylim(ylim)
-                    #ob = mpl.offsetbox.AnchoredText(self.label_template.format(z_bin['z_min'], z_bin['z_max']), loc=1, frameon=False)
                     ax.add_artist(ob)
                     tylo, tyhi = np.percentile(size_kpc, [5, 95])
                     tylo_arr = [ylo, 10**validation_this[:,4].min()]
@@ -168,6 +161,10 @@ class SizeStellarMassLuminosity(BaseValidationTest):
                     tyhi = np.max([yhi, tyhi, 10**validation_this[:,3].max()])
                     if tyhi > yhi:
                         yhi = tyhi
+         
+                    validation = self.compute_chisq(default_L_bins, binned_size_kpc, binned_size_kpc_err,
+                                                    validation_this[:,1], 10**validation_this[:,2])
+                    list_of_validation_values.append(validation)                                
 
                 elif self.observation == 'twocomp':
                     axes2 = []
@@ -194,8 +191,6 @@ class SizeStellarMassLuminosity(BaseValidationTest):
                         tsize_kpc = np.nan_to_num(tsize_kpc)
                         tsize_kpc_err = np.nan_to_num(tsize_kpc_err / np.sqrt(tsize_N))
                         
-                        #tylo = np.percentile(tsize_kpc-tsize_kpc_err, 5)
-                        #tyhi = np.percentile(tsize_kpc+tsize_kpc_err, 95)
                         tylo, tyhi = np.percentile(tsize_kpc-tsize_kpc_err, [5, 95])
                         if tylo < ylo:
                             ylo = tylo
@@ -210,34 +205,21 @@ class SizeStellarMassLuminosity(BaseValidationTest):
                         
                         validation_this = self.validation_data[(self.validation_data[:,0] < z_mean + 0.25) & (self.validation_data[:,0] > z_mean - 0.25)]
                         if si == 'size_bulge':
-
                             vali_bb_max = validation_this[:, 2] + validation_this[:,3]
                             vali_bb_min = validation_this[:, 2] - validation_this[:,3]
-                            
-                            #vali_bd_max = validation_this[:, 4] + validation_this[:,5]
-                            #vali_bd_min = validation_this[:, 4] - validation_this[:,5]
-
                             ax2.semilogy(validation_this[:,1], validation_this[:, 2], label=twocomp_labels[0], color=val_colors[0])
                             ax2.fill_between(validation_this[:,1], vali_bb_max, vali_bb_min, lw=0, alpha=0.2, facecolor=val_colors[0])
                             vali_dd_min = np.array([0])
                             vali_dd_max = np.array([0])
-                        #ax2.semilogy(validation_this[:,1], validation_this[:, 4], label=twocomp_labels[1], color=colors[1])
-                        #ax2.fill_between(validation_this[:,1], vali_bd_max, vali_bd_min, lw=0, alpha=0.2, facecolor=colors[1])
 
-                        #vali_db_max = validation_this[:, 7] + validation_this[:,8]
-                        #vali_db_min = validation_this[:, 7] - validation_this[:,8]
                         if si == 'size_disk': 
                             vali_dd_max = validation_this[:, 9] + validation_this[:,10]
                             vali_dd_min = validation_this[:, 9] - validation_this[:,10]
-         
-                            #ax.semilogy(validation_this[:,6], validation_this[:, 7], label=twocomp_labels[2], color=colors[2])
-                            #ax.fill_between(validation_this[:,6], vali_db_max, vali_db_min, lw=0, alpha=0.2, facecolor=colors[2])
                             ax.semilogy(validation_this[:,6], validation_this[:, 9], label=twocomp_labels[1], color=val_colors[1])
                             ax.fill_between(validation_this[:,6], vali_dd_max, vali_dd_min, lw=0, alpha=0.2, facecolor=val_colors[1])
                             vali_bb_min = np.array([0])
                             vali_bb_max = np.array([0])
 
-                        #ylo_arr = [ylo, vali_db_min.min(), vali_dd_min.min(), vali_bd_min.min(), vali_bb_min.min()]
                         ylo_arr = [ylo, vali_dd_min.min(), vali_bb_min.min()]
                         if np.any(ylo_arr == 0):
                             ylo = np.partition(ylo_arr, 1)[1] 
@@ -245,10 +227,8 @@ class SizeStellarMassLuminosity(BaseValidationTest):
                             ylo = np.min(ylo_arr)
                         yhi = np.max([yhi, vali_dd_max.max(), vali_bb_max.max()])
                         ci += 1
-                    #ax.set_ylim(ylim)
-                    #ax2.set_ylim(ylim)
-                    ax2.set_xlim(self.xlim)
 
+                    ax2.set_xlim(self.xlim)
                     ax.set_yscale('log', nonposy='clip')
                     ax2.set_yscale('log', nonposy='clip')
                     ax2.xaxis.set_ticklabels([])
@@ -259,11 +239,15 @@ class SizeStellarMassLuminosity(BaseValidationTest):
                     ax2.legend(loc=3, ncol=2, fontsize=10)
 
                     #ob = mpl.offsetbox.AnchoredText(self.label_template.format(z_bin['z_min'], z_bin['z_max']), loc=1, frameon=False)
-                    ax2.add_artist(ob)
+                    #ax2.add_artist(ob)
 
+                    validation_bulge = self.compute_chisq(default_L_bins, binned_bulgesize_kpc, binned_bulgesize_kpc_err,
+                                                    validation_this[:,1], validation_this[:,2])
+                    validation_disk = self.compute_chisq(default_L_bins, binned_disksize_kpc, binned_disksize_kpc_err,
+                                                    validation_this[:,1]+0.2, validation_this[:,3])
+                    list_of_validation_values.append([validation_bulge, validation_disk])                                
                 del catalog_data_this
-                
-                
+                                
                 ax.set_xlim(self.xlim)
                 ax.tick_params(direction='in', which='both')
                 ax.legend(loc=3, ncol=2, fontsize=10)
@@ -295,6 +279,40 @@ class SizeStellarMassLuminosity(BaseValidationTest):
         finally:
             fig.savefig(os.path.join(output_dir, '{:s}.png'.format(self.test_name)), bbox_inches='tight')
             plt.close(fig)
-        
+
+        allpass = True
+        for validation_val, zbin in zip(list_of_validation_values, self.z_bins):
+            if hasattr(validation_val, '__iter__'):
+                print("Redshift bin {}-{}: bulge chi-square/dof: {}, disk chi-square/dof: {}.".format(
+                        zbin['z_min'], zbin['z_max'], validation_val[0], validation_val[1]))
+                if validation_val[0] > self.chisq_max:
+                    print("Chi-square/dof with respect to validation data is too large for bulges in redshift bin {}-{}".format(
+                            zbin['z_min'], zbin['z_max']))
+                    allpass = False
+                if validation_val[1] > self.chisq_max:
+                    print("Chi-square/dof with respect to validation data is too large for disks in redshift bin {}-{}".format(
+                            zbin['z_min'], zbin['z_max']))
+                    allpass = False
+            else:
+                print("Redshift bin {}-{}: chi-square/dof: {}.".format(
+                        zbin['z_min'], zbin['z_max'], validation_val))
+                if validation_val > self.chisq_max:
+                    print("Chi-square/dof with respect to validation data is too large for redshift bin {}-{}".format(
+                            zbin['z_min'], zbin['z_max']))
+                    allpass = False
+
         #TODO: calculate summary statistics
-        return TestResult(inspect_only=True)
+        return TestResult(score=np.mean(list_of_validation_values), passed=allpass)
+        
+    def compute_chisq(self, bins, binned_data, binned_err, validation_points, validation_data):
+        if np.any(validation_data==0):
+            mask = validation_data!=0
+            validation_points = validation_points[mask]
+            validation_data = validation_data[mask]
+        if validation_points[-1]<validation_points[0]:
+            validation_points = validation_points[::-1]
+            validation_data = validation_data[::-1]
+        validation_at_binpoints = interpolate.CubicSpline(validation_points, validation_data)(bins)
+        weights = 1./binned_err**2
+        return np.sum(weights*(validation_at_binpoints-binned_data)**2)/len(weights)
+                                  

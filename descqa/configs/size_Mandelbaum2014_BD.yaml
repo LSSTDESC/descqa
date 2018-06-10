@@ -33,5 +33,7 @@ fig_subplot_col: 3
 xlim: [9, 12]
 suptitle: '$M_I$'
 
+chisq_max: 1.2
+
 description: |
   Compare evolution of bulge and disk sizes as a function of i-band magnitude of LSST and redshift and comparing to Mandelbaum et al (2015) HST COSMOS F814W observations

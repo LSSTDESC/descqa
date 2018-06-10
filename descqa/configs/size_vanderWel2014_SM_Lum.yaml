@@ -37,6 +37,7 @@ suptitle: '$M_V$'
 fig_subplot_row: 1
 fig_subplot_col: 3
 
+chisq_max: 1.2
 
 description: |
   Compare evolution of size as a function of luminosity and redshift and van der Wel et al (2014) HST-3D and CANDELS observations
