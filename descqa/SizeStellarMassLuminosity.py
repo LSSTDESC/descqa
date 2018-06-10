@@ -178,6 +178,7 @@ class SizeStellarMassLuminosity(BaseValidationTest):
                     divider = make_axes_locatable(ax)
                     ax2 = divider.append_axes("top", size='100%', pad=0)
                     axes2.append(ax2)
+                    validation_values = []
                     for bti, si, axi, validation_cols, label, color, sim_label, sim_color in zip(
                             bt_cons,
                             ('size_bulge', 'size_disk'),
@@ -206,7 +207,6 @@ class SizeStellarMassLuminosity(BaseValidationTest):
                         np.savetxt(output_filepath, to_write)
 
                         validation_this = self.validation_data[(self.validation_data[:,0] < z_mean + 0.25) & (self.validation_data[:,0] > z_mean - 0.25)]
-                        validation_values = []
                         ix, iy, iyerr = validation_cols
                         vali_max = validation_this[:, iy] + validation_this[:, iyerr]
                         vali_min = validation_this[:, iy] - validation_this[:, iyerr]
