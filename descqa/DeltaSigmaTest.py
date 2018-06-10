@@ -1,12 +1,11 @@
 import os
+from itertools import count
 import numpy as np
 from scipy.interpolate import interp1d
-from scipy import spatial
 from astropy import units as u
 from astropy.coordinates import SkyCoord, search_around_sky
 import astropy.constants as cst
-from astropy.cosmology import WMAP7
-from itertools import count
+from astropy.cosmology import WMAP7 # pylint: disable=no-name-in-module
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
 
@@ -19,12 +18,13 @@ class DeltaSigmaTest(BaseValidationTest):
     """
 
     def __init__(self, **kwargs):
-        #validation data
+        # pylint: disable=super-init-not-called
+        
+        # validation data
         validation_filepath = os.path.join(self.data_dir, kwargs['data_filename'])
         zmax = kwargs['zmax']
 
         self.validation_data = np.loadtxt(validation_filepath)
-        self._color_iterator = ('C{}'.format(i) for i in count())
 
         # Create interpolation tables for efficient computation of sigma crit
         z = np.linspace(0,zmax,zmax*100)
@@ -35,8 +35,7 @@ class DeltaSigmaTest(BaseValidationTest):
         self.comoving_transverse_distance = interp1d(z,d2, kind='quadratic')
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
-        # update color and marker to preserve catalog colors and markers across tests
-        catalog_color = next(self._color_iterator)
+        # pylint: disable=no-member
 
         res = catalog_instance.get_quantities(['redshift_true', 'ra','dec','shear_1', 'shear_2',
                                                'convergence', 'mag_true_i_sdss', 'mag_true_z_sdss',
@@ -68,7 +67,7 @@ class DeltaSigmaTest(BaseValidationTest):
         coords_s = coords[mask_source]
 
         # Search for neighbours
-        idx1, idx2, sep2d, dist3d= search_around_sky(coords_l, coords_s, 2.*u.deg)
+        idx1, idx2, sep2d, _ = search_around_sky(coords_l, coords_s, 2.*u.deg)
 
         # Computing sigma crit for each pair
         zl = res['redshift_true'][mask_lowz][idx1]
@@ -97,12 +96,12 @@ class DeltaSigmaTest(BaseValidationTest):
 
         # Binning the tangential shear
         bins = np.logspace(np.log10(0.05),1, 17, endpoint=True)
-        counts,a = np.histogram(r, bins=bins)
-        gt,b = np.histogram(r, bins=bins, weights=gammat*sigcrit)
+        counts = np.histogram(r, bins=bins)[0]
+        gt, b = np.histogram(r, bins=bins, weights=gammat*sigcrit)
         rp = 0.5*(b[1:]+b[:-1])
 
-        counts[counts <1] = 1
-        gt /= counts
+        counts[counts < 1] = 1
+        gt = gt / counts
 
         fig = plt.figure()
         ax = plt.subplot(111)
@@ -110,7 +109,7 @@ class DeltaSigmaTest(BaseValidationTest):
         plt.errorbar(self.validation_data[:,0], self.validation_data[:,1], yerr=self.validation_data[:,2], label='SDSS LOWZ from Singh et al. (2015)' )
         plt.title('Number density {}/deg$^2$ vs 57/deg$^2$ for LOWZ'.format(nlens))
         ax.set_xlabel('$r_p$ [Mpc/h]')
-        ax.set_ylabel('$\Delta \Sigma [h \ M_\odot / pc^2]$')
+        ax.set_ylabel(r'$\Delta \Sigma [h \ M_\odot / pc^2]$')
         ax.legend()
         ax.set_xlim(0.05,10)
         ax.set_ylim(0.5,100)
