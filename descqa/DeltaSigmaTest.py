@@ -1,5 +1,4 @@
 import os
-from itertools import count
 import numpy as np
 from scipy.interpolate import interp1d
 from astropy import units as u
@@ -19,7 +18,7 @@ class DeltaSigmaTest(BaseValidationTest):
 
     def __init__(self, **kwargs):
         # pylint: disable=super-init-not-called
-        
+
         # validation data
         validation_filepath = os.path.join(self.data_dir, kwargs['data_filename'])
         zmax = kwargs['zmax']
@@ -27,17 +26,17 @@ class DeltaSigmaTest(BaseValidationTest):
         self.validation_data = np.loadtxt(validation_filepath)
 
         # Create interpolation tables for efficient computation of sigma crit
-        z = np.linspace(0,zmax,zmax*100)
+        z = np.linspace(0, zmax, zmax*100)
         d1 = WMAP7.angular_diameter_distance(z) # in Mpc
-        self.angular_diameter_distance = interp1d(z,d1, kind='quadratic')
+        self.angular_diameter_distance = interp1d(z, d1, kind='quadratic')
 
         d2 = WMAP7.comoving_transverse_distance(z) # in Mpc
-        self.comoving_transverse_distance = interp1d(z,d2, kind='quadratic')
+        self.comoving_transverse_distance = interp1d(z, d2, kind='quadratic')
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         # pylint: disable=no-member
 
-        res = catalog_instance.get_quantities(['redshift_true', 'ra','dec','shear_1', 'shear_2',
+        res = catalog_instance.get_quantities(['redshift_true', 'ra', 'dec', 'shear_1', 'shear_2',
                                                'convergence', 'mag_true_i_sdss', 'mag_true_z_sdss',
                                                'mag_true_g_sdss', 'mag_true_r_sdss'])
 
@@ -79,23 +78,24 @@ class DeltaSigmaTest(BaseValidationTest):
         dm2 = self.comoving_transverse_distance(zs)
         angular_diameter_distance_z1z2 = u.Quantity((dm2 - dm1)/(1. + zs), u.Mpc)
 
-        sigcrit = cst.c**2/(4.*np.pi*cst.G) * (self.angular_diameter_distance(zs)/((1. + zl)**2. *
-                                            angular_diameter_distance_z1z2 *
-                                            self.angular_diameter_distance(zl)))
+        sigcrit = cst.c**2 / (4.*np.pi*cst.G) * self.angular_diameter_distance(zs) / \
+                ((1. + zl)**2. * angular_diameter_distance_z1z2 * self.angular_diameter_distance(zl))
         # Apply unit conversion to obtain sigma crit in h Msol /pc^2
-        cms = u.Msun /u.pc**2
-        sigcrit = sigcrit*(u.kg/(u.Mpc* u.m)).to(cms)/0.7
+        cms = u.Msun / u.pc**2
+        sigcrit = sigcrit*(u.kg/(u.Mpc* u.m)).to(cms) / 0.7
 
         # Computing the projected separation for each pairs, in Mpc/h
         r = sep2d.rad*self.angular_diameter_distance(zl)*(1. + zl) * 0.7
 
         # Computing the tangential shear
-        thetac = np.arctan2((coords_s[idx2].dec.rad - coords_l[idx1].dec.rad)/np.cos((coords_s[idx2].dec.rad + coords_l[idx1].dec.rad) /2.0),
-                 coords_s[idx2].ra.rad - coords_l[idx1].ra.rad)
+        thetac = np.arctan2(
+            (coords_s[idx2].dec.rad - coords_l[idx1].dec.rad) / np.cos((coords_s[idx2].dec.rad + coords_l[idx1].dec.rad) / 2.0),
+            coords_s[idx2].ra.rad - coords_l[idx1].ra.rad
+        )
         gammat = -(res['shear_1'][mask_source][idx2] * np.cos(2*thetac) - res['shear_2'][mask_source][idx2] * np.sin(2*thetac))
 
         # Binning the tangential shear
-        bins = np.logspace(np.log10(0.05),1, 17, endpoint=True)
+        bins = np.logspace(np.log10(0.05), 1, 17, endpoint=True)
         counts = np.histogram(r, bins=bins)[0]
         gt, b = np.histogram(r, bins=bins, weights=gammat*sigcrit)
         rp = 0.5*(b[1:]+b[:-1])
@@ -106,13 +106,13 @@ class DeltaSigmaTest(BaseValidationTest):
         fig = plt.figure()
         ax = plt.subplot(111)
         plt.loglog(rp, gt, label='LOWZ-like sample from '+catalog_name)
-        plt.errorbar(self.validation_data[:,0], self.validation_data[:,1], yerr=self.validation_data[:,2], label='SDSS LOWZ from Singh et al. (2015)' )
+        plt.errorbar(self.validation_data[:,0], self.validation_data[:,1], yerr=self.validation_data[:,2], label='SDSS LOWZ from Singh et al. (2015)')
         plt.title('Number density {}/deg$^2$ vs 57/deg$^2$ for LOWZ'.format(nlens))
         ax.set_xlabel('$r_p$ [Mpc/h]')
         ax.set_ylabel(r'$\Delta \Sigma [h \ M_\odot / pc^2]$')
         ax.legend()
-        ax.set_xlim(0.05,10)
-        ax.set_ylim(0.5,100)
+        ax.set_xlim(0.05, 10)
+        ax.set_ylim(0.5, 100)
         fig.savefig(os.path.join(output_dir, 'delta_sigma_{}.png'.format(catalog_name)))
         plt.close(fig)
         return TestResult(inspect_only=True)
