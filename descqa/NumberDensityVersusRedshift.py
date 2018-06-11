@@ -18,7 +18,46 @@ __all__ = ['NumberDensityVersusRedshift']
 
 class NumberDensityVersusRedshift(BaseValidationTest):
     """
-    validation test to show N(z) distributions
+    Validation test to show redshift distribution P(z) or N(z)
+
+    Parameters
+    ----------
+    z : str, optional, (default: 'redshift_true')
+        label for redshift column
+    band : str, optional (default: 'i')
+        band to test
+    N_zbins : int, optional (default: 10)
+        number of redshift bins between `zlo` and `zhi`
+        should be smaller than `N_jack` if `jackknife` is set to `True`
+    zlo : float, optional, (default: 0)
+        lower redshift limit
+    zhi : float, optional (default: 1.1)
+        upper redshift limit
+    observation : str, optional (default: '')
+        observation dataset to compare to
+    mag_lo : float, optional (default: 27)
+        faint-end magnitude limit
+    mag_hi : float, optional (default: 18)
+        bright-end magnitude limit
+    ncolumns : int, optional (default: 2)
+        number of subplot columns
+    normed : bool, optional (default: True)
+        normalize the redshift distribution (i.e. plotting P(z)).
+        Note that when `normed` set to `False` the comparision with validation data
+        does not make much sense since the validation data is normalized.
+    jackknife : bool, optional (default: False)
+        turn on jackknife error. When set to `False` use Poisson error.
+    N_jack : int, optional (default: 20)
+        number of jackknife regions
+        `N_jack` should be much larger than `N_zbins` for the jackknife errors to be stable
+    ra : str, optional, (default: 'ra')
+        label of RA column (used if `jackknife` is `True`)    
+    dec : str, optional, (default: 'dec')
+        label of Dec column (used if `jackknife` is `True`)
+    pass_limit : float, optional (default: 2.)
+        chi^2 value needs to be less than this value to pass the test
+    use_diagonal_only : bool, optional (default: True)
+        use only the diagonal terms of the convariance matric when calculating chi^2
     """
     #setup dict with parameters needed to read in validation data
     possible_observations = {
