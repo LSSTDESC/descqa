@@ -27,16 +27,21 @@ class DeltaSigmaTest(BaseValidationTest):
 
         self.validation_data = np.loadtxt(validation_filepath)
 
-        # Create interpolation tables for efficient computation of sigma crit
-        z = np.linspace(0, zmax, zmax*100)
-        d1 = WMAP7.angular_diameter_distance(z) # in Mpc
-        self.angular_diameter_distance = interp1d(z, d1, kind='quadratic')
-
-        d2 = WMAP7.comoving_transverse_distance(z) # in Mpc
-        self.comoving_transverse_distance = interp1d(z, d2, kind='quadratic')
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         # pylint: disable=no-member
+
+        # Try to read cosmology from catalog, otherwise defualts to WMAP7
+        try:
+            cosmo = catalog_instance.cosmology
+        except:
+            cosmo = WMAP7
+        # Create interpolation tables for efficient computation of sigma crit
+        z = np.linspace(0, zmax, zmax*100)
+        d1 = cosmo.angular_diameter_distance(z) # in Mpc
+        angular_diameter_distance = interp1d(z, d1, kind='quadratic')
+        d2 = cosmo.comoving_transverse_distance(z) # in Mpc
+        comoving_transverse_distance = interp1d(z, d2, kind='quadratic')
 
         res = catalog_instance.get_quantities(['redshift_true', 'ra', 'dec', 'shear_1', 'shear_2',
                                                'convergence', 'mag_true_i_sdss', 'mag_true_z_sdss',
@@ -78,20 +83,20 @@ class DeltaSigmaTest(BaseValidationTest):
 
         # Warning: this assumes a flat universe
         # See http://docs.astropy.org/en/v0.3/_modules/astropy/cosmology/core.html#FLRW.angular_diameter_distance_z1z2
-        dm1 = self.comoving_transverse_distance(zl)
-        dm2 = self.comoving_transverse_distance(zs)
+        dm1 = comoving_transverse_distance(zl)
+        dm2 = comoving_transverse_distance(zs)
         angular_diameter_distance_z1z2 = u.Quantity((dm2 - dm1)/(1. + zs), u.Mpc)
 
-        sigcrit = cst.c**2 / (4.*np.pi*cst.G) * self.angular_diameter_distance(zs) / \
-                ((1. + zl)**2. * angular_diameter_distance_z1z2 * self.angular_diameter_distance(zl))
+        sigcrit = cst.c**2 / (4.*np.pi*cst.G) * angular_diameter_distance(zs) / \
+                ((1. + zl)**2. * angular_diameter_distance_z1z2 * angular_diameter_distance(zl))
 
         # NOTE: the validation data is in comoving coordinates, the next few
         # lines take care of proper unit conversions
         # Apply unit conversion to obtain sigma crit in h Msol /pc^2 (comoving)
         cms = u.Msun / u.pc**2
-        sigcrit = sigcrit*(u.kg/(u.Mpc* u.m)).to(cms) / WMAP7.h
+        sigcrit = sigcrit*(u.kg/(u.Mpc* u.m)).to(cms) / cosmo.h
         # Computing the projected separation for each pairs, in Mpc/h (comoving)
-        r = sep2d.rad*self.angular_diameter_distance(zl)*(1. + zl) * WMAP7.h
+        r = sep2d.rad*angular_diameter_distance(zl)*(1. + zl) * cosmo.h
 
         # Computing the tangential shear
         thetac = np.arctan2(
