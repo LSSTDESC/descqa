@@ -13,7 +13,8 @@ __all__ = ['DeltaSigmaTest']
 class DeltaSigmaTest(BaseValidationTest):
     """
     This validation test looks at galaxy-shear correlations by comparing Delta
-    Sigma to the Singh et al (2015) measurements on the SDSS LOWZ sample.
+    Sigma to the Singh et al (2015) (http://adsabs.harvard.edu/abs/2015MNRAS.450.2195S)
+    measurements on the SDSS LOWZ sample.
     """
 
     def __init__(self, **kwargs):
@@ -22,6 +23,7 @@ class DeltaSigmaTest(BaseValidationTest):
         # validation data
         validation_filepath = os.path.join(self.data_dir, kwargs['data_filename'])
         zmax = kwargs['zmax']
+        self.min_count_per_bin = kwargs['min_count_per_bin']
 
         self.validation_data = np.loadtxt(validation_filepath)
 
@@ -41,9 +43,12 @@ class DeltaSigmaTest(BaseValidationTest):
                                                'mag_true_g_sdss', 'mag_true_r_sdss'])
 
         # Compute mask for lowz sample
+        # These cuts are defined in section 3 of https://arxiv.org/pdf/1509.06529.pdf
+        # and summarised here: http://www.sdss.org/dr14/algorithms/boss_galaxy_ts/#TheBOSSLOWZGalaxySample
+        # Definition of auxiliary colors:
         cperp = (res['mag_true_r_sdss'] - res['mag_true_i_sdss']) - (res['mag_true_g_sdss'] - res['mag_true_r_sdss'])/4.0 - 0.18
         cpar = 0.7*(res['mag_true_g_sdss'] - res['mag_true_r_sdss']) + 1.2*((res['mag_true_r_sdss'] - res['mag_true_i_sdss'])-0.18)
-
+        # LOWZ selection cuts:
         mask_lowz = np.abs(cperp) < 0.2 # color boundaries
         mask_lowz &= res['mag_true_r_sdss'] < (13.5 + cpar/0.3) # sliding magnitude cut
         mask_lowz &= (res['mag_true_r_sdss'] > 16) &(res['mag_true_r_sdss'] < 19.6)
@@ -80,12 +85,14 @@ class DeltaSigmaTest(BaseValidationTest):
 
         sigcrit = cst.c**2 / (4.*np.pi*cst.G) * self.angular_diameter_distance(zs) / \
                 ((1. + zl)**2. * angular_diameter_distance_z1z2 * self.angular_diameter_distance(zl))
-        # Apply unit conversion to obtain sigma crit in h Msol /pc^2
-        cms = u.Msun / u.pc**2
-        sigcrit = sigcrit*(u.kg/(u.Mpc* u.m)).to(cms) / 0.7
 
-        # Computing the projected separation for each pairs, in Mpc/h
-        r = sep2d.rad*self.angular_diameter_distance(zl)*(1. + zl) * 0.7
+        # NOTE: the validation data is in comoving coordinates, the next few
+        # lines take care of proper unit conversions
+        # Apply unit conversion to obtain sigma crit in h Msol /pc^2 (comoving)
+        cms = u.Msun / u.pc**2
+        sigcrit = sigcrit*(u.kg/(u.Mpc* u.m)).to(cms) / WMAP7.h
+        # Computing the projected separation for each pairs, in Mpc/h (comoving)
+        r = sep2d.rad*self.angular_diameter_distance(zl)*(1. + zl) * WMAP7.h
 
         # Computing the tangential shear
         thetac = np.arctan2(
@@ -100,7 +107,10 @@ class DeltaSigmaTest(BaseValidationTest):
         gt, b = np.histogram(r, bins=bins, weights=gammat*sigcrit)
         rp = 0.5*(b[1:]+b[:-1])
 
-        counts[counts < 1] = 1
+        # Checks that there are a sufficient number of background galaxies in
+        # each bin.
+        if counts.min() < self.min_count_per_bin:
+            return TestResult(passed=False, summary="Not enough background sources to compute delta sigma")
         gt = gt / counts
 
         fig = plt.figure()
