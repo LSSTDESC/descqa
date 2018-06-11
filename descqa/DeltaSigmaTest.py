@@ -41,7 +41,6 @@ class DeltaSigmaTest(BaseValidationTest):
         res = catalog_instance.get_quantities(['redshift_true', 'ra', 'dec', 'shear_1', 'shear_2',
                                                'convergence', 'mag_true_i_sdss', 'mag_true_z_sdss',
                                                'mag_true_g_sdss', 'mag_true_r_sdss'])
-
         # Compute mask for lowz sample
         # These cuts are defined in section 3 of https://arxiv.org/pdf/1509.06529.pdf
         # and summarised here: http://www.sdss.org/dr14/algorithms/boss_galaxy_ts/#TheBOSSLOWZGalaxySample
