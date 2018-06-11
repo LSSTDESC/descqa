@@ -397,24 +397,27 @@ class NumberDensityVersusRedshift(BaseValidationTest):
 
     @staticmethod
     def get_score(catalog, validation, cov, use_diagonal_only=True):
+
         #remove bad values
-        mask = np.isfinite(catalog)
-        mask &= np.isfinite(validation)
+        mask = np.isfinite(catalog) & np.isfinite(validation)
+        if not mask.any():
+            return np.nan
+
         catalog = catalog[mask]
         validation = validation[mask]
-        cov = cov[mask].T[mask]
-        try:
-            inverse_cov = np.matrix(cov).I
-        except np.linalg.LinAlgError:
-            print('Covariance matrix inversion failed: diagonal errors only will be used')
-            use_diagonal_only = True
+        cov = cov[mask][:,mask]
 
-        if use_diagonal_only:
-            chi2 = np.sum([(catalog[i] - validation[i])**2 / cov[i][i] for i in range(len(catalog))])
-        else:
-            chi2 = np.matrix(catalog - validation) * inverse_cov * np.matrix(catalog - validation).T
-        diff = chi2 / float(len(catalog))
-        return diff
+        inverse_cov = np.diag(1.0 / np.diag(cov))
+        if not use_diagonal_only:
+            try:
+                inverse_cov = np.linalg.inv(cov)
+            except np.linalg.LinAlgError:
+                print('Covariance matrix inversion failed: diagonal errors only will be used')
+
+        d = catalog - validation
+        chi2 = np.einsum('i,ij,j', d, inverse_cov, d)
+        chi2_reduced = chi2 / float(len(catalog))
+        return chi2_reduced
 
 
     @staticmethod
