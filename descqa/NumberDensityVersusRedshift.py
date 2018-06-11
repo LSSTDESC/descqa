@@ -56,7 +56,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         label of Dec column (used if `jackknife` is `True`)
     pass_limit : float, optional (default: 2.)
         chi^2 value needs to be less than this value to pass the test
-    use_diagonal_only : bool, optional (default: True)
+    use_diagonal_only : bool, optional (default: False)
         use only the diagonal terms of the convariance matric when calculating chi^2
     """
     #setup dict with parameters needed to read in validation data
@@ -99,7 +99,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
 
     def __init__(self, z='redshift_true', band='i', N_zbins=10, zlo=0., zhi=1.1,
                  observation='', mag_lo=27, mag_hi=18, ncolumns=2, normed=True,
-                 jackknife=False, N_jack=20, ra='ra', dec='dec', pass_limit=2., use_diagonal_only=True,
+                 jackknife=False, N_jack=20, ra='ra', dec='dec', pass_limit=2., use_diagonal_only=False,
                  **kwargs): #pylint: disable=W0231
 
         #catalog quantities
