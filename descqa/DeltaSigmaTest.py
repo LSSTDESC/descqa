@@ -34,7 +34,7 @@ class DeltaSigmaTest(BaseValidationTest):
         # Try to read cosmology from catalog, otherwise defualts to WMAP7
         try:
             cosmo = catalog_instance.cosmology
-        except:
+        except AttributeError:
             cosmo = WMAP7
         # Create interpolation tables for efficient computation of sigma crit
         z = np.linspace(0, self.zmax, self.zmax*100)
