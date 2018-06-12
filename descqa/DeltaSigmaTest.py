@@ -22,7 +22,7 @@ class DeltaSigmaTest(BaseValidationTest):
 
         # validation data
         validation_filepath = os.path.join(self.data_dir, kwargs['data_filename'])
-        zmax = kwargs['zmax']
+        self.zmax = kwargs['zmax']
         self.min_count_per_bin = kwargs['min_count_per_bin']
 
         self.validation_data = np.loadtxt(validation_filepath)
@@ -37,7 +37,7 @@ class DeltaSigmaTest(BaseValidationTest):
         except:
             cosmo = WMAP7
         # Create interpolation tables for efficient computation of sigma crit
-        z = np.linspace(0, zmax, zmax*100)
+        z = np.linspace(0, self.zmax, self.zmax*100)
         d1 = cosmo.angular_diameter_distance(z) # in Mpc
         angular_diameter_distance = interp1d(z, d1, kind='quadratic')
         d2 = cosmo.comoving_transverse_distance(z) # in Mpc
