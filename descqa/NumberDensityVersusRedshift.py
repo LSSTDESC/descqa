@@ -303,8 +303,11 @@ class NumberDensityVersusRedshift(BaseValidationTest):
                 if z0 and z0 > 0: # has validation data
                     fits = self.validation_subplot(ax_this, meanz, z0, z0err, validation_label)
                     results[key].update(fits)
-                    scores[n] = self.get_score(N, fits['fit'], covariance, use_diagonal_only=self.use_diagonal_only)
+                    scores[n], inverse_cov = self.get_score(N, fits['fit'], covariance, use_diagonal_only=self.use_diagonal_only)
                     results[key]['score'] = 'Chi_sq/dof = {:11.4g}'.format(scores[n])
+                    if self.jackknife:
+                        results[key]['inverse_cov_matrix'] = inverse_cov
+
                 self.decorate_subplot(ax_this, n)
 
                 #add curve for this catalog to summary plot
@@ -316,10 +319,17 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         #save results for catalog and validation data in txt files
         for filename, dtype, comment, info, info2 in zip_longest((filelabel, self.observation), ('N', 'fit'), (filtername,), ('total',), ('score',)):
             if filename:
-                with open(os.path.join(output_dir, 'Nvsz_' + filename + '.txt'), 'ab') as f_handle: #open file in append mode
+                with open(os.path.join(output_dir, 'Nvsz_' + filename + '.txt'), 'ab') as f_handle: #open file in append binary mode
                     #loop over magnitude cuts in results dict
                     for key, value in results.items():
                         self.save_quantities(dtype, value, f_handle, comment=' '.join(((comment or ''), key, value.get(info, ''), value.get(info2, ''))))
+                
+                if self.jackknife:
+                    with open(os.path.join(output_dir, 'Nvsz_' + filename + '.txt'), 'a') as f_handle: #open file in append mode
+                        f_handle.write('\nInverse Covariance Matrices:\n')
+                        for key in results.keys():
+                            self.save_matrix(results[key]['inverse_cov_matrix'], f_handle, comment= key)
+            
 
         if self.first_pass: #turn off validation data plot in summary for remaining catalogs
             self.first_pass = False
@@ -417,7 +427,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         d = catalog - validation
         chi2 = np.einsum('i,ij,j', d, inverse_cov, d)
         chi2_reduced = chi2 / float(len(catalog))
-        return chi2_reduced
+        return chi2_reduced, inverse_cov
 
 
     @staticmethod
@@ -428,6 +438,13 @@ class NumberDensityVersusRedshift(BaseValidationTest):
     @staticmethod
     def post_process_plot(fig):
         fig.subplots_adjust(hspace=0)
+
+
+    @staticmethod
+    def save_matrix(matrix, fhandle, comment=''):
+        fhandle.write('{}:\n'.format(comment))
+        for row in matrix:
+            fhandle.write('  '.join(['{:10.3g}'.format(element) for element in row])+'\n')
 
 
     @staticmethod
