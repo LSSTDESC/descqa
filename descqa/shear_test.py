@@ -192,14 +192,14 @@ class ShearTest(BaseValidationTest):
         for i in range(self.nbins):
             for j in range(self.nbins):
                 for k in range(N_clust):
-                    cp_xip[i][j] += 1./(N_clust - 1.)  * (xip[i] - xip_jack[k][i] * 1.e6) * (
+                    cp_xip[i][j] += N_clust/(N_clust - 1.)  * (xip[i] - xip_jack[k][i] * 1.e6) * (
                         xip[j] - xip_jack[k][j] * 1.e6)
 
         cp_xim = np.zeros((self.nbins, self.nbins))
         for i in range(self.nbins):
             for j in range(self.nbins):
                 for k in range(N_clust):
-                    cp_xim[i][j] += 1./(N_clust - 1.)  * (xim[i] - xim_jack[k][i] * 1.e6) * (
+                    cp_xim[i][j] += N_clust/(N_clust - 1.)  * (xim[i] - xim_jack[k][i] * 1.e6) * (
                         xim[j] - xim_jack[k][j] * 1.e6)
         return cp_xip, cp_xim
 
