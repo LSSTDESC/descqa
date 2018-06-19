@@ -302,6 +302,7 @@ class ShearTest(BaseValidationTest):
 
         if do_jackknife:
             cp_xip, cp_xim = self.jackknife(catalog_data, xip, xim)
+            print(cp_xip)
             sig_jack = np.zeros((self.nbins))
             sigm_jack = np.zeros((self.nbins))
             for i in range(self.nbins):
@@ -352,7 +353,7 @@ class ShearTest(BaseValidationTest):
         #TODO: This criteria for the score is effectively a placeholder if jackknifing isn't used and assumes a diagonal covariance if it is
         # Proper validation criteria need to be assigned to this test
         if score < 2:
-            return TestResult(score, passed=True)
+            return TestResult(score, inspect_only=True)
         else:
             return TestResult(score, passed=False)
 
