@@ -3,9 +3,9 @@ band: i
 zlo: 0.
 zhi: 1.0
 N_zbins: 10
-normed: True
 jackknife: True
 N_jack: 20
+use_diagonal_only: True
 observation: 'Coil2004_maglim'
 included_by_default: true
 description: 'Plot N(z) distributions for selected magnitude cuts in specified band and compare with fits to DEEP2 data from Coil et. al. (2004).'

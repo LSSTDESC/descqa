@@ -6,5 +6,6 @@ N_zbins: 10
 observation: 'DEEP2_JAN'
 jackknife: True
 N_jack: 20
+use_diagonal_only: True
 included_by_default: true
 description: 'Plot N(z) distributions for selected magnitude cuts in specified band and compare with fits to DEEP2 data from J. A. Newman (priv. comm.)'
