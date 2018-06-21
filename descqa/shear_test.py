@@ -31,7 +31,7 @@ class ShearTest(BaseValidationTest):
                  ra='ra',
                  dec='dec',
                  e1='shear_1',
-                 e2='shear_2',
+                 e2='shear_2_phosim',
                  kappa='convergence',
                  nbins=20,
                  min_sep=2.5,
@@ -147,6 +147,9 @@ class ShearTest(BaseValidationTest):
     def jackknife(self, catalog_data, xip, xim):
         " computing jack-knife covariance matrix using K-means clustering"
         #k-means clustering to define areas
+        #NOTE: This is somewhat deprecated, the jack-knifing takes too much effort to find appropriately accurate covariance matrices. 
+        # If you want to use this, do a quick convergence check and some timing tests on small N_clust values (~5 to start) first.
+        # note also that this is comparing against the (low) variance in the catalog which might not be a great comparison -no shape noise
         N_clust = self.N_clust
         nn = np.stack((catalog_data[self.ra], catalog_data[self.dec]), axis=1)
         _, labs, _ = k_means(
@@ -182,19 +185,21 @@ class ShearTest(BaseValidationTest):
             print(gg.xip)
             print("time = " + str(time.time() - time_jack))
 
+
         ### assign covariance matrix - loop is poor python syntax but compared to the time taken for the rest of the test doesn't really matter
         cp_xip = np.zeros((self.nbins, self.nbins))
+       #TODO: check factors of N_clust here 
         for i in range(self.nbins):
             for j in range(self.nbins):
                 for k in range(N_clust):
-                    cp_xip[i][j] += (N_clust - 1.) / N_clust * (xip[i] - xip_jack[k][i] * 1.e6) * (
+                    cp_xip[i][j] += N_clust/(N_clust - 1.)  * (xip[i] - xip_jack[k][i] * 1.e6) * (
                         xip[j] - xip_jack[k][j] * 1.e6)
 
         cp_xim = np.zeros((self.nbins, self.nbins))
         for i in range(self.nbins):
             for j in range(self.nbins):
                 for k in range(N_clust):
-                    cp_xim[i][j] += (N_clust - 1.) / N_clust * (xim[i] - xim_jack[k][i] * 1.e6) * (
+                    cp_xim[i][j] += N_clust/(N_clust - 1.)  * (xim[i] - xim_jack[k][i] * 1.e6) * (
                         xim[j] - xim_jack[k][j] * 1.e6)
         return cp_xip, cp_xim
 
@@ -244,7 +249,10 @@ class ShearTest(BaseValidationTest):
         #TODO: ns set to 0.963 for now, as this isn't within astropy's cosmology dictionaries.
         cosmo = catalog_instance.cosmology
         pars.set_cosmology(H0=cosmo.H0.value, ombh2=cosmo.Ob0*(cosmo.H0.value /100.)**2, omch2=(cosmo.Om0-cosmo.Ob0)*(cosmo.H0.value /100.)**2)
-        pars.InitPower.set_params(ns=0.963)
+        #TODO: set sigma8 value to catalog value when this becomes possible 
+
+        pars.InitPower.set_params(ns=0.963, As = 2.168e-9)
+        #pars.InitPower.set_params(ns=0.963,As = 2.168e-9*(sigma8/0.8 )**2)
         camb.set_halofit_version(version='takahashi')
         p = camb.get_matter_power_interpolator(pars, nonlinear=True, k_hunit=False, hubble_units=False, kmax=100., zmax=1100., k_per_logint=False).P
         chi_recomb = cosmo.comoving_distance(1100.).value
@@ -294,6 +302,7 @@ class ShearTest(BaseValidationTest):
 
         if do_jackknife:
             cp_xip, cp_xim = self.jackknife(catalog_data, xip, xim)
+            print(cp_xip)
             sig_jack = np.zeros((self.nbins))
             sigm_jack = np.zeros((self.nbins))
             for i in range(self.nbins):
@@ -313,7 +322,7 @@ class ShearTest(BaseValidationTest):
         theory_minus = theory_minus * 1.e6
 
         if do_jackknife:
-            chi2_dof_1 = self.get_score(xip, theory_plus, cp_xip, opt='diagonal')  # correct this
+            chi2_dof_1 = self.get_score(xip, theory_plus, cp_xip, opt='diagonal')  #NOTE: correct this to opt=cov if you want full covariance matrix
         else:
             chi2_dof_1 = self.get_score(xip, theory_plus, 0, opt='nojack')  # correct this
 
@@ -344,7 +353,7 @@ class ShearTest(BaseValidationTest):
         #TODO: This criteria for the score is effectively a placeholder if jackknifing isn't used and assumes a diagonal covariance if it is
         # Proper validation criteria need to be assigned to this test
         if score < 2:
-            return TestResult(score, passed=True)
+            return TestResult(score, inspect_only=True)
         else:
             return TestResult(score, passed=False)
 
