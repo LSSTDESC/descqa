@@ -111,8 +111,10 @@ class DeltaSigmaTest(BaseValidationTest):
         gt, b = np.histogram(r, bins=bins, weights=gammat*sigcrit)
         rp = 0.5*(b[1:]+b[:-1])
 
-        # Checks that there are a sufficient number of background galaxies in
-        # each bin.
+        # Outputs the number of background galaxies in each bins and checks that
+        # that number is sufficient.
+        with open(os.path.join(output_dir, 'galaxy_count.dat'), 'a') as f:
+                f.write('{} {}\n'.format(rp, counts))
         if counts.min() < self.min_count_per_bin:
             return TestResult(passed=False, summary="Not enough background sources to compute delta sigma")
         gt = gt / counts
