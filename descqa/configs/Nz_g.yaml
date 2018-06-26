@@ -2,7 +2,7 @@ subclass_name: NumberDensityVersusRedshift.NumberDensityVersusRedshift
 band: g
 zlo: 0.
 zhi: 1.0
-Nbins: 20
+N_zbins: 10
 mag_hi: 17.
 mag_lo: 25.
 observation: ''
