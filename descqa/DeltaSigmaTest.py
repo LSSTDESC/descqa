@@ -116,7 +116,7 @@ class DeltaSigmaTest(BaseValidationTest):
         with open(os.path.join(output_dir, 'galaxy_count.dat'), 'a') as f:
             f.write('{} {}\n'.format(rp, counts))
         if counts.min() < self.min_count_per_bin:
-            return TestResult(passed=False, summary="Not enough background sources to compute delta sigma")
+            return TestResult(score=np.nan, passed=False, summary="Not enough background sources to compute delta sigma")
         gt = gt / counts
 
         fig = plt.figure()
