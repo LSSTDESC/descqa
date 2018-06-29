@@ -1,0 +1,7 @@
+subclass_name: CheckAstroPhoto.CheckAstroPhoto
+bands: ['r']
+nbins_mag: 25
+min_mag: 15
+max_mag: 26
+selection_cuts: 'ra < 500'
+description: Compare magnitude and position of two different catalogs 
