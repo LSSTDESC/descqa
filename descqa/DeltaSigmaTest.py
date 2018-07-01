@@ -71,7 +71,7 @@ class DeltaSigmaTest(BaseValidationTest):
         # of neighbours manageable
         mask_source = res['redshift_true'] > self.zcut_background
         inds = np.where(mask_source)[0]
-        if len(inds) > self.max_background_galaxies:
+        if len(inds) > int(self.max_background_galaxies):
             mask_source[inds[np.random.choice(len(inds),
                                               size=len(inds) - int(self.max_background_galaxies),
                                               replace=False)]] = False
