@@ -3,3 +3,10 @@ data_filename: delta_sigma/lowz_DS.dat
 zmax: 3.0
 # Minimum number of background galaxies per radial bins for delta sigma
 min_count_per_bin: 10
+
+# Redshift cut for background galaxies
+zcut_background: 0.7
+
+# Maximum number of background galaxies (to keep the computational load manageable)
+# These galaxies will be randomly sub-sampled from the entire sample
+max_background_galaxies: 5e5

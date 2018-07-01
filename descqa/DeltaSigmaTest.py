@@ -24,6 +24,8 @@ class DeltaSigmaTest(BaseValidationTest):
         validation_filepath = os.path.join(self.data_dir, kwargs['data_filename'])
         self.zmax = kwargs['zmax']
         self.min_count_per_bin = kwargs['min_count_per_bin']
+        self.max_background_galaxies = kwargs['max_background_galaxies']
+        self.zcut_background = kwargs['zcut_background']
 
         self.validation_data = np.loadtxt(validation_filepath)
 
@@ -67,7 +69,12 @@ class DeltaSigmaTest(BaseValidationTest):
 
         # Computing mask for source sample, this only serves to keep the number
         # of neighbours manageable
-        mask_source = (res['mag_true_i_sdss'] < 26.) & (res['redshift_true'] > 0.4)
+        mask_source = res['redshift_true'] > self.zcut_background
+        inds = np.where(mask_source)[0]
+        if len(inds) > self.max_background_galaxies:
+            mask_source[inds[np.random.choice(len(inds),
+                                              size=len(inds) - int(self.max_background_galaxies),
+                                              replace=False)]] = False
 
         # Create astropy coordinate objects
         coords = SkyCoord(ra=res['ra']*u.degree, dec=res['dec']*u.degree)
