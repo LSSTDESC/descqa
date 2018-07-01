@@ -121,7 +121,7 @@ class DeltaSigmaTest(BaseValidationTest):
         # Outputs the number of background galaxies in each bins and checks that
         # that number is sufficient.
         with open(os.path.join(output_dir, 'galaxy_count.dat'), 'a') as f:
-            f.write('{} {}\n'.format(rp, counts))
+            f.write('{} {} {}\n'.format(rp, counts, gt))
         if counts.min() < self.min_count_per_bin:
             return TestResult(score=np.nan, passed=False, summary="Not enough background sources to compute delta sigma")
         gt = gt / counts
