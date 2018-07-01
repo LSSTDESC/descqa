@@ -24,7 +24,7 @@ class DeltaSigmaTest(BaseValidationTest):
         validation_filepath = os.path.join(self.data_dir, kwargs['data_filename'])
         self.zmax = kwargs['zmax']
         self.min_count_per_bin = kwargs['min_count_per_bin']
-        self.max_background_galaxies = kwargs['max_background_galaxies']
+        self.max_background_galaxies = int(float(kwargs['max_background_galaxies']))
         self.zcut_background = kwargs['zcut_background']
 
         self.validation_data = np.loadtxt(validation_filepath)
