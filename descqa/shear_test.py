@@ -245,8 +245,8 @@ class ShearTest(BaseValidationTest):
             ax[0][i].set_title('z = '+str(zmeans[i]))
             ax[0][i].legend()
             ax[-1][i].legend()
-        ax[0][0].set_ylabel(r'$\chi_{{{}}} \; (10^{{-6}})$'.format(sign))
-        ax[-1][0].set_ylabel(r'$\chi_{{{}}} \; (10^{{-6}})$'.format(sign))
+        ax[0][0].set_ylabel(r'$\chi_{{{}}} \; (10^{{-6}})$'.format('+'))
+        ax[-1][0].set_ylabel(r'$\chi_{{{}}} \; (10^{{-6}})$'.format('-'))
 
 
 
