@@ -237,7 +237,7 @@ class ShearTest(BaseValidationTest):
 
         # vmin and vmax are very rough DES-like limits (maximum and minimum scales)
         for i in range(self.ntomo):
-            for ax_this, vmin, vmax, sign in zip(ax[:, i], (2.5, 35), (200, 200), '+-'):
+            for ax_this, vmin, vmax in zip(ax[:, i], (2.5, 35), (200, 200)):
                 ax_this.set_xscale('log')
                 ax_this.axvline(vmin, ls='--', c='k')
                 ax_this.axvline(vmax, ls='--', c='k')
