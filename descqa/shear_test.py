@@ -40,12 +40,16 @@ class ShearTest(BaseValidationTest):
                  bin_slop=0.1,
                  zlo=0.5,
                  zhi=0.6,
+                 ntomo = 2,
+                 z_range = 0.05,
                  do_jackknife=False,
                  N_clust=10,
                  **kwargs):
         #pylint: disable=W0231
         #catalog quantities
 
+        import matplotlib 
+        matplotlib.rcParams.update({'font.size': 9})
 
         self.z = z
         #sep-bounds and binning
@@ -64,8 +68,11 @@ class ShearTest(BaseValidationTest):
         self.do_jackknife = do_jackknife
         # cut in redshift
         self.filters = [(lambda z: (z > zlo) & (z < zhi), self.z)]
-        self.summary_fig, self.summary_ax = plt.subplots(2, sharex=True)
-
+        self.summary_fig, self.summary_ax = plt.subplots(nrows=2, ncols = ntomo, sharex=True,squeeze=False,figsize=(ntomo*5,5))
+        self.ntomo = ntomo
+        self.z_range = z_range
+        self.zlo = zlo
+        self.zhi = zhi
 
     def compute_nz(self, n_z):
         '''create interpolated n(z) distribution'''
@@ -120,7 +127,9 @@ class ShearTest(BaseValidationTest):
             phi_array.append(a)
         phi_array = np.array(phi_array)
         prefactor = 1.0  #(l+2)*(l+1)*l*(l-1)  / (l+0.5)**4
-        return l, phi_array * prefactor
+        #import healpy as hp
+        #pixwin = hp.pixwin(1024)[:lmax]
+        return l, phi_array * prefactor#*pixwin**2
 
     def theory_corr(self, n_z2, xvals, lmax2, cosmo, p, chi_recomb):
         ll, pp = self.phi(lmax=lmax2, n_z=n_z2, cosmo=cosmo, p=p, chi_recomb=chi_recomb)
@@ -224,14 +233,32 @@ class ShearTest(BaseValidationTest):
         '''
         Post-processing routines on plot
         '''
+        zmeans = np.linspace(self.zlo,self.zhi,self.ntomo+2)[1:-1]
+
         # vmin and vmax are very rough DES-like limits (maximum and minimum scales)
-        for ax_this, vmin, vmax, sign in zip(ax, (2.5, 35), (200, 200), '+-'):
-            ax_this.set_xscale('log')
-            ax_this.set_ylabel(r'$\chi_{{{}}} \; (10^{{-6}})$'.format(sign))
-            ax_this.axvline(vmin, ls='--', c='k')
-            ax_this.axvline(vmax, ls='--', c='k')
-            ax_this.legend()
-        ax[-1].set_xlabel(r'$\theta \; {\rm (arcmin)}$')
+        for i in range(self.ntomo):
+            for ax_this, vmin, vmax, sign in zip(ax[:,i], (2.5, 35), (200, 200), '+-'):
+                ax_this.set_xscale('log')
+                #ax_this.set_title('z = '+str(zmeans[i]))
+                #ax_this.set_ylabel(r'$\chi_{{{}}} \; (10^{{-6}})$'.format(sign))
+                ax_this.axvline(vmin, ls='--', c='k')
+                ax_this.axvline(vmax, ls='--', c='k')
+            ax[-1][i].set_xlabel(r'$\theta \; {\rm (arcmin)}$')
+            ax[0][i].set_title('z = '+str(zmeans[i]))
+            ax[0][i].legend()
+            ax[-1][i].legend()
+                #ax_this.legend()
+       # ax[0][-1].legend()
+        #ax[-1][-1].legend()
+        #ax[-1][0].set_xlabel(r'$\theta \; {\rm (arcmin)}$')
+        #ax[0][-1].set_xlabel(r'$\theta \; {\rm (arcmin)}$')
+        ax[0][0].set_ylabel(r'$\chi_{{{}}} \; (10^{{-6}})$'.format(sign))
+        ax[-1][0].set_ylabel(r'$\chi_{{{}}} \; (10^{{-6}})$'.format(sign))
+
+    #    ax.legend()    
+    #    ax.set_xlabel(r'$\theta \; {\rm (arcmin)}$')
+    #    ax.set_ylabel(r'$\chi_{{{}}} \; (10^{{-6}})$'.format(sign))
+    
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         ''' 
@@ -271,78 +298,89 @@ class ShearTest(BaseValidationTest):
             return TestResult(skipped=True, summary='e1 values out of range [-1,+1]')
         if ((min_e2 < (-1.)) or (max_e2 > 1.0)):
             return TestResult(skipped=True, summary='e2 values out of range [-1,+1]')
+        ntomo=self.ntomo
+        fig, ax = plt.subplots(nrows=2, ncols = ntomo, sharex=True, squeeze=False,figsize=(ntomo*5,5))
 
+        zmeans = np.linspace(self.zlo,self.zhi,ntomo+2)[1:-1]
+        for ii in range(ntomo):
+            z_mean = zmeans[ii]
+            zlo2 = z_mean - self.z_range
+            zhi2 = z_mean + self.z_range
+            print(zlo2,zhi2)
+            zmask = (catalog_data[self.z]<zhi2)*(catalog_data[self.z]>zlo2) 
+            # compute shear auto-correlation
+            cat_s = treecorr.Catalog(
+                ra=catalog_data[self.ra][zmask],
+                dec=catalog_data[self.dec][zmask],
+                g1=catalog_data[self.e1][zmask] - np.mean(catalog_data[self.e1][zmask]),
+                g2=-(catalog_data[self.e2][zmask] - np.mean(catalog_data[self.e2][zmask])),
+                ra_units='deg',
+                dec_units='deg')
+            gg = treecorr.GGCorrelation(
+                nbins=self.nbins,
+                min_sep=self.min_sep,
+                max_sep=self.max_sep,
+                sep_units='arcmin',
+                bin_slop=self.bin_slop,
+                verbose=True)
+            gg.process(cat_s)
 
-        # compute shear auto-correlation
-        cat_s = treecorr.Catalog(
-            ra=catalog_data[self.ra],
-            dec=catalog_data[self.dec],
-            g1=catalog_data[self.e1] - np.mean(catalog_data[self.e1]),
-            g2=-(catalog_data[self.e2] - np.mean(catalog_data[self.e2])),
-            ra_units='deg',
-            dec_units='deg')
-        gg = treecorr.GGCorrelation(
-            nbins=self.nbins,
-            min_sep=self.min_sep,
-            max_sep=self.max_sep,
-            sep_units='arcmin',
-            bin_slop=self.bin_slop,
-            verbose=True)
-        gg.process(cat_s)
+            r = np.exp(gg.meanlogr)
 
-        r = np.exp(gg.meanlogr)
+            #NOTE: We are computing 10^6 x correlation function for easier comparison
+            xip = gg.xip * 1.e6
+            xim = gg.xim * 1.e6
 
-        #NOTE: We are computing 10^6 x correlation function for easier comparison
-        xip = gg.xip * 1.e6
-        xim = gg.xim * 1.e6
-        #sig = np.sqrt(gg.varxi)  # this is shape noise only - should be very low for simulation data
+            print("npairs  = ")
+            print(gg.npairs)
+	    #sig = np.sqrt(gg.varxi)  # this is shape noise only - should be very low for simulation data
 
-        do_jackknife = self.do_jackknife
-        # Diagonal covariances for error bars on the plots. Use full covariance matrix for chi2 testing.
+            do_jackknife = self.do_jackknife
+	    # Diagonal covariances for error bars on the plots. Use full covariance matrix for chi2 testing.
 
-        if do_jackknife:
-            cp_xip, cp_xim = self.jackknife(catalog_data, xip, xim)
-            print(cp_xip)
-            sig_jack = np.zeros((self.nbins))
-            sigm_jack = np.zeros((self.nbins))
-            for i in range(self.nbins):
-                sig_jack[i] = np.sqrt(cp_xip[i][i])
-                sigm_jack[i] = np.sqrt(cp_xim[i][i])
-        else:
-            sig_jack = np.zeros((self.nbins))
-            sigm_jack = np.zeros((self.nbins))
-            for i in range(self.nbins):
-                sig_jack[i] = np.sqrt(gg.varxi[i])*1.e6
-                sigm_jack[i] = np.sqrt(gg.varxi[i])*1.e6
+            if do_jackknife:
+                cp_xip, cp_xim = self.jackknife(catalog_data, xip, xim)
+                print(cp_xip)
+                sig_jack = np.zeros((self.nbins))
+                sigm_jack = np.zeros((self.nbins))
+                for i in range(self.nbins):
+                    sig_jack[i] = np.sqrt(cp_xip[i][i])
+                    sigm_jack[i] = np.sqrt(cp_xim[i][i])
+            else:
+                sig_jack = np.zeros((self.nbins))
+                sigm_jack = np.zeros((self.nbins))
+                for i in range(self.nbins):
+                    sig_jack[i] = np.sqrt(gg.varxi[i])*1.e6
+                    sigm_jack[i] = np.sqrt(gg.varxi[i])*1.e6
 
-        n_z = catalog_data[self.z]
-        xvals, theory_plus, theory_minus = self.theory_corr(n_z, r, 10000, cosmo, p, chi_recomb)
+            n_z = catalog_data[self.z][zmask]
+            xvals, theory_plus, theory_minus = self.theory_corr(n_z, r, 15000, cosmo, p, chi_recomb)
 
-        theory_plus = theory_plus * 1.e6
-        theory_minus = theory_minus * 1.e6
+            theory_plus = theory_plus * 1.e6
+            theory_minus = theory_minus * 1.e6
 
-        if do_jackknife:
-            chi2_dof_1 = self.get_score(xip, theory_plus, cp_xip, opt='diagonal')  #NOTE: correct this to opt=cov if you want full covariance matrix
-        else:
-            chi2_dof_1 = self.get_score(xip, theory_plus, 0, opt='nojack')  # correct this
+            if do_jackknife:
+                chi2_dof_1 = self.get_score(xip, theory_plus, cp_xip, opt='diagonal')  #NOTE: correct this to opt=cov if you want full covariance matrix
+            else:
+                chi2_dof_1 = self.get_score(xip, theory_plus, 0, opt='nojack')  # correct this
 
-        print(theory_plus)
-        print(theory_minus)
-        print(xip)
-        print(xim)
+            print(theory_plus)
+            print(theory_minus)
+            print(xip)
+            print(xim)
 
-        #The following are further treecorr correlation functions that could be added in later to extend the test
-        #treecorr.NNCorrelation(nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin')
-        #treecorr.NGCorrelation(nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin')  # count-shear  (i.e. <gamma_t>(R))
-        #treecorr.NKCorrelation(nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin')  # count-kappa  (i.e. <kappa>(R))
-        #treecorr.KKCorrelation(nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin')  # count-kappa  (i.e. <kappa>(R))
+	    #The following are further treecorr correlation functions that could be added in later to extend the test
+	    #treecorr.NNCorrelation(nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin')
+	    #treecorr.NGCorrelation(nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin')  # count-shear  (i.e. <gamma_t>(R))
+	    #treecorr.NKCorrelation(nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin')  # count-kappa  (i.e. <kappa>(R))
+	    #treecorr.KKCorrelation(nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin')  # count-kappa  (i.e. <kappa>(R))
 
-        fig, ax = plt.subplots(2, sharex=True)
-        for ax_this in (ax, self.summary_ax):
-            ax_this[0].errorbar(r, xip, sig_jack, lw=0.6, marker='o', ls='', color="#3f9b0b", label=r'$\chi_{+}$')
-            ax_this[0].plot(xvals, theory_plus, 'o', color="#9a0eea", label=r'$\chi_{+}$' + " theory")
-            ax_this[1].errorbar(r, xim, sigm_jack, lw=0.6, marker='o', ls='', color="#3f9b0b", label=r'$\chi_{-}$')
-            ax_this[1].plot(xvals, theory_minus, 'o', color="#9a0eea", label=r'$\chi_{-}$' + " theory")
+        #fig, ax = plt.subplots(nrows=2, ncols = ntomo, sharex=True)
+            for ax_this in (ax, self.summary_ax):
+                ax_this[0,ii].errorbar(r, xip, sig_jack, lw=0.6, marker='o', ls='', color="#3f9b0b", label=r'$\chi_{+}$')
+                ax_this[0,ii].plot(xvals, theory_plus, 'o', color="#9a0eea", label=r'$\chi_{+}$' + " theory")
+                ax_this[1,ii].errorbar(r, xim, sigm_jack, lw=0.6, marker='o', ls='', color="#3f9b0b", label=r'$\chi_{-}$')
+                ax_this[1,ii].plot(xvals, theory_minus, 'o', color="#9a0eea", label=r'$\chi_{-}$' + " theory")
 
         self.post_process_plot(ax)
         fig.savefig(os.path.join(output_dir, 'plot.png'))
