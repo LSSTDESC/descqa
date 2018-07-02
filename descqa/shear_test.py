@@ -68,7 +68,7 @@ class ShearTest(BaseValidationTest):
         self.do_jackknife = do_jackknife
         # cut in redshift
         self.filters = [(lambda z: (z > zlo) & (z < zhi), self.z)]
-        self.summary_fig, self.summary_ax = plt.subplots(nrows=2, ncols=ntomo, sharex=True, squeeze=False, figsize=(ntomo*5,5))
+        self.summary_fig, self.summary_ax = plt.subplots(nrows=2, ncols=ntomo, sharex=True, squeeze=False, figsize=(ntomo*5, 5))
         self.ntomo = ntomo
         self.z_range = z_range
         self.zlo = zlo
@@ -248,10 +248,10 @@ class ShearTest(BaseValidationTest):
         ax[0][0].set_ylabel(r'$\chi_{{{}}} \; (10^{{-6}})$'.format(sign))
         ax[-1][0].set_ylabel(r'$\chi_{{{}}} \; (10^{{-6}})$'.format(sign))
 
-    
+
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
-        ''' 
+        '''
         run test on a single catalog
         '''
         # check if needed quantities exist
@@ -266,7 +266,7 @@ class ShearTest(BaseValidationTest):
         #TODO: ns set to 0.963 for now, as this isn't within astropy's cosmology dictionaries.
         cosmo = catalog_instance.cosmology
         pars.set_cosmology(H0=cosmo.H0.value, ombh2=cosmo.Ob0*(cosmo.H0.value /100.)**2, omch2=(cosmo.Om0-cosmo.Ob0)*(cosmo.H0.value /100.)**2)
-        #TODO: set sigma8 value to catalog value when this becomes possible 
+        #TODO: set sigma8 value to catalog value when this becomes possible
 
         pars.InitPower.set_params(ns=0.963, As=2.168e-9)
         #pars.InitPower.set_params(ns=0.963,As = 2.168e-9*(sigma8/0.8 )**2)
@@ -289,15 +289,14 @@ class ShearTest(BaseValidationTest):
         if ((min_e2 < (-1.)) or (max_e2 > 1.0)):
             return TestResult(skipped=True, summary='e2 values out of range [-1,+1]')
         ntomo = self.ntomo
-        fig, ax = plt.subplots(nrows=2, ncols=ntomo, sharex=True, squeeze=False, figsize=(ntomo*5,5))
-
-        zmeans = np.linspace(self.zlo,self.zhi,ntomo+2)[1:-1]
+        fig, ax = plt.subplots(nrows=2, ncols=ntomo, sharex=True, squeeze=False, figsize=(ntomo*5, 5))
+        zmeans = np.linspace(self.zlo, self.zhi, ntomo+2)[1:-1]
         for ii in range(ntomo):
             z_mean = zmeans[ii]
             zlo2 = z_mean - self.z_range
             zhi2 = z_mean + self.z_range
             print(zlo2, zhi2)
-            zmask = (catalog_data[self.z] < zhi2)*(catalog_data[self.z] > zlo2) 
+            zmask = (catalog_data[self.z] < zhi2)*(catalog_data[self.z] > zlo2)
             # compute shear auto-correlation
             cat_s = treecorr.Catalog(
                 ra=catalog_data[self.ra][zmask],
@@ -365,12 +364,11 @@ class ShearTest(BaseValidationTest):
 	    #treecorr.NKCorrelation(nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin')  # count-kappa  (i.e. <kappa>(R))
 	    #treecorr.KKCorrelation(nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin')  # count-kappa  (i.e. <kappa>(R))
 
-        #fig, ax = plt.subplots(nrows=2, ncols = ntomo, sharex=True)
             for ax_this in (ax, self.summary_ax):
-                ax_this[0,ii].errorbar(r, xip, sig_jack, lw=0.6, marker='o', ls='', color="#3f9b0b", label=r'$\chi_{+}$')
-                ax_this[0,ii].plot(xvals, theory_plus, 'o', color="#9a0eea", label=r'$\chi_{+}$' + " theory")
-                ax_this[1,ii].errorbar(r, xim, sigm_jack, lw=0.6, marker='o', ls='', color="#3f9b0b", label=r'$\chi_{-}$')
-                ax_this[1,ii].plot(xvals, theory_minus, 'o', color="#9a0eea", label=r'$\chi_{-}$' + " theory")
+                ax_this[0, ii].errorbar(r, xip, sig_jack, lw=0.6, marker='o', ls='', color="#3f9b0b", label=r'$\chi_{+}$')
+                ax_this[0, ii].plot(xvals, theory_plus, 'o', color="#9a0eea", label=r'$\chi_{+}$' + " theory")
+                ax_this[1, ii].errorbar(r, xim, sigm_jack, lw=0.6, marker='o', ls='', color="#3f9b0b", label=r'$\chi_{-}$')
+                ax_this[1, ii].plot(xvals, theory_minus, 'o', color="#9a0eea", label=r'$\chi_{-}$' + " theory")
 
         self.post_process_plot(ax)
         fig.savefig(os.path.join(output_dir, 'plot.png'))
