@@ -40,15 +40,15 @@ class ShearTest(BaseValidationTest):
                  bin_slop=0.1,
                  zlo=0.5,
                  zhi=0.6,
-                 ntomo = 2,
-                 z_range = 0.05,
+                 ntomo=2,
+                 z_range=0.05,
                  do_jackknife=False,
                  N_clust=10,
                  **kwargs):
         #pylint: disable=W0231
         #catalog quantities
 
-        import matplotlib 
+        import matplotlib
         matplotlib.rcParams.update({'font.size': 9})
 
         self.z = z
@@ -68,7 +68,7 @@ class ShearTest(BaseValidationTest):
         self.do_jackknife = do_jackknife
         # cut in redshift
         self.filters = [(lambda z: (z > zlo) & (z < zhi), self.z)]
-        self.summary_fig, self.summary_ax = plt.subplots(nrows=2, ncols = ntomo, sharex=True,squeeze=False,figsize=(ntomo*5,5))
+        self.summary_fig, self.summary_ax = plt.subplots(nrows=2, ncols=ntomo, sharex=True, squeeze=False, figsize=(ntomo*5,5))
         self.ntomo = ntomo
         self.z_range = z_range
         self.zlo = zlo
@@ -156,7 +156,7 @@ class ShearTest(BaseValidationTest):
     def jackknife(self, catalog_data, xip, xim):
         " computing jack-knife covariance matrix using K-means clustering"
         #k-means clustering to define areas
-        #NOTE: This is somewhat deprecated, the jack-knifing takes too much effort to find appropriately accurate covariance matrices. 
+        #NOTE: This is somewhat deprecated, the jack-knifing takes too much effort to find appropriately accurate covariance matrices.
         # If you want to use this, do a quick convergence check and some timing tests on small N_clust values (~5 to start) first.
         # note also that this is comparing against the (low) variance in the catalog which might not be a great comparison -no shape noise
         N_clust = self.N_clust
@@ -197,7 +197,7 @@ class ShearTest(BaseValidationTest):
 
         ### assign covariance matrix - loop is poor python syntax but compared to the time taken for the rest of the test doesn't really matter
         cp_xip = np.zeros((self.nbins, self.nbins))
-       #TODO: check factors of N_clust here 
+       #TODO: check factors of N_clust here
         for i in range(self.nbins):
             for j in range(self.nbins):
                 for k in range(N_clust):
@@ -233,31 +233,21 @@ class ShearTest(BaseValidationTest):
         '''
         Post-processing routines on plot
         '''
-        zmeans = np.linspace(self.zlo,self.zhi,self.ntomo+2)[1:-1]
+        zmeans = np.linspace(self.zlo, self.zhi, self.ntomo+2)[1:-1]
 
         # vmin and vmax are very rough DES-like limits (maximum and minimum scales)
         for i in range(self.ntomo):
-            for ax_this, vmin, vmax, sign in zip(ax[:,i], (2.5, 35), (200, 200), '+-'):
+            for ax_this, vmin, vmax, sign in zip(ax[:, i], (2.5, 35), (200, 200), '+-'):
                 ax_this.set_xscale('log')
-                #ax_this.set_title('z = '+str(zmeans[i]))
-                #ax_this.set_ylabel(r'$\chi_{{{}}} \; (10^{{-6}})$'.format(sign))
                 ax_this.axvline(vmin, ls='--', c='k')
                 ax_this.axvline(vmax, ls='--', c='k')
             ax[-1][i].set_xlabel(r'$\theta \; {\rm (arcmin)}$')
             ax[0][i].set_title('z = '+str(zmeans[i]))
             ax[0][i].legend()
             ax[-1][i].legend()
-                #ax_this.legend()
-       # ax[0][-1].legend()
-        #ax[-1][-1].legend()
-        #ax[-1][0].set_xlabel(r'$\theta \; {\rm (arcmin)}$')
-        #ax[0][-1].set_xlabel(r'$\theta \; {\rm (arcmin)}$')
         ax[0][0].set_ylabel(r'$\chi_{{{}}} \; (10^{{-6}})$'.format(sign))
         ax[-1][0].set_ylabel(r'$\chi_{{{}}} \; (10^{{-6}})$'.format(sign))
 
-    #    ax.legend()    
-    #    ax.set_xlabel(r'$\theta \; {\rm (arcmin)}$')
-    #    ax.set_ylabel(r'$\chi_{{{}}} \; (10^{{-6}})$'.format(sign))
     
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
@@ -278,7 +268,7 @@ class ShearTest(BaseValidationTest):
         pars.set_cosmology(H0=cosmo.H0.value, ombh2=cosmo.Ob0*(cosmo.H0.value /100.)**2, omch2=(cosmo.Om0-cosmo.Ob0)*(cosmo.H0.value /100.)**2)
         #TODO: set sigma8 value to catalog value when this becomes possible 
 
-        pars.InitPower.set_params(ns=0.963, As = 2.168e-9)
+        pars.InitPower.set_params(ns=0.963, As=2.168e-9)
         #pars.InitPower.set_params(ns=0.963,As = 2.168e-9*(sigma8/0.8 )**2)
         camb.set_halofit_version(version='takahashi')
         p = camb.get_matter_power_interpolator(pars, nonlinear=True, k_hunit=False, hubble_units=False, kmax=100., zmax=1100., k_per_logint=False).P
@@ -298,16 +288,16 @@ class ShearTest(BaseValidationTest):
             return TestResult(skipped=True, summary='e1 values out of range [-1,+1]')
         if ((min_e2 < (-1.)) or (max_e2 > 1.0)):
             return TestResult(skipped=True, summary='e2 values out of range [-1,+1]')
-        ntomo=self.ntomo
-        fig, ax = plt.subplots(nrows=2, ncols = ntomo, sharex=True, squeeze=False,figsize=(ntomo*5,5))
+        ntomo = self.ntomo
+        fig, ax = plt.subplots(nrows=2, ncols=ntomo, sharex=True, squeeze=False, figsize=(ntomo*5,5))
 
         zmeans = np.linspace(self.zlo,self.zhi,ntomo+2)[1:-1]
         for ii in range(ntomo):
             z_mean = zmeans[ii]
             zlo2 = z_mean - self.z_range
             zhi2 = z_mean + self.z_range
-            print(zlo2,zhi2)
-            zmask = (catalog_data[self.z]<zhi2)*(catalog_data[self.z]>zlo2) 
+            print(zlo2, zhi2)
+            zmask = (catalog_data[self.z] < zhi2)*(catalog_data[self.z] > zlo2) 
             # compute shear auto-correlation
             cat_s = treecorr.Catalog(
                 ra=catalog_data[self.ra][zmask],
