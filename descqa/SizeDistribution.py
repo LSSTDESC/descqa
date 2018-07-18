@@ -27,6 +27,7 @@ class SizeDistribution(BaseValidationTest):
         self.validation_data = np.loadtxt(validation_filepath)
         
         self.acceptable_keys = kwargs['possible_size_fields']
+        self.acceptable_mag_keys = kwargs['possible_mag_fields']
 
         self._color_iterator = ('C{}'.format(i) for i in count())
 
@@ -39,10 +40,14 @@ class SizeDistribution(BaseValidationTest):
         if not key:
             summary = 'Missing required quantity' + ' or '.join(['{}']*len(self.acceptable_keys))
             return TestResult(skipped=True, summary=summary.format(*self.acceptable_keys))
+        mag_key = catalog_instance.first_available(*self.acceptable_mag_keys)
+        if not mag_key:
+            summary = 'Missing required quantity' + ' or '.join(['{}']*len(self.acceptable_mag_keys))
+            return TestResult(skipped=True, summary=summary.format(*self.acceptable_mag_keys))
 
         # get data
-        catalog_data = catalog_instance.get_quantities(key)
-        sizes = catalog_data[key]
+        catalog_data = catalog_instance.get_quantities([key, mag_key])
+        sizes = catalog_data[key][catalog_data[mag_key]<25.2]
         good_data_mask = np.logical_not(np.logical_or(np.isinf(sizes), np.isnan(sizes)))
         sizes = sizes[good_data_mask]
         non_neg_mask = sizes > 0
@@ -109,6 +114,7 @@ class SizeDistribution(BaseValidationTest):
 
         fig.savefig(os.path.join(output_dir, 'size_distribution_{}.png'.format(catalog_name)))
         plt.close(fig)
-        return TestResult(inspect_only=True)
+        return TestResult(score=data_slope/validation_slope,
+                          passed=(0.5<=(data_slope/validation_slope)<=2.0))
 
 

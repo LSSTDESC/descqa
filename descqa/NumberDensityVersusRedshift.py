@@ -18,7 +18,46 @@ __all__ = ['NumberDensityVersusRedshift']
 
 class NumberDensityVersusRedshift(BaseValidationTest):
     """
-    validation test to show N(z) distributions
+    Validation test to show redshift distribution P(z) or N(z)
+
+    Parameters
+    ----------
+    z : str, optional, (default: 'redshift_true')
+        label for redshift column
+    band : str, optional (default: 'i')
+        band to test
+    N_zbins : int, optional (default: 10)
+        number of redshift bins between `zlo` and `zhi`
+        should be smaller than `N_jack` if `jackknife` is set to `True`
+    zlo : float, optional, (default: 0)
+        lower redshift limit
+    zhi : float, optional (default: 1.1)
+        upper redshift limit
+    observation : str, optional (default: '')
+        observation dataset to compare to
+    mag_lo : float, optional (default: 27)
+        faint-end magnitude limit
+    mag_hi : float, optional (default: 18)
+        bright-end magnitude limit
+    ncolumns : int, optional (default: 2)
+        number of subplot columns
+    normed : bool, optional (default: True)
+        normalize the redshift distribution (i.e. plotting P(z)).
+        Note that when `normed` set to `False` the comparision with validation data
+        does not make much sense since the validation data is normalized.
+    jackknife : bool, optional (default: False)
+        turn on jackknife error. When set to `False` use Poisson error.
+    N_jack : int, optional (default: 20)
+        number of jackknife regions
+        `N_jack` should be much larger than `N_zbins` for the jackknife errors to be stable
+    ra : str, optional, (default: 'ra')
+        label of RA column (used if `jackknife` is `True`)    
+    dec : str, optional, (default: 'dec')
+        label of Dec column (used if `jackknife` is `True`)
+    pass_limit : float, optional (default: 2.)
+        chi^2 value needs to be less than this value to pass the test
+    use_diagonal_only : bool, optional (default: False)
+        use only the diagonal terms of the convariance matric when calculating chi^2
     """
     #setup dict with parameters needed to read in validation data
     possible_observations = {
@@ -58,9 +97,9 @@ class NumberDensityVersusRedshift(BaseValidationTest):
     validation_color = 'black'
     default_markers = ['o', 'v', 's', 'd', 'H', '^', 'D', 'h', '<', '>', '.']
 
-    def __init__(self, z='redshift_true', band='i', N_zbins=44, zlo=0., zhi=1.1,
+    def __init__(self, z='redshift_true', band='i', N_zbins=10, zlo=0., zhi=1.1,
                  observation='', mag_lo=27, mag_hi=18, ncolumns=2, normed=True,
-                 jackknife=False, N_jack=10, ra='ra', dec='dec',
+                 jackknife=False, N_jack=20, ra='ra', dec='dec', pass_limit=2., use_diagonal_only=False,
                  **kwargs): #pylint: disable=W0231
 
         #catalog quantities
@@ -87,6 +126,10 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         self.N_jack = N_jack
         self.ra = ra
         self.dec = dec
+        self.use_diagonal_only = use_diagonal_only
+
+        #scores
+        self.pass_limit = pass_limit
 
         #validation data
         self.validation_data = {}
@@ -173,11 +216,11 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         #setup plots
         fig, ax = plt.subplots(self.nrows, self.ncolumns, figsize=(self.figx_p, self.figy_p), sharex='col')
         catalog_color = next(self.colors)
-        catalog_marker= next(self.markers)
+        catalog_marker = next(self.markers)
 
         #initialize arrays for storing histogram sums
         N_array = np.zeros((self.nrows, self.ncolumns, len(self.zbins)-1), dtype=np.int)
-        sumz_array = np.zeros((self.nrows, self.ncolumns,len(self.zbins)-1))
+        sumz_array = np.zeros((self.nrows, self.ncolumns, len(self.zbins)-1))
 
         jackknife_data = {}
         #get catalog data by looping over data iterator (needed for large catalogs) and aggregate histograms
@@ -201,7 +244,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
                             jackknife_data[str(n)] = dict(zip(required_quantities, [np.asarray([]) for jq in jackknife_quantities]))
                         for jkey in jackknife_data[str(n)].keys():
                             jackknife_data[str(n)][jkey] = np.hstack((jackknife_data[str(n)][jkey], catalog_data[jkey][mask]))
-                    
+
                     del mask
 
                     #bin catalog_data and accumulate subplot histograms
@@ -211,6 +254,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
 
         #loop over magnitude cuts and make plots
         results = {}
+        scores = np.array([self.pass_limit]*self.nplots)
         for n, (ax_this, summary_ax_this, cut_lo, cut_hi, N, sumz, z0, z0err) in enumerate(zip_longest(
                 ax.flat,
                 self.summary_ax.flat,
@@ -227,39 +271,43 @@ class NumberDensityVersusRedshift(BaseValidationTest):
             else:
                 cut_label = '{} $< {}$'.format(self.band, cut_lo)
                 if cut_hi:
-                    cut_label = '${} <=$ '.format(cut_hi) + cut_label #also appears in txt file so don't use \leq
+                    cut_label = '${} <=$ {}'.format(cut_hi, cut_label) #also appears in txt file so don't use \leq
 
                 if z0 is None and 'z0const' in self.validation_data:  #alternate format for some validation data
                     z0 = self.validation_data['z0const'] + self.validation_data['z0linear'] * cut_lo
 
-                meanz = sumz/N
-                sumN = N.sum()
-                total = '(# of galaxies = {})'.format(sumN)
-                if self.normed:
-                    binwidths = self.zbins[1:] - self.zbins[:-1]
-                    N = N/sumN/binwidths
-                    rescale = 1.
-                else:
-                    rescale = sumN*(self.zbins[1] - self.zbins[0]) #factor by which to rescale validation plot if not normed
+                N = N.astype(np.float64)
 
                 if self.jackknife:
-                    covariance = self.get_jackknife_errors(self.N_jack, jackknife_data[str(n)], N, normed=self.normed)
-                    Nerrors = np.sqrt(np.diagonal(covariance))
+                    covariance = self.get_jackknife_errors(self.N_jack, jackknife_data[str(n)], N)
                 else:
-                    Nerrors = np.sqrt(N)
-                    if self.normed:
-                        Nerrors = Nerrors/sumN/binwidths
-                    covariance = np.diag(1./Nerrors**2)
-                
+                    covariance = np.diag(N)
+
+                meanz = sumz / N
+                sumN = N.sum()
+                total = '(# of galaxies = {})'.format(sumN)
+
+                if self.normed:
+                    scale = sumN * (self.zbins[1:] - self.zbins[:-1])
+                    N /= scale
+                    covariance /= np.outer(scale, scale)
+
+                Nerrors = np.sqrt(np.diag(covariance))
+
                 #make subplot
                 catalog_label = ' '.join((catalog_name, cut_label.replace(self.band, filtername + ' ' + self.band)))
                 validation_label = ' '.join((self.validation_data.get('label', ''), cut_label))
                 key = cut_label.replace('$', '')
                 results[key] = {'meanz': meanz, 'total':total, 'N':N, 'N+-':Nerrors}
                 self.catalog_subplot(ax_this, meanz, N, Nerrors, catalog_color, catalog_marker, catalog_label)
-                if z0 and z0 > 0.:
-                    fits = self.validation_subplot(ax_this, meanz, z0, z0err, validation_label, rescale=rescale)
-                results[key].update(fits)
+                if z0 and z0 > 0: # has validation data
+                    fits = self.validation_subplot(ax_this, meanz, z0, z0err, validation_label)
+                    results[key].update(fits)
+                    scores[n], inverse_cov = self.get_score(N, fits['fit'], covariance, use_diagonal_only=self.use_diagonal_only)
+                    results[key]['score'] = 'Chi_sq/dof = {:11.4g}'.format(scores[n])
+                    if self.jackknife:
+                        results[key]['inverse_cov_matrix'] = inverse_cov
+
                 self.decorate_subplot(ax_this, n)
 
                 #add curve for this catalog to summary plot
@@ -268,14 +316,20 @@ class NumberDensityVersusRedshift(BaseValidationTest):
                     self.validation_subplot(summary_ax_this, meanz, z0, z0err, validation_label) #add validation data if evaluating first catalog
                 self.decorate_subplot(summary_ax_this, n)
 
-
         #save results for catalog and validation data in txt files
-        for filename, dtype, comment, info in zip_longest((filelabel, self.observation), ('N', 'fit'), (filtername,), ('total',)):
+        for filename, dtype, comment, info, info2 in zip_longest((filelabel, self.observation), ('N', 'fit'), (filtername,), ('total',), ('score',)):
             if filename:
-                with open(os.path.join(output_dir, 'Nvsz_' + filename + '.txt'), 'ab') as f_handle: #open file in append mode
+                with open(os.path.join(output_dir, 'Nvsz_' + filename + '.txt'), 'ab') as f_handle: #open file in append binary mode
                     #loop over magnitude cuts in results dict
                     for key, value in results.items():
-                        self.save_quantities(dtype, value, f_handle, comment=' '.join(((comment or ''), key, value.get(info, ''))))
+                        self.save_quantities(dtype, value, f_handle, comment=' '.join(((comment or ''), key, value.get(info, ''), value.get(info2, ''))))
+                
+                if self.jackknife:
+                    with open(os.path.join(output_dir, 'Nvsz_' + filename + '.txt'), 'a') as f_handle: #open file in append mode
+                        f_handle.write('\nInverse Covariance Matrices:\n')
+                        for key in results.keys():
+                            self.save_matrix(results[key]['inverse_cov_matrix'], f_handle, comment= key)
+            
 
         if self.first_pass: #turn off validation data plot in summary for remaining catalogs
             self.first_pass = False
@@ -284,37 +338,40 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         self.post_process_plot(fig)
         fig.savefig(os.path.join(output_dir, 'Nvsz_' + filelabel + '.png'))
         plt.close(fig)
-        return TestResult(inspect_only=True)
+
+        #compute final score
+        #final_scores = (scores < self.pass_limit)
+        #pass or fail on average score rather than demanding that all distributions pass
+        score_ave = np.mean(scores)
+        return TestResult(score_ave, passed=score_ave < self.pass_limit)
 
 
-    def get_jackknife_errors(self, N_jack, jackknife_data, N, normed=False):
+    def get_jackknife_errors(self, N_jack, jackknife_data, N):
         nn = np.stack((jackknife_data[self.ra], jackknife_data[self.dec]), axis=1)
         _, jack_labels, _ = k_means(n_clusters=N_jack, random_state=0, X=nn, n_jobs=-1)
 
         #make histograms for jackknife regions
         Njack_array = np.zeros((N_jack, len(self.zbins)-1), dtype=np.int)
         for nj in range(N_jack):
-            Njack_array[nj] = np.histogram(jackknife_data[self.zlabel][jack_labels != nj], self.zbins, normed= normed)[0]
+            Njack_array[nj] = np.histogram(jackknife_data[self.zlabel][jack_labels != nj], self.zbins)[0]
 
         covariance = np.zeros((self.N_zbins, self.N_zbins))
         for i in range(self.N_zbins):
             for j in range(self.N_zbins):
                 for njack in Njack_array:
                     covariance[i][j] += (N_jack - 1.)/N_jack * (N[i] - njack[i]) * (N[j] - njack[j])
-            
+
         return covariance
 
-    def catalog_subplot(self, ax, meanz, data, errors, catalog_color, catalog_marker, catalog_label):
 
+    def catalog_subplot(self, ax, meanz, data, errors, catalog_color, catalog_marker, catalog_label):
         ax.errorbar(meanz, data, yerr=errors, label=catalog_label, color=catalog_color, fmt=catalog_marker, ms=self.msize)
 
 
-    def validation_subplot(self, ax, meanz, z0, z0err, validation_label, rescale=1.):
+    def validation_subplot(self, ax, meanz, z0, z0err, validation_label):
         #plot validation data if available
         ndata = meanz**2*np.exp(-meanz/z0)
         norm = self.nz_norm(self.zhi, z0) - self.nz_norm(self.zlo, z0)
-        if not self.normed:
-            norm = norm/rescale
         ax.plot(meanz, ndata/norm, label=validation_label, ls='--', color=self.validation_color, lw=self.lw2)
         fits = {'fit': ndata/norm}
 
@@ -349,6 +406,31 @@ class NumberDensityVersusRedshift(BaseValidationTest):
 
 
     @staticmethod
+    def get_score(catalog, validation, cov, use_diagonal_only=True):
+
+        #remove bad values
+        mask = np.isfinite(catalog) & np.isfinite(validation)
+        if not mask.any():
+            return np.nan
+
+        catalog = catalog[mask]
+        validation = validation[mask]
+        cov = cov[mask][:,mask]
+
+        inverse_cov = np.diag(1.0 / np.diag(cov))
+        if not use_diagonal_only:
+            try:
+                inverse_cov = np.linalg.inv(cov)
+            except np.linalg.LinAlgError:
+                print('Covariance matrix inversion failed: diagonal errors only will be used')
+
+        d = catalog - validation
+        chi2 = np.einsum('i,ij,j', d, inverse_cov, d)
+        chi2_reduced = chi2 / float(len(catalog))
+        return chi2_reduced, inverse_cov
+
+
+    @staticmethod
     def nz_norm(z, z0):
         return z0*math.exp(-z/z0)*(-z*z-2.*z*z0-2.*z0*z0)
 
@@ -359,6 +441,13 @@ class NumberDensityVersusRedshift(BaseValidationTest):
 
 
     @staticmethod
+    def save_matrix(matrix, fhandle, comment=''):
+        fhandle.write('{}:\n'.format(comment))
+        for row in matrix:
+            fhandle.write('  '.join(['{:10.3g}'.format(element) for element in row])+'\n')
+
+
+    @staticmethod
     def save_quantities(keyname, results, filename, comment=''):
         if keyname in results:
             if keyname+'-' in results and keyname+'+' in results:
@@ -366,7 +455,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
                 header = ', '.join(('Data columns are: <z>', keyname, keyname+'-', keyname+'+', ' '))
             elif keyname+'+-' in results:
                 fields = ('meanz', keyname, keyname+'+-')
-                header = ', '.join(('Data columns are: <z>', keyname, keyname+'+-',' '))
+                header = ', '.join(('Data columns are: <z>', keyname, keyname+'+-', ' '))
             else:
                 fields = ('meanz', keyname)
                 header = ', '.join(('Data columns are: <z>', keyname, ' '))
