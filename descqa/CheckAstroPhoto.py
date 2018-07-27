@@ -31,19 +31,19 @@ class CheckAstroPhoto(BaseValidationTest):
         self.bands = kwargs['bands'] # Photometric band(s) to analyze
       
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
-
-        #TODO: Use aliases for magnitudes and make this more general
-        mags = ['mag_true_%s_lsst' % band for band in self.bands]
+        mags = {catalog_instance.first_available('mag_{}'.format(b), 'mag_true_{}'.format(b)): 'mag_{}'.format(b) for b in self.bands}
         qs = ['ra', 'dec']
-        qs.append(mags)
+        qs = qs + list(mags)
+        # Trick to read both true and observed magnitudes by @Yao
         filters = [GCRQuery(self.selection_cuts)]
-        data = catalog_instance.get_quantities(['ra','dec','mag_true_r_lsst'], filters=filters)
+        data = catalog_instance.get_quantities(qs, filters=filters)
+        data = {mags.get(k, k): v for k, v in data.items()}
         print('Selected %d objects for catalog %s' % (len(data), catalog_name))
         self.ra[catalog_name] = data['ra']
         self.dec[catalog_name] = data['dec']
         
         for band in self.bands:
-            self.magnitude[(catalog_name, band)] = data['mag_true_%s_lsst' % band]
+            self.magnitude[(catalog_name, band)] = data['mag_%s' % band]
         return TestResult(inspect_only=True)
 
     def scatter_project(self, x, y, xmin, xmax, ymin, ymax, nbins, xlabel, ylabel, savename, bin_stat=False):
@@ -97,6 +97,7 @@ class CheckAstroPhoto(BaseValidationTest):
             print('The test can compare two catalogs only!')
 
         cat_names = list(self.ra.keys()) # This is an auxiliary list to easily get the catalogs
+        print(cat_names)
         cat_len = [len(self.ra[cat_names[0]]),len(self.ra[cat_names[1]])]
         cat_names = np.array(cat_names)[np.argsort(cat_len)].tolist() # We find the catalog with less objects to build the tree
         # For this test we are going to match using closest neighbor since it is the fastest but it can be easily
