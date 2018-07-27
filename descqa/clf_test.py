@@ -18,6 +18,7 @@ class ConditionalLuminosityFunction(BaseValidationTest):
         self.mass_bins = 10**np.array((kwargs.get('mass_bins', [13.5, 14.0, 14.5, 15.0, 15.5])))
         self.z_bins = np.linspace(*kwargs.get('z_bins', (0.2, 1.0, 4)))
         self.color_cut_fraction = float(kwargs.get('color_cut_fraction', 0.2))
+        self.color_cut_redshift = float(kwargs.get('color_cut_redshift', 0.2))
 
         possible_Mag_fields = ('Mag_true_{}_lsst_z0',
                                'Mag_true_{}_lsst_z01',
@@ -29,9 +30,6 @@ class ConditionalLuminosityFunction(BaseValidationTest):
 
         self.possible_Mag1_fields = [f.format(self.band1) for f in possible_Mag_fields]
         self.possible_Mag2_fields = [f.format(self.band2) for f in possible_Mag_fields]
-
-        color_cut_percentile_at = 100.0 * (1 - self.color_cut_fraction)
-        self.color_cut = lambda g, r, z: g-r>np.percentile((g-r)[z<0.2], color_cut_percentile_at)
 
         self.n_magnitude_bins = len(self.magnitude_bins) - 1
         self.n_mass_bins      = len(self.mass_bins) - 1
@@ -69,22 +67,36 @@ class ConditionalLuminosityFunction(BaseValidationTest):
             return TestResult(skipped=True)
 
         absolute_magnitude1_field, absolute_magnitude2_field, quantities_needed = prepared
+
+        # find out color cut threshold
+        color = []
+        for data in catalog_instance.get_quantities(
+            [absolute_magnitude1_field, absolute_magnitude2_field, 'redshift_true'], 
+            filters=['redshift_true < 0.2'],
+            return_iterator=True,
+        ):
+            color.append(data[absolute_magnitude1_field] - data[absolute_magnitude2_field])
+        
+        color_cut_percentile_at = 100.0 * (1 - self.color_cut_fraction)
+        color_cut_thres = np.percentile(np.concatenate(color), color_cut_percentile_at)
+        del color
+
         colnames = [absolute_magnitude2_field, 'halo_mass', 'redshift_true']
         bins = (self.magnitude_bins, self.mass_bins, self.z_bins)
         hist_cen = np.zeros((self.n_magnitude_bins, self.n_mass_bins, self.n_z_bins))
         hist_sat = np.zeros_like(hist_cen)
 
-        red_query = GCRQuery((self.color_cut,
-                              absolute_magnitude1_field,
-                              absolute_magnitude2_field, 'redshift_true'))
-
-        cen_query = GCRQuery('is_central') & red_query
-        sat_query = ~GCRQuery('is_central') & red_query
+        cen_query = GCRQuery('is_central')
+        sat_query = ~GCRQuery('is_central')
 
         if 'r_host' in quantities_needed and 'r_vir' in quantities_needed:
             sat_query &= GCRQuery('r_host < r_vir')
 
-        for data in catalog_instance.get_quantities(quantities_needed, return_iterator=True):
+        for data in catalog_instance.get_quantities(
+            quantities_needed, 
+            filters=['{} - {} > {}'.format(absolute_magnitude1_field, absolute_magnitude2_field, color_cut_thres)],
+            return_iterator=True,
+        ):
             cen_mask = cen_query.mask(data)
             sat_mask = sat_query.mask(data)
 
