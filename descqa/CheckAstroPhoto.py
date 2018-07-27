@@ -31,7 +31,7 @@ class CheckAstroPhoto(BaseValidationTest):
         self.bands = kwargs['bands'] # Photometric band(s) to analyze
       
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
-        mags = {catalog_instance.first_available('mag_{}'.format(b), 'mag_true_{}'.format(b)): 'mag_{}'.format(b) for b in self.bands}
+        mags = {catalog_instance.first_available('mag_{}_cModel'.format(b), 'mag_true_{}'.format(b)): 'mag_{}'.format(b) for b in self.bands}
         qs = ['ra', 'dec']
         qs = qs + list(mags)
         # Trick to read both true and observed magnitudes by @Yao
@@ -65,13 +65,14 @@ class CheckAstroPhoto(BaseValidationTest):
         axHistx.xaxis.set_major_formatter(nullfmt)
         axHisty.yaxis.set_major_formatter(nullfmt)
 
-        axScatter.scatter(x, y, s=1., alpha=0.5)
-        
+        #axScatter.scatter(x, y, s=1., alpha=0.5)
+        hexplot = axScatter.hexbin(x, y, gridsize=6*nbins, extent=(xmin, xmax, ymin, ymax))
+        plt.colorbar(hexplot, label='Objects/bin')
         if bin_stat:
             mean_y, be, _ = binned_statistic(x, y, range=(xmin, xmax), bins=nbins)
             std_y, be, _ = binned_statistic(x, y, range=(xmin, xmax), bins=nbins, statistic='std')
             n_y, be, _ = binned_statistic(x, y, range=(xmin, xmax), bins=nbins, statistic='count')
-            axScatter.errorbar(0.5*(be[1:]+be[:-1]), mean_y, std_y/np.sqrt(n_y), marker='o', linestyle='none')
+            axScatter.errorbar(0.5*(be[1:]+be[:-1]), mean_y, std_y/np.sqrt(n_y), marker='o', linestyle='none', color='red')
 
         axScatter.set_xlim((xmin, xmax))
         axScatter.set_ylim((ymin, ymax))
