@@ -3,7 +3,6 @@ language: python
 cache: pip
 
 python:
-- "2.7"
 - "3.6"
 
 before_install: # camb requires gfortran to be at least gfortran-4.9
