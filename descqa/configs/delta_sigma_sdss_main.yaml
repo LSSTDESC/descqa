@@ -1,0 +1,18 @@
+subclass_name: DeltaSigma.DeltaSigma
+
+data: 'sdss_main'
+zmin_l: 0.03
+zmax_l: 0.2
+zmin_s: 0.2
+zmax_s: 2.0
+max_background_galaxies: 2000000
+zmax: 3.0
+Rmin: 0.05
+Rmax: 15.0
+nR: 15
+
+description: 'Plot Delta Sigma for SDSS main sample.'
+
+data_filename: 'delta_sigma/SDSS_main.dat'
+
+

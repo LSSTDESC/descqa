@@ -98,8 +98,24 @@ class DeltaSigma(BaseValidationTest):
                 Mask_lens.append(mask_lens & (gr<gr_threshold))
             
             fig = plt.figure(figsize=(12,5))            
+        
+        if self.data == 'sdss_main':
+            res = catalog_instance.get_quantities(['redshift_true', 'ra', 'dec', 'shear_1', 'shear_2',
+                    'mag_true_i_sdss', 'mag_true_z_sdss','mag_true_g_sdss', 'mag_true_r_sdss', 'stellar_mass_bulge', 'stellar_mass_disk','Mag_true_g_sdss_z0','Mag_true_r_sdss_z0'])
+            gr = res['Mag_true_g_sdss_z0'] - res['Mag_true_r_sdss_z0'] # larger number means redder
+            sm = res['stellar_mass_bulge'] + res['stellar_mass_disk']
+            
+            SM_min = np.array([10,10.4,10.7,11.0,11.2,11.4,11.6])
+            SM_max = np.array([10.4,10.7,11.0,11.2,11.4,11.6,15.0])
+            Mask_lens = []
+            for i in range(7):
+                mask_lens = (res['redshift_true']>self.zmin_l) & (res['redshift_true']<self.zmax_l) & (res['mag_true_r_sdss']< 17.7) & (np.log10(sm)>SM_min[i]) & (np.log10(sm)<SM_max[i])
+                Mask_lens.append(mask_lens & (gr>0.8))
+                Mask_lens.append(mask_lens & (gr<0.8))
 
-    
+            fig = plt.figure(figsize=(12,5))
+
+
         # Computing mask for source sample, this only serves to keep the number of galaxies managable
         mask_source = (res['redshift_true'] > self.zmin_s) & (res['redshift_true'] < self.zmax_s)
         inds = np.where(mask_source)[0]
@@ -167,9 +183,13 @@ class DeltaSigma(BaseValidationTest):
             
             if self.data == 'sdss_lowz':
                 ax = plt.subplot(111)
-                plt.errorbar(self.validation_data[:,0], self.validation_data[:,1], yerr=self.validation_data[:,2], label='SDSS LOWZ from Singh et al. (2015)')
+                plt.errorbar(self.validation_data[:,0], self.validation_data[:,1], yerr=self.validation_data[:,2], label='SDSS LOWZ from Singh et al. (2015)',c='k', lw=1, marker='.', fmt='.', capthick=0.8, capsize=2.2)
                 plt.loglog(rp, gt, label=catalog_name)
 
+                ax.set_xlabel('$r_p$ [Mpc/h]')
+                ax.set_ylabel(r'$\Delta \Sigma [h \ M_\odot / pc^2]$')
+                ax.set_xlim(self.Rmin*0.7, self.Rmax*1.3)
+                ax.set_ylim(0.5, 100)
            
             if self.data == 'cfhtlens':
                 ii = np.mod(i,2)
@@ -181,23 +201,35 @@ class DeltaSigma(BaseValidationTest):
                 else:
                     plt.title('blue')
 
-        #plt.title('Number density {}/deg$^2$ vs 57/deg$^2$ for LOWZ'.format(nlens))
-        ax.plt.subplot(121)
-        ax.set_xlabel('$r_p$ [Mpc/h]')
-        ax.set_ylabel(r'$\Delta \Sigma [h \ M_\odot / pc^2]$')
-        ax.set_xlim(self.Rmin*0.7, self.Rmax*1.3)
-        ax.set_ylim(0.5, 100)
+                ax.set_xlabel('$r_p$ [Mpc/h]')
+                ax.set_ylabel(r'$\Delta \Sigma [h \ M_\odot / pc^2]$')
+                ax.set_xlim(self.Rmin*0.7, self.Rmax*1.3)
+                ax.set_ylim(0.5, 100)
 
-        ax.plt.subplot(122)
-        ax.legend()
-        ax.set_xlabel('$r_p$ [Mpc/h]')
-        ax.set_ylabel(r'$\Delta \Sigma [h \ M_\odot / pc^2]$')
-        ax.set_xlim(self.Rmin*0.7, self.Rmax*1.3)
-        ax.set_ylim(0.5, 100)
+                if i==(len(Mask_lens)-1):
+                    ax.legend()
+
+            if self.data=='sdss_main':
+                ii = np.mod(i,2)
+                ax = plt.subplot(1,2,ii+1)
+                plt.loglog(rp, gt, label='['+str(SM_min[int(i/2)])+', '+str(SM_max[int(i/2)])+']')
+                plt.errorbar(self.validation_data[:15,0], self.validation_data[ii*15:(ii+1)*15,int(i/2)*2+1], yerr=self.validation_data[ii*15:(ii+1)*15,int(i/2)*2+2], c='k', lw=1, marker='.', fmt='.', capthick=0.8, capsize=2.2)
+                
+                if ii==0:
+                    plt.title('red')
+                else:
+                    plt.title('blue')
+
+                ax.set_xlabel('$r_p$ [Mpc/h]')
+                ax.set_ylabel(r'$\Delta \Sigma [h \ M_\odot / pc^2]$')
+                ax.set_xlim(self.Rmin*0.7, self.Rmax*1.3)
+                ax.set_ylim(0.5, 1000)
+
+                if i==(len(Mask_lens)-1):
+                    ax.legend()
 
         fig.savefig(os.path.join(output_dir, 'delta_sigma_'+str(catalog_name)+'.png'))
         plt.close(fig)
-
 
         return TestResult(inspect_only=True)
 
