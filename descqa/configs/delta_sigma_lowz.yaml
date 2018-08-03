@@ -1,0 +1,18 @@
+subclass_name: DeltaSigma.DeltaSigma
+
+data: 'sdss_lowz'
+zmin_l: 0.16
+zmax_l: 0.36
+zmin_s: 0.4
+zmax_s: 1.0
+max_background_galaxies: 500000
+zmax: 3.0
+Rmin: 0.15
+Rmax: 15.0
+nR: 20
+
+description: 'Plot Delta Sigma for SDSS lowz sample.'
+
+data_filename: 'delta_sigma/lowz_DS.dat'
+
+
