@@ -69,11 +69,12 @@ class CheckAstroPhoto(BaseValidationTest):
         hexplot = axScatter.hexbin(x, y, gridsize=6*nbins, extent=(xmin, xmax, ymin, ymax))
         plt.colorbar(hexplot, label='Objects/bin')
         if bin_stat:
-            mean_y, be, _ = binned_statistic(x, y, range=(xmin, xmax), bins=nbins)
+            mean_y, be, _ = binned_statistic(x, y, range=(xmin, xmax), bins=nbins, statistic='median')
             std_y, be, _ = binned_statistic(x, y, range=(xmin, xmax), bins=nbins, statistic='std')
             n_y, be, _ = binned_statistic(x, y, range=(xmin, xmax), bins=nbins, statistic='count')
             axScatter.errorbar(0.5*(be[1:]+be[:-1]), mean_y, std_y/np.sqrt(n_y), marker='o', linestyle='none', color='red')
-
+        
+        axScatter.autoscale(tight=True)
         axScatter.set_xlim((xmin, xmax))
         axScatter.set_ylim((ymin, ymax))
         axScatter.set_xlabel(xlabel)
@@ -82,9 +83,10 @@ class CheckAstroPhoto(BaseValidationTest):
         axHistx.hist(x, bins=nbins, range=(xmin, xmax))
         axHisty.hist(y, bins=nbins, range=(ymin, ymax), orientation='horizontal')
 
+        axHistx.autoscale(tight=True)
+        axHisty.autoscale(tight=True)
         axHistx.set_xlim(axScatter.get_xlim())
         axHisty.set_ylim(axScatter.get_ylim())
-        #plt.tight_layout()
         plt.savefig(savename)
 
     def conclude_test(self, output_dir):
@@ -110,18 +112,28 @@ class CheckAstroPhoto(BaseValidationTest):
         delta_ra = self.ra[cat_names[0]]-self.ra[cat_names[1]][matched_id]
         delta_dec = self.dec[cat_names[0]]-self.dec[cat_names[1]][matched_id]
         delta_mag = dict()
-
+        good_mag = dict()
         for band in self.bands:
             delta_mag[band] = self.magnitude[(cat_names[0], band)]-self.magnitude[(cat_names[1],band)][matched_id]
-        
+            good_mag[band] = (np.isnan(self.magnitude[(cat_names[0], band)])==False) & (np.isinf(self.magnitude[(cat_names[0], band)])==False)
         # Scatter plot + histogram of RA and Dec (assumed to be in degrees)
         astro_savename = os.path.join(output_dir, 'astrometry_check_%s_%s.png' % (cat_names[0], cat_names[1]))
-        self.scatter_project(delta_ra*3600, delta_dec*3600, -1, 1, -1, 1, 100, r'$\Delta$ RA [arcsec]',
+        self.scatter_project(delta_ra*3600, delta_dec*3600, -0.5, 0.5, -0.5, 0.5, 100, r'$\Delta$ RA [arcsec]',
                             r'$\Delta$ Dec [arcsec]', astro_savename)
         
         # Scatter plot + histogram of Delta mag vs mag
         for band in self.bands:
             photo_savename = os.path.join(output_dir, 'photometry_check_%s_%s_%s.png' % (cat_names[0], cat_names[1], band))
-            self.scatter_project(self.magnitude[(cat_names[0], band)], delta_mag[band], self.min_mag, self.max_mag,
-                                -1, 1, self.nbins, '%s' % band, r'$\Delta %s$' % band, photo_savename, bin_stat=True)
- 
+            self.scatter_project(self.magnitude[(cat_names[0], band)][good_mag[band]],
+                delta_mag[band][good_mag[band]], self.min_mag, self.max_mag,
+                -1, 1, self.nbins, '%s' % band, r'$\Delta %s$' % band, photo_savename, bin_stat=True)
+            n_true, _ = np.histogram(self.magnitude[(cat_names[1], band)], bins=50, range=(10, 30))
+            n_meas, bin_edges = np.histogram(self.magnitude[(cat_names[0], band)], bins=50, range=(10, 30))
+            plt.figure()
+            plt.plot(0.5*(bin_edges[1:]+bin_edges[:-1]), 1.0*n_meas/n_true,'o')
+            plt.xlabel('{}'.format(band))
+            plt.ylabel('Ratio of detected over input objects')
+            plt.ylim(0,1)
+            plt.tight_layout()
+            photo_savename = os.path.join(output_dir, 'mag_ratio_%s_%s_%s.png' % (cat_names[0], cat_names[1], band))    
+            plt.savefig(photo_savename)      
