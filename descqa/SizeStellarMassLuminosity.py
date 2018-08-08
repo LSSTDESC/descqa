@@ -37,6 +37,7 @@ class SizeStellarMassLuminosity(BaseValidationTest):
         self.label_template = kwargs['label_template']
         self.fig_xlabel = kwargs['fig_xlabel']
         self.fig_ylabel = kwargs['fig_ylabel']
+        self.chisq_max = kwargs['chisq_max']
 
         validation_filepath = os.path.join(self.data_dir, kwargs['data_filename'])
         self.validation_data = np.genfromtxt(validation_filepath)
@@ -91,6 +92,7 @@ class SizeStellarMassLuminosity(BaseValidationTest):
         catalog_data = {k: catalog_data[v] for k, v in colnames.items()}
 
         fig, axes = plt.subplots(2, 3, figsize=(9, 6), sharex=True, sharey=True)
+        list_of_validation_values = []
         try:
             col = 0
             row = 0
@@ -123,6 +125,10 @@ class SizeStellarMassLuminosity(BaseValidationTest):
                     ax.semilogy(validation_this[:,1], 10**validation_this[:,2], label=self.label_template.format(z_bin['z_min'], z_bin['z_max']))
                     ax.fill_between(validation_this[:,1], 10**validation_this[:,3], 10**validation_this[:,4], lw=0, alpha=0.2)
                     ax.errorbar(default_L_bins, binned_size_kpc, binned_size_kpc_err, marker='o', ls='')
+                    
+                    validation = self.compute_chisq(default_L_bins, binned_size_kpc, binned_size_kpc_err,
+                                                    validation_this[:,1], 10**validation_this[:,2])
+                    list_of_validation_values.append(validation)                                
                 elif self.observation == 'twocomp':
                     logL_I = self.ConvertAbsMagLuminosity(catalog_data_this['mag'], 'i')
                     arcsec_to_kpc = self._ARCSEC_TO_RADIAN * interpolate.splev(catalog_data_this['z'], spl) / (1 + catalog_data_this['z'])
@@ -150,6 +156,12 @@ class SizeStellarMassLuminosity(BaseValidationTest):
                     ax.set_xlim([9, 13])
                     ax.set_ylim([1e-1, 25])
                     ax.set_yscale('log', nonposy='clip')
+
+                    validation_bulge = self.compute_chisq(default_L_bins, binned_bulgesize_kpc, binned_bulgesize_kpc_err,
+                                                    validation_this[:,1], validation_this[:,2])
+                    validation_disk = self.compute_chisq(default_L_bins, binned_disksize_kpc, binned_disksize_kpc_err,
+                                                    validation_this[:,1]+0.2, validation_this[:,3])
+                    list_of_validation_values.append([validation_bulge, validation_disk])                                
                 del catalog_data_this
 
                 col += 1
@@ -170,6 +182,39 @@ class SizeStellarMassLuminosity(BaseValidationTest):
         finally:
             fig.savefig(os.path.join(output_dir, '{:s}.png'.format(self.test_name)), bbox_inches='tight')
             plt.close(fig)
+        allpass = True
+        for validation_val, zbin in zip(list_of_validation_values, self.z_bins):
+            if hasattr(validation_val, '__iter__'):
+                print("Redshift bin {}-{}: bulge chi-square/dof: {}, disk chi-square/dof: {}.".format(
+                        zbin['z_min'], zbin['z_max'], validation_val[0], validation_val[1]))
+                if validation_val[0] > self.chisq_max:
+                    print("Chi-square/dof with respect to validation data is too large for bulges in redshift bin {}-{}".format(
+                            zbin['z_min'], zbin['z_max']))
+                    allpass = False
+                if validation_val[1] > self.chisq_max:
+                    print("Chi-square/dof with respect to validation data is too large for disks in redshift bin {}-{}".format(
+                            zbin['z_min'], zbin['z_max']))
+                    allpass = False
+            else:
+                print("Redshift bin {}-{}: chi-square/dof: {}.".format(
+                        zbin['z_min'], zbin['z_max'], validation_val))
+                if validation_val > self.chisq_max:
+                    print("Chi-square/dof with respect to validation data is too large for redshift bin {}-{}".format(
+                            zbin['z_min'], zbin['z_max']))
+                    allpass = False
 
         #TODO: calculate summary statistics
-        return TestResult(inspect_only=True)
+        return TestResult(score=np.mean(list_of_validation_values), passed=allpass)
+        
+    def compute_chisq(self, bins, binned_data, binned_err, validation_points, validation_data):
+        if np.any(validation_data==0):
+            mask = validation_data!=0
+            validation_points = validation_points[mask]
+            validation_data = validation_data[mask]
+        if validation_points[-1]<validation_points[0]:
+            validation_points = validation_points[::-1]
+            validation_data = validation_data[::-1]
+        validation_at_binpoints = interpolate.CubicSpline(validation_points, validation_data)(bins)
+        weights = 1./binned_err**2
+        return np.sum(weights*(validation_at_binpoints-binned_data)**2)/len(weights)
+                                  
