@@ -14,6 +14,29 @@ from .plotting import plt
 __all__ = ['CheckQuantities']
 
 
+def check_column_uniqueness(x, mask=None):
+    """ Return True if the elements of the input x are unique, else False.
+    Optionally only evaluate uniqueness on a subset defined by the input mask.
+
+    Examples
+    --------
+    >>> x = np.random.randint(0, 10, 100)
+    >>> assert check_column_uniqueness(x) == False
+    >>> assert check_column_uniqueness(np.arange(5)) == True
+    """
+    x = np.atleast_1d(x)
+    if mask is None:
+        return len(x) == len(np.unique(x))
+    else:
+        mask = np.ones_like(x).astype(bool)
+        try:
+            return len(x[mask]) == len(np.unique(x[mask]))
+        except IndexError:
+            msg = ("Input `mask` must be an ndarray of integers or booleans"
+            " with the same shape as x")
+            raise ValueError(msg)
+
+
 def find_outlier(x):
     """
     return a bool array indicating outliers or not in *x*
