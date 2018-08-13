@@ -1,8 +1,8 @@
 subclass_name: NumberDensityVersusRedshift.NumberDensityVersusRedshift
 band: r
 zlo: 0.
-zhi: 1.0
-N_zbins: 10
+zhi: 3.0
+N_zbins: 30
 observation: 'DEEP2_JAN'
 jackknife: True
 N_jack: 20
