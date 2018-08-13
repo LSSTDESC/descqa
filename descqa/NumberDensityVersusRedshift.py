@@ -58,6 +58,9 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         chi^2 value needs to be less than this value to pass the test
     use_diagonal_only : bool, optional (default: False)
         use only the diagonal terms of the convariance matric when calculating chi^2
+    rest_frame: boolean, optional (default: False)
+        use rest-frame magnitudes for cuts
+        Note that mag_lo and mag_hi need to be adjusted if rest_frame is set to `True`
     """
     #setup dict with parameters needed to read in validation data
     possible_observations = {
@@ -100,17 +103,24 @@ class NumberDensityVersusRedshift(BaseValidationTest):
     def __init__(self, z='redshift_true', band='i', N_zbins=10, zlo=0., zhi=1.1,
                  observation='', mag_lo=27, mag_hi=18, ncolumns=2, normed=True,
                  jackknife=False, N_jack=20, ra='ra', dec='dec', pass_limit=2., use_diagonal_only=False,
-                 **kwargs): #pylint: disable=W0231
+                 rest_frame=False, **kwargs): #pylint: disable=W0231
 
         #catalog quantities
         self.zlabel = z
-        possible_mag_fields = ('mag_{}_lsst',
-                               'mag_{}_sdss',
-                               'mag_{}_des',
-                               'mag_true_{}_lsst',
-                               'mag_true_{}_sdss',
-                               'mag_true_{}_des',
-                              )
+        self.rest_frame = rest_frame
+        if self.rest_frame:
+            possible_mag_fields = ('Mag_true_{}_lsst_z0',
+                                   'Mag_true_{}_sdss_z0',
+                                   'Mag_true_{}_des_z0',
+                                  )
+        else:
+            possible_mag_fields = ('mag_{}_lsst',
+                                   'mag_{}_sdss',
+                                   'mag_{}_des',
+                                   'mag_true_{}_lsst',
+                                   'mag_true_{}_sdss',
+                                   'mag_true_{}_des',
+                                  )
         self.possible_mag_fields = [f.format(band) for f in possible_mag_fields]
         self.band = band
 
@@ -210,7 +220,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
                 return TestResult(skipped=True, summary='Missing required {} quantity'.format(jq))
 
         required_quantities = jackknife_quantities + [mag_field]
-        filtername = mag_field.rpartition('_')[-1].upper()
+        filtername = mag_field.split('_z0')[0].rpartition('_')[-1].upper()  #extract filtername
         filelabel = '_'.join((filtername, self.band))
 
         #setup plots
