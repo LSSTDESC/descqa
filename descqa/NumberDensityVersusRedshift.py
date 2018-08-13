@@ -102,8 +102,9 @@ class NumberDensityVersusRedshift(BaseValidationTest):
 
     def __init__(self, z='redshift_true', band='i', N_zbins=10, zlo=0., zhi=1.1,
                  observation='', mag_lo=27, mag_hi=18, ncolumns=2, normed=True,
-                 jackknife=False, N_jack=20, ra='ra', dec='dec', pass_limit=2., use_diagonal_only=False,
-                 rest_frame=False, **kwargs): #pylint: disable=W0231
+                 jackknife=False, N_jack=20, ra='ra', dec='dec', pass_limit=2., 
+                 use_diagonal_only=False, rest_frame=False, **kwargs):
+        # pylint: disable=W0231
 
         #catalog quantities
         self.zlabel = z
@@ -220,7 +221,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
                 return TestResult(skipped=True, summary='Missing required {} quantity'.format(jq))
 
         required_quantities = jackknife_quantities + [mag_field]
-        filtername = mag_field.split('_z0')[0].rpartition('_')[-1].upper()  #extract filtername
+        filtername = mag_field.split('_')[(-1 if mag_field.startswith('m') else -2)].upper()  #extract filtername
         filelabel = '_'.join((filtername, self.band))
 
         #setup plots
