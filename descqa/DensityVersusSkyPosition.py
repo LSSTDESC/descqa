@@ -14,7 +14,7 @@ def create_hp_map(ra, dec, nside):
     It reads the ra and dec in degrees and returns a HEALPix map
     """
     pixnums = hp.ang2pix(nside, ra, dec, lonlat=True)
-    return 1.0*np.bincount(pixnums, minlength=hp.nside2npix(nside))
+    return np.bincount(pixnums, minlength=hp.nside2npix(nside)).astype(float)
 
 class DensityVersusSkyPosition(BaseValidationTest):
     """
