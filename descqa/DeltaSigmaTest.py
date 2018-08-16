@@ -130,7 +130,7 @@ class DeltaSigmaTest(BaseValidationTest):
         ax = plt.subplot(111)
         plt.loglog(rp, gt, label='LOWZ-like sample from '+catalog_name)
         plt.errorbar(self.validation_data[:,0], self.validation_data[:,1], yerr=self.validation_data[:,2], label='SDSS LOWZ from Singh et al. (2015)')
-        plt.title('Number density {}/deg$^2$ vs 57/deg$^2$ for LOWZ'.format(nlens))
+        plt.title('Number density {:.1f}/deg$^2$ vs 57/deg$^2$ for LOWZ'.format(nlens))
         ax.set_xlabel('$r_p$ [Mpc/h]')
         ax.set_ylabel(r'$\Delta \Sigma [h \ M_\odot / pc^2]$')
         ax.legend()

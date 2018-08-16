@@ -14,8 +14,6 @@ before_install: # camb requires gfortran to be at least gfortran-4.9
 install:
 - pip install .[full]
 - pip install pylint nose
-- pip install pandas
-- pip install scikit-image
 
 before_script:
 - export CHANGED=$(git diff --diff-filter=d --name-only $TRAVIS_COMMIT_RANGE | grep '^\(descqa.*\|tests\)/.\+\.py$')
