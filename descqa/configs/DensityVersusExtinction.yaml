@@ -1,6 +1,0 @@
-subclass_name: DensityVersusExtinction.DensityVersusExtinction
-test_name: Density versus extinction
-validation_map_filename: /global/projecta/projectdirs/lsst/groups/LSS/DC1/systematics/lambda_sfd_ebv.fits
-nside: 1024
-xlabel: 'E(B-V)'
-description: Variation of mean density of detected objects as a function of extinction
