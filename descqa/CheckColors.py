@@ -12,7 +12,9 @@ class CheckColors(BaseValidationTest):
     def __init__(self, xcolor='ri', ycolor='gr', **kwargs): # pylint: disable=W0231
         self.kwargs = kwargs
         self.test_name = kwargs.get('test_name', 'CheckColors')
-        self.mag_fields_to_check = ('mag_{}_lsst',
+        self.mag_fields_to_check = ('mag_{}',
+                                    'mag_{}_cModel',
+                                    'mag_{}_lsst',
                                     'mag_{}_sdss',
                                     'mag_{}_des',
                                     'mag_{}_stripe82',
@@ -21,8 +23,6 @@ class CheckColors(BaseValidationTest):
                                     'mag_true_{}_des',
                                     'Mag_true_{}_des_z01',
                                     'Mag_true_{}_sdss_z01',
-                                    'mag_{}',
-                                    'mag_{}_cModel',
                                     )
 
         if len(xcolor) != 2 or len(ycolor) != 2:
