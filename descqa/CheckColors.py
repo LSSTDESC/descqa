@@ -21,6 +21,8 @@ class CheckColors(BaseValidationTest):
                                     'mag_true_{}_des',
                                     'Mag_true_{}_des_z01',
                                     'Mag_true_{}_sdss_z01',
+                                    'mag_{}',
+                                    'mag_{}_cModel',
                                     )
 
         if len(xcolor) != 2 or len(ycolor) != 2:
