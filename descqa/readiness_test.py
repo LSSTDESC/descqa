@@ -14,6 +14,23 @@ from .plotting import plt
 __all__ = ['CheckQuantities']
 
 
+def check_uniqueness(x, mask=None):
+    """ Return True if the elements of the input x are unique, else False.
+    Optionally only evaluate uniqueness on a subset defined by the input mask.
+
+    Examples
+    --------
+    >>> x = np.random.randint(0, 10, 100)
+    >>> assert check_uniqueness(x) == False
+    >>> assert check_uniqueness(np.arange(5)) == True
+    """
+    x = np.asarray(x)
+    if mask is None:
+        return x.size == np.unique(x).size
+    else:
+        return check_uniqueness(x[mask])
+
+
 def find_outlier(x):
     """
     return a bool array indicating outliers or not in *x*
@@ -88,9 +105,25 @@ class CheckQuantities(BaseValidationTest):
     def __init__(self, **kwargs):
         self.quantities_to_check = kwargs.get('quantities_to_check', [])
         self.relations_to_check = kwargs.get('relations_to_check', [])
-        assert (self.quantities_to_check or self.relations_to_check), 'must specify quantities_to_check or relations_to_check'
-        assert all('quantities' in d for d in self.quantities_to_check), 'yaml file not correctly specified'
-        self.nbins = kwargs.get('nbins', 50)
+        self.uniqueness_to_check = kwargs.get('uniqueness_to_check', [])
+
+        if not any((
+                self.quantities_to_check,
+                self.relations_to_check,
+                self.uniqueness_to_check,
+        )):
+            raise ValueError('must specify quantities_to_check, relations_to_check, or uniqueness_to_check')
+
+        if not all(d.get('quantities') for d in self.quantities_to_check):
+            raise ValueError('yaml file error: `quantities` must exist for each item in `quantities_to_check`')
+
+        if not all(isinstance(d, str) for d in self.relations_to_check):
+            raise ValueError('yaml file error: each item in `relations_to_check` must be a string')
+
+        if not all(d.get('quantity') for d in self.uniqueness_to_check):
+            raise ValueError('yaml file error: `quantity` must exist for each item in `uniqueness_to_check`')
+
+        self.nbins = int(kwargs.get('nbins', 50))
         self.prop_cycle = cycle(iter(plt.rcParams['axes.prop_cycle']))
         super(CheckQuantities, self).__init__(**kwargs)
 
@@ -118,7 +151,6 @@ class CheckQuantities(BaseValidationTest):
         for i, checks in enumerate(self.quantities_to_check):
 
             quantity_patterns = checks['quantities'] if isinstance(checks['quantities'], (tuple, list)) else [checks['quantities']]
-            assert quantity_patterns, 'yaml file not specify correctly!'
 
             quantities_this = set()
             quantity_pattern = None
@@ -191,6 +223,10 @@ class CheckQuantities(BaseValidationTest):
 
             ax.set_xlabel(('log ' if checks.get('log') else '') + quantity_group_label)
             ax.yaxis.set_ticklabels([])
+            if checks.get('plot_min') is not None: #zero values fail otherwise
+                ax.set_xlim(left=checks.get('plot_min'))
+            if checks.get('plot_max') is not None:
+                ax.set_xlim(right=checks.get('plot_max'))
             ax.set_title('{} {}'.format(catalog_name, getattr(catalog_instance, 'version', '')), fontsize='small')
             fig.tight_layout()
             if len(quantities_this) <= 9:
@@ -216,6 +252,27 @@ class CheckQuantities(BaseValidationTest):
                 output_header.append('<span>It is true that `{}`</span>'.format(relation))
             else:
                 output_header.append('<span class="fail">`{}` not true!</span>'.format(relation))
+                failed_count += 1
+
+        for d in self.uniqueness_to_check:
+            quantity = label = d.get('quantity')
+            mask = d.get('mask')
+
+            quantities_needed = [quantity]
+            if mask is not None:
+                quantities_needed.append(mask)
+                label += '[{}]'.format(mask)
+
+            if not catalog_instance.has_quantities(quantities_needed):
+                output_header.append('<span class="fail">{} does not exist!</span>'.format(' or '.join(quantities_needed)))
+                failed_count += 1
+                continue
+
+            data = catalog_instance.get_quantities(quantities_needed)
+            if check_uniqueness(data[quantity], data.get(mask)):
+                output_header.append('<span>{} is all unique</span>'.format(label))
+            else:
+                output_header.append('<span class="fail">{} has repeated entries!</span>'.format(label))
                 failed_count += 1
 
         with open(os.path.join(output_dir, 'SUMMARY.html'), 'w') as f:
