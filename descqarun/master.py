@@ -453,7 +453,10 @@ def main():
         check_copy(descqa.__path__[0], pjoin(snapshot_dir, 'descqa'))
         check_copy(GCRCatalogs.__path__[0], pjoin(snapshot_dir, 'GCRCatalogs'))
         if hasattr(GCRCatalogs, 'GCR'):
-            check_copy(GCRCatalogs.GCR.__file__, pjoin(snapshot_dir, 'GCR.py'))
+            if getattr(GCRCatalogs.GCR, '__path__', None):
+                check_copy(GCRCatalogs.GCR.__path__[0], pjoin(snapshot_dir, 'GCR'))
+            else:
+                check_copy(GCRCatalogs.GCR.__file__, pjoin(snapshot_dir, 'GCR.py'))
 
         logger.debug('preparing to run validation tests...')
         descqa_task = DescqaTask(output_dir, args.validations_to_run, args.catalogs_to_run, logger)
