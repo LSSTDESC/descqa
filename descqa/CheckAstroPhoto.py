@@ -106,8 +106,8 @@ class CheckAstroPhoto(BaseValidationTest):
         # For this test we are going to match using closest neighbor since it is the fastest but it can be easily
         # swapped for any other matching strategy
         
-        dist, matched_id, is_matched = spatial_closest(self.ra[cat_names[0]],self.dec[cat_names[0]], 
-                                           self.ra[cat_names[1]],self.dec[cat_names[1]],np.arange(cat_len[1]))
+        matched_id = spatial_closest(self.ra[cat_names[0]], self.dec[cat_names[0]], 
+                                     self.ra[cat_names[1]], self.dec[cat_names[1]], np.arange(cat_len[1]))[1]
         
         delta_ra = self.ra[cat_names[0]]-self.ra[cat_names[1]][matched_id]
         delta_dec = self.dec[cat_names[0]]-self.dec[cat_names[1]][matched_id]
