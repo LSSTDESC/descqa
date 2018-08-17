@@ -59,9 +59,7 @@ class ColorDistribution(BaseValidationTest):
         self.plot_cdf_q = kwargs.get('plot_cdf_q', True)
         self.color_transformation_q = kwargs.get('color_transformation_q', True)
         self.Mag_r_limit = kwargs.get('Mag_r_limit', None)
-        self.rest_frame = kwargs.get('rest_frame', False)
-        #check for missing rest_frame flag in config file
-        self.rest_frame =  True if self.Mag_r_limit and not self.obs_r_mag_limit and not self.rest_frame else self.rest_frame
+        self.rest_frame = kwargs.get('rest_frame', bool(self.Mag_r_limit and not self.obs_r_mag_limit))
 
         # bins of color distribution
         self.bins = np.linspace(-1, 4, 2000)
