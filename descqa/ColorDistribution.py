@@ -61,7 +61,7 @@ class ColorDistribution(BaseValidationTest):
         self.Mag_r_limit = kwargs.get('Mag_r_limit', None)
         self.rest_frame = kwargs.get('rest_frame', False)
         #check for missing rest_frame flag in config file
-        self.restframe =  True if self.Mag_r_limit and not self.obs_r_mag_limit and not self.rest_frame else self.rest_frame
+        self.rest_frame =  True if self.Mag_r_limit and not self.obs_r_mag_limit and not self.rest_frame else self.rest_frame
 
         # bins of color distribution
         self.bins = np.linspace(-1, 4, 2000)
@@ -168,10 +168,10 @@ class ColorDistribution(BaseValidationTest):
         color_shift = {}
         cvm_omega = {}
         cvm_omega_shift = {}
-        for color in self.colors:
-            if self.validation_catalog and not ((color in self.obs_color_dist) and (color in mock_color_dist)):
-                continue
-            if self.validation_catalog:
+        if self.validation_catalog:
+            for color in self.colors:
+                if not ((color in self.obs_color_dist) and (color in mock_color_dist)):
+                    continue
                 color_shift[color] = self.obs_color_dist[color]['median'] - mock_color_dist[color]['median']
                 cvm_omega[color] = CvM_statistic(
                     mock_color_dist[color]['nsample'], self.obs_color_dist[color]['nsample'],
@@ -196,10 +196,10 @@ class ColorDistribution(BaseValidationTest):
                 f.write('r_mag < %2.3f\n\n'%(self.obs_r_mag_limit))
             elif self.Mag_r_limit:
                 f.write('Mag_r < %2.3f\n\n'%(self.Mag_r_limit))
-            for color in self.colors:
-                if self.validation_catalog and not ((color in self.obs_color_dist) and (color in mock_color_dist)):
-                    continue
-                if self.validation_catalog:
+            if self.validation_catalog:
+                for color in self.colors:
+                    if self.validation_catalog and not ((color in self.obs_color_dist) and (color in mock_color_dist)):
+                        continue
                     f.write("Median "+color+" difference (obs - mock) = %2.3f\n"%(color_shift[color]))
                     f.write(color+": {} = {:2.6f}\n".format('CvM statistic', cvm_omega[color]))
                     f.write(color+" (shifted): {} = {:2.6f}\n".format('CvM statistic', cvm_omega_shift[color]))
