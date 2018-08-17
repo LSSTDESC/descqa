@@ -1,10 +1,10 @@
 from __future__ import unicode_literals, absolute_import, division
 import os
 import numpy as np
-from .base import BaseValidationTest, TestResult
-from .plotting import plt
 from scipy import fftpack
 import astropy.table
+from .base import BaseValidationTest, TestResult
+from .plotting import plt
 
 __all__ = ['ImgPkTest']
 
@@ -13,7 +13,8 @@ class ImgPkTest(BaseValidationTest):
     Validation test that computes the power spectrum
     of a given raft image
     """
-    def __init__(self,input_path,val_label,raft, **kwargs):
+    def __init__(self, input_path, val_label, raft, **kwargs):
+        # pylint: disable=W0231
         self.input_path = input_path
         self.validation_data = astropy.table.Table.read(self.input_path)
         self.label = val_label
@@ -54,7 +55,7 @@ class ImgPkTest(BaseValidationTest):
             ps1d[i] = np.mean(psd2D.T[(rad>b-0.5*bin_space) & (rad<b+0.5*bin_space)])/(F2.shape[0]*F2.shape[1])
         bins = bins/(2*np.pi)
         fig, ax = plt.subplots(2,1)
-        for i in range(0,9):
+        for i in range(9):
             image = list(test_raft.sensors.values())[i].get_data()
             key = list(test_raft.sensors.keys())[i]
             ax[0].hist(image.flatten(),histtype='step',range=(200,2000),bins=200,label=key)
@@ -69,12 +70,11 @@ class ImgPkTest(BaseValidationTest):
         ax[1].set_ylim(1,1000)
         self.post_process_plot(ax[1])
         fig.savefig(os.path.join(output_dir, 'plot.png'))
-        score=0
+        score = 0
         # Check if the k binning/rebinning is the same before checking chi-sq
         if all(bins==self.validation_data['k']):
             score = np.sum((ps1d/self.validation_data['Pk']-1)**2)
         # Check criteria to pass or fail (images in the edges of the focal plane
         # will have way more power than the ones in the center if they are not
         # flattened
-        return TestResult(score, passed=True)
-
+        return TestResult(score=score, inspect=True)
