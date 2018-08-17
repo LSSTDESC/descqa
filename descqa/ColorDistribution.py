@@ -223,62 +223,60 @@ class ColorDistribution(BaseValidationTest):
         print(mock_color_dist.keys())
         for ax_cdf, ax_pdf, color in zip(axes_cdf.flat, axes_pdf.flat, available_colors):
 
-            if self.validation_catalog and not ((color in self.obs_color_dist) and (color in mock_color_dist)):
+            if color not in mock_color_dist or (self.validation_catalog and color not in self.obs_color_dist):
                 continue
-            if color in mock_color_dist:
-                print(color, mock_color_dist[color]['pdf_smooth'])
-                mbinctr = mock_color_dist[color]['binctr']
-                mpdf_smooth = mock_color_dist[color]['pdf_smooth']
-                mcdf = mock_color_dist[color]['cdf']
-                if self.validation_catalog:
-                    obinctr = self.obs_color_dist[color]['binctr']
-                    opdf_smooth = self.obs_color_dist[color]['pdf_smooth']
-                    ocdf = self.obs_color_dist[color]['cdf']
-                    xmin = np.min([mbinctr[find_first_true(mcdf > 0.001)],
+            mbinctr = mock_color_dist[color]['binctr']
+            mpdf_smooth = mock_color_dist[color]['pdf_smooth']
+            mcdf = mock_color_dist[color]['cdf']
+            if self.validation_catalog:
+                obinctr = self.obs_color_dist[color]['binctr']
+                opdf_smooth = self.obs_color_dist[color]['pdf_smooth']
+                ocdf = self.obs_color_dist[color]['cdf']
+                xmin = np.min([mbinctr[find_first_true(mcdf > 0.001)],
                            mbinctr[find_first_true(mcdf > 0.001)] + color_shift[color],
                            obinctr[find_first_true(ocdf > 0.001)]])
-                    xmax = np.max([mbinctr[find_first_true(mcdf > 0.999)],
+                xmax = np.max([mbinctr[find_first_true(mcdf > 0.999)],
                            mbinctr[find_first_true(mcdf > 0.999)] + color_shift[color],
                            obinctr[find_first_true(ocdf > 0.999)]])
-                else:
-                    xmin = np.min(mbinctr[find_first_true(mcdf > 0.001)])
-                    xmax = np.max(mbinctr[find_first_true(mcdf > 0.999)])
+            else:
+                xmin = np.min(mbinctr[find_first_true(mcdf > 0.001)])
+                xmax = np.max(mbinctr[find_first_true(mcdf > 0.999)])
 
-                # Plot PDF
-                # mock color distribution
-                if cvm_omega.get(color, None):
-                    catalog_label = catalog_name+'\n'+r'$\omega={:.3}$'.format(cvm_omega[color])
-                else:
-                    catalog_label = catalog_name
-                ax_pdf.step(mbinctr, mpdf_smooth, where="mid", label= catalog_label, color='C1')
-                if self.validation_catalog:
-                    # validation data
-                    ax_pdf.step(obinctr, opdf_smooth, where="mid", label=self.validation_catalog, color='C0')
-                    # color distribution after constant shift
-                    ax_pdf.step(mbinctr + color_shift[color], mpdf_smooth,
+            # Plot PDF
+            # mock color distribution
+            if cvm_omega.get(color, None):
+                catalog_label = catalog_name+'\n'+r'$\omega={:.3}$'.format(cvm_omega[color])
+            else:
+                catalog_label = catalog_name
+            ax_pdf.step(mbinctr, mpdf_smooth, where="mid", label= catalog_label, color='C1')
+            if self.validation_catalog:
+                # validation data
+                ax_pdf.step(obinctr, opdf_smooth, where="mid", label=self.validation_catalog, color='C0')
+                # color distribution after constant shift
+                ax_pdf.step(mbinctr + color_shift[color], mpdf_smooth,
                         label=catalog_name+' shifted\n'+r'$\omega={:.3}$'.format(cvm_omega_shift[color]),
                         linestyle='--', color='C2')
-                ax_pdf.set_xlabel('${}$'.format(color))
-                ax_pdf.set_xlim(xmin, xmax)
-                ax_pdf.set_ylim(ymin=0.)
-                ax_pdf.set_title(title)
-                ax_pdf.legend(loc='upper left', frameon=False)
+            ax_pdf.set_xlabel('${}$'.format(color))
+            ax_pdf.set_xlim(xmin, xmax)
+            ax_pdf.set_ylim(ymin=0.)
+            ax_pdf.set_title(title)
+            ax_pdf.legend(loc='upper left', frameon=False)
 
-                # Plot CDF
-                # catalog distribution
-                ax_cdf.step(mbinctr, mcdf, where="mid", label= catalog_label, color='C1')
-                if self.validation_catalog:
-                    # validation distribution
-                    ax_cdf.step(obinctr, ocdf, label=self.validation_catalog, color='C0')
-                    # color distribution after constant shift
-                    ax_cdf.step(mbinctr + color_shift[color], mcdf, where="mid",
+            # Plot CDF
+            # catalog distribution
+            ax_cdf.step(mbinctr, mcdf, where="mid", label= catalog_label, color='C1')
+            if self.validation_catalog:
+                # validation distribution
+                ax_cdf.step(obinctr, ocdf, label=self.validation_catalog, color='C0')
+                # color distribution after constant shift
+                ax_cdf.step(mbinctr + color_shift[color], mcdf, where="mid",
                         label=catalog_name+' shifted\n'+r'$\omega={:.3}$'.format(cvm_omega_shift[color]),
                         linestyle='--', color='C2')
-                ax_cdf.set_xlabel('${}$'.format(color))
-                ax_cdf.set_title(title)
-                ax_cdf.set_xlim(xmin, xmax)
-                ax_cdf.set_ylim(0, 1)
-                ax_cdf.legend(loc='upper left', frameon=False)
+            ax_cdf.set_xlabel('${}$'.format(color))
+            ax_cdf.set_title(title)
+            ax_cdf.set_xlim(xmin, xmax)
+            ax_cdf.set_ylim(0, 1)
+            ax_cdf.legend(loc='upper left', frameon=False)
 
         if self.plot_pdf_q:
             fig_pdf.tight_layout()
