@@ -77,4 +77,4 @@ class ImgPkTest(BaseValidationTest):
         # Check criteria to pass or fail (images in the edges of the focal plane
         # will have way more power than the ones in the center if they are not
         # flattened
-        return TestResult(score=score, inspect=True)
+        return TestResult(score=score, inspect_only=True)
