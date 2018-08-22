@@ -18,7 +18,7 @@ def create_hp_map(ra, dec, nside):
 
 class DensityVersusSkyPosition(BaseValidationTest):
     """
-    This tests checks the object density as a function
+    This test checks the object density as a function
     of another map (e.g: extinction, airmass, etc)
     """
     def __init__(self,**kwargs): # pylint: disable=W0231
