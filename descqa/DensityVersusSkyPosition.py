@@ -20,6 +20,15 @@ class DensityVersusSkyPosition(BaseValidationTest):
     """
     This test checks the object density as a function
     of another map (e.g: extinction, airmass, etc)
+
+    Args:
+    ----
+
+    validation_map_filename (str): Path to extinction, airmass or other map
+    nside (int): Healpix nside parameter in which to compute the density.
+    xlabel (str): Name of the quantity read from validation_map_filename, it will
+       serve as x-label axis of the validation plots
+    
     """
     def __init__(self,**kwargs): # pylint: disable=W0231
         
