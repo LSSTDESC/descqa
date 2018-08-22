@@ -51,13 +51,15 @@ class ColorDistribution(BaseValidationTest):
 
         # load test config options
         self.kwargs = kwargs
-        self.obs_r_mag_limit = kwargs['obs_r_mag_limit']
+        self.obs_r_mag_limit = kwargs.get('obs_r_mag_limit', None)
         self.zlo = kwargs['zlo']
         self.zhi = kwargs['zhi']
-        self.validation_catalog = kwargs['validation_catalog']
+        self.validation_catalog = kwargs.get('validation_catalog', None)
         self.plot_pdf_q = kwargs.get('plot_pdf_q', True)
         self.plot_cdf_q = kwargs.get('plot_cdf_q', True)
         self.color_transformation_q = kwargs.get('color_transformation_q', True)
+        self.Mag_r_limit = kwargs.get('Mag_r_limit', None)
+        self.rest_frame = kwargs.get('rest_frame', bool(self.Mag_r_limit and not self.obs_r_mag_limit))
 
         # bins of color distribution
         self.bins = np.linspace(-1, 4, 2000)
@@ -76,13 +78,14 @@ class ColorDistribution(BaseValidationTest):
             obs_translate = {'u':'u_apercor', 'g':'g_apercor', 'r':'r_apercor', 'i':'i_apercor', 'z':'z_apercor'}
             obs_zcol = 'zhelio'
             weights = 1/np.array(obscat['p_onmask'])
-        else:
+        elif self.validation_catalog is not None:
             raise ValueError('Validation catalog not recognized')
 
         # Magnitude and redshift cut
-        mask = obscat[obs_translate['r']] < self.obs_r_mag_limit
-        mask &= (obscat[obs_zcol] > self.zlo) & (obscat[obs_zcol] < self.zhi)
-        obscat = obscat[mask]
+        if self.validation_catalog is not None:
+            mask = obscat[obs_translate['r']] < self.obs_r_mag_limit
+            mask &= (obscat[obs_zcol] > self.zlo) & (obscat[obs_zcol] < self.zhi)
+            obscat = obscat[mask]
 
         if self.validation_catalog == 'DEEP2':
             # Remove unsecured redshifts
@@ -98,13 +101,17 @@ class ColorDistribution(BaseValidationTest):
             weights = 1/np.array(obscat['p_onmask'])
 
         # Compute color distribution (PDF, CDF etc.)
-        self.obs_color_dist = self.get_color_dist(obscat, obs_translate, weights)
-
+        self.obs_color_dist = {}
+        if self.validation_catalog is not None:
+            self.obs_color_dist = self.get_color_dist(obscat, obs_translate, weights)
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
 
         bands = set(sum((c.split('-') for c in self.colors), []))
-        possible_names = ('mag_{}_sdss', 'mag_{}_des', 'mag_true_{}_sdss', 'mag_true_{}_des')
+        if self.rest_frame:
+            possible_names = ('Mag_{}_lsst', 'Mag_{}_sdss', 'Mag_true_{}_lsst_z0', 'Mag_true_{}_sdss_z0')
+        else:
+            possible_names = ('mag_{}_sdss', 'mag_{}_des', 'mag_true_{}_sdss', 'mag_true_{}_des')
         labels = {band: catalog_instance.first_available(*(n.format(band) for n in possible_names)) for band in bands}
         labels = {k: v for k, v in labels.items() if v}
         if len(labels) < 2:
@@ -147,7 +154,10 @@ class ColorDistribution(BaseValidationTest):
             data = data_transformed
             del data_transformed
 
-        data = GCRQuery('r < {}'.format(self.obs_r_mag_limit)).filter(data)
+        if self.obs_r_mag_limit and not self.rest_frame:
+            data = GCRQuery('r < {}'.format(self.obs_r_mag_limit)).filter(data)
+        elif self.Mag_r_limit and self.rest_frame:
+            data = GCRQuery('r < {}'.format(self.Mag_r_limit)).filter(data)
 
         # Compute color distribution (PDF, CDF etc.)
         mock_color_dist = self.get_color_dist(data)
@@ -156,18 +166,19 @@ class ColorDistribution(BaseValidationTest):
         color_shift = {}
         cvm_omega = {}
         cvm_omega_shift = {}
-        for color in self.colors:
-            if not ((color in self.obs_color_dist) and (color in mock_color_dist)):
-                continue
-            color_shift[color] = self.obs_color_dist[color]['median'] - mock_color_dist[color]['median']
-            cvm_omega[color] = CvM_statistic(
-                mock_color_dist[color]['nsample'], self.obs_color_dist[color]['nsample'],
-                mock_color_dist[color]['binctr'], mock_color_dist[color]['cdf'],
-                self.obs_color_dist[color]['binctr'], self.obs_color_dist[color]['cdf'])
-            cvm_omega_shift[color] = CvM_statistic(
-                mock_color_dist[color]['nsample'], self.obs_color_dist[color]['nsample'],
-                mock_color_dist[color]['binctr'] + color_shift[color], mock_color_dist[color]['cdf'],
-                self.obs_color_dist[color]['binctr'], self.obs_color_dist[color]['cdf'])
+        if self.validation_catalog:
+            for color in self.colors:
+                if not ((color in self.obs_color_dist) and (color in mock_color_dist)):
+                    continue
+                color_shift[color] = self.obs_color_dist[color]['median'] - mock_color_dist[color]['median']
+                cvm_omega[color] = CvM_statistic(
+                    mock_color_dist[color]['nsample'], self.obs_color_dist[color]['nsample'],
+                    mock_color_dist[color]['binctr'], mock_color_dist[color]['cdf'],
+                    self.obs_color_dist[color]['binctr'], self.obs_color_dist[color]['cdf'])
+                cvm_omega_shift[color] = CvM_statistic(
+                    mock_color_dist[color]['nsample'], self.obs_color_dist[color]['nsample'],
+                    mock_color_dist[color]['binctr'] + color_shift[color], mock_color_dist[color]['cdf'],
+                    self.obs_color_dist[color]['binctr'], self.obs_color_dist[color]['cdf'])
 
         self.make_plots(mock_color_dist, color_shift, cvm_omega, cvm_omega_shift, catalog_name, output_dir)
 
@@ -179,70 +190,88 @@ class ColorDistribution(BaseValidationTest):
             else:
                 f.write('No color transformation\n')
             f.write('%2.3f < z < %2.3f\n'%(self.zlo, self.zhi))
-            f.write('r_mag < %2.3f\n\n'%(self.obs_r_mag_limit))
-            for color in self.colors:
-                if not ((color in self.obs_color_dist) and (color in mock_color_dist)):
-                    continue
-                f.write("Median "+color+" difference (obs - mock) = %2.3f\n"%(color_shift[color]))
-                f.write(color+": {} = {:2.6f}\n".format('CvM statistic', cvm_omega[color]))
-                f.write(color+" (shifted): {} = {:2.6f}\n".format('CvM statistic', cvm_omega_shift[color]))
-                f.write("\n")
+            if self.obs_r_mag_limit:
+                f.write('r_mag < %2.3f\n\n'%(self.obs_r_mag_limit))
+            elif self.Mag_r_limit:
+                f.write('Mag_r < %2.3f\n\n'%(self.Mag_r_limit))
+            if self.validation_catalog:
+                for color in self.colors:
+                    if self.validation_catalog and not ((color in self.obs_color_dist) and (color in mock_color_dist)):
+                        continue
+                    f.write("Median "+color+" difference (obs - mock) = %2.3f\n"%(color_shift[color]))
+                    f.write(color+": {} = {:2.6f}\n".format('CvM statistic', cvm_omega[color]))
+                    f.write(color+" (shifted): {} = {:2.6f}\n".format('CvM statistic', cvm_omega_shift[color]))
+                    f.write("\n")
 
         return TestResult(inspect_only=True)
 
 
     def make_plots(self, mock_color_dist, color_shift, cvm_omega, cvm_omega_shift, catalog_name, output_dir):
-        nrows = int(np.ceil(len(self.colors)/2.))
+        available_colors = [c for c in self.colors if c in mock_color_dist]
+        print(available_colors)
+        nrows = int(np.ceil(len(available_colors)/2.))
         fig_pdf, axes_pdf = plt.subplots(nrows, 2, figsize=(8, 3.5*nrows))
         fig_cdf, axes_cdf = plt.subplots(nrows, 2, figsize=(8, 3.5*nrows))
+        title = ''
+        if self.obs_r_mag_limit:
+            title = '$m_r < {:2.1f},  {:.1f} < z < {:.1f}$'.format(self.obs_r_mag_limit, self.zlo, self.zhi)
+        elif self.Mag_r_limit:
+            title = '$M_r < {:2.1f},  {:.1f} < z < {:.1f}$'.format(self.Mag_r_limit, self.zlo, self.zhi)
 
-        for ax_cdf, ax_pdf, color in zip(axes_cdf.flat, axes_pdf.flat, self.colors):
+        print(mock_color_dist.keys())
+        for ax_cdf, ax_pdf, color in zip(axes_cdf.flat, axes_pdf.flat, available_colors):
 
-            if not ((color in self.obs_color_dist) and (color in mock_color_dist)):
+            if color not in mock_color_dist or (self.validation_catalog and color not in self.obs_color_dist):
                 continue
-
-            obinctr = self.obs_color_dist[color]['binctr']
             mbinctr = mock_color_dist[color]['binctr']
-            opdf_smooth = self.obs_color_dist[color]['pdf_smooth']
             mpdf_smooth = mock_color_dist[color]['pdf_smooth']
-            ocdf = self.obs_color_dist[color]['cdf']
             mcdf = mock_color_dist[color]['cdf']
-
-            xmin = np.min([mbinctr[find_first_true(mcdf > 0.001)],
+            if self.validation_catalog:
+                obinctr = self.obs_color_dist[color]['binctr']
+                opdf_smooth = self.obs_color_dist[color]['pdf_smooth']
+                ocdf = self.obs_color_dist[color]['cdf']
+                xmin = np.min([mbinctr[find_first_true(mcdf > 0.001)],
                            mbinctr[find_first_true(mcdf > 0.001)] + color_shift[color],
                            obinctr[find_first_true(ocdf > 0.001)]])
-            xmax = np.max([mbinctr[find_first_true(mcdf > 0.999)],
+                xmax = np.max([mbinctr[find_first_true(mcdf > 0.999)],
                            mbinctr[find_first_true(mcdf > 0.999)] + color_shift[color],
                            obinctr[find_first_true(ocdf > 0.999)]])
+            else:
+                xmin = np.min(mbinctr[find_first_true(mcdf > 0.001)])
+                xmax = np.max(mbinctr[find_first_true(mcdf > 0.999)])
 
             # Plot PDF
-            # validation data
-            ax_pdf.step(obinctr, opdf_smooth, where="mid", label=self.validation_catalog, color='C0')
             # mock color distribution
-            ax_pdf.step(mbinctr, mpdf_smooth, where="mid",
-                        label=catalog_name+'\n'+r'$\omega={:.3}$'.format(cvm_omega[color]), color='C1')
-            # color distribution after constant shift
-            ax_pdf.step(mbinctr + color_shift[color], mpdf_smooth,
+            if cvm_omega.get(color, None):
+                catalog_label = catalog_name+'\n'+r'$\omega={:.3}$'.format(cvm_omega[color])
+            else:
+                catalog_label = catalog_name
+            ax_pdf.step(mbinctr, mpdf_smooth, where="mid", label= catalog_label, color='C1')
+            if self.validation_catalog:
+                # validation data
+                ax_pdf.step(obinctr, opdf_smooth, where="mid", label=self.validation_catalog, color='C0')
+                # color distribution after constant shift
+                ax_pdf.step(mbinctr + color_shift[color], mpdf_smooth,
                         label=catalog_name+' shifted\n'+r'$\omega={:.3}$'.format(cvm_omega_shift[color]),
                         linestyle='--', color='C2')
             ax_pdf.set_xlabel('${}$'.format(color))
             ax_pdf.set_xlim(xmin, xmax)
             ax_pdf.set_ylim(ymin=0.)
-            ax_pdf.set_title('')
+            ax_pdf.set_title(title)
             ax_pdf.legend(loc='upper left', frameon=False)
 
             # Plot CDF
-            # validation distribution
-            ax_cdf.step(obinctr, ocdf, label=self.validation_catalog, color='C0')
             # catalog distribution
-            ax_cdf.step(mbinctr, mcdf, where="mid",
-                        label=catalog_name+'\n'+r'$\omega={:.3}$'.format(cvm_omega[color]), color='C1')
-            # color distribution after constant shift
-            ax_cdf.step(mbinctr + color_shift[color], mcdf, where="mid",
+            ax_cdf.step(mbinctr, mcdf, where="mid", label= catalog_label, color='C1')
+            if self.validation_catalog:
+                # validation distribution
+                ax_cdf.step(obinctr, ocdf, label=self.validation_catalog, color='C0')
+                # color distribution after constant shift
+                ax_cdf.step(mbinctr + color_shift[color], mcdf, where="mid",
                         label=catalog_name+' shifted\n'+r'$\omega={:.3}$'.format(cvm_omega_shift[color]),
                         linestyle='--', color='C2')
             ax_cdf.set_xlabel('${}$'.format(color))
-            ax_cdf.set_title('')
+            ax_cdf.set_title(title)
             ax_cdf.set_xlim(xmin, xmax)
             ax_cdf.set_ylim(0, 1)
             ax_cdf.legend(loc='upper left', frameon=False)
@@ -272,7 +301,10 @@ class ColorDistribution(BaseValidationTest):
 
             # Remove objects with invalid magnitudes from the analysis
             try:
-                cat_mask = (cat[band1] > 0) & (cat[band1] < 50) & (cat[band2] > 0) & (cat[band2] < 50)
+                if self.rest_frame:
+                    cat_mask = (cat[band1] < -10) & (cat[band1] > -30) & (cat[band2] < -10) & (cat[band2] > -30)
+                else:
+                    cat_mask = (cat[band1] > 0) & (cat[band1] < 50) & (cat[band2] > 0) & (cat[band2] < 50)
             except KeyError:
                 continue
 
