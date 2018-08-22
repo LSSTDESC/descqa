@@ -25,13 +25,9 @@ def compute_bkg(image):
     bkg_noise: Background noise level
     """
     image = image.flatten()
-    q95 = np.percentile(image,95) # This is kind of arbitrary but it works fine
-    q5 = np.percentile(image,5) # Same as above -> can be substituted by 10 and 90
-    mask = (image>q5) & (image<q95)
-    median_bkg = np.median(image[mask])
-    mean_bkg = np.mean(image[mask])
-    bkg_noise = np.std(image[mask])
-    return mean_bkg, median_bkg, bkg_noise
+    q_low, q_high = np.percentile(image, [5, 95]) # This is kind of arbitrary but it works fine
+    image = image[(image > q_low) & (image < q_high)] 
+    return np.mean(image), np.median(image), np.std(image)
 
 def get_predicted_bkg(visit,validation_dataset,db_file,band):
     if validation_dataset.lower() == 'opsim':
@@ -67,19 +63,29 @@ def get_airmass_raw_seeing(visit,db_file):
     cur = conn.cursor()
     cur.execute("SELECT airmass, filtSkyBrightness, finSeeing, rawSeeing, visitExpTime, fiveSigmaDepth FROM ObsHistory WHERE obsHistID==%d" %(visit))
     rows = cur.fetchall()
-    return rows[0][0], rows[0][1], rows[0][2], rows[0][3], rows[0][4], rows[0][5]
+    return rows[0]
 
 def get_opsim_bkg(visit,db_file,band):
     skybrightness = get_airmass_raw_seeing(int(visit),db_file)[1]
+    # We are going to compute the background counts given OpSim's sky-brightness
     mean_bkg = compute_sky_counts(skybrightness,band,1)
-    median_bkg = mean_bkg
-    bkg_noise = np.sqrt(mean_bkg)
+    median_bkg = mean_bkg # We assume that the background is completely homogeneous
+    bkg_noise = np.sqrt(mean_bkg) # We assume Poisson noise
     return mean_bkg, median_bkg, bkg_noise
 
 class QuickBkgTest(BaseValidationTest):
     """
     Check of mean, median and standard deviation of the image background.
     We compare to expeted values by OpSim or imSim.
+   
+    Args:
+    -----
+     
+    label (str): x-label for the validation plots
+    visit (int): Visit numbr to analyze
+    band (str): Filter/band to analyze
+    bkg_validation_dataset (str): Name of the validation data to which compare, for now,
+        only opsim is available.
     """
     def __init__(self,label,bkg_validation_dataset,visit,band,db_file, **kwargs):
         self.validation_data = get_predicted_bkg(visit,bkg_validation_dataset,db_file,band)
@@ -121,7 +127,7 @@ class QuickBkgTest(BaseValidationTest):
         ax[1].hist(list(bkg_noise.values()), histtype='step')
         ax[1].set_xlabel('{} noise [ADU]'.format(self.label))
         ax[1].set_ylabel('Number of sensors') 
-        score = np.mean(np.array(list(median_bkg.values())))/self.validation_data[0]-1.
+        score = sum(median_bkg.values()) / len(median_bkg) / self.validation_data[0] - 1.
         score = np.fabs(score)
         self.post_process_plot(ax)
         fig.savefig(os.path.join(output_dir, 'plot_png'))

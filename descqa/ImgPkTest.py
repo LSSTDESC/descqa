@@ -12,6 +12,12 @@ class ImgPkTest(BaseValidationTest):
     """
     Validation test that computes the power spectrum
     of a given raft image
+
+    Args:
+    -----
+    input_path: (str) Directory where the raw e-images live.
+    val_label: (str) Label of the horizontal axis for the validation plots.
+    raft: (str) Raft number to analyze (e.g.: '01','10','22', etc).
     """
     def __init__(self,input_path,val_label,raft, **kwargs):
         self.input_path = input_path
@@ -32,19 +38,18 @@ class ImgPkTest(BaseValidationTest):
             return TestResult(skipped=True, summary='Raft is not complete')
         xdim, ydim = list(test_raft.sensors.values())[0].get_data().shape
         total_data = np.zeros((xdim*3,ydim*3))
-        # Assemble the 3 x 3 raft's image: Need to use LSST's software to
-        # handle the gaps properly
-        for i in range(0,3):
-            for j in range(0,3):
-                total_data[xdim*i:xdim*(i+1),ydim*j:ydim*(j+1)] = test_raft.sensors['S%d%d' %(i,j)].get_data()
-
+        
+        # Assemble the 3 x 3 raft's image
+        # TODO: Need to use LSST's software to handle the gaps properly
+        total_data = [test_raft.sensors['S%d%d'%(i, j)].get_data() for i in range (3) for j in range(3)]
+        total_data = np.moveaxis(np.array(total_data), [0, 1], [2, 3])
         # FFT of the density contrast
         F1 = fftpack.fft2((total_data/np.mean(total_data)-1))
         F2 = fftpack.fftshift( F1 )
         psd2D = np.abs( F2 )**2 # 2D power
         pix_scale = 0.2/60*rebinning #pixel scale in arcmin 
-        kx = 1./pix_scale*np.arange(-F2.shape[0]/2,F2.shape[0]/2)*1./F2.shape[0]
-        ky = 1./pix_scale*np.arange(-F2.shape[1]/2,F2.shape[1]/2)*1./F2.shape[1]
+        kx = 1 / pix_scale*np.arange(-F2.shape[0] // 2,F2.shape[0] // 2, dtype=np.float) / F2.shape[0]
+        ky = 1 / pix_scale*np.arange(-F2.shape[1] // 2,F2.shape[1] // 2, dtype=np.float) / F2.shape[1]
         kxx, kyy = np.meshgrid(kx,ky)
         rad = np.sqrt(kxx**2+kyy**2)
         bins = 1./pix_scale*np.arange(0,F2.shape[0]/2)*1./F2.shape[0]
@@ -69,6 +74,7 @@ class ImgPkTest(BaseValidationTest):
         ax[1].set_ylim(1,1000)
         self.post_process_plot(ax[1])
         fig.savefig(os.path.join(output_dir, 'plot.png'))
+        plt.close(fig)
         score=0
         # Check if the k binning/rebinning is the same before checking chi-sq
         if all(bins==self.validation_data['k']):
