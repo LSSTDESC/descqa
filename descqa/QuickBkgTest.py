@@ -32,6 +32,8 @@ def compute_bkg(image):
 def get_predicted_bkg(visit, validation_dataset, db_file, band):
     if validation_dataset.lower() == 'opsim':
         return get_opsim_bkg(visit, db_file, band)
+    else:
+        raise NotImplementedError('only "opsim" is currently supported')
     # TODO add imSim option
     #if validation_dataset == 'imSim':
     #    return get_imsim_bkg(visit,band)
