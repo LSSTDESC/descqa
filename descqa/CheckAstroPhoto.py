@@ -56,7 +56,7 @@ class CheckAstroPhoto(BaseValidationTest):
         rect_histx = [left, bottom_h, width, 0.2]
         rect_histy = [left_h, bottom, 0.2, height]
 
-        plt.figure()
+        fig = plt.figure()
 
         axScatter = plt.axes(rect_scatter)
         axHistx = plt.axes(rect_histx)
@@ -88,26 +88,25 @@ class CheckAstroPhoto(BaseValidationTest):
         axHistx.set_xlim(axScatter.get_xlim())
         axHisty.set_ylim(axScatter.get_ylim())
         plt.savefig(savename)
+        plt.close(fig)
 
     def conclude_test(self, output_dir):
         """
         This function should gather the two catalogs, match them and perform the summary plots
-        """
+        """     
 
-        try:
-            assert(len(self.ra.keys())==2) # Making sure that we have *just* two catalogs
-        except AssertionError:
-            print('The test can compare two catalogs only!')
+        if len(self.ra) != 2: # Making sure that we have *just* two catalogs
+            raise ValueError('The test can compare two catalogs only!')
 
-        cat_names = list(self.ra.keys()) # This is an auxiliary list to easily get the catalogs
-        print(cat_names)
-        cat_len = [len(self.ra[cat_names[0]]),len(self.ra[cat_names[1]])]
-        cat_names = np.array(cat_names)[np.argsort(cat_len)].tolist() # We find the catalog with less objects to build the tree
+        cat_names = list(self.ra) # This is an auxiliary list to easily get the catalogs 
+        cat_names = sorted(cat_names, key=lambda name: len(self.ra[name]))   
+     
         # For this test we are going to match using closest neighbor since it is the fastest but it can be easily
         # swapped for any other matching strategy
         
         matched_id = spatial_closest(self.ra[cat_names[0]], self.dec[cat_names[0]], 
-                                     self.ra[cat_names[1]], self.dec[cat_names[1]], np.arange(cat_len[1]))[1]
+                                     self.ra[cat_names[1]], self.dec[cat_names[1]],
+                                     np.arange(len(self.ra[cat_names[1]])))[1]
         
         delta_ra = self.ra[cat_names[0]]-self.ra[cat_names[1]][matched_id]
         delta_dec = self.dec[cat_names[0]]-self.dec[cat_names[1]][matched_id]
@@ -129,11 +128,12 @@ class CheckAstroPhoto(BaseValidationTest):
                 -1, 1, self.nbins, '%s' % band, r'$\Delta %s$' % band, photo_savename, bin_stat=True)
             n_true, _ = np.histogram(self.magnitude[(cat_names[1], band)], bins=50, range=(10, 30))
             n_meas, bin_edges = np.histogram(self.magnitude[(cat_names[0], band)], bins=50, range=(10, 30))
-            plt.figure()
-            plt.plot(0.5*(bin_edges[1:]+bin_edges[:-1]), 1.0*n_meas/n_true,'o')
+            fig = plt.figure()
+            plt.plot(0.5*(bin_edges[1:]+bin_edges[:-1]), n_meas.astype(float)/n_true,'o')
             plt.xlabel('{}'.format(band))
             plt.ylabel('Ratio of detected over input objects')
             plt.ylim(0,1)
             plt.tight_layout()
             photo_savename = os.path.join(output_dir, 'mag_ratio_%s_%s_%s.png' % (cat_names[0], cat_names[1], band))    
-            plt.savefig(photo_savename)      
+            plt.savefig(photo_savename)
+            plt.close(fig)      
