@@ -47,7 +47,7 @@ class TruthGalaxyVerification(BaseValidationTest):
             if not catalog_instance.has_quantities(quantities):
                 failed.append(quantities)
                 continue
-                
+
             data = catalog_instance.get_quantities(quantities)
             q1 = data[quantities[0]]
             q2 = data[quantities[1]]
@@ -55,7 +55,7 @@ class TruthGalaxyVerification(BaseValidationTest):
 
             if masked is None and np.ma.is_masked(q2):
                 masked = q2.mask.copy()
-            
+
             if to_verify.get('atol') or to_verify.get('rtol'):
                 passed_this = np.allclose(q1, q2, **{k: float(to_verify.get(k, 0)) for k in ('atol', 'rtol')})
             else:
@@ -69,22 +69,22 @@ class TruthGalaxyVerification(BaseValidationTest):
                 if np.ma.is_masked(diff):
                     diff = diff.compressed()
                 self.plot_hist(diff, '{0[0]}:{0[1]} - {1[0]}:{1[1]}'.format(*quantities), 'diff_{:02d}'.format(i), output_dir, log=True)
-        
+
         if masked is not None and masked.any() and self.check_missing_galaxy_quantities:
             data = catalog_instance.get_quantities([('extragalactic', q) for q in self.check_missing_galaxy_quantities])
             for i, q in enumerate(self.check_missing_galaxy_quantities):
                 self.plot_hist(data[('extragalactic', q)][masked], q, 'missing_{:02d}'.format(i), output_dir, log=True)
-        
+
         if passed:
             with open(os.path.join(output_dir, 'results_passed.txt'), 'w') as f:
                 for q in passed:
                     f.write(str(q) + '\n')
-        
+
         if failed:
             with open(os.path.join(output_dir, 'results_failed.txt'), 'w') as f:
                 for q in failed:
                     f.write(str(q) + '\n')
-        
+
         return TestResult(score=len(failed), passed=(not failed))
 
     def plot_hist(self, data, xlabel, filename_prefix, output_dir, **kwargs):
