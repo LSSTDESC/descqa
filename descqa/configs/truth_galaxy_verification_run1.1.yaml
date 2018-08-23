@@ -1,0 +1,23 @@
+subclass_name: truth_galaxy_verification.TruthGalaxyVerification
+to_verify:
+  - truth: object_id
+    extragalactic: galaxy_id
+  - truth: redshift
+    extragalactic: redshift_true
+  - truth: mag_true_u
+    extragalactic: mag_true_u_lsst_no_host_extinction
+  - truth: mag_true_g
+    extragalactic: mag_true_g_lsst_no_host_extinction
+  - truth: mag_true_r
+    extragalactic: mag_true_r_lsst_no_host_extinction
+  - truth: mag_true_i
+    extragalactic: mag_true_i_lsst_no_host_extinction
+  - truth: mag_true_z
+    extragalactic: mag_true_z_lsst_no_host_extinction
+  - truth: mag_true_y
+    extragalactic: mag_true_y_lsst_no_host_extinction
+check_missing_galaxy_quantities:
+  - ra
+  - dec
+  - redshift
+  - mag_r_lsst
