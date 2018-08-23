@@ -31,6 +31,7 @@ class TruthGalaxyVerification(BaseValidationTest):
         self.to_verify = tuple(to_verify)
         self.check_missing_galaxy_quantities = tuple(kwargs.get('check_missing_galaxy_quantities', []))
         self.bins = int(kwargs.get('bins', 100))
+        super(TruthGalaxyVerification, self).__init__(**kwargs)
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
 
@@ -87,7 +88,7 @@ class TruthGalaxyVerification(BaseValidationTest):
         return TestResult(score=len(failed), passed=(not failed))
 
     def plot_hist(self, data, xlabel, filename_prefix, output_dir, **kwargs):
-        filename = '{}_{}.png'.format(filename_prefix, re.sub('_+', '_', re.sub('\W+', '_', xlabel)).strip('_')).strip('_')
+        filename = '{}_{}.png'.format(filename_prefix, re.sub('_+', '_', re.sub(r'\W+', '_', xlabel)).strip('_')).strip('_')
         fig, ax = plt.subplots()
         data = data[np.isfinite(data)]
         if data.size:
