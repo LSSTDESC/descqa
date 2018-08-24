@@ -138,8 +138,11 @@ class CheckQuantities(BaseValidationTest):
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
 
-        all_quantities = sorted(catalog_instance.list_all_quantities(True))
+        #list_of_all_quantities = sorted(map(str,catalog_instance.list_all_quantities(True)))
+        #using True in the previous statement means that the elements require further parsing to remove the catalog name for composite catalogs
+        #all_quantities = [re.sub("'", "", q.split(', ')[-1].split(')')[0]) for q in list_of_all_quantities]
 
+        all_quantities = sorted(catalog_instance.list_all_quantities())
         galaxy_count = None
         failed_count = 0
         output_rows = []
@@ -267,8 +270,12 @@ class CheckQuantities(BaseValidationTest):
                 output_header.append('<span class="fail">{} does not exist!</span>'.format(' or '.join(quantities_needed)))
                 failed_count += 1
                 continue
+            
+            try:
+                data = catalog_instance.get_quantities(quantities_needed)
+            except KeyError:
+                raise ValueError('{} not found'.format(', '.join(quantities_needed)))
 
-            data = catalog_instance.get_quantities(quantities_needed)
             if check_uniqueness(data[quantity], data.get(mask)):
                 output_header.append('<span>{} is all unique</span>'.format(label))
             else:
