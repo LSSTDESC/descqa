@@ -32,7 +32,7 @@ class ShearTest(BaseValidationTest):
                  dec='dec',
                  e1='shear_1',
                  e2='shear_2_phosim',
-                 mag='restframe_extincted_sdss_abs_magr',
+                 mag='mag_true_r_sdss',
                  maglim=19.6,
                  kappa='convergence',
                  nbins=20,
@@ -80,7 +80,7 @@ class ShearTest(BaseValidationTest):
 
     def compute_nz(self, n_z):
         '''create interpolated n(z) distribution'''
-        z_bins = np.linspace(self.zlo,self.zhi, 301)
+        z_bins = np.linspace(self.zlo, self.zhi, 301)
         n = np.histogram(n_z, bins=z_bins)[0]
         z = (z_bins[1:] - z_bins[:-1]) / 2. + z_bins[:-1]
         n2 = interp1d(z, n, bounds_error=False, fill_value=0.0, kind='cubic')
@@ -266,8 +266,7 @@ class ShearTest(BaseValidationTest):
         if not catalog_instance.has_quantities([self.mag]):
             return TestResult(skipped=True, summary='do not have required magnitude quantities for cuts')
         catalog_data = self.get_catalog_data(
-            catalog_instance, [self.z, self.ra, self.dec, self.e1, self.e2, self.kappa,self.mag], filters=self.filters)
-         
+            catalog_instance, [self.z, self.ra, self.dec, self.e1, self.e2, self.kappa, self.mag], filters=self.filters)
 
         #TODO: ns set to 0.963 for now, as this isn't within astropy's cosmology dictionaries.
         try:
@@ -307,13 +306,14 @@ class ShearTest(BaseValidationTest):
             zlo2 = z_mean - self.z_range
             zhi2 = z_mean + self.z_range
             print(zlo2, zhi2)
-            zmask = (catalog_data[self.z]< zhi2)*(catalog_data[self.z] > zlo2)
+            zmask = (catalog_data[self.z] < zhi2)*(catalog_data[self.z] > zlo2)
+            mask = zmask & mask_mag
             # compute shear auto-correlation
             cat_s = treecorr.Catalog(
-                ra=catalog_data[self.ra][zmask*mask_mag],
-                dec=catalog_data[self.dec][zmask*mask_mag],
-                g1=catalog_data[self.e1][zmask*mask_mag] - np.mean(catalog_data[self.e1][zmask*mask_mag]),
-                g2=-(catalog_data[self.e2][zmask*mask_mag] - np.mean(catalog_data[self.e2][zmask*mask_mag])),
+                ra=catalog_data[self.ra][mask],
+                dec=catalog_data[self.dec][mask],
+                g1=catalog_data[self.e1][mask] - np.mean(catalog_data[self.e1][mask]),
+                g2=-(catalog_data[self.e2][mask] - np.mean(catalog_data[self.e2][mask])),
                 ra_units='deg',
                 dec_units='deg')
             gg = treecorr.GGCorrelation(
@@ -324,8 +324,8 @@ class ShearTest(BaseValidationTest):
                 bin_slop=self.bin_slop,
                 verbose=True)
             gg.process(cat_s)
-            #NOTE commented out for now - will need to change back
             r = np.exp(gg.meanlogr)
+
             #NOTE: We are computing 10^6 x correlation function for easier comparison
             xip = gg.xip * 1.e6
             xim = gg.xim * 1.e6
@@ -352,7 +352,7 @@ class ShearTest(BaseValidationTest):
                     sig_jack[i] = np.sqrt(gg.varxi[i])*1.e6
                     sigm_jack[i] = np.sqrt(gg.varxi[i])*1.e6
 
-            n_z = catalog_data[self.z][zmask*mask_mag]
+            n_z = catalog_data[self.z][mask]
             xvals, theory_plus, theory_minus = self.theory_corr(n_z, r, 15000, cosmo, p, chi_recomb)
             theory_plus = theory_plus * 1.e6
             theory_minus = theory_minus * 1.e6
