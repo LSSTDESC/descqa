@@ -12,7 +12,7 @@ import camb.correlations
 import astropy.units as u
 import astropy.constants as const
 from GCR import GCRQuery
-from astropy.cosmology import WMAP7
+from astropy.cosmology import WMAP7 # pylint: disable=no-name-in-module
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
 pars = camb.CAMBparams()
