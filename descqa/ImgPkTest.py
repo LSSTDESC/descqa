@@ -39,12 +39,11 @@ class ImgPkTest(BaseValidationTest):
         if len(test_raft.sensors) != 9:
             return TestResult(skipped=True, summary='Raft is not complete')
         xdim, ydim = list(test_raft.sensors.values())[0].get_data().shape
-        total_data = np.zeros((xdim*3,ydim*3))
         
         # Assemble the 3 x 3 raft's image
         # TODO: Need to use LSST's software to handle the gaps properly
-        total_data = [test_raft.sensors['S%d%d'%(i, j)].get_data() for i in range (3) for j in range(3)]
-        total_data = np.moveaxis(np.array(total_data), [0, 1], [2, 3])
+        total_data = np.array([test_raft.sensors['S%d%d'%(i, j)].get_data() for i in range (3) for j in range(3)])
+        total_data = total_data.reshape(3,3,xdim,ydim).swapaxes(1,2).reshape(3*xdim,3*ydim)
         # FFT of the density contrast
         F1 = fftpack.fft2((total_data/np.mean(total_data)-1))
         F2 = fftpack.fftshift( F1 )
