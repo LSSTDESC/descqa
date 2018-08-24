@@ -258,7 +258,6 @@ class ShearTest(BaseValidationTest):
         '''
         run test on a single catalog
         '''
-        f1 = open('./logfile','w+')
         # check if needed quantities exist
         if not catalog_instance.has_quantities([self.z, self.ra, self.dec]):
             return TestResult(skipped=True, summary='do not have needed location quantities')
@@ -280,7 +279,6 @@ class ShearTest(BaseValidationTest):
         pars.set_cosmology(H0=cosmo.H0.value, ombh2=cosmo.Ob0*(cosmo.H0.value /100.)**2, omch2=(cosmo.Om0-cosmo.Ob0)*(cosmo.H0.value /100.)**2)
         #TODO: set sigma8 value to catalog value when this becomes possible
 
-        f1.write("set cosmology\n")
         pars.InitPower.set_params(ns=0.963, As=2.168e-9)
         #pars.InitPower.set_params(ns=0.963,As = 2.168e-9*(sigma8/0.8 )**2)
         camb.set_halofit_version(version='takahashi')
@@ -305,7 +303,6 @@ class ShearTest(BaseValidationTest):
         fig, ax = plt.subplots(nrows=2, ncols=ntomo, sharex=True, squeeze=False, figsize=(ntomo*5, 5))
         zmeans = np.linspace(self.zlo, self.zhi, ntomo+2)[1:-1]
         for ii in range(ntomo):
-            f1.write(str(ii) +"\n")
             z_mean = zmeans[ii]
             zlo2 = z_mean - self.z_range
             zhi2 = z_mean + self.z_range
@@ -328,15 +325,11 @@ class ShearTest(BaseValidationTest):
                 verbose=True)
             gg.process(cat_s)
             #NOTE commented out for now - will need to change back
-            #r = np.exp(gg.meanlogr)
             r = np.exp(gg.meanlogr)
             #NOTE: We are computing 10^6 x correlation function for easier comparison
             xip = gg.xip * 1.e6
             xim = gg.xim * 1.e6
-            #xip = np.zeros((self.nbins))
-            #xim = np.zeros((self.nbins))
  
-            f1.write("npairs computed \n")
             print("npairs  = ")
             print(gg.npairs)
 	    #sig = np.sqrt(gg.varxi)  # this is shape noise only - should be very low for simulation data
@@ -361,7 +354,6 @@ class ShearTest(BaseValidationTest):
 
             n_z = catalog_data[self.z][zmask*mask_mag]
             xvals, theory_plus, theory_minus = self.theory_corr(n_z, r, 15000, cosmo, p, chi_recomb)
-            f1.write("done theory \n")
             theory_plus = theory_plus * 1.e6
             theory_minus = theory_minus * 1.e6
 
@@ -374,7 +366,6 @@ class ShearTest(BaseValidationTest):
             print(theory_minus)
             print(xip)
             print(xim)
-            f1.write("all done! \n")
 
 	    #The following are further treecorr correlation functions that could be added in later to extend the test
 	    #treecorr.NNCorrelation(nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin')
