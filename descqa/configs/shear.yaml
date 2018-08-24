@@ -11,8 +11,10 @@ max_sep: 150
 sep_units: 'arcmin'
 bin_slop: 0.07
 zlo: 0.2
-zhi: 1.0
-ntomo: 3
+zhi: 3.0
+ntomo: 6
 z_range: 0.1
 do_jackknife: False
 N_clust: 5
+mag: 'restframe_extincted_sdss_abs_magr'
+maglim: -18.0
