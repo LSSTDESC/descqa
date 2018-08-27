@@ -30,7 +30,7 @@ class TruthGalaxyVerification(BaseValidationTest):
             raise ValueError('each dict in `to_verify` must have `truth` and `extragalactic`')
         self.to_verify = tuple(to_verify)
         self.check_missing_galaxy_quantities = tuple(kwargs.get('check_missing_galaxy_quantities', []))
-        self.bins = int(kwargs.get('bins', 100))
+        self.bins = int(kwargs.get('bins', 50))
         super(TruthGalaxyVerification, self).__init__(**kwargs)
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
@@ -65,15 +65,19 @@ class TruthGalaxyVerification(BaseValidationTest):
                 passed.append(quantities)
             else:
                 failed.append(quantities)
+
+            if not passed_this or to_verify.get('always_show_plot'):
                 diff = (q1 - q2)
                 if np.ma.is_masked(diff):
                     diff = diff.compressed()
-                self.plot_hist(diff, '{0[0]}:{0[1]} - {1[0]}:{1[1]}'.format(*quantities), 'diff_{:02d}'.format(i), output_dir, log=True)
+                self.plot_hist(diff, '{0[0]}:{0[1]} - {1[0]}:{1[1]}'.format(*quantities), 'diff_{:02d}'.format(i), output_dir, log=True, title='Difference')
 
-        if masked is not None and masked.any() and self.check_missing_galaxy_quantities:
-            data = catalog_instance.get_quantities([('extragalactic', q) for q in self.check_missing_galaxy_quantities])
-            for i, q in enumerate(self.check_missing_galaxy_quantities):
-                self.plot_hist(data[('extragalactic', q)][masked], q, 'missing_{:02d}'.format(i), output_dir, log=True)
+        if masked is not None and masked.any():
+            print('[Warning] Truth catalog has {} galaxies fewer than the extragalactic catalog'.format(np.count_nonzero(masked)))
+            if self.check_missing_galaxy_quantities:
+                data = catalog_instance.get_quantities([('extragalactic', q) for q in self.check_missing_galaxy_quantities])
+                for i, q in enumerate(self.check_missing_galaxy_quantities):
+                    self.plot_hist(data[('extragalactic', q)][masked], q, 'missing_{:02d}'.format(i), output_dir, log=True, color='C1', title='Missing galaxies')
 
         if passed:
             with open(os.path.join(output_dir, 'results_passed.txt'), 'w') as f:
@@ -87,13 +91,15 @@ class TruthGalaxyVerification(BaseValidationTest):
 
         return TestResult(score=len(failed), passed=(not failed))
 
-    def plot_hist(self, data, xlabel, filename_prefix, output_dir, **kwargs):
+    def plot_hist(self, data, xlabel, filename_prefix, output_dir, title=None, **kwargs):
         filename = '{}_{}.png'.format(filename_prefix, re.sub('_+', '_', re.sub(r'\W+', '_', xlabel)).strip('_')).strip('_')
         fig, ax = plt.subplots()
         data = data[np.isfinite(data)]
         if data.size:
             ax.hist(data, self.bins, **kwargs)
         ax.set_xlabel(xlabel)
+        ax.set_ylabel('Count')
+        if title:
+            ax.set_title(title)
         fig.savefig(os.path.join(output_dir, filename))
         plt.close(fig)
-
