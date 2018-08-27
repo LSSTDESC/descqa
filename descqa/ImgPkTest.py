@@ -1,7 +1,7 @@
 from __future__ import unicode_literals, absolute_import, division
 import os
 import numpy as np
-from scipy import fftpack
+from scipy.stats import binned_statistic
 import astropy.table
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
@@ -22,7 +22,7 @@ class ImgPkTest(BaseValidationTest):
     -----
     input_path: (str) Directory where the raw e-images live.
     val_label: (str) Label of the horizontal axis for the validation plots.
-    raft: (str) Raft number to analyze (e.g.: '01','10','22', etc).
+    raft: (str) Raft number to analyze (e.g., 'R01', 'R10', 'R22').
     """
 
     def __init__(self, input_path, val_label, raft, **kwargs):
@@ -32,10 +32,6 @@ class ImgPkTest(BaseValidationTest):
         self.label = val_label
         self.raft = raft
 
-    def post_process_plot(self, ax):
-        ax.plot(self.validation_data['k'], self.validation_data['Pk'], label=self.label)
-        ax.legend()
-
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         # The catalog instance is a focal plane
         test_raft = catalog_instance.focal_plane.rafts[self.raft]
@@ -44,49 +40,47 @@ class ImgPkTest(BaseValidationTest):
             return TestResult(skipped=True, summary='invalid rebinning value: {}'.format(rebinning))
         if len(test_raft.sensors) != 9:
             return TestResult(skipped=True, summary='Raft is not complete')
-        xdim, ydim = first(test_raft.sensors.values()).get_data().shape
-        
+
         # Assemble the 3 x 3 raft's image
         # TODO: Need to use LSST's software to handle the gaps properly
         total_data = np.array([test_raft.sensors['S%d%d'%(i, j)].get_data() for i in range (3) for j in range(3)])
-        total_data = total_data.reshape(3,3,xdim,ydim).swapaxes(1,2).reshape(3*xdim,3*ydim)
+        xdim, ydim = total_data.shape[1:]
+        total_data = total_data.reshape(3, 3, xdim, ydim).swapaxes(1, 2).reshape(3*xdim, 3*ydim)
+
         # FFT of the density contrast
-        F1 = fftpack.fft2((total_data/np.mean(total_data)-1))
-        F2 = fftpack.fftshift( F1 )
-        psd2D = np.abs( F2 )**2 # 2D power
-        pix_scale = 0.2/60*rebinning #pixel scale in arcmin 
-        kx = fftpack.fftshift(fftpack.fftfreq(F2.shape[0], pix_scale))
-        ky = fftpack.fftshift(fftpack.fftfreq(F2.shape[1], pix_scale))
-        kxx, kyy = np.meshgrid(kx, ky)
-        rad = np.sqrt(kxx**2 + kyy**2)
-        bins = fftpack.rfftfreq(F2.shape[0], pix_scale)
-        bin_space = bins[1]-bins[0]
-        ps1d = np.zeros(len(bins))
-        for i, b in enumerate(bins):
-            ps1d[i] = np.mean(
-                psd2D.T[(rad > b - 0.5 * bin_space) & (rad < b + 0.5 * bin_space)]) / (F2.shape[0] * F2.shape[1])
-        bins = bins / (2 * np.pi)
-        fig, ax = plt.subplots(2, 1)
+        FT = np.fft.fft2(total_data / total_data.mean() - 1)
+        n_kx, n_ky = FT.shape
+        psd2D = np.square(np.abs(FT)).ravel() # 2D power, flattened
+        psd2D /= (n_kx * n_ky)
+        pix_scale = 0.2 / 60.0 #pixel scale in arcmin
+        spacing = pix_scale * rebinning
+        rad = np.hypot(*np.meshgrid(np.fft.fftfreq(n_kx, spacing), np.fft.fftfreq(n_ky, spacing), indexing='ij')).ravel()
+        rad /= (2.0 * np.pi)
+
+        psd1D, bin_edges, _ = binned_statistic(rad, psd2D, bins=self.validation_data['k'])
+        bin_center = (bin_edges[1:] + bin_edges[:-1]) * 0.5
+        score = np.square(psd1D/self.validation_data['Pk'][:-1] - 1.0).sum()
+
+        # make plot
+        fig, ax = plt.subplots(2, 1, figsize=(7, 7))
         for key, image in test_raft.sensors.items():
-            ax[0].hist(image.get_data().flatten(), histtype='step', range=(200, 2000), bins=200, label=key)
+            ax[0].hist(image.get_data().ravel(), histtype='step', range=(200, 2000), bins=200, label=key, log=True)
         ax[0].set_xlabel('Background level [ADU]')
         ax[0].set_ylabel('Number of pixels')
         ax[0].legend(loc='best')
-        ax[1].plot(bins, ps1d, label=self.raft)
+        ax[1].plot(bin_center, psd1D, label=self.raft)
+        ax[1].plot(self.validation_data['k'], self.validation_data['Pk'], label='validation')
         ax[1].set_xlabel('k [arcmin$^{-1}$]')
         ax[1].set_ylabel('P(k)')
         ax[1].set_xscale('log')
         ax[1].set_yscale('log')
         ax[1].set_ylim(1, 1000)
-        self.post_process_plot(ax[1])
+        ax[1].legend(loc='best')
+        fig.tight_layout()
         fig.savefig(os.path.join(output_dir, 'plot.png'))
         plt.close(fig)
-        score = 0
-        # Check if the k binning/rebinning is the same before checking chi-sq
-        if (bins == self.validation_data['k']).all():
-            score = np.sum((ps1d / self.validation_data['Pk'] - 1)**2)
+
         # Check criteria to pass or fail (images in the edges of the focal plane
         # will have way more power than the ones in the center if they are not
         # flattened
         return TestResult(score=score, inspect_only=True)
-
