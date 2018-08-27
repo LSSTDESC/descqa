@@ -36,6 +36,8 @@ class ImgPkTest(BaseValidationTest):
         # The catalog instance is a focal plane
         test_raft = catalog_instance.focal_plane.rafts[self.raft]
         rebinning = list(test_raft.sensors.values())[0].rebinning
+        if rebinning<=0:
+            rebinning = 1
         if len(test_raft.sensors) != 9:
             return TestResult(skipped=True, summary='Raft is not complete')
         xdim, ydim = list(test_raft.sensors.values())[0].get_data().shape
