@@ -9,6 +9,10 @@ from .plotting import plt
 __all__ = ['ImgPkTest']
 
 
+def first(iterable, default=None):
+    return next(iter(iterable), default)
+
+
 class ImgPkTest(BaseValidationTest):
     """
     Validation test that computes the power spectrum
@@ -35,12 +39,12 @@ class ImgPkTest(BaseValidationTest):
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         # The catalog instance is a focal plane
         test_raft = catalog_instance.focal_plane.rafts[self.raft]
-        rebinning = list(test_raft.sensors.values())[0].rebinning
+        rebinning = first(test_raft.sensors.values()).rebinning
         if not rebinning or rebinning < 0:
             return TestResult(skipped=True, summary='invalid rebinning value: {}'.format(rebinning))
         if len(test_raft.sensors) != 9:
             return TestResult(skipped=True, summary='Raft is not complete')
-        xdim, ydim = list(test_raft.sensors.values())[0].get_data().shape
+        xdim, ydim = first(test_raft.sensors.values()).get_data().shape
         
         # Assemble the 3 x 3 raft's image
         # TODO: Need to use LSST's software to handle the gaps properly
@@ -63,7 +67,7 @@ class ImgPkTest(BaseValidationTest):
                 psd2D.T[(rad > b - 0.5 * bin_space) & (rad < b + 0.5 * bin_space)]) / (F2.shape[0] * F2.shape[1])
         bins = bins / (2 * np.pi)
         fig, ax = plt.subplots(2, 1)
-        for key, image in test_raft.sensor.items():
+        for key, image in test_raft.sensors.items():
             ax[0].hist(image.get_data().flatten(), histtype='step', range=(200, 2000), bins=200, label=key)
         ax[0].set_xlabel('Background level [ADU]')
         ax[0].set_ylabel('Number of pixels')
@@ -77,7 +81,7 @@ class ImgPkTest(BaseValidationTest):
         self.post_process_plot(ax[1])
         fig.savefig(os.path.join(output_dir, 'plot.png'))
         plt.close(fig)
-        score=0
+        score = 0
         # Check if the k binning/rebinning is the same before checking chi-sq
         if (bins == self.validation_data['k']).all():
             score = np.sum((ps1d / self.validation_data['Pk'] - 1)**2)
