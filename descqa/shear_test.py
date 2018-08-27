@@ -32,8 +32,8 @@ class ShearTest(BaseValidationTest):
                  dec='dec',
                  e1='shear_1',
                  e2='shear_2_phosim',
-                 mag='mag_true_r_sdss',
-                 maglim=19.6,
+                 mag='Mag_true_r_sdss_z0',
+                 maglim=-19.0,
                  kappa='convergence',
                  nbins=20,
                  min_sep=2.5,
@@ -201,7 +201,6 @@ class ShearTest(BaseValidationTest):
 
         ### assign covariance matrix - loop is poor python syntax but compared to the time taken for the rest of the test doesn't really matter
         cp_xip = np.zeros((self.nbins, self.nbins))
-       #TODO: check factors of N_clust here
         for i in range(self.nbins):
             for j in range(self.nbins):
                 for k in range(N_clust):
@@ -268,18 +267,19 @@ class ShearTest(BaseValidationTest):
         catalog_data = self.get_catalog_data(
             catalog_instance, [self.z, self.ra, self.dec, self.e1, self.e2, self.kappa, self.mag], filters=self.filters)
 
-        #TODO: ns set to 0.963 for now, as this isn't within astropy's cosmology dictionaries.
         try:
             cosmo = catalog_instance.cosmology
+            ns = cosmo.ns
+            s8 = cosmo.sigma8
         except AttributeError:
             cosmo = WMAP7
             print("WARNING: using WMAP7 cosmology")
+            ns = 0.963
+            s8 = 0.8
         print(cosmo)
         pars.set_cosmology(H0=cosmo.H0.value, ombh2=cosmo.Ob0*(cosmo.H0.value /100.)**2, omch2=(cosmo.Om0-cosmo.Ob0)*(cosmo.H0.value /100.)**2)
-        #TODO: set sigma8 value to catalog value when this becomes possible
 
-        pars.InitPower.set_params(ns=0.963, As=2.168e-9)
-        #pars.InitPower.set_params(ns=0.963,As = 2.168e-9*(sigma8/0.8 )**2)
+        pars.InitPower.set_params(ns=ns,As = 2.168e-9*(s8/0.8 )**2)
         camb.set_halofit_version(version='takahashi')
         p = camb.get_matter_power_interpolator(pars, nonlinear=True, k_hunit=False, hubble_units=False, kmax=100., zmax=1100., k_per_logint=False).P
         chi_recomb = cosmo.comoving_distance(1100.).value
