@@ -36,8 +36,8 @@ class ImgPkTest(BaseValidationTest):
         # The catalog instance is a focal plane
         test_raft = catalog_instance.focal_plane.rafts[self.raft]
         rebinning = list(test_raft.sensors.values())[0].rebinning
-        if rebinning<=0:
-            rebinning = 1
+        if not rebinning or rebinning < 0:
+            return TestResult(skipped=True, summary='invalid rebinning value: {}'.format(rebinning))
         if len(test_raft.sensors) != 9:
             return TestResult(skipped=True, summary='Raft is not complete')
         xdim, ydim = list(test_raft.sensors.values())[0].get_data().shape
@@ -51,11 +51,11 @@ class ImgPkTest(BaseValidationTest):
         F2 = fftpack.fftshift( F1 )
         psd2D = np.abs( F2 )**2 # 2D power
         pix_scale = 0.2/60*rebinning #pixel scale in arcmin 
-        kx = 1 / pix_scale*np.arange(-F2.shape[0] // 2, F2.shape[0] // 2, dtype=np.float) / F2.shape[0]
-        ky = 1 / pix_scale*np.arange(-F2.shape[1] // 2, F2.shape[1] // 2, dtype=np.float) / F2.shape[1]
-        kxx, kyy = np.meshgrid(kx,ky)
-        rad = np.sqrt(kxx**2+kyy**2)
-        bins = 1 / pix_scale*np.arange(0, F2.shape[0] // 2, dtype=np.float) / F2.shape[0]
+        kx = fftpack.fftshift(fftpack.fftfreq(F2.shape[0], pix_scale))
+        ky = fftpack.fftshift(fftpack.fftfreq(F2.shape[1], pix_scale))
+        kxx, kyy = np.meshgrid(kx, ky)
+        rad = np.sqrt(kxx**2 + kyy**2)
+        bins = fftpack.rfftfreq(F2.shape[0], pix_scale)
         bin_space = bins[1]-bins[0]
         ps1d = np.zeros(len(bins))
         for i, b in enumerate(bins):
@@ -63,10 +63,8 @@ class ImgPkTest(BaseValidationTest):
                 psd2D.T[(rad > b - 0.5 * bin_space) & (rad < b + 0.5 * bin_space)]) / (F2.shape[0] * F2.shape[1])
         bins = bins / (2 * np.pi)
         fig, ax = plt.subplots(2, 1)
-        for i in range(9):
-            image = list(test_raft.sensors.values())[i].get_data()
-            key = list(test_raft.sensors.keys())[i]
-            ax[0].hist(image.flatten(), histtype='step', range=(200, 2000), bins=200, label=key)
+        for key, image in test_raft.sensor.items():
+            ax[0].hist(image.get_data().flatten(), histtype='step', range=(200, 2000), bins=200, label=key)
         ax[0].set_xlabel('Background level [ADU]')
         ax[0].set_ylabel('Number of pixels')
         ax[0].legend(loc='best')
@@ -81,7 +79,7 @@ class ImgPkTest(BaseValidationTest):
         plt.close(fig)
         score=0
         # Check if the k binning/rebinning is the same before checking chi-sq
-        if all(bins == self.validation_data['k']):
+        if (bins == self.validation_data['k']).all():
             score = np.sum((ps1d / self.validation_data['Pk'] - 1)**2)
         # Check criteria to pass or fail (images in the edges of the focal plane
         # will have way more power than the ones in the center if they are not
