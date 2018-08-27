@@ -101,5 +101,6 @@ class TruthGalaxyVerification(BaseValidationTest):
         ax.set_ylabel('Count')
         if title:
             ax.set_title(title)
+        fig.tight_layout()
         fig.savefig(os.path.join(output_dir, filename))
         plt.close(fig)
