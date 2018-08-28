@@ -1,7 +1,6 @@
 subclass_name: ImgPkTest.ImgPkTest
-description: 'Compute power spectrum of the background' 
+description: 'Compute power spectrum of the background'
 included_by_default: true
-
-input_path: '/global/projecta/projectdirs/lsst/groups/SSim/DC2/img_pk/Pk_9.fits.gz'
-val_label: 'Test 9'
-raft: 'R22'
+rebinning: 16
+validation_data_path: '/global/projecta/projectdirs/lsst/groups/SSim/DC2/img_pk/Pk_9.fits.gz'
+validation_data_label: 'Test 9'
