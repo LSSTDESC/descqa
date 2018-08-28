@@ -46,7 +46,7 @@ class ImgPkTest(BaseValidationTest):
             return first(raft.sensors.values()).default_rebinning
         return self.rebinning
 
-    def calc_psd(self, raft, bins=300):
+    def calc_psd(self, raft, bins=200):
         rebinning = self.get_rebinning(raft)
 
         # Assemble the 3 x 3 raft's image
@@ -66,9 +66,9 @@ class ImgPkTest(BaseValidationTest):
         rad = np.hypot(*np.meshgrid(np.fft.fftfreq(n_kx, spacing), np.fft.fftfreq(n_ky, spacing), indexing='ij')).ravel()
         rad /= (2.0 * np.pi)
 
-        psd1D, bin_edges, _ = binned_statistic(rad, psd2D, bins=bins)
-        bin_center = (bin_edges[1:] + bin_edges[:-1]) * 0.5
-        return bin_center, psd1D
+        k = binned_statistic(rad, rad, bins=bins)[0]
+        psd1D = binned_statistic(rad, psd2D, bins=bins)[0]
+        return k, psd1D
 
     def plot_hist(self, ax, raft):
         rebinning = self.get_rebinning(raft)
@@ -87,7 +87,7 @@ class ImgPkTest(BaseValidationTest):
         ax.set_xlabel('k [arcmin$^{-1}$]')
         ax.set_ylabel('P(k)')
         ax.set_xlim(0.001, 2)
-        ax.set_ylim(1.0e-4, 1)
+        ax.set_ylim(1.0e-4, 10)
         ax.legend(loc='best')
         return ax
 
@@ -119,11 +119,14 @@ class ImgPkTest(BaseValidationTest):
                     count += 1
                     score += np.square((psd_log_interp - np.log(self.validation_data['Pk']))).sum()
             else:
-                print('[Warning] Raft {} is not complete!'.format(raft_name))
+                msg = 'Raft {} is not complete!'.format(raft_name)
+                ax[1].text(0.05, 0.5, msg, transform=ax[1].transAxes)
+                print('[WARNING]', msg)
             fig.tight_layout()
             fig.savefig(os.path.join(output_dir, 'plot_{}.png'.format(raft_name)))
             plt.close(fig)
-        score /= count
+        if count:
+            score /= count
 
         # Check criteria to pass or fail (images in the edges of the focal plane
         # will have way more power than the ones in the center if they are not
