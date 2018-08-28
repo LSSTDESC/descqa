@@ -81,7 +81,7 @@ class ImgPkTest(BaseValidationTest):
         return ax
 
     def plot_psd(self, ax, k, psd, label):
-        ax.loglog(k, psd, label)
+        ax.loglog(k, psd, label=label)
         if self.validation_data is not None:
             ax.loglog(self.validation_data['k'], self.validation_data['Pk'], label=self.validation_data_label)
         ax.set_xlabel('k [arcmin$^{-1}$]')
