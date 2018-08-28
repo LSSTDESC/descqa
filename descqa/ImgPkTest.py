@@ -123,10 +123,10 @@ class ImgPkTest(BaseValidationTest):
             fig.savefig(os.path.join(output_dir, 'plot_{}.png'.format(raft_name)))
             plt.close(fig)
         if count:
-            score /= count
+            total_chi2 /= count
         ndof = len(self.validation_data['k']) - 1
         score = 1 - chi2.cdf(total_chi2, ndof)
         # Check criteria to pass or fail (images in the edges of the focal plane
         # will have way more power than the ones in the center if they are not
         # flattened, we require the power to be within 2-sigma ( p < 0.95)
-        return TestResult(score= score, passed= (score < 0.95))
+        return TestResult(score=score, passed=(score < 0.95))
