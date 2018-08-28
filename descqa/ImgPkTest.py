@@ -58,17 +58,14 @@ class ImgPkTest(BaseValidationTest):
         # FFT of the density contrast
         FT = np.fft.fft2(total_data / total_data.mean() - 1)
         n_kx, n_ky = FT.shape
+        psd = np.square(np.abs(FT)).ravel()
         spacing = self.pixel_scale * rebinning
+        k_rad = np.hypot(*np.meshgrid(np.fft.fftfreq(n_kx, spacing), np.fft.fftfreq(n_ky, spacing), indexing='ij')).ravel()
 
-        psd2D = np.square(np.abs(FT)).ravel()
-        psd2D *= (spacing / n_kx) * (spacing / n_ky)
+        k_rad /= (2.0 * np.pi)
+        psd *= (spacing / n_kx) * (spacing / n_ky)
 
-        rad = np.hypot(*np.meshgrid(np.fft.fftfreq(n_kx, spacing), np.fft.fftfreq(n_ky, spacing), indexing='ij')).ravel()
-        rad /= (2.0 * np.pi)
-
-        k = binned_statistic(rad, rad, bins=bins)[0]
-        psd1D = binned_statistic(rad, psd2D, bins=bins)[0]
-        return k, psd1D
+        return binned_statistic(k_rad, [k_rad, psd], bins=bins)[0]
 
     def plot_hist(self, ax, raft):
         rebinning = self.get_rebinning(raft)
@@ -77,7 +74,7 @@ class ImgPkTest(BaseValidationTest):
                     histtype='step', range=(200, 2000), bins=200, label=key, log=True)
         ax.set_xlabel('Background level [ADU]')
         ax.set_ylabel('Number of pixels')
-        ax.legend(loc='best')
+        ax.legend(loc='best', ncol=2)
         return ax
 
     def plot_psd(self, ax, k, psd, label):
@@ -86,8 +83,8 @@ class ImgPkTest(BaseValidationTest):
             ax.loglog(self.validation_data['k'], self.validation_data['Pk'], label=self.validation_data_label)
         ax.set_xlabel('k [arcmin$^{-1}$]')
         ax.set_ylabel('P(k)')
-        ax.set_xlim(0.001, 2)
-        ax.set_ylim(1.0e-4, 10)
+        ax.set_xlim(0.005, 2)
+        ax.set_ylim(1.0e-4, 2)
         ax.legend(loc='best')
         return ax
 
