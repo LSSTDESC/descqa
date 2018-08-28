@@ -1,7 +1,7 @@
 from __future__ import unicode_literals, absolute_import, division
 import os
 import numpy as np
-from scipy.stats import binned_statistic
+from scipy.stats import binned_statistic, chi2
 from astropy.table import Table
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
@@ -102,7 +102,7 @@ class ImgPkTest(BaseValidationTest):
         if not all(raft_name in rafts for raft_name in raft_names):
             return TestResult(skipped=True, summary='Not all rafts exist!')
 
-        score = 0
+        total_chi2 = 0
         count = 0
         for raft_name in raft_names:
             raft = rafts[raft_name]
@@ -114,7 +114,7 @@ class ImgPkTest(BaseValidationTest):
                 if self.validation_data is not None:
                     psd_log_interp = np.interp(self.validation_data['k'], k, np.log(psd), left=-np.inf, right=-np.inf)
                     count += 1
-                    score += np.square((psd_log_interp - np.log(self.validation_data['Pk']))).sum()
+                    total_chi2 += np.square((psd_log_interp - np.log(self.validation_data['Pk']))).sum()
             else:
                 msg = 'Raft {} is not complete!'.format(raft_name)
                 ax[1].text(0.05, 0.5, msg, transform=ax[1].transAxes)
@@ -124,8 +124,9 @@ class ImgPkTest(BaseValidationTest):
             plt.close(fig)
         if count:
             score /= count
-
+        ndof = len(self.validation_data['k']) - 1
+        score = 1 - chi2.cdf(total_chi2, ndof)
         # Check criteria to pass or fail (images in the edges of the focal plane
         # will have way more power than the ones in the center if they are not
-        # flattened
-        return TestResult(score=score, inspect_only=True)
+        # flattened, we require the power to be within 2-sigma ( p < 0.95)
+        return TestResult(score= score, passed= (score < 0.95))
