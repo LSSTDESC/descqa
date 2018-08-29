@@ -12,6 +12,8 @@ __all__ = [
     'get_healpixel_footprint',
     'generate_uniform_random_ra_dec',
     'generate_uniform_random_ra_dec_footprint',
+    'first',
+    'is_string_like',
 ]
 
 
@@ -233,3 +235,21 @@ def generate_uniform_random_dist(n, dlo, dhi):
     d += dlo**3.0
     d **= 1.0/3.0
     return d
+
+
+def first(iterable, default=None):
+    """
+    returns the first element of `iterable`
+    """
+    return next(iter(iterable), default)
+
+
+def is_string_like(obj):
+    """
+    test if `obj` is string like
+    """
+    try:
+        obj + ''
+    except (TypeError, ValueError):
+        return False
+    return True
