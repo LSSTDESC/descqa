@@ -1,6 +1,5 @@
 from __future__ import unicode_literals, absolute_import, division
 import os
-from itertools import product
 import numpy as np
 from scipy.stats import binned_statistic, chi2
 from astropy.table import Table
