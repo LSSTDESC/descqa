@@ -274,12 +274,13 @@ class CheckQuantities(BaseValidationTest):
                     if s in checks:
                         try:
                             min_value, max_value = checks[s]
+                        except (TypeError, ValueError):
+                            flag |= (s_value != checks[s])
+                        else:
                             if min_value is not None:
                                 flag |= (s_value < min_value)
                             if max_value is not None:
                                 flag |= (s_value > max_value)
-                        except TypeError:
-                            flag |= (s_value != checks[s])
                     else:
                         flag = None
                     result_this_quantity[s] = (

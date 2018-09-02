@@ -9,7 +9,7 @@ always_show_plot: false
 quantities_to_check:
   - quantities: 'agn_gal/mag_norm'
     label: 'mag'
-    min: 10, 30
+    min: [10, null]
     f_inf: 0
     f_nan: 0
-    f_outlier: 0, 0.005
+    f_outlier: [0, 0.01]
