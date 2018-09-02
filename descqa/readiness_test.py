@@ -129,7 +129,7 @@ class CheckQuantities(BaseValidationTest):
         self.always_show_plot = bool(kwargs.get('always_show_plot', True))
 
         self.nbins = int(kwargs.get('nbins', 50))
-        self.prop_cycle = cycle(iter(plt.rcParams['axes.prop_cycle']))
+        self.prop_cycle = None
 
         self.current_catalog_name = None
         self.current_failed_count = None
@@ -140,7 +140,7 @@ class CheckQuantities(BaseValidationTest):
 
         super(CheckQuantities, self).__init__(**kwargs)
 
-    def record_result(self, results, quantity_name=None, more_info=None, failed=None):
+    def record_result(self, results, quantity_name=None, more_info=None, failed=None, individual_only=False):
         if isinstance(results, dict):
             self.current_failed_count += sum(1 for v in results.values() if v[1] == 'fail')
         elif failed:
@@ -152,7 +152,7 @@ class CheckQuantities(BaseValidationTest):
             else:
                 self._individual_table.append(self.format_result_row(results, quantity_name, more_info))
 
-        if self.enable_aggregated_summary:
+        if self.enable_aggregated_summary and not individual_only:
             if quantity_name is None:
                 results = '{} {}'.format(self.current_catalog_name, results) if self.current_catalog_name else results
                 self._aggregated_header.append(self.format_result_header(results, failed))
@@ -211,6 +211,7 @@ class CheckQuantities(BaseValidationTest):
 
         all_quantities = sorted(map(str, catalog_instance.list_all_quantities(True)))
 
+        self.prop_cycle = cycle(iter(plt.rcParams['axes.prop_cycle']))
         self.current_catalog_name = catalog_name
         self.current_failed_count = 0
         galaxy_count = None
@@ -218,7 +219,8 @@ class CheckQuantities(BaseValidationTest):
 
         self.record_result('Running readiness test on {} {}'.format(
             catalog_name,
-            getattr(catalog_instance, 'version', '')
+            getattr(catalog_instance, 'version', ''),
+            individual_only=True,
         ))
 
         for i, checks in enumerate(self.quantities_to_check):
