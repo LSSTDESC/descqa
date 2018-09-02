@@ -1,0 +1,11 @@
+subclass_name: readiness_test.CheckQuantities
+description: 'Check AGN magnitudes in the instance catalogs'
+included_by_default: true
+
+enable_individual_summary: false
+enable_aggregated_summary: true
+always_show_plot: false
+
+quantities_to_check:
+  - quantities: 'agn_gal/mag_norm'
+    label: 'mag'
