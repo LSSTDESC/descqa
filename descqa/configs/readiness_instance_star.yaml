@@ -7,7 +7,7 @@ enable_aggregated_summary: true
 always_show_plot: false
 
 quantities_to_check:
-  - quantities: 'star/mag_norm', 'bright_stars/mag_norm'
+  - quantities: 'star/mag_norm'
     label: 'mag'
     min: 10, 30
     f_inf: 0
