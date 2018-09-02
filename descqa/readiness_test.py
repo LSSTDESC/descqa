@@ -6,6 +6,7 @@ from itertools import cycle
 from collections import defaultdict, OrderedDict
 import numpy as np
 import numexpr as ne
+from scipy.stats import norm
 
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
@@ -35,7 +36,7 @@ def find_outlier(x):
     """
     return a bool array indicating outliers or not in *x*
     """
-    l, m, h = np.percentile(x, [16.0, 50.0, 84.0])
+    l, m, h = np.percentile(x, norm.cdf([-1, 0, 1])*100)
     d = (h-l) * 0.5
     return (x > (m + d*3)) | (x < (m - d*3))
 
@@ -123,30 +124,102 @@ class CheckQuantities(BaseValidationTest):
         if not all(d.get('quantity') for d in self.uniqueness_to_check):
             raise ValueError('yaml file error: `quantity` must exist for each item in `uniqueness_to_check`')
 
+        self.enable_individual_summary = bool(kwargs.get('enable_individual_summary', True))
+        self.enable_aggregated_summary = bool(kwargs.get('enable_aggregated_summary', False))
+        self.always_show_plot = bool(kwargs.get('always_show_plot', True))
+
         self.nbins = int(kwargs.get('nbins', 50))
         self.prop_cycle = cycle(iter(plt.rcParams['axes.prop_cycle']))
+
+        self.current_catalog_name = None
+        self.current_failed_count = None
+        self._aggregated_header = list()
+        self._aggregated_table = list()
+        self._individual_header = list()
+        self._individual_table = list()
+
         super(CheckQuantities, self).__init__(**kwargs)
 
+    def record_result(self, results, quantity_name=None, more_info=None, failed=None):
+        if isinstance(results, dict):
+            self.current_failed_count += sum(1 for v in results.values() if v[1] == 'fail')
+        elif failed:
+            self.current_failed_count += 1
 
-    def _format_row(self, quantity, plot_filename, results):
-        output = ['<tr>', '<td title="{1}">{0}</td>'.format(quantity, plot_filename)]
+        if self.enable_individual_summary:
+            if quantity_name is None:
+                self._individual_header.append(self.format_result_header(results, failed))
+            else:
+                self._individual_table.append(self.format_result_row(results, quantity_name, more_info))
+
+        if self.enable_aggregated_summary:
+            if quantity_name is None:
+                results = '{} {}'.format(self.current_catalog_name, results) if self.current_catalog_name else results
+                self._aggregated_header.append(self.format_result_header(results, failed))
+            else:
+                quantity_name = '{} {}'.format(self.current_catalog_name, quantity_name) if self.current_catalog_name else quantity_name
+                self._aggregated_table.append(self.format_result_row(results, quantity_name, more_info))
+
+    def format_result_row(self, results, quantity_name, more_info):
+        more_info = 'title="{}"'.format(more_info) if more_info else ''
+        output = ['<tr>', '<td {1}>{0}</td>'.format(quantity_name, more_info)]
         for s in self.stats:
             output.append('<td class="{1}" title="{2}">{0:.4g}</td>'.format(*results[s]))
         output.append('</tr>')
         return ''.join(output)
 
+    @staticmethod
+    def format_result_header(results, failed=False):
+        return '<span {1}>{0}</span>'.format(results, 'class="fail"' if failed else '')
+
+    def generate_summery(self, output_dir, aggregated=False):
+        if aggregated:
+            if not self.enable_aggregated_summary:
+                return
+            header = self._aggregated_header
+            table = self._aggregated_table
+        else:
+            if not self.enable_individual_summary:
+                return
+            header = self._individual_header
+            table = self._individual_table
+
+        with open(os.path.join(output_dir, 'SUMMARY.html'), 'w') as f:
+            f.write('<html><head><style>html{font-family: monospace;} table{border-spacing: 0;} thead,tr:nth-child(even){background: #ddd;} thead{font-weight: bold;} td{padding: 2px 8px;} .fail{color: #F00;} .none{color: #444;}</style></head><body>\n')
+
+            f.write('<ul>\n')
+            for line in header:
+                f.write('<li>')
+                f.write(line)
+                f.write('</li>\n')
+            f.write('</ul><br>\n')
+
+            f.write('<table><thead><tr><td>Quantity</td>\n')
+            for s in self.stats:
+                f.write('<td>{}</td>'.format(s))
+            f.write('</tr></thead><tbody>\n')
+            for line in table:
+                f.write(line)
+                f.write('\n')
+            f.write('</tbody></table></body></html>\n')
+
+        if not aggregated:
+            self._individual_header.clear()
+            self._individual_table.clear()
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
 
-        all_quantities = sorted(catalog_instance.list_all_quantities(True))
+        all_quantities = sorted(map(str, catalog_instance.list_all_quantities(True)))
 
+        self.current_catalog_name = catalog_name
+        self.current_failed_count = 0
         galaxy_count = None
-        failed_count = 0
-        output_rows = []
-        output_header = []
         quantity_hashes = defaultdict(set)
 
-        output_header.append('<span>Running readiness test on {} {}</span>'.format(catalog_name, getattr(catalog_instance, 'version', '')))
+        self.record_result('Running readiness test on {} {}'.format(
+            catalog_name,
+            getattr(catalog_instance, 'version', '')
+        ))
 
         for i, checks in enumerate(self.quantities_to_check):
 
@@ -158,8 +231,7 @@ class CheckQuantities(BaseValidationTest):
                 quantities_this.update(fnmatch.filter(all_quantities, quantity_pattern))
 
             if not quantities_this:
-                output_header.append('<span class="fail">Found no matching quantities for {}</span>'.format(quantity_pattern))
-                failed_count += 1
+                self.record_result('Found no matching quantities for {}'.format(quantity_pattern), failed=True)
                 continue
 
             quantities_this = sorted(quantities_this, key=split_for_natural_sort)
@@ -171,16 +243,18 @@ class CheckQuantities(BaseValidationTest):
             plot_filename = 'p{:02d}_{}.png'.format(i, quantity_group_label)
 
             fig, ax = plt.subplots()
+            has_plot = False
 
             for quantity in quantities_this:
                 value = catalog_instance[quantity]
+                need_plot = False
 
                 if galaxy_count is None:
                     galaxy_count = len(value)
-                    output_header.append('<span>Found {} entries in this catalog.</span>'.format(galaxy_count))
+                    self.record_result('Found {} entries in this catalog.'.format(galaxy_count))
                 elif galaxy_count != len(value):
-                    output_header.append('<span class="fail">"{}" has {} entries (different from {})</span>'.format(quantity, len(value), galaxy_count))
-                    failed_count += 1
+                    self.record_result('"{}" has {} entries (different from {})'.format(quantity, len(value), galaxy_count), failed=True)
+                    need_plot = True
 
                 if checks.get('log'):
                     value = np.log10(value)
@@ -214,45 +288,49 @@ class CheckQuantities(BaseValidationTest):
                         checks.get(s, ''),
                     )
                     if flag:
-                        failed_count += 1
+                        need_plot = True
 
                 quantity_hashes[tuple(result_this_quantity[s][0] for s in self.stats)].add(quantity)
+                self.record_result(
+                    result_this_quantity,
+                    quantity + (' [log]' if checks.get('log') else ''),
+                    plot_filename
+                )
 
-                ax.hist(value_finite, self.nbins, histtype='step', fill=False, label=quantity, **next(self.prop_cycle))
-                output_rows.append(self._format_row(quantity + (' [log]' if checks.get('log') else ''), plot_filename, result_this_quantity))
+                if need_plot or self.always_show_plot:
+                    ax.hist(value_finite, self.nbins, histtype='step', fill=False, label=quantity, **next(self.prop_cycle))
+                    has_plot = True
 
-            ax.set_xlabel(('log ' if checks.get('log') else '') + quantity_group_label)
-            ax.yaxis.set_ticklabels([])
-            if checks.get('plot_min') is not None: #zero values fail otherwise
-                ax.set_xlim(left=checks.get('plot_min'))
-            if checks.get('plot_max') is not None:
-                ax.set_xlim(right=checks.get('plot_max'))
-            ax.set_title('{} {}'.format(catalog_name, getattr(catalog_instance, 'version', '')), fontsize='small')
-            fig.tight_layout()
-            if len(quantities_this) <= 9:
-                leg = ax.legend(loc='best', fontsize='x-small', ncol=3, frameon=True, facecolor='white')
-                leg.get_frame().set_alpha(0.5)
-            fig.savefig(os.path.join(output_dir, plot_filename))
+            if has_plot:
+                ax.set_xlabel(('log ' if checks.get('log') else '') + quantity_group_label)
+                ax.yaxis.set_ticklabels([])
+                if checks.get('plot_min') is not None: #zero values fail otherwise
+                    ax.set_xlim(left=checks.get('plot_min'))
+                if checks.get('plot_max') is not None:
+                    ax.set_xlim(right=checks.get('plot_max'))
+                ax.set_title('{} {}'.format(catalog_name, getattr(catalog_instance, 'version', '')), fontsize='small')
+                fig.tight_layout()
+                if len(quantities_this) <= 9:
+                    leg = ax.legend(loc='best', fontsize='x-small', ncol=3, frameon=True, facecolor='white')
+                    leg.get_frame().set_alpha(0.5)
+                fig.savefig(os.path.join(output_dir, plot_filename))
             plt.close(fig)
 
         for same_quantities in quantity_hashes.values():
             if len(same_quantities) > 1:
-                output_header.append('<span class="fail">{} seem be to identical!</span>'.format(', '.join(same_quantities)))
-                failed_count += 1
+                self.record_result('{} seem be to identical!'.format(', '.join(same_quantities)), failed=True)
 
         for relation in self.relations_to_check:
             try:
                 result = check_relation(relation, catalog_instance)
             except Exception as e: # pylint: disable=broad-except
-                output_header.append('<span class="fail">Not able to evaluate `{}`! {}</span>'.format(relation, e))
-                failed_count += 1
+                self.record_result('Not able to evaluate `{}`! {}'.format(relation, e), failed=True)
                 continue
 
             if result:
-                output_header.append('<span>It is true that `{}`</span>'.format(relation))
+                self.record_result('It is true that `{}`'.format(relation))
             else:
-                output_header.append('<span class="fail">`{}` not true!</span>'.format(relation))
-                failed_count += 1
+                self.record_result('It is NOT true that `{}`'.format(relation), failed=True)
 
         for d in self.uniqueness_to_check:
             quantity = label = d.get('quantity')
@@ -264,35 +342,18 @@ class CheckQuantities(BaseValidationTest):
                 label += '[{}]'.format(mask)
 
             if not catalog_instance.has_quantities(quantities_needed):
-                output_header.append('<span class="fail">{} does not exist!</span>'.format(' or '.join(quantities_needed)))
-                failed_count += 1
+                self.record_result('{} does not exist'.format(' or '.join(quantities_needed)), failed=True)
                 continue
 
             data = catalog_instance.get_quantities(quantities_needed)
             if check_uniqueness(data[quantity], data.get(mask)):
-                output_header.append('<span>{} is all unique</span>'.format(label))
+                self.record_result('{} is all unique'.format(label))
             else:
-                output_header.append('<span class="fail">{} has repeated entries!</span>'.format(label))
-                failed_count += 1
+                self.record_result('{} has repeated entries!'.format(label), failed=True)
 
-        with open(os.path.join(output_dir, 'SUMMARY.html'), 'w') as f:
-            f.write('<html><head><style>html{font-family: monospace;} table{border-spacing: 0;} thead,tr:nth-child(even){background: #ddd;} thead{font-weight: bold;} td{padding: 2px 8px;} .fail{color: #F00;} .none{color: #444;}</style></head><body>\n')
+        self.generate_summery(output_dir)
 
-            f.write('<ul>\n')
-            for line in output_header:
-                f.write('<li>')
-                f.write(line)
-                f.write('</li>\n')
-            f.write('</ul><br>\n')
+        return TestResult(passed=(self.current_failed_count == 0), score=self.current_failed_count)
 
-            f.write('<table><thead><tr><td>Quantity</td>\n')
-            for s in self.stats:
-                f.write('<td>{}</td>'.format(s))
-            f.write('</tr></thead><tbody>\n')
-            for line in output_rows:
-                f.write(line)
-                f.write('\n')
-            f.write('</tbody></table></body></html>\n')
-
-        return TestResult(passed=(failed_count == 0), score=failed_count)
-
+    def conclude_test(self, output_dir):
+        self.generate_summery(output_dir, aggregated=True)
