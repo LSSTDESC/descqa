@@ -172,7 +172,7 @@ class CheckQuantities(BaseValidationTest):
     def format_result_header(results, failed=False):
         return '<span {1}>{0}</span>'.format(results, 'class="fail"' if failed else '')
 
-    def generate_summery(self, output_dir, aggregated=False):
+    def generate_summary(self, output_dir, aggregated=False):
         if aggregated:
             if not self.enable_aggregated_summary:
                 return
@@ -354,9 +354,9 @@ class CheckQuantities(BaseValidationTest):
             else:
                 self.record_result('{} has repeated entries!'.format(label), failed=True)
 
-        self.generate_summery(output_dir)
+        self.generate_summary(output_dir)
 
         return TestResult(passed=(self.current_failed_count == 0), score=self.current_failed_count)
 
     def conclude_test(self, output_dir):
-        self.generate_summery(output_dir, aggregated=True)
+        self.generate_summary(output_dir, aggregated=True)
