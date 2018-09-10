@@ -250,6 +250,8 @@ quantities_to_check:
     mean: [0, 1]
     f_nan: 0
     f_inf: 0
+    plot_min: -300
+    plot_max: 300
 
 relations_to_check:
   - 'galaxy_id < 1e11'
