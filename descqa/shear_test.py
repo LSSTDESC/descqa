@@ -16,7 +16,6 @@ from astropy.cosmology import WMAP7 # pylint: disable=no-name-in-module
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
 pars = camb.CAMBparams()
-# note that chi_recomb should be a function of cosmology but this shouldn't have a major impact
 
 __all__ = ['ShearTest']
 
@@ -48,10 +47,8 @@ class ShearTest(BaseValidationTest):
                  N_clust=10,
                  **kwargs):
         #pylint: disable=W0231
-        #catalog quantities
 
-        import matplotlib
-        matplotlib.rcParams.update({'font.size': 9})
+        plt.rcParams.update({'font.size': 9})
 
         self.z = z
         #sep-bounds and binning
@@ -91,11 +88,11 @@ class ShearTest(BaseValidationTest):
     def integrand_w(self, x, n, chi, chi_int, cosmo):
         ''' This is the inner bit of GWL lensing kernel - z is related to x, not chi'''
         z = chi_int(x)
-        H_z = cosmo.H(z).value * 3.240779289469756e-20  #1/s units #.to(1./u.s) conversion
-        dchidz = 9.715611890256315e-15 / H_z  #const.c.to(u.Mpc/u.s).value / (H_z) # Mpc units
+        H_z = cosmo.H(z).to(1./u.s).value
+        dchidz = const.c.to(u.Mpc/u.s).value/H_z
         return n(z) / dchidz * (x - chi) / x
 
-    def galaxy_W(self, z, n, chi_int, cosmo, chi_recomb):
+    def galaxy_W(self, z, n, chi_int, cosmo, chi_max):
         ''' galaxy window function'''
         #pylint: disable=E1101
         chi = cosmo.comoving_distance(z).value  # can be array
@@ -104,7 +101,7 @@ class ShearTest(BaseValidationTest):
         prefactor = cst * chi * (1. + z) * u.Mpc
         val_array = []
         for i in range(len(z)):
-            val_array.append(quad(self.integrand_w, chi[i], chi_recomb, args=(n, chi[i], chi_int, cosmo))[0])
+            val_array.append(quad(self.integrand_w, chi[i], chi_max, args=(n, chi[i], chi_int, cosmo))[0])
         W = np.array(val_array) * prefactor * (u.Mpc)  # now unitless
         return W
 
@@ -116,30 +113,30 @@ class ShearTest(BaseValidationTest):
         integrand = p(z, k, grid=False) * galaxy_W_int(z)**2 / chi**2
         return integrand
 
-    def phi(self, lmax, n_z, cosmo, p, chi_recomb):
-        z_array = np.logspace(-3, np.log10(10.), 200)
+    def phi(self, lmax, n_z, cosmo, p, chi_max):
+        z_array = np.logspace(-3, np.log10(self.zhi+1.0), 200)
         chi_array = cosmo.comoving_distance(z_array).value
         chi_int = interp1d(chi_array, z_array, bounds_error=False, fill_value=0.0)
         n = self.compute_nz(n_z)
-        galaxy_W_int = interp1d(z_array, self.galaxy_W(z_array, n, chi_int, cosmo, chi_recomb), bounds_error=False, fill_value=0.0)
+        galaxy_W_int = interp1d(z_array, self.galaxy_W(z_array, n, chi_int, cosmo, chi_max), bounds_error=False, fill_value=0.0)
         phi_array = []
         l = range(0, lmax, 1)
         l = np.array(l)
         for i in l:
             a = quad(
-                self.integrand_lensing_limber, 1.e-10, chi_recomb, args=(i, galaxy_W_int, chi_int, p), epsrel=1.e-6)[0]
+                self.integrand_lensing_limber, 1.e-10, chi_max, args=(i, galaxy_W_int, chi_int, p), epsrel=1.e-6)[0]
             phi_array.append(a)
         phi_array = np.array(phi_array)
+        #NOTE: comments here allow for small corrections on large and small scales, these can be used to check impact of pixelization on lensing maps and flat sky approximations in theory. 
         prefactor = 1.0  #(l+2)*(l+1)*l*(l-1)  / (l+0.5)**4
         #import healpy as hp
         #pixwin = hp.pixwin(1024)[:lmax]
         return l, phi_array * prefactor#*pixwin**2
 
-    def theory_corr(self, n_z2, xvals, lmax2, cosmo, p, chi_recomb):
-        ll, pp = self.phi(lmax=lmax2, n_z=n_z2, cosmo=cosmo, p=p, chi_recomb=chi_recomb)
+    def theory_corr(self, n_z2, xvals, lmax2, cosmo, p, chi_max):
+        ll, pp = self.phi(lmax=lmax2, n_z=n_z2, cosmo=cosmo, p=p, chi_max=chi_max)
         pp3_2 = np.zeros((lmax2, 4))
         pp3_2[:, 1] = pp[:] * (ll * (ll + 1.)) / (2. * np.pi)
-        #xvals = np.logspace(np.log10(min_sep2), np.log10(max_sep2), nbins2) #in arcminutes
         cxvals = np.cos(xvals / (60.) / (180. / np.pi))
         vals = camb.correlations.cl2corr(pp3_2, cxvals)
         return xvals, vals[:, 1], vals[:, 2]
@@ -267,24 +264,23 @@ class ShearTest(BaseValidationTest):
         catalog_data = self.get_catalog_data(
             catalog_instance, [self.z, self.ra, self.dec, self.e1, self.e2, self.kappa, self.mag], filters=self.filters)
 
-        try:
-            cosmo = catalog_instance.cosmology
-            ns = cosmo.ns
-            s8 = cosmo.sigma8
-        except AttributeError:
-            cosmo = WMAP7
-            print("WARNING: using WMAP7 cosmology")
-            ns = 0.963
-            s8 = 0.8
+        cosmo = getattr(catalog_instance, 'cosmology', WMAP7)
+        ns = getattr(cosmo, 'n_s', 0.963)
+        s8 = getattr(cosmo, 'sigma8', 0.8)
         print(cosmo)
-        pars.set_cosmology(H0=cosmo.H0.value, ombh2=cosmo.Ob0*(cosmo.H0.value /100.)**2, omch2=(cosmo.Om0-cosmo.Ob0)*(cosmo.H0.value /100.)**2)
 
-        pars.InitPower.set_params(ns=ns,As = 2.168e-9*(s8/0.8 )**2)
+        pars.set_cosmology(H0=cosmo.H0.value, ombh2=cosmo.Ob0*cosmo.h**2, omch2=(cosmo.Om0-cosmo.Ob0)*cosmo.h**2)
+        pars.InitPower.set_params(ns=ns, As = 2.168e-9*(s8/0.8)**2)
         camb.set_halofit_version(version='takahashi')
-        p = camb.get_matter_power_interpolator(pars, nonlinear=True, k_hunit=False, hubble_units=False, kmax=100., zmax=1100., k_per_logint=False).P
-        chi_recomb = cosmo.comoving_distance(1100.).value
-
-
+        p = camb.get_matter_power_interpolator(pars, nonlinear=True, k_hunit=False, hubble_units=False, kmax=100., zmax=self.zhi+1., k_per_logint=False).P
+        z_max = np.max(catalog_data[self.z])
+        if self.zhi>z_max:
+            print("updating zhi to "+ str(z_max)+ " from "+ str(self.zhi))
+            self.zhi = z_max
+            zhi = z_max
+        else:
+            zhi = self.zhi
+        chi_max = cosmo.comoving_distance(self.zhi+1.0).value
         mask_mag = (catalog_data[self.mag][:]<self.maglim)  
 
         # read in shear values and check limits
@@ -300,7 +296,7 @@ class ShearTest(BaseValidationTest):
             return TestResult(skipped=True, summary='e2 values out of range [-1,+1]')
         ntomo = self.ntomo
         fig, ax = plt.subplots(nrows=2, ncols=ntomo, sharex=True, squeeze=False, figsize=(ntomo*5, 5))
-        zmeans = np.linspace(self.zlo, self.zhi, ntomo+2)[1:-1]
+        zmeans = np.linspace(self.zlo, zhi, ntomo+2)[1:-1]
         for ii in range(ntomo):
             z_mean = zmeans[ii]
             zlo2 = z_mean - self.z_range
@@ -329,7 +325,7 @@ class ShearTest(BaseValidationTest):
             #NOTE: We are computing 10^6 x correlation function for easier comparison
             xip = gg.xip * 1.e6
             xim = gg.xim * 1.e6
- 
+
             print("npairs  = ")
             print(gg.npairs)
 	    #sig = np.sqrt(gg.varxi)  # this is shape noise only - should be very low for simulation data
@@ -353,7 +349,7 @@ class ShearTest(BaseValidationTest):
                     sigm_jack[i] = np.sqrt(gg.varxi[i])*1.e6
 
             n_z = catalog_data[self.z][mask]
-            xvals, theory_plus, theory_minus = self.theory_corr(n_z, r, 15000, cosmo, p, chi_recomb)
+            xvals, theory_plus, theory_minus = self.theory_corr(n_z, r, 15000, cosmo, p, chi_max)
             theory_plus = theory_plus * 1.e6
             theory_minus = theory_minus * 1.e6
 
