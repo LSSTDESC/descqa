@@ -125,7 +125,7 @@ def make_output_dir(root_output_dir):
     parent_dir = pjoin(root_output_dir, new_dir_name.rpartition('-')[0])
     if not os.path.exists(parent_dir):
         os.mkdir(parent_dir)
-        subprocess.check_call(['chmod', 'a+rx,o-w', parent_dir])
+        subprocess.check_call(['chmod', 'a+rx,g+ws,o-w', parent_dir])
 
     output_dir = pjoin(parent_dir, new_dir_name)
     if os.path.exists(output_dir):
