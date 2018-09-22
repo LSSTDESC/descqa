@@ -271,7 +271,8 @@ class DeltaSigma(BaseValidationTest):
         
         plt.tight_layout()
 
-        if self.data=='cfhtlens' or 'sdss_main':
+        print(self.data)
+        if self.data=='cfhtlens' or self.data=='sdss_main':
             fig1.savefig(os.path.join(output_dir, 'delta_sigma_'+str(catalog_name)+'1.png'))
             plt.close(fig1)
             fig2.savefig(os.path.join(output_dir, 'delta_sigma_'+str(catalog_name)+'2.png'))

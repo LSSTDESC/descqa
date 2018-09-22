@@ -5,7 +5,7 @@ zmin_l: 0.03
 zmax_l: 0.2
 zmin_s: 0.2
 zmax_s: 2.0
-max_background_galaxies: 2000000
+max_background_galaxies: 5000000
 zmax: 3.0
 Rmin: 0.05
 Rmax: 15.0
