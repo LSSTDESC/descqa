@@ -1,7 +1,7 @@
 subclass_name: NumberDensityVersusRedshift.NumberDensityVersusRedshift
 band: i
 zlo: 0.
-zhi: 1.0
-N_zbins: 10
+zhi: 1.5
+N_zbins: 15
 observation: 'DEEP2_JAN'
 description: 'Plot N(z) distributions for selected magnitude cuts in specified band and compare with fits to DEEP2 data from J. A. Newman (priv. comm.)'

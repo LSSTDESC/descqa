@@ -1,6 +1,6 @@
 subclass_name: DeltaSigmaTest.DeltaSigmaTest
 data_filename: delta_sigma/lowz_DS.dat
-zmax: 3.0
+zmax: 3.1
 # Minimum number of background galaxies per radial bins for delta sigma
 min_count_per_bin: 10
 
