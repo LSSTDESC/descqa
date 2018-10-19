@@ -5,10 +5,10 @@ included_by_default: true
 quantities_to_check:
   - quantities: ['dec_true', 'dec']
     label: 'deg'
-    min: [-55, -54]                
-    max: [-20, -19]                
-    median: [-38, -34]             
-    mean: [-38, -34]               
+    min: [-55, -54]
+    max: [-20, -19]
+    median: [-38, -34]
+    mean: [-38, -34]
     std: [5, 10]
     f_nan: 0
     f_inf: 0
