@@ -347,12 +347,8 @@ class CheckQuantities(BaseValidationTest):
             if not catalog_instance.has_quantities(quantities_needed):
                 self.record_result('{} does not exist'.format(' or '.join(quantities_needed)), failed=True)
                 continue
-            
-            try:
-                data = catalog_instance.get_quantities(quantities_needed)
-            except KeyError:
-                raise ValueError('{} not found'.format(', '.join(quantities_needed)))
 
+            data = catalog_instance.get_quantities(quantities_needed)
             if check_uniqueness(data[quantity], data.get(mask)):
                 self.record_result('{} is all unique'.format(label))
             else:
