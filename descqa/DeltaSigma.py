@@ -187,6 +187,8 @@ class DeltaSigma(BaseValidationTest):
                 ax = plt.subplot(111)
                 plt.errorbar(self.validation_data[:,0], self.validation_data[:,1], yerr=self.validation_data[:,2], label='SDSS LOWZ from Singh et al. (2015)',c='k', lw=1, marker='.', fmt='.', capthick=0.8, capsize=2.2)
                 plt.loglog(rp, gt, label=catalog_name)
+                plt.title('Lens number density: '+str(nlens)[:4]+' per sq. deg')
+
 
                 ax.set_xlabel('$r_p$ [Mpc/h]')
                 ax.set_ylabel(r'$\Delta \Sigma [h \ M_\odot / pc^2]$')
@@ -202,9 +204,13 @@ class DeltaSigma(BaseValidationTest):
                 if ii==0:
                     plt.loglog(rp, gt, label=str(Mr_min[int(i/2)])+'< Mr < '+str(Mr_max[int(i/2)])+'; red; '+catalog_name, lw=2, color='r', alpha=0.5)
                     plt.errorbar(self.validation_data[:,0]/1000*(7./10.), self.validation_data[:,iii*2+1]/(7./10.), color='darkred', lw=2, marker='x', fmt='.', label='Velander et al. (2013)')
+                    plt.text(self.Rmin*0.7*1.5, 1.5,'Red: '+str(nlens)[:4]+' per sq. deg')
+
                 else:
                     plt.loglog(rp, gt, label=str(Mr_min[int(i/2)])+'< Mr < '+str(Mr_max[int(i/2)])+'; blue', lw=2, color='b', alpha=0.5)
                     plt.errorbar(self.validation_data[:,0]/1000*(7./10.), self.validation_data[:,iii*2+2]/(7./10.), color='darkblue', lw=2, marker='x', fmt='.')
+                    plt.title('Lens number density: '+str(nlens)[:4]+' per sq. deg')
+                    plt.text(self.Rmin*0.7*1.5, 1.0,'Blue: '+str(nlens)[:4]+' per sq. deg')
 
                 ax.legend()
                 ax.set_xlabel('$r_p$ [Mpc/h]')
@@ -241,9 +247,12 @@ class DeltaSigma(BaseValidationTest):
                 if ii==0:
                     plt.loglog(rp, gt, label=str(SM_min[int(i/2)])+'< log10(M*) < '+str(SM_max[int(i/2)])+'; red; '+catalog_name, lw=2, color='r', alpha=0.5)
                     plt.errorbar(self.validation_data[:15,0], self.validation_data[ii*15:(ii+1)*15,int(i/2)*4+1], yerr=self.validation_data[ii*15:(ii+1)*15,int(i/2)*4+2], color='darkred', lw=2, marker='x', fmt='.', label='Mandelbaum et al. (2016)')
+                    plt.text(self.Rmin*0.7*1.5, 1.5,'Red: '+str(nlens)[:4]+' per sq. deg')
+
                 else:
                     plt.loglog(rp, gt, label=str(SM_min[int(i/2)])+'< log10(M*) < '+str(SM_max[int(i/2)])+'; blue', lw=2, color='b', alpha=0.5)
                     plt.errorbar(self.validation_data[:15,0], self.validation_data[ii*15:(ii+1)*15,int(i/2)*4+1], yerr=self.validation_data[ii*15:(ii+1)*15,int(i/2)*4+2], color='darkblue', lw=2, marker='x', fmt='.')
+                    plt.text(self.Rmin*0.7*1.5, 1,'Blue: '+str(nlens)[:4]+' per sq. deg')
 
                 ax.legend()
                 ax.set_xlabel('$r_p$ [Mpc/h]')
