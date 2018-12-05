@@ -1,4 +1,4 @@
-subclass_name: DeltaSigma.DeltaSigma
+subclass_name: DeltaSigmaTest.DeltaSigma
 
 data: 'sdss_lowz'
 zmin_l: 0.16
