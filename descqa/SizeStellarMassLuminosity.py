@@ -124,7 +124,7 @@ class SizeStellarMassLuminosity(BaseValidationTest):
 
                     ax.semilogy(validation_this[:,1], 10**validation_this[:,2], label=self.label_template.format(z_bin['z_min'], z_bin['z_max']))
                     ax.fill_between(validation_this[:,1], 10**validation_this[:,3], 10**validation_this[:,4], lw=0, alpha=0.2)
-                    ax.errorbar(default_L_bins, binned_size_kpc, binned_size_kpc_err, marker='o', ls='')
+                    ax.errorbar(default_L_bins, binned_size_kpc, binned_size_kpc_err, marker='o', ls='', label=catalog_name)
                     
                     validation = self.compute_chisq(default_L_bins, binned_size_kpc, binned_size_kpc_err,
                                                     validation_this[:,1], 10**validation_this[:,2])
@@ -151,8 +151,8 @@ class SizeStellarMassLuminosity(BaseValidationTest):
                     ax.semilogy(validation_this[:,1] + 0.2, validation_this[:,3], label='Disk', color=colors[1])
                     ax.fill_between(validation_this[:,1] + 0.2, validation_this[:,3] + validation_this[:,5], validation_this[:,3] - validation_this[:,5], lw=0, alpha=0.2, facecolor=colors[1])
 
-                    ax.errorbar(default_L_bins, binned_bulgesize_kpc, binned_bulgesize_kpc_err, marker='o', ls='', c=colors[0])
-                    ax.errorbar(default_L_bins+0.2, binned_disksize_kpc, binned_disksize_kpc_err, marker='o', ls='', c=colors[1])
+                    ax.errorbar(default_L_bins, binned_bulgesize_kpc, binned_bulgesize_kpc_err, marker='o', ls='', c=colors[0], label=catalog_name)
+                    ax.errorbar(default_L_bins+0.2, binned_disksize_kpc, binned_disksize_kpc_err, marker='o', ls='', c=colors[1], label=catalog_name)
                     ax.set_xlim([9, 13])
                     ax.set_ylim([1e-1, 25])
                     ax.set_yscale('log', nonposy='clip')
@@ -211,10 +211,14 @@ class SizeStellarMassLuminosity(BaseValidationTest):
             mask = validation_data!=0
             validation_points = validation_points[mask]
             validation_data = validation_data[mask]
-        if validation_points[-1]<validation_points[0]:
+        if len(validation_points)>0 and validation_points[-1]<validation_points[0]:
             validation_points = validation_points[::-1]
             validation_data = validation_data[::-1]
-        validation_at_binpoints = interpolate.CubicSpline(validation_points, validation_data)(bins)
+        if len(validation_points)>1:
+            validation_at_binpoints = interpolate.CubicSpline(validation_points, validation_data)(bins)
+        else:
+            validation_at_binpoints = binned_data #force chi-sq to zero if no validation data
+
         weights = 1./binned_err**2
         return np.sum(weights*(validation_at_binpoints-binned_data)**2)/len(weights)
                                   

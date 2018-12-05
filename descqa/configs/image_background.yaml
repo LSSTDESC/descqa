@@ -1,0 +1,9 @@
+subclass_name: QuickBkgTest.QuickBkgTest
+description: 'Plot histograms of background mean, median and noise' 
+included_by_default: true
+
+label: 'Background'
+visit: 162700
+band: 'r'
+bkg_validation_dataset: 'OpSim'
+db_file: '/global/cscratch1/sd/descpho/Pipeline-tasks/DBstaging/minion_1016_desc_dithered_v4.db'

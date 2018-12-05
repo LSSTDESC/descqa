@@ -287,12 +287,13 @@ class EllipticityDistribution(BaseValidationTest):
                     sume2 += np.histogram(e_this, bins=self.ebins, weights=e_this**2)[0]
                     
                     #check borders
-                    if np.min(e_this)<0:
-                        any_low = True
-                        print('Value<0 found for morphology {} in catalog {}: {}'.format(morphology, catalog_name, np.min(e_this)))
-                    if np.max(e_this)>1:
-                        any_high = True
-                        print('Value>1 found for morphology {} in catalog {}: {}'.format(morphology, catalog_name, np.max(e_this)))
+                    if len(e_this)>0:
+                        if np.min(e_this)<0:
+                            any_low = True
+                            print('Value<0 found for morphology {} in catalog {}: {}'.format(morphology, catalog_name, np.min(e_this)))
+                        if np.max(e_this)>1:
+                            any_high = True
+                            print('Value>1 found for morphology {} in catalog {}: {}'.format(morphology, catalog_name, np.max(e_this)))
 
         #check that catalog has entries for quantity to be plotted
         if not np.asarray([N.sum() for N in N_array]).sum():
