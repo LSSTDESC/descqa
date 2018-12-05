@@ -61,8 +61,11 @@ def run():
 
     print(env.get_template('header.html').render(full_header=True, please_wait=True, config=config))
     sys.stdout.flush()
-    print(env.get_template('matrix.html').render(**prepare_matrix(
-        run=_run,
-        catalog_prefix=form.getfirst('catalog_prefix'),
-        test_prefix=form.getfirst('test_prefix'),
-    )))
+    if _run or getattr(config, 'use_latest_run_as_home', True):
+        print(env.get_template('matrix.html').render(**prepare_matrix(
+            run=_run,
+            catalog_prefix=form.getfirst('catalog_prefix'),
+            test_prefix=form.getfirst('test_prefix'),
+        )))
+    else:
+        print(env.get_template('home.html').render(general_info=config.general_info))
