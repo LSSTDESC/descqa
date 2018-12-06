@@ -1,16 +1,16 @@
 subclass_name: ColorRedshiftTest.ColorRedshiftTest
 observation: ''
 description: 'Trying to get this test to run on the data'
-frame: rest
-color: g-r
+frame: obs
+color: r-i
 filter: lsst
 
 
-central_cut: true
+# central: true
 # Mr_cut: -20
 # mr_cut: 20
 # stellar_mass_cut: 9.5
-# halo_mass_cut: 12
+halo_mass_cut: 13
 red_sequence_cut: true
 
 log_scale: true

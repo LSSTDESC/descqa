@@ -41,7 +41,7 @@ class ColorRedshiftTest(BaseValidationTest):
         self.filter = kwargs.get('filter', '').lower()
         assert (self.filter in ['lsst', 'sdss', 'des']), "Only lsst, sdss, or DES filters allowed"
         self.baseDC2 = kwargs.get('baseDC2', False)
-        self.central_cut = kwargs.get("central_cut", None)
+        self.central = kwargs.get("central", None)
         self.Mr_cut = kwargs.get("Mr_cut", None)
         self.mr_cut = kwargs.get("mr_cut", None)
         self.stellar_mass_cut = kwargs.get("stellar_mass_cut", None)
@@ -71,7 +71,7 @@ class ColorRedshiftTest(BaseValidationTest):
         mag2_val = self._get_quantity(catalog_instance, mag2_str)
         redshift = self._get_quantity(catalog_instance, 'redshift')
         clr_val = mag1_val - mag2_val
-        title = catalog_name
+        title = catalog_name+", "
         slct, title = self._get_selection_and_title(catalog_instance, title)
         fig, ax = plt.subplots()
         for ax_this in (ax, self.summary_ax):
@@ -106,15 +106,17 @@ class ColorRedshiftTest(BaseValidationTest):
         # a cheap way to get an array of trues of the correct size
         redshift = catalog_instance.first_available('redshift')
         slct = redshift == redshift
+        title_elem_per_line =3
         title_elem = 2 # The number of elements in the title. We want about
         # three elements per line. The catalog name is pretty big, so it counts
         # as two elements.
-        if self.central_cut is not None:
+        
+
+        if self.central is not None:
             is_central = self._get_quantity(catalog_instance, 'is_central')
-            slct = slct & (is_central == self.central_cut)
-            title += "central == {}, ".format(self.central_cut)
+            slct = slct & (is_central == self.central)
+            title += "central = {}, ".format(self.central)
             title_elem +=1
-            title_elem_per_line =3
             if title_elem % title_elem_per_line == 0:
                 title += "\n"
 
@@ -141,9 +143,11 @@ class ColorRedshiftTest(BaseValidationTest):
             title_elem +=1
             if title_elem % title_elem_per_line == 0:
                 title += "\n"
-
+        print("halo_mass_cut: ", self.halo_mass_cut)
         if self.halo_mass_cut is not None:
             halo_mass = self._get_quantity(catalog_instance, "halo_mass")
+            print(np.sum(np.log10(halo_mass) > self.halo_mass_cut), '/', halo_mass.size)
+            print(np.median(np.log10(halo_mass)))
             slct = slct & ( np.log10(halo_mass) > self.halo_mass_cut )
             title += "halo_mass > {}, ".format(self.halo_mass_cut)
             title_elem +=1
