@@ -1,5 +1,3 @@
-from __future__ import unicode_literals, absolute_import, division, print_function
-import itertools
 import os
 import sys
 import pickle
@@ -253,8 +251,10 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                         loaded_data = np.loadtxt(self.data_dir + "/clf/{5}/clf_{4}_z_{0}_{1}_lm_{2}_{3}.dat".format(zrange[0], zrange[1], lambdlow, lambdhigh, name, self.compared_survey))
                         loaded_data[:, 0] += 5*np.log10(h) #kcorrect distmodule assume h=1, so we need to adjust it to match h in simulation
                         data[galtype].append(loaded_data)
-                    except:
+                    except IOError as e:
                         data[galtype].append(None)
+                    except: #handle other exceptions such as attribute errors
+                        print("Unexpected error:", sys.exc_info()[0])
         newdata={}
         for item in data.keys():
            newdata[item] = np.array(data[item]).reshape(self.n_z_bins, self.nlambd_bins, -1, 3)
