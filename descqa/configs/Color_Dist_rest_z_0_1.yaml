@@ -1,0 +1,9 @@
+subclass_name: ColorDistribution.ColorDistribution
+Mag_r_limit: -19.0
+zlo: 0.0
+zhi: 1.0
+rest_frame: true
+plot_pdf_q: true
+plot_cdf_q: false
+color_transformation_q: false
+description: Inspect the mock-galaxy rest-frame color distributions

@@ -1,0 +1,64 @@
+subclass_name: readiness_test.CheckQuantities
+description: 'Plot histograms of listed quantities and perform range, finiteness, mean and standard deviation checks.'
+included_by_default: true
+
+quantities_to_check:
+  - quantities: A_v
+    min: [0.001, 3.1]
+    max: [0.001, 3.1]
+    median: [0.001, 3.1]
+    mean: [0.001, 3.1]
+    f_nan: 0
+    f_inf: 0
+    plot_min: -0.2
+    plot_max: 3
+
+  - quantities: A_v_disk
+    min: [0.001, 3.1]
+    max: [0.001, 3.1]
+    median: [0.001, 3.1]
+    mean: [0.001, 3.1]
+    f_nan: 0
+    f_inf: 0
+    plot_min: -0.2
+    plot_max: 3
+
+  - quantities: A_v_bulge
+    min: [0.001, 3.1]
+    max: [0.001, 3.1]
+    median: [0.001, 3.1]
+    mean: [0.001, 3.1]
+    f_nan: 0
+    f_inf: 0
+    plot_min: -0.2
+    plot_max: 3
+
+  - quantities: R_v
+    min: [1, 5]
+    max: [1, 5]
+    median: [1, 5]
+    mean: [1, 5]
+    f_nan: 0
+    f_inf: 0
+    plot_min: -300
+    plot_max: 300
+
+  - quantities: R_v_disk
+    min: [1, 5]
+    max: [1, 5]
+    median: [1, 5]
+    mean: [1, 5]
+    f_nan: 0
+    f_inf: 0
+    plot_min: -300
+    plot_max: 300
+
+  - quantities: R_v_bulge
+    min: [1, 5]
+    max: [1, 5]
+    median: [1, 5]
+    mean: [1, 5]
+    f_nan: 0
+    f_inf: 0
+    plot_min: -300
+    plot_max: 300

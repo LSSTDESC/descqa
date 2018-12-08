@@ -3,7 +3,6 @@ language: python
 cache: pip
 
 python:
-- "2.7"
 - "3.6"
 
 before_install: # camb requires gfortran to be at least gfortran-4.9
@@ -13,7 +12,8 @@ before_install: # camb requires gfortran to be at least gfortran-4.9
 - sudo ln -s /usr/bin/gfortran-4.9 /usr/bin/gfortran
 
 install:
-- pip install .[full] --process-dependency-links
+- pip install --upgrade numpy
+- pip install --process-dependency-links .[full]
 - pip install pylint nose
 
 before_script:

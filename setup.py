@@ -24,15 +24,17 @@ setup(
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.6',
     ],
     keywords='DESCQA',
     packages=['descqa'],
     install_requires=['future', 'pyyaml', 'jinja2'],
     extras_require={
-        'full': ['kmeans_radec==0.1','numpy', 'scipy', 'matplotlib', 'GCR>=0.6.2', 'healpy', 'treecorr', 'camb', 'scikit-learn'],
+        'full': ['numpy', 'scipy', 'matplotlib', 'GCR>=0.6.2', 'healpy', 'treecorr', 'camb', 'scikit-learn', 'CatalogMatcher', 'kmeans_radec==0.1'],
     },
+    dependency_links=[
+        'https://github.com/LSSTDESC/CatalogMatcher/archive/master.zip#egg=CatalogMatcher-0.1.0.dev',
+        'https://github.com/esheldon/kmeans_radec/archive/master.zip#egg=kmeans_radec-0.1',
+    ],
     package_data={'descqa': ['configs/*.yaml', 'data/*']},
-    dependency_links=['git+https://github.com/esheldon/kmeans_radec.git#egg=kmeans_radec-0.1'],
 )
