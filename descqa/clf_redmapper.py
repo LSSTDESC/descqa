@@ -210,17 +210,17 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         scores_scatter = []
         for i in range(self.n_z_bins):
             for j in range(self.nlambd_bins):
-               #calculate the relative brightness of centrals and satellites
-               meancen_ref = np.average(data['centrals'][i, j, :, 0], weights=data['centrals'][i, j, :, 1])
-               meansat_ref = np.average(data['satellites'][i, j, :, 0], weights=data['satellites'][i, j, :, 1])
-               meancen = np.average(self.mag_center, weights=cenclf[i, j])
-               meansat = np.average(self.mag_center, weights=satclf[i, j])
-               scores_shift.append(np.abs(meancen - meansat - (meancen_ref - meansat_ref)))
+                #calculate the relative brightness of centrals and satellites
+                meancen_ref = np.average(data['centrals'][i, j, :, 0], weights=data['centrals'][i, j, :, 1])
+                meansat_ref = np.average(data['satellites'][i, j, :, 0], weights=data['satellites'][i, j, :, 1])
+                meancen = np.average(self.mag_center, weights=cenclf[i, j])
+                meansat = np.average(self.mag_center, weights=satclf[i, j])
+                scores_shift.append(np.abs(meancen - meansat - (meancen_ref - meansat_ref)))
 
-               #calculate the std of central luminosity given richness
-               std_cen_ref = np.sqrt(np.average((data['centrals'][i, j, :, 0]-meancen_ref)**2, weights=data['centrals'][i, j, :, 1]))
-               std_cen = np.sqrt(np.average((self.mag_center-meancen)**2, weights=cenclf[i, j]))
-               scores_scatter.append(np.abs(std_cen-std_cen_ref))
+                #calculate the std of central luminosity given richness
+                std_cen_ref = np.sqrt(np.average((data['centrals'][i, j, :, 0]-meancen_ref)**2, weights=data['centrals'][i, j, :, 1]))
+                std_cen = np.sqrt(np.average((self.mag_center-meancen)**2, weights=cenclf[i, j]))
+                scores_scatter.append(np.abs(std_cen-std_cen_ref))
         scores = [np.max(scores_shift), np.max(scores_scatter)]
         clf = {'satellites': satclf, 'centrals': cenclf}
         covar = {'satellites': covar_sat, 'centrals': covar_cen}
