@@ -1,6 +1,6 @@
 subclass_name: SizeStellarMassLuminosity.SizeStellarMassLuminosity
 
-catalogs: ['protoDC2', 'buzzard_test']
+catalogs: ['protoDC2', 'proto-dc2_v4.4', 'proto-dc2_v4.5', 'proto-dc2_v4.5_rescale']
 observation: onecomp
 
 possible_mag_fields:
