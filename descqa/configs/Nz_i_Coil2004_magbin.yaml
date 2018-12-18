@@ -1,10 +1,10 @@
 subclass_name: NumberDensityVersusRedshift.NumberDensityVersusRedshift
 band: i
 zlo: 0.
-zhi: 1.0
-N_zbins: 10
+zhi: 1.5
+N_zbins: 15
 jackknife: True
-N_jack: 20
+N_jack: 30
 use_diagonal_only: True
 observation: 'Coil2004_magbin'
 included_by_default: true

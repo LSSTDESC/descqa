@@ -125,7 +125,7 @@ def make_output_dir(root_output_dir):
     parent_dir = pjoin(root_output_dir, new_dir_name.rpartition('-')[0])
     if not os.path.exists(parent_dir):
         os.mkdir(parent_dir)
-        subprocess.check_call(['chmod', 'a+rx,o-w', parent_dir])
+        subprocess.check_call(['chmod', 'a+rx,g+ws,o-w', parent_dir])
 
     output_dir = pjoin(parent_dir, new_dir_name)
     if os.path.exists(output_dir):
@@ -453,7 +453,10 @@ def main():
         check_copy(descqa.__path__[0], pjoin(snapshot_dir, 'descqa'))
         check_copy(GCRCatalogs.__path__[0], pjoin(snapshot_dir, 'GCRCatalogs'))
         if hasattr(GCRCatalogs, 'GCR'):
-            check_copy(GCRCatalogs.GCR.__file__, pjoin(snapshot_dir, 'GCR.py'))
+            if getattr(GCRCatalogs.GCR, '__path__', None):
+                check_copy(GCRCatalogs.GCR.__path__[0], pjoin(snapshot_dir, 'GCR'))
+            else:
+                check_copy(GCRCatalogs.GCR.__file__, pjoin(snapshot_dir, 'GCR.py'))
 
         logger.debug('preparing to run validation tests...')
         descqa_task = DescqaTask(output_dir, args.validations_to_run, args.catalogs_to_run, logger)
