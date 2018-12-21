@@ -160,6 +160,18 @@ class VirialScaling(BaseValidationTest):
 
         elif(self.c_axis == 'redshift'):
            img =self.summary_ax.scatter(x_axis, vel_dispersion[mask_num], c = median_r[mask_num], norm = LogNorm(), label = catalog_name + ' cluster')	
+
+        #save halo masses, normalized hubble parameters, and velocity dispersion of galaxies for each cluster
+        self.mass_col = mass[mask_num]
+        self.norm_h_col = cosmo.H(median_r[mask_num])/100
+        self.vel_disp_col = vel_dispersion[mask_num]
+        self.median_r_col = median_r[mask_num]
+        self.galaxy_num_col = galaxy_num_list[mask_num]
+        if (self.c_axis == 'number'):
+            np.savetxt(os.path.join(output_dir, 'summary.txt'), np.c_[self.mass_col, self.norm_h_col, self.vel_disp_col, self.galaxy_num_col], header = 'HALO_MASS // CLUSTER_NORMALIZED_H // CLUSTER_VELOCITY_DISPERSION // CLUSTER_GALAXY_COUNT')
+        elif (self.c_axis == 'redshift'):
+            np.savetxt(os.path.join(output_dir, 'summary.txt'), np.c_[self.mass_col, self.norm_h_col, self.vel_disp_col, self.median_r_col], header = 'HALO_MASS // CLUSTER_NORMALIZED_H // CLUSTER_VELOCITY_DISPERSION // CLUSTER_GALAZY_COUNT')
+
         #make plot
         x = np.linspace(smallest*.75, largest*1.5)
         self.summary_ax.plot(x, eval("1082*(x/10**15)**.3361"), c = "red", label = "Evrard et al. 2007")
@@ -169,8 +181,8 @@ class VirialScaling(BaseValidationTest):
         self.summary_ax.set_ylim(np.min(vel_dispersion[mask_num])*.3, np.max(vel_dispersion[mask_num])*5)
         self.summary_ax.set_xlim(smallest*.75, largest*1.5)
         self.summary_ax.set_yscale('log')
-        self.summary_ax.set_xlabel('$Mh(z)  (M_{\odot})$')
-        self.summary_ax.set_ylabel('$\sigma_v$ (km/s)')
+        self.summary_ax.set_xlabel('$h(z)M\_halo  (M_{\odot})$')
+        self.summary_ax.set_ylabel('$\sigma_v  (km/s)$')
         #label color axis depending on what you want to show
         if(self.c_axis == 'number'):
             bar.ax.set_ylabel('galaxies per cluster')
@@ -185,4 +197,8 @@ class VirialScaling(BaseValidationTest):
     def conclude_test(self, output_dir):
         '''conclude the test'''
         self.summary_fig.savefig(os.path.join(output_dir, 'mass_virial_scaling.png'))
+        if (self.c_axis == 'number'):
+            np.savetxt(os.path.join(output_dir, 'summary.txt'), np.c_[self.mass_col, self.norm_h_col, self.vel_disp_col, self.galaxy_num_col], header = 'HALO_MASS // CLUSTER_NORMALIZED_H // CLUSTER_VELOCITY_DISPERSION // CLUSTER_GALAXY_COUNT')
+        elif (self.c_axis == 'redshift'):
+            np.savetxt(os.path.join(output_dir, 'summary.txt'), np.c_[self.mass_col, self.norm_h_col, self.vel_disp_col, self.median_r_col], header = 'HALO_MASS // CLUSTER_NORMALIZED_H // CLUSTER_VELOCITY_DISPERSION // CLUSTER_GALAZY_COUNT')
         plt.close(self.summary_fig)
