@@ -166,11 +166,11 @@ class VirialScaling(BaseValidationTest):
         self.norm_h_col = cosmo.H(median_r[mask_num])/100
         self.vel_disp_col = vel_dispersion[mask_num]
         self.median_r_col = median_r[mask_num]
-        self.galaxy_num_col = galaxy_num_list[mask_num]
+        self.galaxy_num_col = np.around(galaxy_num_list[mask_num], decimals = 0)
         if (self.c_axis == 'number'):
-            np.savetxt(os.path.join(output_dir, 'summary.txt'), np.c_[self.mass_col, self.norm_h_col, self.vel_disp_col, self.galaxy_num_col], header = 'HALO_MASS // CLUSTER_NORMALIZED_H // CLUSTER_VELOCITY_DISPERSION // CLUSTER_GALAXY_COUNT')
+            np.savetxt(os.path.join(output_dir, 'summary.txt'), np.c_[self.mass_col, self.norm_h_col, self.vel_disp_col, self.galaxy_num_col], fmt = '%12.4e', header = 'HALO_MASS // CLUSTER_NORMALIZED_H // CLUSTER_VELOCITY_DISPERSION // CLUSTER_GALAXY_COUNT')
         elif (self.c_axis == 'redshift'):
-            np.savetxt(os.path.join(output_dir, 'summary.txt'), np.c_[self.mass_col, self.norm_h_col, self.vel_disp_col, self.median_r_col], header = 'HALO_MASS // CLUSTER_NORMALIZED_H // CLUSTER_VELOCITY_DISPERSION // CLUSTER_GALAZY_COUNT')
+            np.savetxt(os.path.join(output_dir, 'summary.txt'), np.c_[self.mass_col, self.norm_h_col, self.vel_disp_col, self.median_r_col], fmt = '%12.4e', header = 'HALO_MASS // CLUSTER_NORMALIZED_H // CLUSTER_VELOCITY_DISPERSION // CLUSTER_GALAZY_COUNT')
 
         #make plot
         x = np.linspace(smallest*.75, largest*1.5)
@@ -198,7 +198,7 @@ class VirialScaling(BaseValidationTest):
         '''conclude the test'''
         self.summary_fig.savefig(os.path.join(output_dir, 'mass_virial_scaling.png'))
         if (self.c_axis == 'number'):
-            np.savetxt(os.path.join(output_dir, 'summary.txt'), np.c_[self.mass_col, self.norm_h_col, self.vel_disp_col, self.galaxy_num_col], header = 'HALO_MASS // CLUSTER_NORMALIZED_H // CLUSTER_VELOCITY_DISPERSION // CLUSTER_GALAXY_COUNT')
+            np.savetxt(os.path.join(output_dir, 'summary.txt'), np.c_[self.mass_col, self.norm_h_col, self.vel_disp_col, self.galaxy_num_col], fmt = '%12.4e', header = 'HALO_MASS // CLUSTER_NORMALIZED_H // CLUSTER_VELOCITY_DISPERSION // CLUSTER_GALAXY_COUNT')
         elif (self.c_axis == 'redshift'):
-            np.savetxt(os.path.join(output_dir, 'summary.txt'), np.c_[self.mass_col, self.norm_h_col, self.vel_disp_col, self.median_r_col], header = 'HALO_MASS // CLUSTER_NORMALIZED_H // CLUSTER_VELOCITY_DISPERSION // CLUSTER_GALAZY_COUNT')
+            np.savetxt(os.path.join(output_dir, 'summary.txt'), np.c_[self.mass_col, self.norm_h_col, self.vel_disp_col, self.median_r_col], fmt = '%12.4e', header = 'HALO_MASS // CLUSTER_NORMALIZED_H // CLUSTER_VELOCITY_DISPERSION // CLUSTER_GALAZY_COUNT')
         plt.close(self.summary_fig)
