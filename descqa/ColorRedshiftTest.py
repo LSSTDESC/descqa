@@ -31,7 +31,7 @@ class ColorRedshiftTest(BaseValidationTest):
             assert (plot_param["mag1"] in allowed_colors) and (plot_param["mag2"] in allowed_colors), "only ugrizy colors are allowed"
             assert (plot_param["frame"] in ['rest', 'obs', 'observed', 'observer']), "Only 'rest', 'obs', and 'observed' frames allowed"
             plot_param["filter"] = plot_param.get('filter', '').lower()
-            assert (self.filter in ['lsst', 'sdss', 'des']), "Only lsst, sdss, or DES filters allowed"
+            assert (plot_param["filter"] in ['lsst', 'sdss', 'des']), "Only lsst, sdss, or DES filters allowed"
             plot_param["baseDC2"]          = plot_param.get('baseDC2',          False)
             plot_param["central"]          = plot_param.get("central",          None)
             plot_param["Mr_cut"]           = plot_param.get("Mr_cut",           None)
