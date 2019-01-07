@@ -106,9 +106,8 @@ class ColorRedshiftTest(BaseValidationTest):
         # a cheap way to get an array of trues of the correct size
         redshift = catalog_instance.first_available('redshift')
         slct = redshift == redshift
-        title_elem_per_line =3
-        title_elem = 2 # The number of elements in the title. We want about
-        # three elements per line. The catalog name is pretty big, so it counts
+        title_elem_per_line =3 # The number of elements in the title. We want about
+        title_elem = 2 # three elements per line. The catalog name is pretty big, so it counts
         # as two elements.
         
 
