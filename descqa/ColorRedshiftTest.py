@@ -49,6 +49,8 @@ class ColorRedshiftTest(BaseValidationTest):
         self.red_sequence_cut = kwargs.get("red_sequence_cut", None)
         self.synthetic_type = kwargs.get("synthetic_type", None)
         self.log_scale = kwargs.get("log_scale", True)
+        print("hhhm?")
+        print(kwargs.get('test_list', {}))
 
     def post_process_plot(self, ax):
         pass
@@ -71,7 +73,7 @@ class ColorRedshiftTest(BaseValidationTest):
         mag2_val = self._get_quantity(catalog_instance, mag2_str)
         redshift = self._get_quantity(catalog_instance, 'redshift')
         clr_val = mag1_val - mag2_val
-        title = catalog_name+", "
+        title = ""
         slct, title = self._get_selection_and_title(catalog_instance, title)
         fig, ax = plt.subplots()
         for ax_this in (ax, self.summary_ax):
@@ -84,8 +86,10 @@ class ColorRedshiftTest(BaseValidationTest):
                 fig.colorbar(pc, ax = ax_this).set_label("Population Density")
             ax_this.set_ylabel('{} - {}'.format(mag1_str, mag2_str))
             ax_this.set_xlabel('redshift')
-            ax.set_title(title)
-            print(title)
+            ax_this.text(0.05, 0.95, title, transform=ax.transAxes,
+                         verticalalignment='top', color='white',
+                         fontsize='small')
+            ax_this.set_title(catalog_name)
         # self.post_process_plot(ax)
         fig.savefig(os.path.join(output_dir, 'plot.png'))
         plt.close(fig)
@@ -107,7 +111,7 @@ class ColorRedshiftTest(BaseValidationTest):
         redshift = catalog_instance.first_available('redshift')
         slct = redshift == redshift
         title_elem_per_line =3 # The number of elements in the title. We want about
-        title_elem = 2 # three elements per line. The catalog name is pretty big, so it counts
+        title_elem = 0 # three elements per line. The catalog name is pretty big, so it counts
         # as two elements.
         
 
@@ -130,7 +134,7 @@ class ColorRedshiftTest(BaseValidationTest):
         if self.mr_cut is not None:
             mag_r = self._get_quantity(catalog_instance, "mag_r")
             slct = slct & ( mag_r < self.mr_cut )
-            title += "mr < {}, ".format(self.Mr_cut)
+            title += "mr < {}, ".format(self.mr_cut)
             title_elem +=1
             if title_elem % title_elem_per_line == 0:
                 title += "\n"
@@ -138,17 +142,14 @@ class ColorRedshiftTest(BaseValidationTest):
         if self.stellar_mass_cut is not None:
             sm = self._get_quantity(catalog_instance, "stellar_mass")
             slct = slct & ( np.log10(sm) > self.stellar_mass_cut )
-            title += "s.m. > {}, ".format(self.Mr_cut)
+            title += "M$_{{*}}$ > {}, ".format(self.stellar_mass_cut)
             title_elem +=1
             if title_elem % title_elem_per_line == 0:
                 title += "\n"
-        print("halo_mass_cut: ", self.halo_mass_cut)
         if self.halo_mass_cut is not None:
             halo_mass = self._get_quantity(catalog_instance, "halo_mass")
-            print(np.sum(np.log10(halo_mass) > self.halo_mass_cut), '/', halo_mass.size)
-            print(np.median(np.log10(halo_mass)))
             slct = slct & ( np.log10(halo_mass) > self.halo_mass_cut )
-            title += "halo_mass > {}, ".format(self.halo_mass_cut)
+            title += "M$_{{halo}}$ > {}, ".format(self.halo_mass_cut)
             title_elem +=1
             if title_elem % title_elem_per_line == 0:
                 title += "\n"
