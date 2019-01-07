@@ -1,0 +1,48 @@
+subclass_name: ColorRedshiftTest.ColorRedshiftTest
+observation: ''
+description: 'Plotting galaxy as function of redshift with different cuts on galaxy population'
+
+# Optional settings for plotting:
+  # central: true  
+    # selects centrals if true, satellites if false. 
+
+  # Mr_cut: -20
+    # rest frame r-band cut
+
+  # mr_cut: 20 
+    # observer frame r-band cut
+
+  # stellar_mass_cut: 9.5
+    # minimum galaxy mass cut
+
+  # halo_mass_cut: 13
+    # minimum host halo mass
+
+  # red_sequence_cut: true
+    # if true, selects red sequence galaxies. If false, selects non-red sequence
+
+  # log_scale: false
+    # Sets the color scaling to be log in the density plot if set true. Deefault is true.
+
+plot_list:
+
+
+- frame: obs
+  color: u-g
+  filter: lsst
+
+- frame: obs
+  color: g-r
+  filter: lsst
+
+- frame: obs
+  color: r-i
+  filter: lsst
+
+- frame: obs
+  color: i-z
+  filter: lsst
+
+- frame: obs
+  color: z-y
+  filter: lsst
