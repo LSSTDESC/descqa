@@ -74,8 +74,8 @@ class ColorRedshiftTest(BaseValidationTest):
             print(np.shape(redshift[slct]))
             print(np.shape(clr_val[slct]))
             h,xbins,ybins = np.histogram2d(redshift[slct], clr_val[slct], 
-                                           bins=(np.linspace(0, 1.1, 256), 
-                                                 np.linspace(-0.25, 2, 256))) 
+                                           bins=(np.linspace(0, 1.05, 256), 
+                                                 np.linspace(-0.4, 2.2, 256))) 
             if plot_param["log_scale"]:
                 pc = ax.pcolor(xbins,ybins, h.T+3.0, norm = clr.LogNorm())
                 fig.colorbar(pc, ax = ax).set_label("Population Density + 3")
