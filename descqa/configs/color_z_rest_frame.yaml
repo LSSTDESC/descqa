@@ -1,6 +1,7 @@
 subclass_name: ColorRedshiftTest.ColorRedshiftTest
 observation: ''
-description: 'Plotting galaxy as function of redshift with different cuts on galaxy population'
+description: 'Plotting red sequence galaxies as function of redshift with different cuts on galaxy population'
+
 
 # Optional settings for plotting:
   # central: 
@@ -33,24 +34,24 @@ description: 'Plotting galaxy as function of redshift with different cuts on gal
     # "3" reads 0<z<~3. Other values are not allowed. Default is "1". If redshift_limit is 
     # specified, this value is ignored and the redshift blocks to read is determined from the
     # redshift_limit. 
+
 plot_list:
 
-- frame: obs
+
+- frame: rest
+  color: u-g
+  filter: lsst
+
+- frame: rest
   color: g-r
   filter: lsst
-  halo_mass_cut: 13
-  red_sequence_cut: True
 
-- frame: obs
+- frame: rest
   color: r-i
   filter: lsst
-  halo_mass_cut: 13
-  red_sequence_cut: True
 
-- frame: obs
+- frame: rest
   color: i-z
   filter: lsst
-  halo_mass_cut: 13
-  red_sequence_cut: True
 
 
