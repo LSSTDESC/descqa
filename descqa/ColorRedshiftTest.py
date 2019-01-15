@@ -41,7 +41,9 @@ class ColorRedshiftTest(BaseValidationTest):
             plot_param["red_sequence_cut"] = plot_param.get("red_sequence_cut", None)
             plot_param["synthetic_type"]   = plot_param.get("synthetic_type",   None)
             plot_param["log_scale"]        = plot_param.get("log_scale",        True)
-
+            plot_param["redshift_limit"]   = plot_param.get("redshift_limit",   None)
+            plot_param["redshift_block_limit"] = plot_param.get("redshift_block_limit", 1)
+            assert plot_param['redshift_block_limit'] in [1,2,3], "redshift_block_limit must be set to 1,2 or 3. It is set to: {}".format(plot_param['redshift_block_limit'])
 
     def post_process_plot(self, ax):
         pass
@@ -59,22 +61,35 @@ class ColorRedshiftTest(BaseValidationTest):
             else:
                 mag_frame = "mag"
                 mag_end = ""
-            mag1_str = "{}_{}_{}{}".format(mag_frame, plot_param["mag1"], plot_param["filter"], mag_end)
-            mag2_str = "{}_{}_{}{}".format(mag_frame, plot_param["mag2"], plot_param["filter"], mag_end)
-            mag1_val = self._get_quantity(catalog_instance, mag1_str)
-            mag2_val = self._get_quantity(catalog_instance, mag2_str)
-            redshift = self._get_quantity(catalog_instance, 'redshift')
+            mag1_str = "{}_{}_{}{}".format(mag_frame, plot_param["mag1"], 
+                                           plot_param["filter"], mag_end)
+            mag2_str = "{}_{}_{}{}".format(mag_frame, plot_param["mag2"], 
+                                           plot_param["filter"], mag_end)
+            mag1_val = self._get_quantity(catalog_instance, mag1_str,
+                                          redshift_block_limit = plot_param['redshift_block_limit'],
+                                          redshift_limit = plot_param['redshift_limit'],)
+            mag2_val = self._get_quantity(catalog_instance, mag2_str,
+                                          redshift_block_limit = plot_param['redshift_block_limit'],
+                                          redshift_limit = plot_param['redshift_limit'],)
+            redshift = self._get_quantity(catalog_instance, 'redshift',
+                                          redshift_block_limit = plot_param['redshift_block_limit'],
+                                          redshift_limit = plot_param['redshift_limit'],)
             clr_val = mag1_val - mag2_val
             title = ""
-            slct, title = self._get_selection_and_title(catalog_instance, title, plot_param)
+            slct, title = self._get_selection_and_title(catalog_instance, title, plot_param, 
+                                                        redshift_limit = plot_param['redshift_limit'],
+                                                        redshift_block_limit = plot_param['redshift_block_limit'])
             fig, ax = plt.subplots()
             # for ax_this in (ax, self.summary_ax):
-            print(np.shape(redshift))
-            print(np.shape(slct))
-            print(np.shape(redshift[slct]))
-            print(np.shape(clr_val[slct]))
+            if plot_param['redshift_limit'] is not None:
+                redshift_bins = np.linspace(0, 1.05*plot_param['redshift_limit'], 256)
+            elif plot_param['redshift_block_limit'] is not None:
+                redshift_bins = np.linspace(0, 1.05*(plot_param['redshift_block_limit']), 256)
+            else:
+                redshift_bins =np.linspace(0, 1.05, 256) 
+
             h,xbins,ybins = np.histogram2d(redshift[slct], clr_val[slct], 
-                                           bins=(np.linspace(0, 1.05, 256), 
+                                           bins=(redshift_bins,
                                                  np.linspace(-0.4, 2.2, 256))) 
             if plot_param["log_scale"]:
                 pc = ax.pcolor(xbins,ybins, h.T+3.0, norm = clr.LogNorm())
@@ -96,25 +111,43 @@ class ColorRedshiftTest(BaseValidationTest):
     
 
 
-    def _get_quantity(self, catalog_instance, quantity_name):
+    def _get_quantity(self, catalog_instance, quantity_name,
+                      redshift_block_limit = 1,
+                      redshift_limit=None):
         if not catalog_instance.has_quantities([quantity_name]):
             raise _CatalogDoesNotHaveQuantity(quantity_name)
         first_name = catalog_instance.first_available(quantity_name)
-        return catalog_instance.get_quantities([first_name], native_filters=['redshift_block_lower == 0'],)[first_name]
+        if redshift_limit is not None:
+            filters = ["redshift < {}".format(redshift_limit)]
+            if redshift_limit <= 1:
+                redshift_block_limit = 1
+            elif redshift_limit <= 2:
+                redshift_block_limit = 2
+            else:    
+                redshift_block_limit = 3
+        else:
+                filters = None
+        native_filters = ['redshift_block_lower <= {}'.format(redshift_block_limit-1)]
+        return catalog_instance.get_quantities([first_name],
+                                               filters=filters,
+                                               native_filters=native_filters,)[first_name]
                                     
                                     
-    def _get_selection_and_title(self, catalog_instance, title, plot_param):
+    def _get_selection_and_title(self, catalog_instance, title, plot_param,
+                                 redshift_block_limit = 1,
+                                 redshift_limit = None):
         # a cheap way to get an array of trues of the correct size
-        redshift = self._get_quantity(catalog_instance, 'redshift')
+        redshift = self._get_quantity(catalog_instance, 'redshift',
+                                      redshift_limit=redshift_limit,
+                                      redshift_block_limit=redshift_block_limit)
         slct = redshift == redshift
         title_elem_per_line =3 # The number of elements in the title. We want about
         title_elem = 0 # three elements per line. The catalog name is pretty big, so it counts
         # as two elements.
-        print("inside get_selection and title")
-        print("redshift: ", np.shape(redshift))
-        print("slct: ", np.shape(slct))
         if plot_param["central"] is not None:
-            is_central = self._get_quantity(catalog_instance, 'is_central')
+            is_central = self._get_quantity(catalog_instance, 'is_central',
+                                            redshift_limit=redshift_limit,
+                                            redshift_block_limit=redshift_block_limit)
             slct = slct & (is_central == plot_param["central"])
             title += "central = {}, ".format(plot_param["central"])
             title_elem +=1
@@ -122,7 +155,9 @@ class ColorRedshiftTest(BaseValidationTest):
                 title += "\n"
 
         if plot_param["Mr_cut"] is not None:
-            Mag_r  = self._get_quantity(catalog_instance, "Mag_true_r_lsst_z0")
+            Mag_r  = self._get_quantity(catalog_instance, "Mag_true_r_lsst_z0",
+                                        redshift_limit=redshift_limit,
+                                        redshift_block_limit=redshift_block_limit)
             slct = slct & ( Mag_r < plot_param["Mr_cut"] )
             title += "Mr < {}, ".format(plot_param["Mr_cut"])
             title_elem +=1
@@ -130,7 +165,9 @@ class ColorRedshiftTest(BaseValidationTest):
                 title += "\n"
 
         if plot_param["mr_cut"] is not None:
-            mag_r = self._get_quantity(catalog_instance, "mag_r")
+            mag_r = self._get_quantity(catalog_instance, "mag_r",
+                                       redshift_limit=redshift_limit,
+                                       redshift_block_limit=redshift_block_limit)
             slct = slct & ( mag_r < plot_param["mr_cut"] )
             title += "mr < {}, ".format(plot_param["mr_cut"])
             title_elem +=1
@@ -138,14 +175,18 @@ class ColorRedshiftTest(BaseValidationTest):
                 title += "\n"
 
         if plot_param["stellar_mass_cut"] is not None:
-            sm = self._get_quantity(catalog_instance, "stellar_mass")
+            sm = self._get_quantity(catalog_instance, "stellar_mass",
+                                    redshift_limit=redshift_limit,
+                                    redshift_block_limit=redshift_block_limit)
             slct = slct & ( np.log10(sm) > plot_param["stellar_mass_cut"] )
             title += "M$_{{*}}$ > {}, ".format(plot_param["stellar_mass_cut"])
             title_elem +=1
             if title_elem % title_elem_per_line == 0:
                 title += "\n"
         if plot_param["halo_mass_cut"] is not None:
-            halo_mass = self._get_quantity(catalog_instance, "halo_mass")
+            halo_mass = self._get_quantity(catalog_instance, "halo_mass",
+                                           redshift_limit=redshift_limit,
+                                           redshift_block_limit=redshift_block_limit)
             slct = slct & ( np.log10(halo_mass) > plot_param["halo_mass_cut"] )
             title += "M$_{{halo}}$ > {}, ".format(plot_param["halo_mass_cut"])
             title_elem +=1
@@ -153,7 +194,9 @@ class ColorRedshiftTest(BaseValidationTest):
                 title += "\n"
 
         if plot_param["synthetic_type"] is not None:
-            upid = self._get_quantity(catalog_instance, "baseDC2/upid")
+            upid = self._get_quantity(catalog_instance, "baseDC2/upid",
+                                      redshift_limit=redshift_limit,
+                                      redshift_block_limit=redshift_block_limit)
             slct = slct & ( upid == plot_param["synthetic_type"] )
             title += "synth = {}, ".format(plot_param["synthetic_type"])
             title_elem +=1
@@ -161,7 +204,9 @@ class ColorRedshiftTest(BaseValidationTest):
                 title += "\n"
 
         if plot_param["red_sequence_cut"] is not None:
-            rs = self._get_quantity(catalog_instance, "baseDC2/is_on_red_sequence_gr")
+            rs = self._get_quantity(catalog_instance, "baseDC2/is_on_red_sequence_gr",
+                                    redshift_limit=redshift_limit,
+                                    redshift_block_limit=redshift_block_limit)
             slct = slct & ( rs == plot_param["red_sequence_cut"] )
             title += "red seq = {}, ".format(plot_param["red_sequence_cut"])
             title_elem +=1
@@ -170,10 +215,6 @@ class ColorRedshiftTest(BaseValidationTest):
 
         return slct, title
 
-
-    def _generate_color_z(selection, label, filter_type, frame, mag1, mag2, 
-                          plot_type=None):
-        pass
 
 
     def conclude_test(self, output_dir):
