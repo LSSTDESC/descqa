@@ -21,3 +21,5 @@ See <a href="https://arxiv.org/abs/1709.09665" target="_blank">the DESCQA paper<
 Full details about the catalogs and tests, and how to contribute, are available <a href="https://confluence.slac.stanford.edu/x/Z0uKDQ" target="_blank">here</a> (collaborators only).
 The source code of DESCQA is hosted in <a href="https://github.com/LSSTDESC/descqa/" target="_blank">this GitHub repo</a>.
 '''
+
+use_latest_run_as_home = False
