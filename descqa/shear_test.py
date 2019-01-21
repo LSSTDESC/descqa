@@ -48,7 +48,7 @@ class ShearTest(BaseValidationTest):
                  **kwargs):
         #pylint: disable=W0231
 
-        plt.rcParams.update({'font.size': 9})
+        plt.rcParams['font.size'] = 9
 
         self.z = z
         #sep-bounds and binning
@@ -107,7 +107,6 @@ class ShearTest(BaseValidationTest):
 
     def integrand_lensing_limber(self, chi, l, galaxy_W_int, chi_int, p):
         '''return overall integrand for one value of l'''
-        #chi_unit = chi * u.Mpc
         z = chi_int(chi)
         k = (l + 0.5) / chi
         integrand = p(z, k, grid=False) * galaxy_W_int(z)**2 / chi**2
@@ -178,11 +177,12 @@ class ShearTest(BaseValidationTest):
             verbose=True)
         for i in range(N_clust):
             ##### shear computation excluding each jack-knife region
+            mask_jack = (labs != i)
             cat_s = treecorr.Catalog(
-                ra=catalog_data[self.ra][labs != i],
-                dec=catalog_data[self.dec][labs != i],
-                g1=catalog_data[self.e1][labs != i] - np.mean(catalog_data[self.e1][labs != i]),
-                g2=-(catalog_data[self.e2][labs != i] - np.mean(catalog_data[self.e2][labs != i])),
+                ra=catalog_data[self.ra][mask_jack],
+                dec=catalog_data[self.dec][mask_jack],
+                g1=catalog_data[self.e1][mask_jack] - np.mean(catalog_data[self.e1][mask_jack]),
+                g2=-(catalog_data[self.e2][mask_jack] - np.mean(catalog_data[self.e2][mask_jack])),
                 ra_units='deg',
                 dec_units='deg')
             gg.process(cat_s)
@@ -302,7 +302,7 @@ class ShearTest(BaseValidationTest):
             zlo2 = z_mean - self.z_range
             zhi2 = z_mean + self.z_range
             print(zlo2, zhi2)
-            zmask = (catalog_data[self.z] < zhi2)*(catalog_data[self.z] > zlo2)
+            zmask = (catalog_data[self.z] < zhi2) & (catalog_data[self.z] > zlo2)
             mask = zmask & mask_mag
             # compute shear auto-correlation
             cat_s = treecorr.Catalog(
