@@ -153,14 +153,14 @@ class ShearTest(BaseValidationTest):
         diff = chi2 / float(len(measured))
         return diff
 
-    def jackknife(self, catalog_data, xip, xim):
+    def jackknife(self, catalog_data, xip, xim, mask):
         " computing jack-knife covariance matrix using K-means clustering"
         #k-means clustering to define areas
         #NOTE: This is somewhat deprecated, the jack-knifing takes too much effort to find appropriately accurate covariance matrices.
         # If you want to use this, do a quick convergence check and some timing tests on small N_clust values (~5 to start) first.
         # note also that this is comparing against the (low) variance in the catalog which might not be a great comparison -no shape noise
         N_clust = self.N_clust
-        nn = np.stack((catalog_data[self.ra], catalog_data[self.dec]), axis=1)
+        nn = np.stack((catalog_data[self.ra][mask], catalog_data[self.dec][mask]), axis=1)
         _, labs, _ = k_means(
             n_clusters=N_clust, random_state=0, X=nn, n_jobs=-1)  # check random state, n_jobs is in debugging mode
         print("computing jack-knife errors")
@@ -179,10 +179,10 @@ class ShearTest(BaseValidationTest):
             ##### shear computation excluding each jack-knife region
             mask_jack = (labs != i)
             cat_s = treecorr.Catalog(
-                ra=catalog_data[self.ra][mask_jack],
-                dec=catalog_data[self.dec][mask_jack],
-                g1=catalog_data[self.e1][mask_jack] - np.mean(catalog_data[self.e1][mask_jack]),
-                g2=-(catalog_data[self.e2][mask_jack] - np.mean(catalog_data[self.e2][mask_jack])),
+                ra=catalog_data[self.ra][mask][mask_jack],
+                dec=catalog_data[self.dec][mask][mask_jack],
+                g1=catalog_data[self.e1][mask][mask_jack] - np.mean(catalog_data[self.e1][mask][mask_jack]),
+                g2=-(catalog_data[self.e2][mask][mask_jack] - np.mean(catalog_data[self.e2][mask][mask_jack])),
                 ra_units='deg',
                 dec_units='deg')
             gg.process(cat_s)
@@ -334,7 +334,7 @@ class ShearTest(BaseValidationTest):
 	    # Diagonal covariances for error bars on the plots. Use full covariance matrix for chi2 testing.
 
             if do_jackknife:
-                cp_xip, cp_xim = self.jackknife(catalog_data, xip, xim)
+                cp_xip, cp_xim = self.jackknife(catalog_data, xip, xim, mask)
                 print(cp_xip)
                 sig_jack = np.zeros((self.nbins))
                 sigm_jack = np.zeros((self.nbins))
