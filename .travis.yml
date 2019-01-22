@@ -5,11 +5,11 @@ cache: pip
 python:
 - "3.6"
 
-before_install: # camb requires gfortran to be at least gfortran-4.9
+before_install: # camb requires gfortran to be at least gfortran-6
 - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
 - sudo apt-get update -qq
-- sudo apt-get install gfortran-4.9 -y
-- sudo ln -s /usr/bin/gfortran-4.9 /usr/bin/gfortran
+- sudo apt-get install gfortran-8 -y
+- sudo ln -s /usr/bin/gfortran-8 /usr/bin/gfortran
 
 install:
 - pip install --process-dependency-links .[full]
