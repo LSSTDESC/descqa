@@ -101,7 +101,7 @@ class ShearTest(BaseValidationTest):
         prefactor = cst * chi * (1. + z) * u.Mpc
         val_array = []
         for i in range(len(z)):
-            val_array.append(quad(self.integrand_w, chi[i], chi_max, args=(n, chi[i], chi_int, cosmo))[0])
+            val_array.append(quad(self.integrand_w, chi_this, chi_max, args=(n, chi_this, chi_int, cosmo))[0])
         W = np.array(val_array) * prefactor * (u.Mpc)  # now unitless
         return W
 
