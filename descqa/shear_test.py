@@ -9,7 +9,7 @@ from sklearn.cluster import k_means
 import treecorr
 import camb
 import camb.correlations
-import astropy.units as u
+import astropy.units as u # pylint: disable=no-member
 import astropy.constants as const
 from GCR import GCRQuery
 from astropy.cosmology import WMAP7 # pylint: disable=no-name-in-module
