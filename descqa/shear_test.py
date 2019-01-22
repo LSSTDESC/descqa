@@ -10,7 +10,7 @@ import treecorr
 import camb
 import camb.correlations
 import astropy.units as u # pylint: disable=no-member
-import astropy.constants as const
+import astropy.constants as const # pylint: disable=no-member
 from GCR import GCRQuery
 from astropy.cosmology import WMAP7 # pylint: disable=no-name-in-module
 from .base import BaseValidationTest, TestResult
