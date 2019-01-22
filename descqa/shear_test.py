@@ -106,7 +106,8 @@ class ShearTest(BaseValidationTest):
         W = np.array(val_array) * prefactor * (u.Mpc)  # now unitless
         return W
 
-    def integrand_lensing_limber(self, chi, l, galaxy_W_int, chi_int, p):
+    @staticmethod
+    def integrand_lensing_limber(chi, l, galaxy_W_int, chi_int, p):
         '''return overall integrand for one value of l'''
         z = chi_int(chi)
         k = (l + 0.5) / chi
