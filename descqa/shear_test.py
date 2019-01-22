@@ -270,7 +270,7 @@ class ShearTest(BaseValidationTest):
         print(cosmo)
 
         pars.set_cosmology(H0=cosmo.H0.value, ombh2=cosmo.Ob0*cosmo.h**2, omch2=(cosmo.Om0-cosmo.Ob0)*cosmo.h**2)
-        pars.InitPower.set_params(ns=ns, As = 2.168e-9*(s8/0.8)**2)
+        pars.InitPower.set_params(ns=ns, As=2.168e-9*(s8/0.8)**2)
         camb.set_halofit_version(version='takahashi')
         p = camb.get_matter_power_interpolator(pars, nonlinear=True, k_hunit=False, hubble_units=False, kmax=100., zmax=self.zhi+1., k_per_logint=False).P
         z_max = np.max(catalog_data[self.z])
