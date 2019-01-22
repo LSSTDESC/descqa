@@ -85,7 +85,8 @@ class ShearTest(BaseValidationTest):
         n2 = interp1d(z, n / n2_sum, bounds_error=False, fill_value=0.0, kind='cubic')
         return n2
 
-    def integrand_w(self, x, n, chi, chi_int, cosmo):
+    @staticmethod
+    def integrand_w(x, n, chi, chi_int, cosmo):
         ''' This is the inner bit of GWL lensing kernel - z is related to x, not chi'''
         z = chi_int(x)
         H_z = cosmo.H(z).to(1./u.s).value
