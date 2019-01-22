@@ -9,10 +9,10 @@ from sklearn.cluster import k_means
 import treecorr
 import camb
 import camb.correlations
-import astropy.units as u # pylint: disable=no-member
-import astropy.constants as const # pylint: disable=no-member
-from GCR import GCRQuery
+import astropy.units as u
+import astropy.constants as const
 from astropy.cosmology import WMAP7 # pylint: disable=no-name-in-module
+from GCR import GCRQuery
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
 pars = camb.CAMBparams()
@@ -90,7 +90,7 @@ class ShearTest(BaseValidationTest):
         ''' This is the inner bit of GWL lensing kernel - z is related to x, not chi'''
         z = chi_int(x)
         H_z = cosmo.H(z).to(1./u.s).value
-        dchidz = const.c.to(u.Mpc/u.s).value/H_z
+        dchidz = const.c.to(u.Mpc/u.s).value/H_z  # pylint: disable=no-member
         return n(z) / dchidz * (x - chi) / x
 
     def galaxy_W(self, z, n, chi_int, cosmo, chi_max):
