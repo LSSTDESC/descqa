@@ -19,7 +19,7 @@ __all__ = ['ColorDistribution']
 # A19-22 the paper: arxiv.org/abs/1708.01531
 # Transformations of SDSS -> CFHT are from:
 # www1.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/community/CFHTLS-SG/docs/extra/filters.html
-color_transformation = {'des2sdss': {}, 'des2cfht': {}, 'sdss2cfht': {}}
+color_transformation = {'des2sdss': {}, 'des2cfht': {}, 'sdss2cfht': {}, 'lsst2cfht': {}, 'lsst2sdss':{}}
 color_transformation['des2sdss']['g'] = '1.10421 * g - 0.104208 * r'
 color_transformation['des2sdss']['r'] = '0.102204 * g + 0.897796 * r'
 color_transformation['des2sdss']['i'] = '1.30843 * i - 0.308434 * z'
@@ -33,6 +33,16 @@ color_transformation['sdss2cfht']['g'] = 'g - 0.153 * (g - r)'
 color_transformation['sdss2cfht']['r'] = 'r - 0.024 * (g - r)'
 color_transformation['sdss2cfht']['i'] = 'i - 0.085 * (r - i)'
 color_transformation['sdss2cfht']['z'] = 'z + 0.074 * (i - z)'
+color_transformation['lsst2cfht']['u'] = 'u'
+color_transformation['lsst2cfht']['g'] = 'g'
+color_transformation['lsst2cfht']['r'] = 'r'
+color_transformation['lsst2cfht']['i'] = 'i'
+color_transformation['lsst2cfht']['z'] = 'z'
+color_transformation['lsst2sdss']['u'] = 'u'
+color_transformation['lsst2sdss']['g'] = 'g'
+color_transformation['lsst2sdss']['r'] = 'r'
+color_transformation['lsst2sdss']['i'] = 'i'
+color_transformation['lsst2sdss']['z'] = 'z'
 
 
 class ColorDistribution(BaseValidationTest):
@@ -52,14 +62,17 @@ class ColorDistribution(BaseValidationTest):
         # load test config options
         self.kwargs = kwargs
         self.obs_r_mag_limit = kwargs.get('obs_r_mag_limit', None)
-        self.zlo = kwargs['zlo']
-        self.zhi = kwargs['zhi']
+        self.lightcone = kwargs.get('lightcone', True)
+        if self.lightcone:
+            self.zlo = kwargs['zlo']
+            self.zhi = kwargs['zhi']
         self.validation_catalog = kwargs.get('validation_catalog', None)
         self.plot_pdf_q = kwargs.get('plot_pdf_q', True)
         self.plot_cdf_q = kwargs.get('plot_cdf_q', True)
         self.color_transformation_q = kwargs.get('color_transformation_q', True)
         self.Mag_r_limit = kwargs.get('Mag_r_limit', None)
         self.rest_frame = kwargs.get('rest_frame', bool(self.Mag_r_limit and not self.obs_r_mag_limit))
+        self.use_lsst = kwargs.get('use_lsst', False)
 
         # bins of color distribution
         self.bins = np.linspace(-1, 4, 2000)
@@ -111,7 +124,12 @@ class ColorDistribution(BaseValidationTest):
         if self.rest_frame:
             possible_names = ('Mag_{}_lsst', 'Mag_{}_sdss', 'Mag_true_{}_lsst_z0', 'Mag_true_{}_sdss_z0')
         else:
-            possible_names = ('mag_{}_sdss', 'mag_{}_des', 'mag_true_{}_sdss', 'mag_true_{}_des')
+            if self.use_lsst:
+                print('Selecting lsst magnitudes if available')
+                possible_names = ('mag_{}_lsst', 'mag_{}_sdss', 'mag_{}_des', 'mag_true_{}_lsst', 'mag_true_{}_sdss', 'mag_true_{}_des')
+            else:
+                possible_names = ('mag_{}_sdss', 'mag_{}_des', 'mag_true_{}_sdss', 'mag_true_{}_des')
+                
         labels = {band: catalog_instance.first_available(*(n.format(band) for n in possible_names)) for band in bands}
         labels = {k: v for k, v in labels.items() if v}
         if len(labels) < 2:
@@ -121,13 +139,18 @@ class ColorDistribution(BaseValidationTest):
             return TestResult(skipped=True, summary='magnitudes in mock catalog have mixed filters.')
         filter_this = filters.pop()
 
-        labels['redshift'] = 'redshift_true'
-        if not catalog_instance.has_quantity(labels['redshift']):
-            return TestResult(skipped=True, summary='mock catalog does not have redshift.')
+        if self.lightcone:
+            labels['redshift'] = 'redshift_true'
+            if not catalog_instance.has_quantity(labels['redshift']):
+                return TestResult(skipped=True, summary='mock catalog does not have redshift.')
 
         # Load mock catalog data
-        filters = ['{} > {}'.format(labels['redshift'], self.zlo),
+        if self.lightcone:
+            filters = ['{} > {}'.format(labels['redshift'], self.zlo),
                    '{} < {}'.format(labels['redshift'], self.zhi)]
+        else:
+            filters = None
+            self.redshift = catalog_instance.redshift
         data = catalog_instance.get_quantities(list(labels.values()), filters)
         data = {k: data[v] for k, v in labels.items()}
 
@@ -189,7 +212,10 @@ class ColorDistribution(BaseValidationTest):
                 f.write('Color transformation: {}\n'.format(color_trans_name))
             else:
                 f.write('No color transformation\n')
-            f.write('%2.3f < z < %2.3f\n'%(self.zlo, self.zhi))
+            if self.lightcone:
+                f.write('%2.3f < z < %2.3f\n'%(self.zlo, self.zhi))
+            else:
+                f.write('z = %2.3f\n'%(self.redshift))
             if self.obs_r_mag_limit:
                 f.write('r_mag < %2.3f\n\n'%(self.obs_r_mag_limit))
             elif self.Mag_r_limit:
@@ -213,10 +239,14 @@ class ColorDistribution(BaseValidationTest):
         fig_pdf, axes_pdf = plt.subplots(nrows, 2, figsize=(8, 3.5*nrows))
         fig_cdf, axes_cdf = plt.subplots(nrows, 2, figsize=(8, 3.5*nrows))
         title = ''
+        if self.lightcone:
+            ztitle = '${:.1f} < z < {:.1f}$'.format(self.zlo, self.zhi)
+        else:
+            ztitle = '$z = {:.3f}$'.format(self.redshift)
         if self.obs_r_mag_limit:
-            title = '$m_r < {:2.1f},  {:.1f} < z < {:.1f}$'.format(self.obs_r_mag_limit, self.zlo, self.zhi)
+            title = '$m_r < {:2.1f}$, {}'.format(self.obs_r_mag_limit, ztitle)
         elif self.Mag_r_limit:
-            title = '$M_r < {:2.1f},  {:.1f} < z < {:.1f}$'.format(self.Mag_r_limit, self.zlo, self.zhi)
+            title = '$M_r < {:2.1f}$,  {}'.format(self.Mag_r_limit, ztitle)
 
         print(mock_color_dist.keys())
         for ax_cdf, ax_pdf, color in zip(axes_cdf.flat, axes_pdf.flat, available_colors):
