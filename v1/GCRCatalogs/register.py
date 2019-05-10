@@ -12,7 +12,7 @@ def load_yaml(yaml_file):
     Load *yaml_file*. Ruturn a dictionary.
     """
     with open(yaml_file) as f:
-        config = yaml.load(f)
+        config = yaml.safe_load(f)
     return config
 
 
