@@ -2,6 +2,7 @@ from __future__ import unicode_literals, absolute_import, division
 import os
 import numpy as np
 import numexpr as ne
+import re
 from astropy.table import Table
 from scipy.ndimage.filters import uniform_filter1d
 from GCR import GCRQuery
@@ -60,6 +61,13 @@ class ColorDistribution(BaseValidationTest):
         self.color_transformation_q = kwargs.get('color_transformation_q', True)
         self.Mag_r_limit = kwargs.get('Mag_r_limit', None)
         self.rest_frame = kwargs.get('rest_frame', bool(self.Mag_r_limit and not self.obs_r_mag_limit))
+        self.plot_shift = kwargs.get('plot_shift', True)
+        self.truncate_cat_name = kwargs.get('truncate_cat_name', False)
+        self.title_in_legend = kwargs.get('title_in_legend', False)
+        self.legend_location = kwargs.get('legend_location', 'upper left')
+        self.skip_statistic = kwargs.get('skip_statistic', False)
+        self.font_size = kwargs.get('font_size', 16)
+        self.legend_size = kwargs.get('legend_size', 10)
 
         # bins of color distribution
         self.bins = np.linspace(-1, 4, 2000)
@@ -214,9 +222,9 @@ class ColorDistribution(BaseValidationTest):
         fig_cdf, axes_cdf = plt.subplots(nrows, 2, figsize=(8, 3.5*nrows))
         title = ''
         if self.obs_r_mag_limit:
-            title = '$m_r < {:2.1f},  {:.1f} < z < {:.1f}$'.format(self.obs_r_mag_limit, self.zlo, self.zhi)
+            title = '$m_r < {:2.1f},  {:.2f} < z < {:.2f}$'.format(self.obs_r_mag_limit, self.zlo, self.zhi)
         elif self.Mag_r_limit:
-            title = '$M_r < {:2.1f},  {:.1f} < z < {:.1f}$'.format(self.Mag_r_limit, self.zlo, self.zhi)
+            title = '$M_r < {:2.1f},  {:.2f} < z < {:.2f}$'.format(self.Mag_r_limit, self.zlo, self.zhi)
 
         print(mock_color_dist.keys())
         for ax_cdf, ax_pdf, color in zip(axes_cdf.flat, axes_pdf.flat, available_colors):
@@ -242,8 +250,13 @@ class ColorDistribution(BaseValidationTest):
 
             # Plot PDF
             # mock color distribution
-            if cvm_omega.get(color, None):
-                catalog_label = catalog_name+'\n'+r'$\omega={:.3}$'.format(cvm_omega[color])
+            spacing = '\n'
+            lgnd_title = None
+            if self.truncate_cat_name:
+                catalog_name = re.split('_', catalog_name)[0]
+                spacing = ', '
+            if cvm_omega.get(color, None) and not self.skip_statistic:
+                catalog_label = catalog_name + spacing + r'$\omega={:.3}$'.format(cvm_omega[color])
             else:
                 catalog_label = catalog_name
             ax_pdf.step(mbinctr, mpdf_smooth, where="mid", label= catalog_label, color='C1')
@@ -251,14 +264,18 @@ class ColorDistribution(BaseValidationTest):
                 # validation data
                 ax_pdf.step(obinctr, opdf_smooth, where="mid", label=self.validation_catalog, color='C0')
                 # color distribution after constant shift
-                ax_pdf.step(mbinctr + color_shift[color], mpdf_smooth,
-                        label=catalog_name+' shifted\n'+r'$\omega={:.3}$'.format(cvm_omega_shift[color]),
-                        linestyle='--', color='C2')
-            ax_pdf.set_xlabel('${}$'.format(color))
+                if self.plot_shift:
+                    ax_pdf.step(mbinctr + color_shift[color], mpdf_smooth,
+                                label=catalog_name+' shifted\n'+r'$\omega={:.3}$'.format(cvm_omega_shift[color]),
+                                linestyle='--', color='C2')
+            ax_pdf.set_xlabel('${}$'.format(color), size=self.font_size)
             ax_pdf.set_xlim(xmin, xmax)
             ax_pdf.set_ylim(ymin=0.)
-            ax_pdf.set_title(title)
-            ax_pdf.legend(loc='upper left', frameon=False)
+            if not self.title_in_legend:
+                ax_pdf.set_title(title)
+            else:
+                lgnd_title = title
+            ax_pdf.legend(loc=self.legend_location, title=lgnd_title, fontsize=self.legend_size, frameon=False)
 
             # Plot CDF
             # catalog distribution
@@ -267,14 +284,18 @@ class ColorDistribution(BaseValidationTest):
                 # validation distribution
                 ax_cdf.step(obinctr, ocdf, label=self.validation_catalog, color='C0')
                 # color distribution after constant shift
-                ax_cdf.step(mbinctr + color_shift[color], mcdf, where="mid",
-                        label=catalog_name+' shifted\n'+r'$\omega={:.3}$'.format(cvm_omega_shift[color]),
-                        linestyle='--', color='C2')
-            ax_cdf.set_xlabel('${}$'.format(color))
-            ax_cdf.set_title(title)
+                if self.plot_shift:
+                    ax_cdf.step(mbinctr + color_shift[color], mcdf, where="mid",
+                                label=catalog_name+' shifted\n'+r'$\omega={:.3}$'.format(cvm_omega_shift[color]),
+                                linestyle='--', color='C2')
+            ax_cdf.set_xlabel('${}$'.format(color), size=self.font_size)
+            if not self.title_in_legend:
+                ax_cdf.set_title(title)
+            else:
+                lgnd_title = title
             ax_cdf.set_xlim(xmin, xmax)
             ax_cdf.set_ylim(0, 1)
-            ax_cdf.legend(loc='upper left', frameon=False)
+            ax_cdf.legend(loc=self.legend_location, title=lgnd_title, fontsize=self.legend_size, frameon=False)
 
         if self.plot_pdf_q:
             fig_pdf.tight_layout()

@@ -1,0 +1,13 @@
+subclass_name: apparent_mag_func_test.ApparentMagFuncTest
+band: i
+band_lim: [24, 27.5]
+observation: 'HSC'
+included_by_default: true
+no_title: true
+x_lower_limit: 19
+truncate_cat_name: true
+font_size: 18
+legend_size: 12
+skip_label_detail: true
+
+description: 'Plot N(<mag) distributions for selected magnitude bounds in specified band and compare with extrpolated fits to HSC deep fields data.'

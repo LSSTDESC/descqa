@@ -1,0 +1,16 @@
+subclass_name: ColorDistribution.ColorDistribution
+obs_r_mag_limit: 17.7
+zlo: 0.05
+zhi: 0.1
+validation_catalog: SDSS
+plot_pdf_q: true
+plot_cdf_q: false
+color_transformation_q: true
+truncate_cat_name: true
+plot_shift: false
+title_in_legend: true
+font_size: 18
+legend_size: 12
+skip_statistic: True
+
+description: Compare the mock galaxy color distribution with SDSS

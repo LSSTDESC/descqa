@@ -30,6 +30,10 @@ ncolumns: 2
 fig_ylim: [4e-1, 100]
 fig_xlim: [9, 12.5]
 legend_location: 'upper left'
+no_title: true
+font_size: 14
+legend_size: 10
+truncate_cat_name: true
 
 chisq_max: 1.2
 
