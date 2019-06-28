@@ -31,7 +31,7 @@ setup(
     install_requires=['future', 'pyyaml', 'jinja2'],
     extras_require={
         'full': ['numpy', 'scipy', 'matplotlib', 'GCR>=0.8.7', 'healpy', 'treecorr', 'camb', 'scikit-learn', 
-                 'CatalogMatcher @ https://github.com/LSSTDESC/CatalogMatcher.git'],
+                 'CatalogMatcher @ https://github.com/LSSTDESC/CatalogMatcher/archive/master.zip'],
     },
     package_data={'descqa': ['configs/*.yaml', 'data/*']},
 )
