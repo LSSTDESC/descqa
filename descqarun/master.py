@@ -149,7 +149,7 @@ def print_available_and_exit(catalogs, validations):
     print('Available catalogs')
     print(_horizontal_rule)
     for c in sorted(catalogs):
-        print(c, '*' if catalogs[c].get('included_by_default') else '')
+        print(c, '*' if catalogs[c].get('included_by_default') or catalogs[c].get('include_in_default_catalog_list') else '')
     print()
 
     print(_horizontal_rule)
@@ -172,7 +172,7 @@ class DescqaTask(object):
         self.output_dir = output_dir
         self.logger = logger
         self.validations_to_run = self.select_subset(descqa.available_validations, validations_to_run)
-        self.catalogs_to_run = self.select_subset(GCRCatalogs.available_catalogs, catalogs_to_run)
+        self.catalogs_to_run = self.select_subset(GCRCatalogs.get_available_catalogs(False), catalogs_to_run)
 
         if not self.validations_to_run or not self.catalogs_to_run:
             raise RuntimeError('Nothing to run... Aborted!')
@@ -186,7 +186,7 @@ class DescqaTask(object):
         if wanted is None:
             available_default = None
             if isinstance(available, dict):
-                available_default = [k for k, v in available.items() if v.get('included_by_default')]
+                available_default = [k for k, v in available.items() if v.get('included_by_default') or v.get('include_in_default_catalog_list')]
             return set(available_default) if available_default else set(available)
 
         wanted = set(wanted)
@@ -438,7 +438,7 @@ def main():
         record_version('GCR', GCRCatalogs.GCR.__version__, master_status['versions'], logger=logger)
 
     if args.list:
-        print_available_and_exit(GCRCatalogs.available_catalogs, descqa.available_validations)
+        print_available_and_exit(GCRCatalogs.get_available_catalogs(False), descqa.available_validations)
 
     logger.debug('creating root output directory...')
     output_dir = make_output_dir(args.root_output_dir)
