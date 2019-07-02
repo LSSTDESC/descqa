@@ -55,7 +55,7 @@ def get_available_configs(config_dir, register=None):
     return register
 
 
-def get_available_catalogs():
+def get_available_catalogs(include_default_only=False): # pylint: disable=unused-argument
     """
     Return *available_catalogs* as a dictionary
     """
