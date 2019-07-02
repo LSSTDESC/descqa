@@ -314,7 +314,7 @@ class CorrelationUtilities(BaseValidationTest):
         catalogs = {}
         #cluster
         nn = np.stack((catalog_data[ra], catalog_data[dec]), axis=1)
-        _, jack_labels, _ = k_means(n_clusters=N_jack, random_state=0, X=nn, n_jobs=-1)
+        _, jack_labels, _ = k_means(n_clusters=N_jack, random_state=0, X=nn)
 
         randoms = {}
         for nj in range(N_jack):
