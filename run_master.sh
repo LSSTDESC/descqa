@@ -7,7 +7,7 @@
 set -e
 
 # activate python env
-PYTHON="/global/common/software/lsst/common/miniconda/current/bin/python"
+PYTHON="/global/common/software/lsst/common/miniconda/current/envs/stack/bin/python"
 
 # set output directory
 OUTPUTDIR="/global/projecta/projectdirs/lsst/groups/CS/descqa/run/v2"
