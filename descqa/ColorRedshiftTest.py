@@ -11,6 +11,7 @@ class _CatalogDoesNotHaveQuantity(Exception):
     """Raised when the catalog doesn't have a quantity and indicates the
     test should be skipped"""
     def __init__(self, quantity_name):
+        super(_CatalogDoesNotHaveQuantity, self).__init__()
         self.message = "Catalog does not have {}".format(quantity_name)
 
 class ColorRedshiftTest(BaseValidationTest):
@@ -18,6 +19,7 @@ class ColorRedshiftTest(BaseValidationTest):
     This test plots various color-redshfit diagnostics
     """
     def __init__(self, **kwargs):
+        super(ColorRedshiftTest, self).__init__()
         # load test config options
         self.kwargs = kwargs
         with open(os.path.join(self.data_dir, 'README.md')) as f:
@@ -125,7 +127,7 @@ class ColorRedshiftTest(BaseValidationTest):
             else:
                 redshift_block_limit = 3
         else:
-                filters = None
+            filters = None
         native_filters = ['redshift_block_lower <= {}'.format(redshift_block_limit-1)]
         return catalog_instance.get_quantities([first_name],
                                                filters=filters,
