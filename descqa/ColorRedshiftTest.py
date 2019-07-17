@@ -8,10 +8,10 @@ from .plotting import plt
 
 __all__ = ['ColorRedshiftTest']
 class _CatalogDoesNotHaveQuantity(Exception):
-        """Raised when the catalog doesn't have a quantity and indicates the
-        test should be skipped"""
-        def __init__(self, quantity_name):
-            self.message = "Catalog does not have {}".format(quantity_name)
+    """Raised when the catalog doesn't have a quantity and indicates the
+    test should be skipped"""
+    def __init__(self, quantity_name):
+        self.message = "Catalog does not have {}".format(quantity_name)
 
 class ColorRedshiftTest(BaseValidationTest):
     """
