@@ -27,7 +27,7 @@ class ColorRedshiftTest(BaseValidationTest):
         self.plot_list = kwargs.get("plot_list", [])
         for plot_param in self.plot_list:
             color = plot_param['color']
-            assert (len(color)==3) and (color[1]=='-'), "Color must be defined as 'a-b', where a and b are band names"
+            assert (len(color) == 3) and (color[1] == '-'), "Color must be defined as 'a-b', where a and b are band names"
             allowed_colors = 'ugrizy'
             plot_param['mag1'] = color[0].lower()
             plot_param['mag2'] = color[2].lower()
@@ -42,7 +42,7 @@ class ColorRedshiftTest(BaseValidationTest):
             plot_param["stellar_mass_cut"] = plot_param.get("stellar_mass_cut", None)
             plot_param["halo_mass_cut"]  = plot_param.get("halo_mass_cut", None)
             plot_param["red_sequence_cut"] = plot_param.get("red_sequence_cut", None)
-            plot_param["synthetic_type"]  = plot_param.get("synthetic_type",  None)
+            plot_param["synthetic_type"] = plot_param.get("synthetic_type", None)
             plot_param["log_scale"] = plot_param.get("log_scale", True)
             plot_param["redshift_limit"] = plot_param.get("redshift_limit", None)
             plot_param["redshift_block_limit"] = plot_param.get("redshift_block_limit", 1)
@@ -56,7 +56,7 @@ class ColorRedshiftTest(BaseValidationTest):
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         plot_num = 0
         for plot_param in self.plot_list:
-            plot_num +=1
+            plot_num += 1
             if plot_param["frame"] == "rest":
                 mag_frame = "Mag_true"
                 mag_end = "_z0"
@@ -90,9 +90,8 @@ class ColorRedshiftTest(BaseValidationTest):
             else:
                 redshift_bins = np.linspace(0, 1.05, 256)
 
-            h,xbins,ybins = np.histogram2d(redshift[slct], clr_val[slct],
-                                           bins=(redshift_bins,
-                                           np.linspace(-0.4, 2.2, 256)))
+            h, xbins, ybins = np.histogram2d(redshift[slct], clr_val[slct],
+                                             bins=(redshift_bins, np.linspace(-0.4, 2.2, 256)))
             if plot_param["log_scale"]:
                 pc = ax.pcolor(xbins, ybins, h.T+3.0, norm=clr.LogNorm())
                 fig.colorbar(pc, ax=ax).set_label("Population Density + 3")
@@ -141,7 +140,7 @@ class ColorRedshiftTest(BaseValidationTest):
         redshift = self._get_quantity(catalog_instance, 'redshift',
                                       redshift_limit=redshift_limit,
                                       redshift_block_limit=redshift_block_limit)
-        slct = redshift==redshift
+        slct = redshift == redshift
         title_elem_per_line = 3 # The number of elements in the title. We want about
         title_elem = 0 # three elements per line. The catalog name is pretty big, so it counts
         # as two elements.
@@ -157,8 +156,8 @@ class ColorRedshiftTest(BaseValidationTest):
 
         if plot_param["Mr_cut"] is not None:
             Mag_r = self._get_quantity(catalog_instance, "Mag_true_r_lsst_z0",
-                                        redshift_limit=redshift_limit,
-                                        redshift_block_limit=redshift_block_limit)
+                                       redshift_limit=redshift_limit,
+                                       redshift_block_limit=redshift_block_limit)
             slct = slct & (Mag_r < plot_param["Mr_cut"])
             title += "Mr < {}, ".format(plot_param["Mr_cut"])
             title_elem += 1
