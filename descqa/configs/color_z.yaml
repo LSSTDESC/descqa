@@ -41,19 +41,24 @@ plot_list:
 - frame: obs
   color: u-g
   filter: lsst
+  mr_cut: 24
 
 - frame: obs
   color: g-r
   filter: lsst
+  mr_cut: 24
 
 - frame: obs
   color: r-i
   filter: lsst
+  mr_cut: 24
 
 - frame: obs
   color: i-z
   filter: lsst
+  mr_cut: 24
 
 - frame: obs
   color: z-y
   filter: lsst
+  mr_cut: 24
