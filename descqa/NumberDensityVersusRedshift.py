@@ -383,7 +383,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
 
     def get_jackknife_errors(self, N_jack, jackknife_data, N):
         nn = np.stack((jackknife_data[self.ra], jackknife_data[self.dec]), axis=1)
-        _, jack_labels, _ = k_means(n_clusters=N_jack, random_state=0, X=nn, n_jobs=-1)
+        _, jack_labels, _ = k_means(n_clusters=N_jack, random_state=0, X=nn)
 
         #make histograms for jackknife regions
         Njack_array = np.zeros((N_jack, len(self.zbins)-1), dtype=np.int)
