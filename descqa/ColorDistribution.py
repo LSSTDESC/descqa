@@ -60,7 +60,8 @@ class ColorDistribution(BaseValidationTest):
         self.color_transformation_q = kwargs.get('color_transformation_q', True)
         self.Mag_r_limit = kwargs.get('Mag_r_limit', None)
         self.rest_frame = kwargs.get('rest_frame', bool(self.Mag_r_limit and not self.obs_r_mag_limit))
-
+        self.use_agn = kwargs.get('use_agn', True)
+        
         # bins of color distribution
         self.bins = np.linspace(-1, 4, 2000)
         self.binsize = self.bins[1] - self.bins[0]
@@ -111,12 +112,17 @@ class ColorDistribution(BaseValidationTest):
         if self.rest_frame:
             possible_names = ('Mag_{}_lsst', 'Mag_{}_sdss', 'Mag_true_{}_lsst_z0', 'Mag_true_{}_sdss_z0')
         else:
-            possible_names = ('mag_{}_sdss', 'mag_{}_des', 'mag_true_{}_sdss', 'mag_true_{}_des')
+            possible_lsst_names = ('mag_{}_lsst', 'mag_true_{}_lsst') if self.use_agn else ('mag_{}_noagn_lsst',
+                                                                                            'mag_true_{}_noagn_lsst')
+            possible_names = ('mag_{}_sdss', 'mag_{}_des', 'mag_true_{}_sdss', 'mag_true_{}_des') + possible_lsst_names
+
         labels = {band: catalog_instance.first_available(*(n.format(band) for n in possible_names)) for band in bands}
         labels = {k: v for k, v in labels.items() if v}
+
         if len(labels) < 2:
             return TestResult(skipped=True, summary='magnitudes in mock catalog do not have at least two needed bands.')
         filters = set((v.rpartition('_')[-1] for v in labels.values()))
+
         if len(filters) > 1:
             return TestResult(skipped=True, summary='magnitudes in mock catalog have mixed filters.')
         filter_this = filters.pop()
@@ -130,10 +136,11 @@ class ColorDistribution(BaseValidationTest):
                    '{} < {}'.format(labels['redshift'], self.zhi)]
         data = catalog_instance.get_quantities(list(labels.values()), filters)
         data = {k: data[v] for k, v in labels.items()}
-
+        print(list(data.keys()))
+        
         # Color transformation
         color_trans = None
-        if self.color_transformation_q:
+        if self.color_transformation_q and filter_this != 'lsst':
             color_trans_name = None
             if self.validation_catalog == 'DEEP2':
                 color_trans_name = '{}2cfht'.format(filter_this)
@@ -180,7 +187,8 @@ class ColorDistribution(BaseValidationTest):
                     mock_color_dist[color]['binctr'] + color_shift[color], mock_color_dist[color]['cdf'],
                     self.obs_color_dist[color]['binctr'], self.obs_color_dist[color]['cdf'])
 
-        self.make_plots(mock_color_dist, color_shift, cvm_omega, cvm_omega_shift, catalog_name, output_dir)
+        self.make_plots(mock_color_dist, color_shift, cvm_omega, cvm_omega_shift, catalog_name,
+                        output_dir, filter_this)
 
         # Write to summary file
         fn = os.path.join(output_dir, self.summary_output_file)
@@ -206,9 +214,10 @@ class ColorDistribution(BaseValidationTest):
         return TestResult(inspect_only=True)
 
 
-    def make_plots(self, mock_color_dist, color_shift, cvm_omega, cvm_omega_shift, catalog_name, output_dir):
+    def make_plots(self, mock_color_dist, color_shift, cvm_omega, cvm_omega_shift, catalog_name,
+                   output_dir, filters):
         available_colors = [c for c in self.colors if c in mock_color_dist]
-        print(available_colors)
+        
         nrows = int(np.ceil(len(available_colors)/2.))
         fig_pdf, axes_pdf = plt.subplots(nrows, 2, figsize=(8, 3.5*nrows))
         fig_cdf, axes_cdf = plt.subplots(nrows, 2, figsize=(8, 3.5*nrows))
@@ -217,8 +226,8 @@ class ColorDistribution(BaseValidationTest):
             title = '$m_r < {:2.1f},  {:.1f} < z < {:.1f}$'.format(self.obs_r_mag_limit, self.zlo, self.zhi)
         elif self.Mag_r_limit:
             title = '$M_r < {:2.1f},  {:.1f} < z < {:.1f}$'.format(self.Mag_r_limit, self.zlo, self.zhi)
-
-        print(mock_color_dist.keys())
+        title = title + ' (LSST filters)' if filters == 'lsst' else title
+        
         for ax_cdf, ax_pdf, color in zip(axes_cdf.flat, axes_pdf.flat, available_colors):
 
             if color not in mock_color_dist or (self.validation_catalog and color not in self.obs_color_dist):
@@ -256,7 +265,7 @@ class ColorDistribution(BaseValidationTest):
                         linestyle='--', color='C2')
             ax_pdf.set_xlabel('${}$'.format(color))
             ax_pdf.set_xlim(xmin, xmax)
-            ax_pdf.set_ylim(ymin=0.)
+            ax_pdf.set_ylim(bottom=0.)
             ax_pdf.set_title(title)
             ax_pdf.legend(loc='upper left', frameon=False)
 
