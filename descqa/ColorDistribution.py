@@ -139,15 +139,16 @@ class ColorDistribution(BaseValidationTest):
         
         # Color transformation
         color_trans = None
-        if self.color_transformation_q and filter_this != 'lsst':
+        if self.color_transformation_q:
             color_trans_name = None
-            if self.validation_catalog == 'DEEP2':
+            if self.validation_catalog == 'DEEP2' and filter_this != 'lsst':
                 color_trans_name = '{}2cfht'.format(filter_this)
             elif self.validation_catalog == 'SDSS' and filter_this == 'des':
                 color_trans_name = 'des2sdss'
             if color_trans_name:
                 color_trans = color_transformation[color_trans_name]
 
+        filter_title = '\mathrm{{{}}}'.format(filter_this.upper())
         if color_trans:
             data_transformed = {}
             for band in bands:
@@ -156,10 +157,12 @@ class ColorDistribution(BaseValidationTest):
                 except KeyError:
                     continue
 
+            filter_title = '{}\\rightarrow\mathrm{{{}}}'.format(filter_title,
+                                                                   self.validation_catalog) if data_transformed else filter_title
             data_transformed['redshift'] = data['redshift']
             data = data_transformed
             del data_transformed
-
+            
         if self.obs_r_mag_limit and not self.rest_frame:
             data = GCRQuery('r < {}'.format(self.obs_r_mag_limit)).filter(data)
         elif self.Mag_r_limit and self.rest_frame:
@@ -187,7 +190,7 @@ class ColorDistribution(BaseValidationTest):
                     self.obs_color_dist[color]['binctr'], self.obs_color_dist[color]['cdf'])
 
         self.make_plots(mock_color_dist, color_shift, cvm_omega, cvm_omega_shift, catalog_name,
-                        output_dir, filter_this)
+                        output_dir, filter_title)
 
         # Write to summary file
         fn = os.path.join(output_dir, self.summary_output_file)
@@ -214,7 +217,7 @@ class ColorDistribution(BaseValidationTest):
 
 
     def make_plots(self, mock_color_dist, color_shift, cvm_omega, cvm_omega_shift, catalog_name,
-                   output_dir, filters):
+                   output_dir, filter_title):
         available_colors = [c for c in self.colors if c in mock_color_dist]
         
         nrows = int(np.ceil(len(available_colors)/2.))
@@ -222,10 +225,9 @@ class ColorDistribution(BaseValidationTest):
         fig_cdf, axes_cdf = plt.subplots(nrows, 2, figsize=(8, 3.5*nrows))
         title = ''
         if self.obs_r_mag_limit:
-            title = '$m_r < {:2.1f},  {:.1f} < z < {:.1f}$'.format(self.obs_r_mag_limit, self.zlo, self.zhi)
+            title = '$m_r^{{{}}} < {:2.1f},  {:.1f} < z < {:.1f}$'.format(filter_title, self.obs_r_mag_limit, self.zlo, self.zhi)
         elif self.Mag_r_limit:
-            title = '$M_r < {:2.1f},  {:.1f} < z < {:.1f}$'.format(self.Mag_r_limit, self.zlo, self.zhi)
-        title = title + ' (LSST filters)' if filters == 'lsst' else title
+            title = '$M_r^{{{}}} < {:2.1f},  {:.1f} < z < {:.1f}$'.format(filter_title, self.Mag_r_limit, self.zlo, self.zhi)
         
         for ax_cdf, ax_pdf, color in zip(axes_cdf.flat, axes_pdf.flat, available_colors):
 
