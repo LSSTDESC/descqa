@@ -3,7 +3,7 @@ obs_r_mag_limit: 17.7
 zlo: 0.05
 zhi: 0.1
 validation_catalog: SDSS
-use_agn: false
+exclude_agn: true
 plot_pdf_q: true
 plot_cdf_q: false
 color_transformation_q: true

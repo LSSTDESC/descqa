@@ -60,7 +60,7 @@ class ColorDistribution(BaseValidationTest):
         self.color_transformation_q = kwargs.get('color_transformation_q', True)
         self.Mag_r_limit = kwargs.get('Mag_r_limit', None)
         self.rest_frame = kwargs.get('rest_frame', bool(self.Mag_r_limit and not self.obs_r_mag_limit))
-        self.use_agn = kwargs.get('use_agn', True)
+        self.exclude_agn = kwargs.get('exclude_agn', False)
         
         # bins of color distribution
         self.bins = np.linspace(-1, 4, 2000)
@@ -112,8 +112,8 @@ class ColorDistribution(BaseValidationTest):
         if self.rest_frame:
             possible_names = ('Mag_{}_lsst', 'Mag_{}_sdss', 'Mag_true_{}_lsst_z0', 'Mag_true_{}_sdss_z0')
         else:
-            possible_lsst_names = ('mag_{}_lsst', 'mag_true_{}_lsst') if self.use_agn else ('mag_{}_noagn_lsst',
-                                                                                            'mag_true_{}_noagn_lsst')
+            possible_lsst_names = ('mag_{}_noagn_lsst', 'mag_true_{}_noagn_lsst') if self.exclude_agn else ('mag_{}_lsst',
+                                                                                                            'mag_true_{}_lsst')
             possible_names = ('mag_{}_sdss', 'mag_{}_des', 'mag_true_{}_sdss', 'mag_true_{}_des') + possible_lsst_names
 
         labels = {band: catalog_instance.first_available(*(n.format(band) for n in possible_names)) for band in bands}
@@ -136,7 +136,6 @@ class ColorDistribution(BaseValidationTest):
                    '{} < {}'.format(labels['redshift'], self.zhi)]
         data = catalog_instance.get_quantities(list(labels.values()), filters)
         data = {k: data[v] for k, v in labels.items()}
-        print(list(data.keys()))
         
         # Color transformation
         color_trans = None

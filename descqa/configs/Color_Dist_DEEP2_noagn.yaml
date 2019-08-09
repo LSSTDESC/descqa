@@ -3,7 +3,7 @@ obs_r_mag_limit: 24.0
 zlo: 0.85
 zhi: 0.95
 validation_catalog: DEEP2
-use_agn: false
+exclude_agn: true
 plot_pdf_q: true
 plot_cdf_q: false
 color_transformation_q: true
