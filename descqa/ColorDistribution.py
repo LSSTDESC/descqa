@@ -61,7 +61,7 @@ class ColorDistribution(BaseValidationTest):
         self.Mag_r_limit = kwargs.get('Mag_r_limit', None)
         self.rest_frame = kwargs.get('rest_frame', bool(self.Mag_r_limit and not self.obs_r_mag_limit))
         self.exclude_agn = kwargs.get('exclude_agn', False)
-        
+
         # bins of color distribution
         self.bins = np.linspace(-1, 4, 2000)
         self.binsize = self.bins[1] - self.bins[0]
@@ -112,8 +112,8 @@ class ColorDistribution(BaseValidationTest):
         if self.rest_frame:
             possible_names = ('Mag_{}_lsst', 'Mag_{}_sdss', 'Mag_true_{}_lsst_z0', 'Mag_true_{}_sdss_z0')
         else:
-            possible_lsst_names = ('mag_{}_noagn_lsst', 'mag_true_{}_noagn_lsst') if self.exclude_agn else ('mag_{}_lsst',
-                                                                                                            'mag_true_{}_lsst')
+            possible_lsst_names = (('mag_{}_noagn_lsst', 'mag_true_{}_noagn_lsst')
+                                   if self.exclude_agn else ('mag_{}_lsst', 'mag_true_{}_lsst'))
             possible_names = ('mag_{}_sdss', 'mag_{}_des', 'mag_true_{}_sdss', 'mag_true_{}_des') + possible_lsst_names
 
         labels = {band: catalog_instance.first_available(*(n.format(band) for n in possible_names)) for band in bands}
@@ -136,7 +136,7 @@ class ColorDistribution(BaseValidationTest):
                    '{} < {}'.format(labels['redshift'], self.zhi)]
         data = catalog_instance.get_quantities(list(labels.values()), filters)
         data = {k: data[v] for k, v in labels.items()}
-        
+
         # Color transformation
         color_trans = None
         if self.color_transformation_q:
@@ -148,7 +148,7 @@ class ColorDistribution(BaseValidationTest):
             if color_trans_name:
                 color_trans = color_transformation[color_trans_name]
 
-        filter_title = '\mathrm{{{}}}'.format(filter_this.upper())
+        filter_title = r'\mathrm{{{}}}'.format(filter_this.upper())
         if color_trans:
             data_transformed = {}
             for band in bands:
@@ -157,12 +157,12 @@ class ColorDistribution(BaseValidationTest):
                 except KeyError:
                     continue
 
-            filter_title = '{}\\rightarrow\mathrm{{{}}}'.format(filter_title,
-                                                                   self.validation_catalog) if data_transformed else filter_title
+            filter_title = (r'{}\rightarrow\mathrm{{{}}}'.format(filter_title, self.validation_catalog)
+                            if data_transformed else filter_title)
             data_transformed['redshift'] = data['redshift']
             data = data_transformed
             del data_transformed
-            
+
         if self.obs_r_mag_limit and not self.rest_frame:
             data = GCRQuery('r < {}'.format(self.obs_r_mag_limit)).filter(data)
         elif self.Mag_r_limit and self.rest_frame:
@@ -219,7 +219,7 @@ class ColorDistribution(BaseValidationTest):
     def make_plots(self, mock_color_dist, color_shift, cvm_omega, cvm_omega_shift, catalog_name,
                    output_dir, filter_title):
         available_colors = [c for c in self.colors if c in mock_color_dist]
-        
+
         nrows = int(np.ceil(len(available_colors)/2.))
         fig_pdf, axes_pdf = plt.subplots(nrows, 2, figsize=(8, 3.5*nrows))
         fig_cdf, axes_cdf = plt.subplots(nrows, 2, figsize=(8, 3.5*nrows))
@@ -228,7 +228,7 @@ class ColorDistribution(BaseValidationTest):
             title = '$m_r^{{{}}} < {:2.1f},  {:.1f} < z < {:.1f}$'.format(filter_title, self.obs_r_mag_limit, self.zlo, self.zhi)
         elif self.Mag_r_limit:
             title = '$M_r^{{{}}} < {:2.1f},  {:.1f} < z < {:.1f}$'.format(filter_title, self.Mag_r_limit, self.zlo, self.zhi)
-        
+
         for ax_cdf, ax_pdf, color in zip(axes_cdf.flat, axes_pdf.flat, available_colors):
 
             if color not in mock_color_dist or (self.validation_catalog and color not in self.obs_color_dist):
@@ -241,11 +241,11 @@ class ColorDistribution(BaseValidationTest):
                 opdf_smooth = self.obs_color_dist[color]['pdf_smooth']
                 ocdf = self.obs_color_dist[color]['cdf']
                 xmin = np.min([mbinctr[find_first_true(mcdf > 0.001)],
-                           mbinctr[find_first_true(mcdf > 0.001)] + color_shift[color],
-                           obinctr[find_first_true(ocdf > 0.001)]])
+                               mbinctr[find_first_true(mcdf > 0.001)] + color_shift[color],
+                               obinctr[find_first_true(ocdf > 0.001)]])
                 xmax = np.max([mbinctr[find_first_true(mcdf > 0.999)],
-                           mbinctr[find_first_true(mcdf > 0.999)] + color_shift[color],
-                           obinctr[find_first_true(ocdf > 0.999)]])
+                               mbinctr[find_first_true(mcdf > 0.999)] + color_shift[color],
+                               obinctr[find_first_true(ocdf > 0.999)]])
             else:
                 xmin = np.min(mbinctr[find_first_true(mcdf > 0.001)])
                 xmax = np.max(mbinctr[find_first_true(mcdf > 0.999)])
@@ -256,14 +256,14 @@ class ColorDistribution(BaseValidationTest):
                 catalog_label = catalog_name+'\n'+r'$\omega={:.3}$'.format(cvm_omega[color])
             else:
                 catalog_label = catalog_name
-            ax_pdf.step(mbinctr, mpdf_smooth, where="mid", label= catalog_label, color='C1')
+            ax_pdf.step(mbinctr, mpdf_smooth, where="mid", label=catalog_label, color='C1')
             if self.validation_catalog:
                 # validation data
                 ax_pdf.step(obinctr, opdf_smooth, where="mid", label=self.validation_catalog, color='C0')
                 # color distribution after constant shift
                 ax_pdf.step(mbinctr + color_shift[color], mpdf_smooth,
-                        label=catalog_name+' shifted\n'+r'$\omega={:.3}$'.format(cvm_omega_shift[color]),
-                        linestyle='--', color='C2')
+                            label=catalog_name+' shifted\n'+r'$\omega={:.3}$'.format(cvm_omega_shift[color]),
+                            linestyle='--', color='C2')
             ax_pdf.set_xlabel('${}$'.format(color))
             ax_pdf.set_xlim(xmin, xmax)
             ax_pdf.set_ylim(bottom=0.)
@@ -272,14 +272,14 @@ class ColorDistribution(BaseValidationTest):
 
             # Plot CDF
             # catalog distribution
-            ax_cdf.step(mbinctr, mcdf, where="mid", label= catalog_label, color='C1')
+            ax_cdf.step(mbinctr, mcdf, where="mid", label=catalog_label, color='C1')
             if self.validation_catalog:
                 # validation distribution
                 ax_cdf.step(obinctr, ocdf, label=self.validation_catalog, color='C0')
                 # color distribution after constant shift
                 ax_cdf.step(mbinctr + color_shift[color], mcdf, where="mid",
-                        label=catalog_name+' shifted\n'+r'$\omega={:.3}$'.format(cvm_omega_shift[color]),
-                        linestyle='--', color='C2')
+                            label=catalog_name+' shifted\n'+r'$\omega={:.3}$'.format(cvm_omega_shift[color]),
+                            linestyle='--', color='C2')
             ax_cdf.set_xlabel('${}$'.format(color))
             ax_cdf.set_title(title)
             ax_cdf.set_xlim(xmin, xmax)
