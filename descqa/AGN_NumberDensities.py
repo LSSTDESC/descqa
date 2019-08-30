@@ -1,9 +1,8 @@
 from __future__ import unicode_literals, absolute_import, division
 import os
-import numpy as np
 import re
+import numpy as np
 from scipy.interpolate import interp1d
-from .base import BaseValidationTest, TestResult
 from .plotting import plt
 from GCR import GCRQuery
 try:
@@ -11,6 +10,7 @@ try:
 except ImportError:
     from itertools import izip_longest as zip_longest
 import matplotlib.gridspec as gridspec
+from .base import BaseValidationTest, TestResult
 
 possible_observations = {
     'SDSS': {
@@ -67,11 +67,11 @@ class AGN_NumberDensity(BaseValidationTest):
         # catalog quantities needed
         possible_mag_fields = ('mag_{}_agnonly_sdss',
                                'mag_{}_agnonly_lsst',
-                              ) 
+                              )
         self.possible_mag_fields = [f.format(band) for f in possible_mag_fields]
         possible_Mag_fields = ('Mag_true_{}_agnonly_sdss_z0',
                                'Mag_true_{}_agnonly_lsst_z0',
-                              ) 
+                              )
         self.possible_Mag_fields = [f.format(rest_frame_band) for f in possible_Mag_fields]
 
         # attach some attributes to the test
@@ -82,9 +82,9 @@ class AGN_NumberDensity(BaseValidationTest):
         self.font_size = kwargs.get('font_size', 18)
         self.title_size = kwargs.get('title_size', 20)
         self.legend_size = kwargs.get('legend_size', 16)
-        self.no_title = kwargs.get('no_title', False) 
+        self.no_title = kwargs.get('no_title', False)
         self.nrows = kwargs.get('nrows', 1)
-        self.ncolumns  = kwargs.get('ncolumns', 2)
+        self.ncolumns = kwargs.get('ncolumns', 2)
         self.mag_lo = kwargs.get('mag_lo', 14)
         self.mag_hi = kwargs.get('mag_hi', 24)
         self.validation_range = kwargs.get('validation_range', (16., 19.))
@@ -92,12 +92,15 @@ class AGN_NumberDensity(BaseValidationTest):
         self.figx_p = kwargs.get('figx_p', 11)
         self.figy_p = kwargs.get('figy_p', 7)
         self.msize = kwargs.get('msize', 6)
-        
+
         # set color of lines in plots
-        colors = plt.cm.jet(np.linspace(0,1,2)) # pylint: disable=no-member
-        if band == 'g': self.line_color = colors[0]
-        elif band == 'i': self.line_color = colors[1]
-        else: self.line_color='black'
+        colors = plt.cm.jet(np.linspace(0, 1, 2)) # pylint: disable=no-member
+        if band == 'g':
+            self.line_color = colors[0]
+        elif band == 'i':
+            self.line_color = colors[1]
+        else:
+            self.line_color = 'black'
 
         # check for validation observation
         if not observation:
@@ -128,7 +131,6 @@ class AGN_NumberDensity(BaseValidationTest):
         save_keys = [k for k in data_args.keys() if 'cols' not in k and 'file' not in k and 'skip' not in k]
         validation_data = dict(zip(save_keys, [data_args[k] for k in save_keys]))
         validation_data['data'] = {}
-        print(validation_data)
         
         for k, v in data_args['usecols'][band].items():
             data = np.genfromtxt(data_path, unpack=True, usecols=v, skip_header=data_args['skiprows'],
@@ -141,17 +143,16 @@ class AGN_NumberDensity(BaseValidationTest):
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         """
         """
-
         mag_field_key = catalog_instance.first_available(*self.possible_mag_fields)
         Mag_field_key = catalog_instance.first_available(*self.possible_Mag_fields)
         if not mag_field_key:
-            return TestResult(skipped=True, 
+            return TestResult(skipped=True,
                               summary='Catalog is missing requested quantity: {}'.format(self.possible_mag_fields))
 
         if not Mag_field_key:
             return TestResult(skipped=True,
                               summary='Catalog is missing requested quantity: {}'.format(self.possible_Mag_fields))
-        
+
         # check to see if catalog is a light cone
         # this is required since we must be able to calculate the angular area
         if not catalog_instance.lightcone:
@@ -162,10 +163,10 @@ class AGN_NumberDensity(BaseValidationTest):
             sky_area = catalog_instance.sky_area
         except AttributeError:
             return TestResult(skipped=True, summary="Catalog needs an attribute 'sky_area'.")
-        
+
         filtername = mag_field_key.split('_')[(-1 if mag_field_key.startswith('m') else -2)].upper()  #extract filtername
         filelabel = '_'.join((filtername, self.band))
-        
+
         z_filters = ['redshift > {}'.format(self.z_lim[0]), 'redshift < {}'.format(self.z_lim[1])]
         Mag_filters = ['{} < {}'.format(Mag_field_key, self.Mag_lim)]
 
@@ -173,14 +174,14 @@ class AGN_NumberDensity(BaseValidationTest):
         catalog_data = catalog_instance.get_quantities([mag_field_key], filters=z_filters+ Mag_filters)
         d = GCRQuery(*((np.isfinite, col) for col in catalog_data)).filter(catalog_data)
         mags = d[mag_field_key]
-                       
+
         #####################################################
         # caclulate the number densities of AGN
         #####################################################
 
         # get the total number of AGN in catalog
         N_tot = len(mags)
-        
+
         # define the apparent magnitude bins for plotting purposes
         dmag = self.validation_data.get('bin_width', 0.25)
 
@@ -190,7 +191,7 @@ class AGN_NumberDensity(BaseValidationTest):
         # calculate differential binned data (validation data does not divide by bin width)
         Ndm, _ = np.histogram(mags, bins=mag_bins)
         dn = Ndm/sky_area
-        
+
         # calculate N(<mag) in the bins
         N = np.cumsum(Ndm)
         n_cum = N/sky_area
@@ -200,17 +201,17 @@ class AGN_NumberDensity(BaseValidationTest):
         #################################################
 
         fig, axs = self.setup_subplots()
-        
+
         if self.truncate_cat_name:
             catalog_name = re.split('_', catalog_name)[0]
-        results={'catalog':{}, 'data':{}}
+        results = {'catalog':{}, 'data':{}}
         colname = 'n'
-        
+
         for ax, summary_ax, mag_pts, cat_data, ytit, (k, val_data) in zip(axs, self.summary_axs, 
                                                                           [mag_cen, mag_bins[1:]],
                                                                           [dn, n_cum],
                                                                           [dmag, self.band],
-                                                                          self.validation_data['data'].items()):
+                                                                           self.validation_data['data'].items()):
             # plot
             ax[0].plot(mag_pts, cat_data, label=catalog_name, color=self.line_color)
             ax[0].errorbar(val_data['mag'], val_data['n'], yerr=val_data['err'], label=self.validation_data['label'], 
@@ -227,14 +228,14 @@ class AGN_NumberDensity(BaseValidationTest):
             
             # get fractional diffrence between the mock catalog and validation data
             mag_val_pts, delta = self.get_frac_diff(mag_pts, cat_data, val_data['mag'], val_data['n'],
-                                       self.validation_range)
+                                                    self.validation_range)
             ax[1].plot(mag_val_pts, delta, color=self.line_color, label='Frac. Diff.')
             summary_ax[1].plot(mag_val_pts, delta, color=self.line_color, label='Frac. Diff.')
             self.decorate_plot(ax[1], ylabel=r'$\Delta n/n$', scale='linear', xlabel=r'$\rm m_{}$'.format(self.band))
             if self.first_pass:
                 self.decorate_plot(summary_ax[1], ylabel=r'$\Delta n/n$', scale='linear',
                                    xlabel=r'$\rm m_{}$'.format(self.band))
-            
+
             #save plotted points
             N_tot_data = np.sum(val_data['N_Q']) # total number of AGN
             results['catalog'][k] = {'mag': mag_pts, colname:cat_data}
@@ -250,8 +251,8 @@ class AGN_NumberDensity(BaseValidationTest):
 
         #save results for catalog and validation data in txt files
         for filename, dtype, ntot in zip_longest((filelabel, re.sub(' ', '_', self.validation_data['label'])),
-                                                    ('catalog', 'data'),
-                                                    (N_tot, N_tot_data)):
+                                                 ('catalog', 'data'),
+                                                 (N_tot, N_tot_data)):
             if filename and dtype:
                 with open(os.path.join(output_dir, 'Nagn_' + filename + '.txt'), 'ab') as f_handle:
                     for key, value in results[dtype].items():
@@ -260,7 +261,7 @@ class AGN_NumberDensity(BaseValidationTest):
 
         if self.first_pass: #turn off validation data plot in summary for remaining catalogs
             self.first_pass = False
-            
+
         #make final adjustments to plots and save figure
         self.post_process_plot(fig)
         fig.savefig(os.path.join(output_dir, 'Nagn_vs_mag_{}.png'.format(self.band)))
@@ -268,7 +269,10 @@ class AGN_NumberDensity(BaseValidationTest):
 
         return TestResult(0, inspect_only=True)
 
+
     def setup_subplots(self):
+        """
+        """
         fig = plt.figure(figsize=(self.figx_p, self.figy_p))
         gs = fig.add_gridspec(2*self.nrows, self.ncolumns, height_ratios=[3, 1])
         axs = []
@@ -276,12 +280,14 @@ class AGN_NumberDensity(BaseValidationTest):
         axs[0].append(fig.add_subplot(gs[2], sharex=axs[0][0]))
         axs.append([fig.add_subplot(gs[1])])
         axs[1].append(fig.add_subplot(gs[3], sharex=axs[1][0]))
-        
+
         return fig, axs
 
         
     @staticmethod
     def get_frac_diff(mag_pts, cat_data, val_mags, val_data, validation_range):
+        """
+        """
         mask = (val_data > 0)
         x = val_mags[mask]
         y = np.log10(val_data[mask])
@@ -293,6 +299,8 @@ class AGN_NumberDensity(BaseValidationTest):
 
 
     def decorate_plot(self, ax, ylabel, scale='log', xlabel=None):
+        """
+        """
         ax.set_ylabel(ylabel, size=self.font_size)
         ax.legend(loc='best', fancybox=True, framealpha=0.5, fontsize=self.legend_size, numpoints=1)
         ax.set_yscale(scale)
@@ -301,16 +309,20 @@ class AGN_NumberDensity(BaseValidationTest):
         else:
             for axlabel in ax.get_xticklabels():
                 axlabel.set_visible(False)
-            
-        
+
+
     @staticmethod
     def post_process_plot(fig):
+        """
+        """
         fig.tight_layout()
         fig.subplots_adjust(hspace=0)
 
 
     @staticmethod
     def save_quantities(keyname, results, filename, comment=''):
+        """
+        """
         if keyname in results:
             if keyname+'-' in results and keyname+'+' in results:
                 fields = ('mag', keyname, keyname+'-', keyname+'+')
@@ -326,6 +338,7 @@ class AGN_NumberDensity(BaseValidationTest):
 
     def conclude_test(self, output_dir):
         """
+        output_dir: output directory
         """
         self.post_process_plot(self.summary_fig)
         self.summary_fig.savefig(os.path.join(output_dir, 'summary.png'))
