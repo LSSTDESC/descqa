@@ -3,13 +3,12 @@ import os
 import re
 import numpy as np
 from scipy.interpolate import interp1d
-from .plotting import plt
 from GCR import GCRQuery
 try:
     from itertools import zip_longest
 except ImportError:
     from itertools import izip_longest as zip_longest
-import matplotlib.gridspec as gridspec
+from .plotting import plt
 from .base import BaseValidationTest, TestResult
 
 possible_observations = {
@@ -63,7 +62,8 @@ class AGN_NumberDensity(BaseValidationTest):
             string indicating which obsrvational data to use for validating
         """
         # pylint: disable=super-init-not-called
-
+        # pylint: disable=too-many-instance-attributes
+        
         # catalog quantities needed
         possible_mag_fields = ('mag_{}_agnonly_sdss',
                                'mag_{}_agnonly_lsst',
@@ -131,18 +131,19 @@ class AGN_NumberDensity(BaseValidationTest):
         save_keys = [k for k in data_args.keys() if 'cols' not in k and 'file' not in k and 'skip' not in k]
         validation_data = dict(zip(save_keys, [data_args[k] for k in save_keys]))
         validation_data['data'] = {}
-        
+
         for k, v in data_args['usecols'][band].items():
             data = np.genfromtxt(data_path, unpack=True, usecols=v, skip_header=data_args['skiprows'],
                                  missing_values=data_args['missing_values'])
             validation_data['data'][k] = dict(zip(data_args['colnames'], data))
-            
+
         return validation_data
 
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         """
         """
+
         mag_field_key = catalog_instance.first_available(*self.possible_mag_fields)
         Mag_field_key = catalog_instance.first_available(*self.possible_Mag_fields)
         if not mag_field_key:
@@ -211,15 +212,15 @@ class AGN_NumberDensity(BaseValidationTest):
                                                                           [mag_cen, mag_bins[1:]],
                                                                           [dn, n_cum],
                                                                           [dmag, self.band],
-                                                                           self.validation_data['data'].items()):
+                                                                          self.validation_data['data'].items()):
             # plot
             ax[0].plot(mag_pts, cat_data, label=catalog_name, color=self.line_color)
-            ax[0].errorbar(val_data['mag'], val_data['n'], yerr=val_data['err'], label=self.validation_data['label'], 
+            ax[0].errorbar(val_data['mag'], val_data['n'], yerr=val_data['err'], label=self.validation_data['label'],
                            color=self.validation_data['color'], ms=self.msize, fmt='o')
             summary_ax[0].plot(mag_pts, cat_data, label=catalog_name, color=self.line_color)
             if self.first_pass:
                 summary_ax[0].errorbar(val_data['mag'], val_data['n'], yerr=val_data['err'],
-                                       label=self.validation_data['label'], 
+                                       label=self.validation_data['label'],
                                        color=self.validation_data['color'], ms=self.msize, fmt='o')
                 self.decorate_plot(summary_ax[0], self.validation_data['ytitle'][k].format(ytit), scale='log')
 
@@ -283,7 +284,7 @@ class AGN_NumberDensity(BaseValidationTest):
 
         return fig, axs
 
-        
+
     @staticmethod
     def get_frac_diff(mag_pts, cat_data, val_mags, val_data, validation_range):
         """
@@ -294,7 +295,7 @@ class AGN_NumberDensity(BaseValidationTest):
         f = interp1d(x, y, fill_value='extrapolate')
         val_mask = (mag_pts > validation_range[0]) & (mag_pts < validation_range[1])
         interp_data = 10**f(mag_pts[val_mask])
-        
+
         return mag_pts[val_mask], (cat_data[val_mask] - interp_data)/interp_data
 
 
