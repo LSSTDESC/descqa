@@ -1,0 +1,9 @@
+subclass_name: AGN_NumberDensities.AGN_NumberDensity
+band: g
+rest_frame_band: i
+Mag_lim: -22.5
+z_lim: [0.4, 2.1]
+observation: 'SDSS'
+validation_range: [15., 19.]
+included_by_default: true
+description: 'Plot N and N(<mag) distributions for selected magnitude bound and redshift range in specified band and compare with SDSS data from Richards 2006'
