@@ -27,7 +27,7 @@ possible_observations = {
         'bin-width': 0.25,
         'label': 'SDSS DR3',
         'color': 'r',
-        'title': 'Richards et. al. (2006)  $\\rm M_{}<{}$, $\\rm {}<z<{}$',
+        'title': 'Richards et. al. (2006)  $\\rm M^{{AGN+galaxy}}_{}<{}$, $\\rm {}<z<{}$',
         'ytitle':{'dN/dm':'$\\rm N (deg^{{-2}} {}mag^{{-1}})$',
                   'N<m':'$\\rm N(<{}) (deg^{{-2}})$',
                  },
@@ -63,22 +63,33 @@ class AGN_NumberDensity(BaseValidationTest):
         """
         # pylint: disable=super-init-not-called
         # pylint: disable=too-many-instance-attributes
-        
-        # catalog quantities needed
-        possible_mag_fields = ('mag_{}_agnonly_sdss',
-                               'mag_{}_agnonly_lsst',
-                              )
-        self.possible_mag_fields = [f.format(band) for f in possible_mag_fields]
-        possible_Mag_fields = ('Mag_true_{}_agnonly_sdss_z0',
-                               'Mag_true_{}_agnonly_lsst_z0',
-                              )
-        self.possible_Mag_fields = [f.format(rest_frame_band) for f in possible_Mag_fields]
 
+        self.no_agn_extinction = kwargs.get('no_agn_extinction', True)        
+        # catalog quantities needed
+        noagnext = 'no_agn_extinction_' if self.no_agn_extinction else ''
+        possible_mag_fields = ('mag_{}_{}sdss',
+                               'mag_{}_{}lsst',
+                              )
+        self.possible_mag_fields = [f.format(band, noagnext) for f in possible_mag_fields]
+
+        # cut on host galaxy + AGN flux 
+        possible_Mag_fields = ('Mag_true_{}_{}sdss_z0',
+                               'Mag_true_{}_{}lsst_z0',
+                              )
+        self.possible_Mag_fields = [f.format(rest_frame_band, noagnext) for f in possible_Mag_fields]
+        
+        # for fraction cut
+        possible_agn_mag_fields = ('mag_{}_agnonly_{}sdss',
+                                     'mag_{}_agnonly_{}lsst',
+                                    )
+        self.possible_agn_mag_fields = [f.format(band, noagnext) for f in possible_agn_mag_fields] 
+        
         # attach some attributes to the test
         self.band = band
         self.rest_frame_band = rest_frame_band
         self.Mag_lim = Mag_lim
         self.z_lim = list(z_lim)
+        self.agn_flux_fraction = kwargs.get('agn_flux_fraction', 0.5)
         self.font_size = kwargs.get('font_size', 18)
         self.title_size = kwargs.get('title_size', 20)
         self.legend_size = kwargs.get('legend_size', 16)
@@ -146,13 +157,16 @@ class AGN_NumberDensity(BaseValidationTest):
 
         mag_field_key = catalog_instance.first_available(*self.possible_mag_fields)
         Mag_field_key = catalog_instance.first_available(*self.possible_Mag_fields)
+        mag_agn_key = catalog_instance.first_available(*self.possible_agn_mag_fields)
         if not mag_field_key:
             return TestResult(skipped=True,
                               summary='Catalog is missing requested quantity: {}'.format(self.possible_mag_fields))
-
         if not Mag_field_key:
             return TestResult(skipped=True,
                               summary='Catalog is missing requested quantity: {}'.format(self.possible_Mag_fields))
+        if not mag_agn_key:
+            return TestResult(skipped=True,
+                              summary='Catalog is missing requested quantity: {}'.format(self.possible_agn_mag_fields))
 
         # check to see if catalog is a light cone
         # this is required since we must be able to calculate the angular area
@@ -170,19 +184,31 @@ class AGN_NumberDensity(BaseValidationTest):
 
         z_filters = ['redshift > {}'.format(self.z_lim[0]), 'redshift < {}'.format(self.z_lim[1])]
         Mag_filters = ['{} < {}'.format(Mag_field_key, self.Mag_lim)]
-
+        
         # retreive data from mock catalog
-        catalog_data = catalog_instance.get_quantities([mag_field_key], filters=z_filters+ Mag_filters)
+        catalog_data = catalog_instance.get_quantities([mag_field_key, mag_agn_key], filters=z_filters+ Mag_filters)
         d = GCRQuery(*((np.isfinite, col) for col in catalog_data)).filter(catalog_data)
-        mags = d[mag_field_key]
+        
+        #select point-like sources according to specified agn_flux_fraction
+        N_all = len(d[mag_field_key])
+        fluxid = 'AGN+galaxy'
+        if self.agn_flux_fraction > 0. and self.agn_flux_fraction < 1.:
+            point_like_mask = (d[mag_agn_key] - d[mag_field_key] < -2.5*np.log10(self.agn_flux_fraction))
+            mags = d[mag_field_key][point_like_mask]
+        elif self.agn_flux_fraction == 0.:
+            mags = d[mag_field_key]
+        else:
+            mags = d[mag_agn_key]
+            fluxid = 'AGN'
 
         #####################################################
         # caclulate the number densities of AGN
         #####################################################
 
-        # get the total number of AGN in catalog
+        # get the total number of AGN passing cut and save for txt file
         N_tot = len(mags)
-
+        total_txt = '{}/{} with AGN magnitude fraction > {}'.format(N_tot, N_all, self.agn_flux_fraction)
+        
         # define the apparent magnitude bins for plotting purposes
         dmag = self.validation_data.get('bin_width', 0.25)
 
@@ -191,6 +217,7 @@ class AGN_NumberDensity(BaseValidationTest):
 
         # calculate differential binned data (validation data does not divide by bin width)
         Ndm, _ = np.histogram(mags, bins=mag_bins)
+        print(Ndm)
         dn = Ndm/sky_area
 
         # calculate N(<mag) in the bins
@@ -207,6 +234,9 @@ class AGN_NumberDensity(BaseValidationTest):
             catalog_name = re.split('_', catalog_name)[0]
         results = {'catalog':{}, 'data':{}}
         colname = 'n'
+
+        legend_title = '; '.join(('$\\rm F_{{AGN}}/F_{{AGN+galaxy}} > {}$'.format(self.agn_flux_fraction),
+                                  'No AGN extinction' if self.no_agn_extinction else 'AGN extinction'))
 
         for ax, summary_ax, mag_pts, cat_data, ytit, (k, val_data) in zip(axs, self.summary_axs, 
                                                                           [mag_cen, mag_bins[1:]],
@@ -225,17 +255,20 @@ class AGN_NumberDensity(BaseValidationTest):
                 self.decorate_plot(summary_ax[0], self.validation_data['ytitle'][k].format(ytit), scale='log')
 
             #decorate
-            self.decorate_plot(ax[0], self.validation_data['ytitle'][k].format(ytit), scale='log')
-            
+            self.decorate_plot(ax[0], self.validation_data['ytitle'][k].format(ytit), scale='log',
+                               legend_title=legend_title)
+
             # get fractional diffrence between the mock catalog and validation data
             mag_val_pts, delta = self.get_frac_diff(mag_pts, cat_data, val_data['mag'], val_data['n'],
                                                     self.validation_range)
             ax[1].plot(mag_val_pts, delta, color=self.line_color, label='Frac. Diff.')
             summary_ax[1].plot(mag_val_pts, delta, color=self.line_color, label='Frac. Diff.')
-            self.decorate_plot(ax[1], ylabel=r'$\Delta n/n$', scale='linear', xlabel=r'$\rm m_{}$'.format(self.band))
+            self.decorate_plot(ax[1], ylabel=r'$\Delta n/n$', scale='linear',
+                               xlabel=r'$\rm m_{}^{{{}}}$'.format(self.band, fluxid),
+                               legend_title=legend_title)
             if self.first_pass:
                 self.decorate_plot(summary_ax[1], ylabel=r'$\Delta n/n$', scale='linear',
-                                   xlabel=r'$\rm m_{}$'.format(self.band))
+                                   xlabel='$\\rm m_{}^{{{}}}$'.format(self.band, fluxid))
 
             #save plotted points
             N_tot_data = np.sum(val_data['N_Q']) # total number of AGN
@@ -253,7 +286,7 @@ class AGN_NumberDensity(BaseValidationTest):
         #save results for catalog and validation data in txt files
         for filename, dtype, ntot in zip_longest((filelabel, re.sub(' ', '_', self.validation_data['label'])),
                                                  ('catalog', 'data'),
-                                                 (N_tot, N_tot_data)):
+                                                 (total_txt, N_tot_data)):
             if filename and dtype:
                 with open(os.path.join(output_dir, 'Nagn_' + filename + '.txt'), 'ab') as f_handle:
                     for key, value in results[dtype].items():
@@ -299,14 +332,15 @@ class AGN_NumberDensity(BaseValidationTest):
         return mag_pts[val_mask], (cat_data[val_mask] - interp_data)/interp_data
 
 
-    def decorate_plot(self, ax, ylabel, scale='log', xlabel=None):
+    def decorate_plot(self, ax, ylabel, scale='log', xlabel=None, legend_title=''):
         """
         """
         ax.set_ylabel(ylabel, size=self.font_size)
-        ax.legend(loc='best', fancybox=True, framealpha=0.5, fontsize=self.legend_size, numpoints=1)
+        ax.legend(loc='upper left', fancybox=True, framealpha=0.5, title=legend_title,
+                  fontsize=self.legend_size, numpoints=1)
         ax.set_yscale(scale)
         if xlabel:
-            ax.set_xlabel(xlabel)
+            ax.set_xlabel(xlabel, size=self.font_size)
         else:
             for axlabel in ax.get_xticklabels():
                 axlabel.set_visible(False)
@@ -318,7 +352,7 @@ class AGN_NumberDensity(BaseValidationTest):
         """
         fig.tight_layout()
         fig.subplots_adjust(hspace=0)
-
+        fig.subplots_adjust(top=0.94)
 
     @staticmethod
     def save_quantities(keyname, results, filename, comment=''):
