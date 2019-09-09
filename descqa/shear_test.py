@@ -164,7 +164,7 @@ class ShearTest(BaseValidationTest):
         N_clust = self.N_clust
         nn = np.stack((catalog_data[self.ra][mask], catalog_data[self.dec][mask]), axis=1)
         _, labs, _ = k_means(
-            n_clusters=N_clust, random_state=0, X=nn, n_jobs=-1)  # check random state, n_jobs is in debugging mode
+            n_clusters=N_clust, random_state=0, X=nn)  # check random state
         print("computing jack-knife errors")
         time_jack = time.time()
         # jack-knife code
@@ -273,7 +273,7 @@ class ShearTest(BaseValidationTest):
 
         pars.set_cosmology(H0=cosmo.H0.value, ombh2=cosmo.Ob0*cosmo.h**2, omch2=(cosmo.Om0-cosmo.Ob0)*cosmo.h**2)
         pars.InitPower.set_params(ns=ns, As=2.168e-9*(s8/0.8)**2)
-        camb.set_halofit_version(version='takahashi') # pylint: disable=no-member
+        #camb.set_halofit_version(version='takahashi') # pylint: disable=no-member
         p = camb.get_matter_power_interpolator(pars, nonlinear=True, k_hunit=False, hubble_units=False, kmax=100., zmax=self.zhi+1., k_per_logint=False).P
         z_max = np.max(catalog_data[self.z])
         if self.zhi>z_max:
@@ -347,8 +347,8 @@ class ShearTest(BaseValidationTest):
                 sig_jack = np.zeros((self.nbins))
                 sigm_jack = np.zeros((self.nbins))
                 for i in range(self.nbins):
-                    sig_jack[i] = np.sqrt(gg.varxi[i])*1.e6
-                    sigm_jack[i] = np.sqrt(gg.varxi[i])*1.e6
+                    sig_jack[i] = np.sqrt(gg.varxip[i])*1.e6
+                    sigm_jack[i] = np.sqrt(gg.varxim[i])*1.e6
 
             n_z = catalog_data[self.z][mask]
             xvals, theory_plus, theory_minus = self.theory_corr(n_z, r, 15000, cosmo, p, chi_max)

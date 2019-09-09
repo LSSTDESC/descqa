@@ -1,0 +1,15 @@
+subclass_name: NumberDensityVersusRedshift.NumberDensityVersusRedshift
+band: r
+zlo: 0.
+zhi: 1.5
+mag_lo: 25
+N_zbins: 15
+observation: 'Coil2004_maglim'
+jackknife: True
+N_jack: 30
+use_diagonal_only: True
+truncate_cat_name: True
+legend_size: 12
+font_size: 18
+
+description: 'Plot N(z) distributions for selected magnitude cuts in specified band and compare with fits to DEEP2 data from Coil et. al. (2004).'
