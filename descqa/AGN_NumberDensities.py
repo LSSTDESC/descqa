@@ -217,7 +217,6 @@ class AGN_NumberDensity(BaseValidationTest):
 
         # calculate differential binned data (validation data does not divide by bin width)
         Ndm, _ = np.histogram(mags, bins=mag_bins)
-        print(Ndm)
         dn = Ndm/sky_area
 
         # calculate N(<mag) in the bins
