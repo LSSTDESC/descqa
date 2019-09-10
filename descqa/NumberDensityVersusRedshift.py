@@ -1,6 +1,7 @@
 from __future__ import print_function, division, unicode_literals, absolute_import
 import os
 import math
+import re
 try:
     from itertools import zip_longest
 except ImportError:
@@ -91,8 +92,6 @@ class NumberDensityVersusRedshift(BaseValidationTest):
     figx_p = 9
     figy_p = 11
     lw2 = 2
-    fsize = 16 #fontsize
-    lsize = 10 #legendsize
     msize = 6  #markersize
     default_colors = ['blue', 'r', 'm', 'g', 'navy', 'y', 'purple', 'gray', 'c',\
         'orange', 'violet', 'coral', 'gold', 'orchid', 'maroon', 'tomato', \
@@ -107,6 +106,12 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         # pylint: disable=W0231
 
         #catalog quantities
+        self.truncate_cat_name = kwargs.get('truncate_cat_name', False)
+        self.title_in_legend = kwargs.get('title_in_legend', False)
+        self.legend_location = kwargs.get('legend_location', 'upper left')
+        self.font_size = kwargs.get('font_size', 16)
+        self.legend_size = kwargs.get('legend_size', 10)
+        self.tick_size = kwargs.get('tick_size', 12)
         self.zlabel = z
         self.rest_frame = rest_frame
         if self.rest_frame:
@@ -175,6 +180,19 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         mag_lo = self.validation_data.get('mag_lo', [float(m) for m in range(int(mhi), int(mlo+1))])
         mag_hi = self.validation_data.get('mag_hi', [])
 
+        #check if supplied limits differ from validation limits and adjust
+        mask = (mag_lo <= float(mlo)) & (mag_lo >= float(mhi))
+        if np.count_nonzero(mask) < len(mag_lo):
+            if len(mag_hi) > 0:
+                mag_hi = mag_hi[mask]
+                self.validation_data['mag_hi'] = mag_hi 
+            mag_lo = mag_lo[mask]
+            self.validation_data['mag_lo'] = mag_lo
+            if 'z0values' in self.validation_data:
+                self.validation_data['z0values'] = self.validation_data['z0values'][mask]
+            if  'z0errors' in self.validation_data:
+                self.validation_data['z0errors'] = self.validation_data['z0errors'][mask]
+
         #setup number of plots and number of rows required for subplots
         self.nplots = len(mag_lo)
         self.nrows = (self.nplots+self.ncolumns-1)//self.ncolumns
@@ -225,6 +243,8 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         filelabel = '_'.join((filtername, self.band))
 
         #setup plots
+        if self.truncate_cat_name:
+            catalog_name = re.split('_', catalog_name)[0]
         fig, ax = plt.subplots(self.nrows, self.ncolumns, figsize=(self.figx_p, self.figy_p), sharex='col')
         catalog_color = next(self.colors)
         catalog_marker = next(self.markers)
@@ -276,13 +296,16 @@ class NumberDensityVersusRedshift(BaseValidationTest):
                 self.validation_data.get('z0values', []),
                 self.validation_data.get('z0errors', []),
         )):
+            print(self.nplots, self.nrows, cut_lo, cut_hi)
             if cut_lo is None:  #cut_lo is None if self.mag_lo is exhausted
-                ax_this.set_visible(False)
-                summary_ax_this.set_visible(False)
+                if ax_this is not None:
+                    ax_this.set_visible(False)
+                if summary_ax_this is not None:
+                    summary_ax_this.set_visible(False)
             else:
                 cut_label = '{} $< {}$'.format(self.band, cut_lo)
                 if cut_hi:
-                    cut_label = '${} <=$ {}'.format(cut_hi, cut_label) #also appears in txt file so don't use \leq
+                    cut_label = '${} \leq $ {}'.format(cut_hi, cut_label) #also appears in txt file so don't use \leq
 
                 if z0 is None and 'z0const' in self.validation_data:  #alternate format for some validation data
                     z0 = self.validation_data['z0const'] + self.validation_data['z0linear'] * cut_lo
@@ -328,7 +351,8 @@ class NumberDensityVersusRedshift(BaseValidationTest):
                 self.decorate_subplot(summary_ax_this, n)
 
         #save results for catalog and validation data in txt files
-        for filename, dtype, comment, info, info2 in zip_longest((filelabel, self.observation), ('N', 'fit'), (filtername,), ('total',), ('score',)):
+        for filename, dtype, comment, info, info2 in zip_longest((filelabel, self.observation), ('N', 'fit'), 
+                                                                 (filtername,), ('total', 'z0'), ('score', 'z0err')):
             if filename:
                 with open(os.path.join(output_dir, 'Nvsz_' + filename + '.txt'), 'ab') as f_handle: #open file in append binary mode
                     #loop over magnitude cuts in results dict
@@ -359,7 +383,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
 
     def get_jackknife_errors(self, N_jack, jackknife_data, N):
         nn = np.stack((jackknife_data[self.ra], jackknife_data[self.dec]), axis=1)
-        _, jack_labels, _ = k_means(n_clusters=N_jack, random_state=0, X=nn, n_jobs=-1)
+        _, jack_labels, _ = k_means(n_clusters=N_jack, random_state=0, X=nn)
 
         #make histograms for jackknife regions
         Njack_array = np.zeros((N_jack, len(self.zbins)-1), dtype=np.int)
@@ -384,7 +408,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         ndata = meanz**2*np.exp(-meanz/z0)
         norm = self.nz_norm(self.zhi, z0) - self.nz_norm(self.zlo, z0)
         ax.plot(meanz, ndata/norm, label=validation_label, ls='--', color=self.validation_color, lw=self.lw2)
-        fits = {'fit': ndata/norm}
+        fits = {'fit': ndata/norm, 'z0':'z0 = {:.3f}'.format(z0)}
 
         if z0err and z0err > 0:
             nlo = meanz**2*np.exp(-meanz/(z0-z0err))
@@ -394,14 +418,16 @@ class NumberDensityVersusRedshift(BaseValidationTest):
             ax.fill_between(meanz, nlo/normlo, nhi/normhi, alpha=0.3, facecolor=self.validation_color)
             fits['fit+'] = nhi/normhi
             fits['fit-'] = nlo/normlo
+            fits['z0err'] = 'z0err = {:.3f}'.format(z0err)
 
         return fits
 
 
     def decorate_subplot(self, ax, nplot):
         #add axes and legend
+        ax.tick_params(labelsize=self.tick_size)
         if nplot % self.ncolumns == 0:  #1st column
-            ax.set_ylabel('$'+self.yaxis+'$', size=self.fsize)
+            ax.set_ylabel(self.yaxis, size=self.font_size)
 
         if nplot+1 <= self.nplots-self.ncolumns:  #x scales for last ncol plots only
             #print "noticks",nplot
@@ -410,11 +436,11 @@ class NumberDensityVersusRedshift(BaseValidationTest):
                 #prevent overlapping yaxis labels
                 ax.yaxis.get_major_ticks()[0].label1.set_visible(False)
         else:
-            ax.set_xlabel('$z$', size=self.fsize)
+            ax.set_xlabel('z', size=self.font_size)
             ax.tick_params(labelbottom=True)
             for axlabel in ax.get_xticklabels():
                 axlabel.set_visible(True)
-        ax.legend(loc='best', fancybox=True, framealpha=0.5, fontsize=self.lsize, numpoints=1)
+        ax.legend(loc='best', fancybox=True, framealpha=0.5, fontsize=self.legend_size, numpoints=1)
 
 
     @staticmethod
