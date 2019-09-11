@@ -2,8 +2,11 @@ from __future__ import print_function, division, unicode_literals, absolute_impo
 import os
 from collections import defaultdict
 import numpy as np
+import re
 import scipy.special as scsp
 import treecorr
+import healpy as hp
+from sklearn.cluster import k_means
 from GCR import GCRQuery
 
 from .base import BaseValidationTest, TestResult
@@ -58,9 +61,10 @@ class CorrelationUtilities(BaseValidationTest):
 
         self.fig_xlabel = kwargs['fig_xlabel']
         self.fig_ylabel = kwargs['fig_ylabel']
-        self.fig_ylim = kwargs['fig_ylim']
+        self.fig_ylim = kwargs.get('fig_ylim', None)
         self.fig_subplots_nrows, self.fig_subplots_ncols = kwargs.get('fig_subplots', (1, 1))
         self.fig_subplot_groups = kwargs.get('fig_subplot_groups', [None])
+        self.fig_xlim = kwargs.get('fig_xlim', None)
 
         self.treecorr_config = {
             'min_sep': kwargs['min_sep'],
@@ -70,6 +74,25 @@ class CorrelationUtilities(BaseValidationTest):
         self.random_nside = kwargs.get('random_nside', 1024)
         self.random_mult = kwargs.get('random_mult', 3)
 
+        # jackknife errors
+        self.jackknife = kwargs.get('jackknife', False)
+        if self.jackknife:
+            self.N_jack = kwargs.get('N_jack', 30)
+            jackknife_quantities = kwargs.get('jackknife_quantities',
+                                              {'ra':['ra', 'ra_true'], 'dec':['dec', 'dec_true']})
+            if 'ra' not in self.requested_columns or 'dec' not in self.requested_columns:
+                self.requested_columns.update(jackknife_quantities)
+            self.use_diagonal_only = kwargs.get('use_diagonal_only', True)
+
+        self.r_validation_min = kwargs.get('r_validation_min', 1)
+        self.r_validation_max = kwargs.get('r_validation_max', 10)
+
+        self.truncate_cat_name = kwargs.get('truncate_cat_name', False)
+        self.title_in_legend = kwargs.get('title_in_legend', False)
+        self.font_size = kwargs.get('font_size', 16)
+        self.legend_size = kwargs.get('legend_size', 10)
+        self.survey_label = kwargs.get('survey_label', '')
+        self.no_title = kwargs.get('no_title', False)
 
     @staticmethod
     def load_catalog_data(catalog_instance, requested_columns, test_samples):
@@ -196,25 +219,63 @@ class CorrelationUtilities(BaseValidationTest):
                 ax.loglog(self.validation_data[:, 0],
                         self.validation_data[:, sample_data['data_col']],
                         c=color,
-                        label=sample_label)
+                        label=' '.join([self.survey_label, sample_label]))
                 if 'data_err_col' in sample_data:
                     y1 = (self.validation_data[:, sample_data['data_col']] +
                         self.validation_data[:, sample_data['data_err_col']])
                     y2 = (self.validation_data[:, sample_data['data_col']] -
                         self.validation_data[:, sample_data['data_err_col']])
-                    y2[y2 <= 0] = self.fig_ylim[0]*0.9
-                    ax.fill_between(self.validation_data[:, 0], y1, y2, lw=0, color=color, alpha=0.2)
-                ax.errorbar(sample_corr[0], sample_corr[1], sample_corr[2], marker='o', ls='', c=color)
+                    if self.fig_xlim is not None:
+                        y2[y2 <= 0] = self.fig_ylim[0]*0.9
+                    ax.fill_between(self.validation_data[:, 0], y1, y2, lw=0, color=color, alpha=0.25)
+                ax.errorbar(sample_corr[0], sample_corr[1], sample_corr[2],
+                            label=' '.join([catalog_name, sample_label]),
+                            marker='o', ls='', c=color)
 
-            ax.legend(loc='best')
-            ax.set_xlabel(self.fig_xlabel)
-            ax.set_ylim(*self.fig_ylim)
-            ax.set_ylabel(self.fig_ylabel)
-            ax.set_title('{} vs. {}'.format(catalog_name, self.data_label), fontsize='medium')
+            self.decorate_plot(ax, catalog_name)
 
         fig.tight_layout()
         fig.savefig(os.path.join(output_dir, '{:s}.png'.format(self.test_name)), bbox_inches='tight')
         plt.close(fig)
+
+
+    def get_legend_title(self, test_samples, exclude='mstellar'):
+        legend_title = ''
+        filter_ids  = list(set([k for v in test_samples.values() for k in v.keys() if exclude not in k]))
+        for filter_id in filter_ids:
+            legend_title = self.get_legend_subtitle(test_samples, filter_id=filter_id, legend_title=legend_title)
+            
+        return legend_title
+
+
+    @staticmethod
+    def get_legend_subtitle(test_samples, filter_id='z', legend_title=''):
+        legend_title = legend_title  if len(legend_title) == 0 else '{}; '.format(legend_title)
+        min_values = [test_samples[k][filter_id].get('min', None) for k in test_samples if test_samples[k].get(filter_id, None) is not None]
+        max_values = [test_samples[k][filter_id].get('max', None) for k in test_samples if test_samples[k].get(filter_id, None) is not None]
+        min_title = ''
+        if len(min_values) > 0 and any([k != None for k in min_values]):
+            min_title = '{} < {}'.format(min([k for k in min_values if k is not None]), filter_id)
+        max_title = ''
+        if len(max_values) > 0 and any([k != None for k in max_values]):
+            max_values = [k for k in max_values if k is not None]
+            max_title = '${} < {}$'.format(filter_id, max(max_values)) if len(min_title) == 0 else '${} < {}$'.format(min_title, max(max_values))
+
+        return legend_title + max_title
+
+
+    def decorate_plot(self, ax, catalog_name):
+        title = '{} vs. {}'.format(catalog_name, self.data_label)
+        lgnd_title = self.get_legend_title(self.test_samples) if self.title_in_legend else None
+        ax.legend(loc='lower left', fontsize=self.legend_size, title=lgnd_title)
+        ax.set_xlabel(self.fig_xlabel, size=self.font_size)
+        if self.fig_ylim is not None:
+            ax.set_ylim(*self.fig_ylim)
+        if self.fig_xlim is not None:
+            ax.set_xlim(*self.fig_xlim)
+        ax.set_ylabel(self.fig_ylabel, size=self.font_size)
+        if not self.no_title:
+            ax.set_title(title, fontsize='medium')
 
 
     @staticmethod
@@ -237,6 +298,70 @@ class CorrelationUtilities(BaseValidationTest):
         return TestResult(inspect_only=True)
 
 
+    def get_jackknife_randoms(self, N_jack, catalog_data, ra='ra', dec='dec'):
+        """
+        Computes the jackknife regions and random catalogs for each region 
+        Parameters
+        ----------
+        N_jack : number of regions
+        catalog_data : input catalog
+
+        Returns
+        -------
+        jack_labels: array of regions in catalog data
+        randoms: dict of randoms labeled by region
+        """
+        catalogs = {}
+        #cluster
+        nn = np.stack((catalog_data[ra], catalog_data[dec]), axis=1)
+        _, jack_labels, _ = k_means(n_clusters=N_jack, random_state=0, X=nn)
+
+        randoms = {}
+        for nj in range(N_jack):
+            catalog_data_jk = dict(zip(catalog_data.keys(), [v[(jack_labels != nj)] for v in catalog_data.values()]))
+            rand_cat, rr = self.generate_processed_randoms(catalog_data_jk) #get randoms for this footprint
+            #print('nj = {}, area = {:.2f}'.format(nj, self.check_footprint(catalog_data_jk))) #check footprint
+            randoms[str(nj)] = {'ran': rand_cat, 'rr':rr}
+
+        return jack_labels, randoms
+
+    def get_jackknife_errors(self, N_jack, catalog_data, sample_conditions, r, xi, jack_labels, randoms,
+                             diagonal_errors=True):
+        
+        #run treecorr for jackknife regions
+        Nrbins = len(r)
+        Njack_array = np.zeros((N_jack, Nrbins), dtype=np.float)
+        print(sample_conditions)
+        for nj in range(N_jack):
+            catalog_data_jk = dict(zip(catalog_data.keys(), [v[(jack_labels != nj)] for v in catalog_data.values()]))
+            tmp_catalog_data = self.create_test_sample(catalog_data_jk, sample_conditions) #apply sample cut
+            # run treecorr
+            xi_rad, Njack_array[nj], _ = self.run_treecorr(catalog_data=tmp_catalog_data,
+                                                   treecorr_rand_cat=randoms[str(nj)]['ran'], 
+                                                   rr=randoms[str(nj)]['rr'], 
+                                                   output_file_name=None)
+            print(nj, Njack_array[nj])
+
+        covariance = np.zeros((Nrbins, Nrbins))
+        for i in range(Nrbins):
+            if diagonal_errors:
+                for njack in Njack_array:
+                    covariance[i][i] += (N_jack - 1.)/N_jack * (xi[i] - njack[i]) ** 2
+            else:
+                for j in range(Nrbins):
+                    for njack in Njack_array:
+                        covariance[i][j] += (N_jack - 1.)/N_jack * (xi[i] - njack[i]) * (xi[j] - njack[j])
+            print('bin/cov', i, covariance[i][i])
+
+        return covariance
+
+    def check_footprint(self, catalog_data):
+        pix_footprint = get_healpixel_footprint(catalog_data['ra'], catalog_data['dec'], self.random_nside)
+        area_footprint = 4.*np.pi*(180./np.pi)**2*len(pix_footprint)/hp.nside2npix(self.random_nside)
+
+        return area_footprint
+
+
 class CorrelationsAngularTwoPoint(CorrelationUtilities):
     """
     Validation test for an angular 2pt correlation function.
@@ -252,11 +377,16 @@ class CorrelationsAngularTwoPoint(CorrelationUtilities):
         catalog_data = self.load_catalog_data(catalog_instance=catalog_instance,
                                               requested_columns=self.requested_columns,
                                               test_samples=self.test_samples)
-
         if not catalog_data:
             return TestResult(skipped=True, summary='Missing requested quantities')
 
-        rand_cat, rr = self.generate_processed_randoms(catalog_data)
+        if self.truncate_cat_name:
+            catalog_name = re.split('_', catalog_name)[0]
+
+        rand_cat, rr = self.generate_processed_randoms(catalog_data) #assumes ra and dec exist
+
+        if self.jackknife:                     #evaluate randoms for jackknife footprints
+            jack_labels, randoms = self.get_jackknife_randoms(self.N_jack, catalog_data)
 
         correlation_data = dict()
         for sample_name, sample_conditions in self.test_samples.items():
@@ -277,6 +407,14 @@ class CorrelationsAngularTwoPoint(CorrelationUtilities):
                 treecorr_rand_cat=rand_cat,
                 rr=rr,
                 output_file_name=output_treecorr_filepath)
+
+            print('xi_rad', len(xi_rad))
+            #jackknife errors
+            if self.jackknife:
+                covariance = self.get_jackknife_errors(self.N_jack, catalog_data, sample_conditions,
+                                                       xi_rad, xi, jack_labels, randoms,
+                                                       diagonal_errors=self.use_diagonal_only)
+                xi_sig = np.sqrt(np.diag(covariance)) 
 
             correlation_data[sample_name] = (xi_rad, xi, xi_sig)
 
@@ -348,7 +486,8 @@ class CorrelationsAngularTwoPoint(CorrelationUtilities):
         dr.process(treecorr_rand_cat, cat)
         rd.process(cat, treecorr_rand_cat)
 
-        dd.write(output_file_name, rr, dr, rd)
+        if output_file_name is not None:
+            dd.write(output_file_name, rr, dr, rd)
 
         xi, var_xi = dd.calculateXi(rr, dr, rd)
         xi_rad = np.exp(dd.meanlogr)
@@ -377,6 +516,10 @@ class CorrelationsProjectedTwoPoint(CorrelationUtilities):
         if not catalog_data:
             return TestResult(skipped=True, summary='Missing requested quantities')
 
+        test = self.get_legend_title(self.test_samples)
+
+        if self.truncate_cat_name:
+            catalog_name = re.split('_', catalog_name)[0]
         rand_ra, rand_dec = generate_uniform_random_ra_dec_footprint(
             catalog_data['ra'].size*self.random_mult,
             get_healpixel_footprint(catalog_data['ra'], catalog_data['dec'], self.random_nside),
@@ -572,19 +715,19 @@ class DEEP2StellarMassTwoPoint(CorrelationsProjectedTwoPoint):
             ax.loglog(sample_corr[0],
                       p_law,
                       c=color,
-                      label=sample_label)
+                      label=' '.join([self.survey_label, sample_label]))
+                            
             ax.fill_between(sample_corr[0],
                             p_law - p_law_err,
                             p_law + p_law_err,
                             lw=0, color=color, alpha=0.2)
-            ax.errorbar(sample_corr[0], sample_corr[1], sample_corr[2], marker='o', ls='', c=color)
+            ax.errorbar(sample_corr[0], sample_corr[1], sample_corr[2], marker='o', ls='', c=color,
+                        label=' '.join([catalog_name, sample_label]))
 
-        ax.legend(loc='best')
-        ax.set_xlabel(self.fig_xlabel)
-        ax.set_ylim(*self.fig_ylim)
-        ax.set_ylabel(self.fig_ylabel)
-        ax.set_title('{} vs. {}'.format(catalog_name, self.data_label), fontsize='medium')
+            ax.fill_between([self.r_validation_min, self.r_validation_max], [0, 0], [10**4, 10**4],
+                            alpha=0.15, color='grey') #validation region
 
+        self.decorate_plot(ax, catalog_name)
         fig.tight_layout()
         fig.savefig(os.path.join(output_dir, '{:s}.png'.format(self.test_name)), bbox_inches='tight')
         plt.close(fig)
@@ -597,8 +740,8 @@ class DEEP2StellarMassTwoPoint(CorrelationsProjectedTwoPoint):
         chi_per_nu = 0
         total_sample = 0
         rbins = list(corr_data.values()).pop()[0]
-        r_idx_min = np.searchsorted(rbins, 1.)
-        r_idx_max = np.searchsorted(rbins, 10., side='right')
+        r_idx_min = np.searchsorted(rbins, self.r_validation_min)
+        r_idx_max = np.searchsorted(rbins, self.r_validation_max, side='right')
         for sample_name in self.test_samples:
             sample_corr = corr_data[sample_name]
             sample_data = self.test_data[sample_name]
