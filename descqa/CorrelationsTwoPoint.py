@@ -261,7 +261,7 @@ class CorrelationUtilities(BaseValidationTest):
         if len(min_values) > 0 and any([k is not None for k in min_values]):
             min_title = '{} < {}'.format(min([k for k in min_values if k is not None]), filter_id)
         max_title = ''
-        if len(max_values) > 0 and any([k != None for k in max_values]):
+        if len(max_values) > 0 and any([k is not None for k in max_values]):
             max_values = [k for k in max_values if k is not None]
             max_title = '${} < {}$'.format(filter_id, max(max_values)) if len(min_title) == 0 else '${} < {}$'.format(min_title, max(max_values))
 
@@ -305,13 +305,15 @@ class CorrelationUtilities(BaseValidationTest):
         return TestResult(inspect_only=True)
 
 
-    def get_jackknife_randoms(self, N_jack, catalog_data, ra='ra', dec='dec'):
+    @staticmethod
+    def get_jackknife_randoms(N_jack, catalog_data, generate_randoms, ra='ra', dec='dec'):
         """
         Computes the jackknife regions and random catalogs for each region 
         Parameters
         ----------
         N_jack : number of regions
         catalog_data : input catalog
+        generate_randoms: function to generate randoms (eg self.generate_processed_randoms)
 
         Returns
         -------
@@ -325,14 +327,15 @@ class CorrelationUtilities(BaseValidationTest):
         randoms = {}
         for nj in range(N_jack):
             catalog_data_jk = dict(zip(catalog_data.keys(), [v[(jack_labels != nj)] for v in catalog_data.values()]))
-            rand_cat, rr = self.generate_processed_randoms(catalog_data_jk) #get randoms for this footprint
+            rand_cat, rr = generate_randoms(catalog_data_jk) #get randoms for this footprint
             #print('nj = {}, area = {:.2f}'.format(nj, self.check_footprint(catalog_data_jk))) #check footprint
             randoms[str(nj)] = {'ran': rand_cat, 'rr':rr}
 
         return jack_labels, randoms
 
-    def get_jackknife_errors(self, N_jack, catalog_data, sample_conditions, r, xi, jack_labels, randoms,
-                             diagonal_errors=True):
+    @staticmethod
+    def get_jackknife_errors(N_jack, catalog_data, sample_conditions, r, xi, jack_labels, randoms,
+                             run_treecorr, diagonal_errors=True):
         """
         Computes jacknife errors 
         Parameters
@@ -344,6 +347,8 @@ class CorrelationUtilities(BaseValidationTest):
         xi : correlation data for full region
         jack_labels: array of regions in catalog data
         randoms: dict of randoms labeled by region
+        run_treecorr: method to run treecorr 
+
          Returns
         --------
         covariance : covariance matrix
@@ -357,9 +362,9 @@ class CorrelationUtilities(BaseValidationTest):
                                        [v[(jack_labels != nj)] for v in catalog_data.values()]))
             tmp_catalog_data = self.create_test_sample(catalog_data_jk, sample_conditions) #apply sample cut
             # run treecorr
-            xi_rad, Njack_array[nj], _ = self.run_treecorr(catalog_data=tmp_catalog_data,
+            _, Njack_array[nj], _ = run_treecorr(catalog_data=tmp_catalog_data,
                                                            treecorr_rand_cat=randoms[str(nj)]['ran'], 
-                                                           rr=randoms[str(nj)]['rr'], 
+                                                           rr=randoms[str(nj)]['rr'],
                                                            output_file_name=None)
             print(nj, Njack_array[nj])
 
@@ -481,7 +486,8 @@ class CorrelationsAngularTwoPoint(CorrelationUtilities):
         rand_cat, rr = self.generate_processed_randoms(catalog_data) #assumes ra and dec exist
 
         if self.jackknife:                     #evaluate randoms for jackknife footprints
-            jack_labels, randoms = self.get_jackknife_randoms(self.N_jack, catalog_data)
+            jack_labels, randoms = self.get_jackknife_randoms(self.N_jack, catalog_data,
+                                                              self.generate_processed_randoms)
 
         correlation_data = dict()
         for sample_name, sample_conditions in self.test_samples.items():
@@ -503,11 +509,11 @@ class CorrelationsAngularTwoPoint(CorrelationUtilities):
                 rr=rr,
                 output_file_name=output_treecorr_filepath)
 
-            print('xi_rad', len(xi_rad))
             #jackknife errors
             if self.jackknife:
                 covariance = self.get_jackknife_errors(self.N_jack, catalog_data, sample_conditions,
                                                        xi_rad, xi, jack_labels, randoms,
+                                                       self.run_treecorr,
                                                        diagonal_errors=self.use_diagonal_only)
                 xi_sig = np.sqrt(np.diag(covariance))
 
@@ -543,6 +549,7 @@ class CorrelationsProjectedTwoPoint(CorrelationUtilities):
 
         if self.truncate_cat_name:
             catalog_name = re.split('_', catalog_name)[0]
+
         rand_ra, rand_dec = generate_uniform_random_ra_dec_footprint(
             catalog_data['ra'].size*self.random_mult,
             get_healpixel_footprint(catalog_data['ra'], catalog_data['dec'], self.random_nside),
