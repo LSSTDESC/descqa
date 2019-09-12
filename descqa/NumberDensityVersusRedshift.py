@@ -52,7 +52,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         number of jackknife regions
         `N_jack` should be much larger than `N_zbins` for the jackknife errors to be stable
     ra : str, optional, (default: 'ra')
-        label of RA column (used if `jackknife` is `True`)    
+        label of RA column (used if `jackknife` is `True`)
     dec : str, optional, (default: 'dec')
         label of Dec column (used if `jackknife` is `True`)
     pass_limit : float, optional (default: 2.)
@@ -101,7 +101,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
 
     def __init__(self, z='redshift_true', band='i', N_zbins=10, zlo=0., zhi=1.1,
                  observation='', mag_lo=27, mag_hi=18, ncolumns=2, normed=True,
-                 jackknife=False, N_jack=20, ra='ra', dec='dec', pass_limit=2., 
+                 jackknife=False, N_jack=20, ra='ra', dec='dec', pass_limit=2.,
                  use_diagonal_only=False, rest_frame=False, **kwargs):
         # pylint: disable=W0231
 
@@ -185,7 +185,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         if np.count_nonzero(mask) < len(mag_lo):
             if len(mag_hi) > 0:
                 mag_hi = mag_hi[mask]
-                self.validation_data['mag_hi'] = mag_hi 
+                self.validation_data['mag_hi'] = mag_hi
             mag_lo = mag_lo[mask]
             self.validation_data['mag_lo'] = mag_lo
             if 'z0values' in self.validation_data:
@@ -305,7 +305,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
             else:
                 cut_label = '{} $< {}$'.format(self.band, cut_lo)
                 if cut_hi:
-                    cut_label = '${} \leq $ {}'.format(cut_hi, cut_label) #also appears in txt file so don't use \leq
+                    cut_label = '${} \\leq $ {}'.format(cut_hi, cut_label) #also appears in txt file
 
                 if z0 is None and 'z0const' in self.validation_data:  #alternate format for some validation data
                     z0 = self.validation_data['z0const'] + self.validation_data['z0linear'] * cut_lo
@@ -331,7 +331,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
                 #make subplot
                 catalog_label = ' '.join((catalog_name, cut_label.replace(self.band, filtername + ' ' + self.band)))
                 validation_label = ' '.join((self.validation_data.get('label', ''), cut_label))
-                key = cut_label.replace('$', '')
+                key = cut_label.replace('$', '').replace('\\leq', '<=')
                 results[key] = {'meanz': meanz, 'total':total, 'N':N, 'N+-':Nerrors}
                 self.catalog_subplot(ax_this, meanz, N, Nerrors, catalog_color, catalog_marker, catalog_label)
                 if z0 and z0 > 0: # has validation data
@@ -351,20 +351,21 @@ class NumberDensityVersusRedshift(BaseValidationTest):
                 self.decorate_subplot(summary_ax_this, n)
 
         #save results for catalog and validation data in txt files
-        for filename, dtype, comment, info, info2 in zip_longest((filelabel, self.observation), ('N', 'fit'), 
+        for filename, dtype, comment, info, info2 in zip_longest((filelabel, self.observation), ('N', 'fit'),
                                                                  (filtername,), ('total', 'z0'), ('score', 'z0err')):
             if filename:
                 with open(os.path.join(output_dir, 'Nvsz_' + filename + '.txt'), 'ab') as f_handle: #open file in append binary mode
                     #loop over magnitude cuts in results dict
                     for key, value in results.items():
-                        self.save_quantities(dtype, value, f_handle, comment=' '.join(((comment or ''), key, value.get(info, ''), value.get(info2, ''))))
-                
+                        self.save_quantities(dtype, value, f_handle, comment=' '.join(((comment or ''),
+                                                                                       key, value.get(info, ''), value.get(info2, ''))))
+
                 if self.jackknife:
                     with open(os.path.join(output_dir, 'Nvsz_' + filename + '.txt'), 'a') as f_handle: #open file in append mode
                         f_handle.write('\nInverse Covariance Matrices:\n')
                         for key in results.keys():
-                            self.save_matrix(results[key]['inverse_cov_matrix'], f_handle, comment= key)
-            
+                            self.save_matrix(results[key]['inverse_cov_matrix'], f_handle, comment=key)
+
 
         if self.first_pass: #turn off validation data plot in summary for remaining catalogs
             self.first_pass = False
@@ -453,7 +454,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
 
         catalog = catalog[mask]
         validation = validation[mask]
-        cov = cov[mask][:,mask]
+        cov = cov[mask][:, mask]
 
         inverse_cov = np.diag(1.0 / np.diag(cov))
         if not use_diagonal_only:
