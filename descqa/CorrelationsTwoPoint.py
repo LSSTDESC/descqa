@@ -333,8 +333,7 @@ class CorrelationUtilities(BaseValidationTest):
 
         return jack_labels, randoms
 
-    @staticmethod
-    def get_jackknife_errors(N_jack, catalog_data, sample_conditions, r, xi, jack_labels, randoms,
+    def get_jackknife_errors(self, N_jack, catalog_data, sample_conditions, r, xi, jack_labels, randoms,
                              run_treecorr, diagonal_errors=True):
         """
         Computes jacknife errors 
@@ -366,7 +365,6 @@ class CorrelationUtilities(BaseValidationTest):
                                                            treecorr_rand_cat=randoms[str(nj)]['ran'], 
                                                            rr=randoms[str(nj)]['rr'],
                                                            output_file_name=None)
-            print(nj, Njack_array[nj])
 
         covariance = np.zeros((Nrbins, Nrbins))
         for i in range(Nrbins):
@@ -377,7 +375,6 @@ class CorrelationUtilities(BaseValidationTest):
                 for j in range(Nrbins):
                     for njack in Njack_array:
                         covariance[i][j] += (N_jack - 1.)/N_jack * (xi[i] - njack[i]) * (xi[j] - njack[j])
-            print('bin/cov', i, covariance[i][i])
 
         return covariance
 
