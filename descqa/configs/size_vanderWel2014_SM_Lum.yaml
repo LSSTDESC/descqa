@@ -2,6 +2,9 @@ subclass_name: SizeStellarMassLuminosity.SizeStellarMassLuminosity
 
 observation: onecomp
 
+possible_native_luminosities:
+  - otherLuminosities/totalLuminositiesStellar:V:rest
+
 possible_mag_fields:
   - Mag_true_g_sdss_z0
   - Mag_true_r_sdss_z0
@@ -16,11 +19,12 @@ possible_mag_fields:
   - Mag_true_g_lsst_z01
   - Mag_true_r_lsst_z01
 
-output_filename_template: 'size_lum_z_{}_{}.dat'
+output_filename_template: 'size_lum_{}_z_{}_{}.dat'
 label_template: '${} < z < {}$'
 
 data_filename: 'size/van_der_Wel_2014_ApJ_788_28_Table5_VLuminosity.txt'
-data_label: 'van der Wel+2014: comparing mean and scatter'
+data_label: 'van der Wel+2014'
+survey_label: 'HST-3D+CANDELS'
 
 z_bins:
   - {z_min: 0.0, z_max: 0.5}
@@ -30,8 +34,9 @@ z_bins:
   - {z_min: 2.0, z_max: 2.5}
   - {z_min: 2.5, z_max: 3.0}
 
-fig_xlabel: '$\log_{10}(L/L_{\odot}) [{\rm V-band}]$'
+fig_xlabel: '$\log_{10}(L/L_{\odot})$'
 fig_ylabel: '$\log_{10}(R_e) [{\rm kpc}]$'
+fig_ylim: [1e-1, 25]
 
 chisq_max: 1.2
 
