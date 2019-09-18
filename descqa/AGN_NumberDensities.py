@@ -41,7 +41,7 @@ class AGN_NumberDensity(BaseValidationTest):
     """
     AGN number desnsity test
     """
-    def __init__(self, band='g', rest_frame_band='i', Mag_lim=-22.5, z_lim=[0.4, 2.1],
+    def __init__(self, band='g', rest_frame_band='i', Mag_lim=-22.5, z_lim=(0.4, 2.1),
                  observation='SDSS', **kwargs):
         """
         parameters
@@ -83,13 +83,15 @@ class AGN_NumberDensity(BaseValidationTest):
                                      'mag_{}_agnonly_{}lsst',
                                     )
         self.possible_agn_mag_fields = [f.format(band, noagnext) for f in possible_agn_mag_fields] 
+        self.duty_cycle_quantity = 'duty_cycle_on'
         
         # attach some attributes to the test
         self.band = band
         self.rest_frame_band = rest_frame_band
         self.Mag_lim = Mag_lim
         self.z_lim = list(z_lim)
-        self.agn_flux_fraction = kwargs.get('agn_flux_fraction', 0.5)
+        self.duty_cycle_on = kwargs.get('duty_cycle_on', True)
+        self.agn_flux_fraction = kwargs.get('agn_flux_fraction', 0.)
         self.font_size = kwargs.get('font_size', 18)
         self.title_size = kwargs.get('title_size', 20)
         self.legend_size = kwargs.get('legend_size', 16)
@@ -158,6 +160,7 @@ class AGN_NumberDensity(BaseValidationTest):
         mag_field_key = catalog_instance.first_available(*self.possible_mag_fields)
         Mag_field_key = catalog_instance.first_available(*self.possible_Mag_fields)
         mag_agn_key = catalog_instance.first_available(*self.possible_agn_mag_fields)
+        duty_cycle_key = catalog_instance.first_available(self.duty_cycle_quantity)
         if not mag_field_key:
             return TestResult(skipped=True,
                               summary='Catalog is missing requested quantity: {}'.format(self.possible_mag_fields))
@@ -167,7 +170,10 @@ class AGN_NumberDensity(BaseValidationTest):
         if not mag_agn_key:
             return TestResult(skipped=True,
                               summary='Catalog is missing requested quantity: {}'.format(self.possible_agn_mag_fields))
-
+        if self.duty_cycle_on and not duty_cycle_key:
+            return TestResult(skipped=True,
+                              summary='Catalog is missing requested quantity: {}'.format(self.duty_cycle_quantity))
+        
         # check to see if catalog is a light cone
         # this is required since we must be able to calculate the angular area
         if not catalog_instance.lightcone:
@@ -184,9 +190,10 @@ class AGN_NumberDensity(BaseValidationTest):
 
         z_filters = ['redshift > {}'.format(self.z_lim[0]), 'redshift < {}'.format(self.z_lim[1])]
         Mag_filters = ['{} < {}'.format(Mag_field_key, self.Mag_lim)]
+        filters = z_filters + Mag_filters + [duty_cycle_key] if self.duty_cycle_on else z_filters + Mag_filters
         
         # retreive data from mock catalog
-        catalog_data = catalog_instance.get_quantities([mag_field_key, mag_agn_key], filters=z_filters+ Mag_filters)
+        catalog_data = catalog_instance.get_quantities([mag_field_key, mag_agn_key], filters=filters)
         d = GCRQuery(*((np.isfinite, col) for col in catalog_data)).filter(catalog_data)
         
         #select point-like sources according to specified agn_flux_fraction
@@ -200,15 +207,21 @@ class AGN_NumberDensity(BaseValidationTest):
         else:
             mags = d[mag_agn_key]
             fluxid = 'AGN'
-
+            
         #####################################################
         # caclulate the number densities of AGN
         #####################################################
 
         # get the total number of AGN passing cut and save for txt file
         N_tot = len(mags)
-        total_txt = '{}/{} with AGN magnitude fraction > {}'.format(N_tot, N_all, self.agn_flux_fraction)
-        
+        if self.agn_flux_fraction > 0.:
+            total_txt = '{}/{} with AGN magnitude fraction > {}'.format(N_tot, N_all, self.agn_flux_fraction)
+            fraction_txt = '$\\rm F_{{AGN}}/F_{{Total}} > {}$'.format(self.agn_flux_fraction)
+        else:
+            total_txt = '{} AGN'.format(N_tot)
+            fraction_txt = ''
+        fraction_txt = '$\\rm F_{{AGN}}/F_{{Total}} > {}$'.format(self.agn_flux_fraction)
+            
         # define the apparent magnitude bins for plotting purposes
         dmag = self.validation_data.get('bin_width', 0.25)
 
@@ -234,8 +247,9 @@ class AGN_NumberDensity(BaseValidationTest):
         results = {'catalog':{}, 'data':{}}
         colname = 'n'
 
-        legend_title = '; '.join(('$\\rm F_{{AGN}}/F_{{AGN+galaxy}} > {}$'.format(self.agn_flux_fraction),
-                                  'No AGN extinction' if self.no_agn_extinction else 'AGN extinction'))
+        legend_title = '; '.join(('Duty-cycle on' if self.duty_cycle_on else 'No duty-cycle',
+                                  fraction_txt,
+                                  'No AGN ext.' if self.no_agn_extinction else 'AGN ext.'))
 
         for ax, summary_ax, mag_pts, cat_data, ytit, (k, val_data) in zip(axs, self.summary_axs, 
                                                                           [mag_cen, mag_bins[1:]],
@@ -335,8 +349,9 @@ class AGN_NumberDensity(BaseValidationTest):
         """
         """
         ax.set_ylabel(ylabel, size=self.font_size)
-        ax.legend(loc='upper left', fancybox=True, framealpha=0.5, title=legend_title,
-                  fontsize=self.legend_size, numpoints=1)
+        leg = ax.legend(loc='upper left', fancybox=True, framealpha=0.5,
+                        fontsize=self.legend_size, numpoints=1)
+        leg.set_title(legend_title, prop={'size':'medium'})
         ax.set_yscale(scale)
         if xlabel:
             ax.set_xlabel(xlabel, size=self.font_size)
