@@ -38,21 +38,21 @@ plot_list:
 - frame: obs
   color: g-r
   filter: lsst
-  halo_mass_cut: 12.5
+  halo_mass_cut: 13.0
   red_sequence_cut: True
   central: true
   
 - frame: obs
   color: r-i
   filter: lsst
-  halo_mass_cut: 12.5
+  halo_mass_cut: 13.0
   red_sequence_cut: True
   central: true
   
 - frame: obs
   color: i-z
   filter: lsst
-  halo_mass_cut: 12.5
+  halo_mass_cut: 13.0
   red_sequence_cut: True
   central: true
 
