@@ -1,6 +1,7 @@
 from __future__ import unicode_literals, absolute_import, division
 import os
 import numpy as np
+import re
 from scipy.interpolate import interp1d
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
@@ -41,6 +42,14 @@ class ApparentMagFuncTest(BaseValidationTest):
         """
         # pylint: disable=super-init-not-called
 
+        self.truncate_cat_name = kwargs.get('truncate_cat_name', False)
+        self.title_in_legend = kwargs.get('title_in_legend', False)
+        self.skip_label_detail = kwargs.get('skip_label_detail', False)
+        self.font_size = kwargs.get('font_size', 16)
+        self.legend_size = kwargs.get('legend_size', 10)
+        self.x_lower_limit = kwargs.get('x_lower_limit', 15)
+        self.no_title = kwargs.get('no_title', False)
+        
         # catalog quantities needed
         possible_mag_fields = ('mag_{}_lsst',
                                'mag_true_{}_lsst',
@@ -97,7 +106,8 @@ class ApparentMagFuncTest(BaseValidationTest):
 
         validation_data = dict(zip(data_args['colnames'], data))
         validation_data['label'] = data_args['label']
-
+        if self.skip_label_detail:
+            validation_data['label'] = re.split('\(', validation_data['label'])[0]
         return validation_data
 
 
@@ -106,23 +116,27 @@ class ApparentMagFuncTest(BaseValidationTest):
         """
 
         #upper panel
-        upper_ax.legend(loc='upper left')
-        upper_ax.set_ylabel(r'$n(< {\rm mag}) ~[{\rm deg^{-2}}]$')
+        lgnd_title = ''
+        title = str(self.band_lim[0]) + ' < '+self.band + ' < ' + str(self.band_lim[1])
+        if self.title_in_legend:
+            lgnd_title = title
+        elif not self.no_title:
+            upper_ax.set_title(title)
+        upper_ax.legend(loc='upper left', title=lgnd_title, fontsize=self.legend_size)
+        upper_ax.set_ylabel(r'$n(< {\rm mag}) ~[{\rm deg^{-2}}]$', size=self.font_size)
         upper_ax.xaxis.set_visible(False)
         upper_ax.set_ylim([1000, 10**7])
         upper_ax.fill_between([self.band_lim[0], self.band_lim[1]], [0, 0], [10**9, 10**9], alpha=0.1, color='grey')
         upper_ax.set_yscale('log')
-        upper_ax.set_title(str(self.band_lim[0]) + ' < '+self.band + ' < ' + str(self.band_lim[1]))
-        upper_ax.set_xlim([15,30])
+        upper_ax.set_xlim([self.x_lower_limit, 30])
 
         #lower panel
         lower_ax.fill_between([self.band_lim[0], self.band_lim[1]], [-1, -1], [1, 1], alpha=0.1, color='grey')
-        lower_ax.set_xlabel(self.band + ' magnitude')
-        lower_ax.set_ylabel(r'$\Delta n/n$')
+        lower_ax.set_xlabel(self.band + ' magnitude', size=self.font_size)
+        lower_ax.set_ylabel(r'$\Delta n/n$', size=self.font_size)
         lower_ax.set_ylim([-1,1])
         lower_ax.set_yticks([-0.6,0.0,0.6])
-        lower_ax.set_xlim([15,30])
-
+        lower_ax.set_xlim([self.x_lower_limit, 30])
 
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
@@ -179,6 +193,8 @@ class ApparentMagFuncTest(BaseValidationTest):
         upper_ax, lower_ax = fig.add_axes(upper_rect), fig.add_axes(lower_rect)
 
         # plot on both this plot and any summary plots
+        if self.truncate_cat_name:
+            catalog_name = re.split('_', catalog_name)[0]
         upper_ax.plot(mag_bins, sampled_N, '-', label=catalog_name)
         self.summary_upper_ax.plot(mag_bins, sampled_N, '-', label=catalog_name)
 
