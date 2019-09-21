@@ -66,7 +66,7 @@ class AGN_NumberDensity(BaseValidationTest):
 
         self.no_agn_extinction = kwargs.get('no_agn_extinction', True)        
         # catalog quantities needed
-        noagnext = 'no_agn_extinction_' if self.no_agn_extinction else ''
+        noagnext = '' if self.no_agn_extinction else 'extincted_agn_'
         possible_mag_fields = ('mag_{}_{}sdss',
                                'mag_{}_{}lsst',
                               )
