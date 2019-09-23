@@ -34,16 +34,6 @@ color_transformation['sdss2cfht']['g'] = 'g - 0.153 * (g - r)'
 color_transformation['sdss2cfht']['r'] = 'r - 0.024 * (g - r)'
 color_transformation['sdss2cfht']['i'] = 'i - 0.085 * (r - i)'
 color_transformation['sdss2cfht']['z'] = 'z + 0.074 * (i - z)'
-color_transformation['lsst2cfht']['u'] = 'u'
-color_transformation['lsst2cfht']['g'] = 'g'
-color_transformation['lsst2cfht']['r'] = 'r'
-color_transformation['lsst2cfht']['i'] = 'i'
-color_transformation['lsst2cfht']['z'] = 'z'
-color_transformation['lsst2sdss']['u'] = 'u'
-color_transformation['lsst2sdss']['g'] = 'g'
-color_transformation['lsst2sdss']['r'] = 'r'
-color_transformation['lsst2sdss']['i'] = 'i'
-color_transformation['lsst2sdss']['z'] = 'z'
 
 class ColorDistribution(BaseValidationTest):
     """
@@ -81,7 +71,7 @@ class ColorDistribution(BaseValidationTest):
         self.skip_statistic = kwargs.get('skip_statistic', False)
         self.font_size = kwargs.get('font_size', 16)
         self.legend_size = kwargs.get('legend_size', 10)
-        
+
         # bins of color distribution
         self.bins = np.linspace(-1, 4, 2000)
         self.binsize = self.bins[1] - self.bins[0]
@@ -162,8 +152,8 @@ class ColorDistribution(BaseValidationTest):
                        '{} < {}'.format(labels['redshift'], self.zhi)]
         else:
             filters = None
-            self.redshift = catalog_instance.redshift
-    
+            redshift = catalog_instance.redshift
+
         data = catalog_instance.get_quantities(list(labels.values()), filters)
         data = {k: data[v] for k, v in labels.items()}
 
@@ -220,7 +210,7 @@ class ColorDistribution(BaseValidationTest):
                     self.obs_color_dist[color]['binctr'], self.obs_color_dist[color]['cdf'])
 
         redshift_title = '{:.2f} < z < {:.2f}'.format(self.zlo,
-                                                      self.zhi) if self.lightcone else 'z = {:.2f}'.format(self.redshift) 
+                                                      self.zhi) if self.lightcone else 'z = {:.2f}'.format(redshift)
 
         self.make_plots(mock_color_dist, color_shift, cvm_omega, cvm_omega_shift, catalog_name,
                         output_dir, filter_title, redshift_title)
