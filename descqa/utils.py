@@ -39,7 +39,29 @@ def get_sky_volume(sky_area, zlo, zhi, cosmology):
     sky_area_rad = np.deg2rad(np.deg2rad(sky_area))
     return (dhi**3.0 - dlo**3.0) * sky_area_rad / 3.0
 
+def get_sky_area(catalog_instance, nside=1024):
+    """
+    Parameters
+    ----------
+    catalog_instance: GCRCatalogs intance
+    nside: nside parameter for healpy
+    Returns
+    -------
+    sky_area : float
+        in units of deg**2.0
+    """
+    possible_area_qs = (('ra_true', 'ra'), ('dec_true', 'dec'))
+    area_qs = [catalog_instance.first_available(*a) for a in possible_area_qs]
 
+    pixels = set()
+    for d in catalog_instance.get_quantities(area_qs, return_iterator=True):
+        pixels.update(hp.ang2pix(nside, d[area_qs[0]], d[area_qs[1]], lonlat=True))
+            
+    frac = len(pixels) / hp.nside2npix(nside)
+    sky_area = frac * np.rad2deg(np.rad2deg(4.0*np.pi))
+
+    return sky_area
+    
 def get_opt_binpoints(N, sumM, sumM2, bins):
     """
     compute optimal values at which to plot bin counts
