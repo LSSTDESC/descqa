@@ -50,7 +50,6 @@ class ApparentMagFuncTest(BaseValidationTest):
         self.legend_size = kwargs.get('legend_size', 10)
         self.x_lower_limit = kwargs.get('x_lower_limit', 15)
         self.print_title = kwargs.get('print_title', False)
-        #self.min_mag = kwargs.get('min_mag', band_lim[0] - 1.)
         self.min_mag = kwargs.get('min_mag', 19.)
 
         # catalog quantities needed
