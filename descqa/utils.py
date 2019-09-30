@@ -56,12 +56,13 @@ def get_sky_area(catalog_instance, nside=1024):
     pixels = set()
     for d in catalog_instance.get_quantities(area_qs, return_iterator=True):
         pixels.update(hp.ang2pix(nside, d[area_qs[0]], d[area_qs[1]], lonlat=True))
-            
+
     frac = len(pixels) / hp.nside2npix(nside)
     sky_area = frac * np.rad2deg(np.rad2deg(4.0*np.pi))
 
     return sky_area
-    
+
+
 def get_opt_binpoints(N, sumM, sumM2, bins):
     """
     compute optimal values at which to plot bin counts

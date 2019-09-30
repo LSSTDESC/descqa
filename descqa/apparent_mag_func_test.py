@@ -52,7 +52,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         self.print_title = kwargs.get('print_title', False)
         #self.min_mag = kwargs.get('min_mag', band_lim[0] - 1.)
         self.min_mag = kwargs.get('min_mag', 17.)
-        
+
         # catalog quantities needed
         possible_mag_fields = ('mag_{}_lsst',
                                'mag_true_{}_lsst',
@@ -137,7 +137,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         lower_ax.fill_between([self.band_lim[0], self.band_lim[1]], [-1, -1], [1, 1], alpha=0.1, color='grey')
         lower_ax.set_xlabel(self.band + ' magnitude', size=self.font_size)
         lower_ax.set_ylabel(r'$\Delta n/n$', size=self.font_size)
-        lower_ax.set_ylim([-1,1])
+        lower_ax.set_ylim([-1, 1])
         lower_ax.set_yticks([-0.6, 0.0, 0.6])
         lower_ax.set_xlim([self.x_lower_limit, 30])
 
@@ -158,16 +158,16 @@ class ApparentMagFuncTest(BaseValidationTest):
         except AttributeError:
             if not catalog_instance.has_quantity('ra') or not catalog_instance.has_quantity('dec'):
                 return TestResult(skipped=True, summary="'ra' and/or 'dec' not available to compute sky area")
-            
+
         # check to see the angular area if an attribute of the catalog
         try:
             sky_area = catalog_instance.sky_area
         except AttributeError:
             try:
                 sky_area = get_sky_area(catalog_instance)
-            except:
-                return TestResult(skipped=True, summary="'sky_area' cannot be determined from catalog")
-        
+            except Exception as e:
+                return TestResult(skipped=True, summary="'get_sky_area' raised exception {}".format(e.message))
+
         sky_area_label = ' (Sky Area = {:.1f} $\\rm deg^2$)'.format(sky_area)
 
         #####################################################
@@ -176,12 +176,12 @@ class ApparentMagFuncTest(BaseValidationTest):
 
         # filter on extended sources if quantity is available in catalog (eg. in object catalog)
         filters = ['extendedness == 1'] if catalog_instance.has_quantity('extendedness') else None
-        
+
         # retreive data from mock catalog
         d = catalog_instance.get_quantities([mag_field_key], filters=filters)
         m = d[mag_field_key]
         m = np.sort(m)  # put into order--bright to faint
-        
+
         # get the total number of galaxies in catalog
         N_tot = len(m)
         N = np.cumsum(np.ones(N_tot))/sky_area
