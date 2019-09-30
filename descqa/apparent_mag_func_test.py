@@ -163,10 +163,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         try:
             sky_area = catalog_instance.sky_area
         except AttributeError:
-            try:
-                sky_area = get_sky_area(catalog_instance)
-            except Exception as e:
-                return TestResult(skipped=True, summary="'get_sky_area' raised exception {}".format(e.message))
+            sky_area = get_sky_area(catalog_instance) # compute area from ra and dec
 
         sky_area_label = ' (Sky Area = {:.1f} $\\rm deg^2$)'.format(sky_area)
 
