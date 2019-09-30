@@ -151,17 +151,15 @@ class ApparentMagFuncTest(BaseValidationTest):
 
         # check to see if catalog is a light cone
         # this is required since we must be able to calculate the angular area
-        try:
-            if not catalog_instance.lightcone:
-                return TestResult(skipped=True, summary="Catalog is not a light cone.")
-        except AttributeError:
-            if not catalog_instance.has_quantity('ra') or not catalog_instance.has_quantity('dec'):
-                return TestResult(skipped=True, summary="'ra' and/or 'dec' not available to compute sky area")
+        # if attribute `lightcone` does not exist, allow the catalog to proceed
+        if not getattr(catalog_instance, 'lightcone', True):
+            return TestResult(skipped=True, summary="Catalog is not a light cone.")
 
-        # check to see the angular area if an attribute of the catalog
-        try:
-            sky_area = catalog_instance.sky_area
-        except AttributeError:
+        # obtain or calculate sky area
+        sky_area = getattr(catalog_instance, 'sky_area', None)
+        if sky_area is None:
+            if not catalog_instance.has_quantities(['ra', 'dec']):
+                return TestResult(skipped=True, summary="'ra' and/or 'dec' not available to compute sky area")
             sky_area = get_sky_area(catalog_instance) # compute area from ra and dec
 
         sky_area_label = ' (Sky Area = {:.1f} $\\rm deg^2$)'.format(sky_area)
