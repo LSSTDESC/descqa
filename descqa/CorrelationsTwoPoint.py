@@ -139,6 +139,10 @@ class CorrelationUtilities(BaseValidationTest):
                     col_value_maxs[col_key].append(condition['max'])
 
         filters = [(np.isfinite, c) for c in colnames.values()]
+
+        if catalog_instance.has_quantity('extendedness'):
+            filters.append('extendedness == 1')
+
         for col_key, col_name in colnames.items():
             if col_key in col_value_mins and col_value_mins[col_key]:
                 filters.append('{} >= {}'.format(col_name, min(col_value_mins[col_key])))
@@ -481,7 +485,9 @@ class CorrelationsAngularTwoPoint(CorrelationUtilities):
             catalog_name = re.split('_', catalog_name)[0]
 
         rand_cat, rr = self.generate_processed_randoms(catalog_data) #assumes ra and dec exist
-
+        with open(os.path.join(output_dir, 'galaxy_count.dat'), 'a') as f:
+            f.write('Random (= catalog) Area = {:.1f} sq. deg.\n'.format(self.check_footprint(catalog_data)))
+            
         if self.jackknife:                     #evaluate randoms for jackknife footprints
             jack_labels, randoms = self.get_jackknife_randoms(self.N_jack, catalog_data,
                                                               self.generate_processed_randoms)
@@ -492,7 +498,8 @@ class CorrelationsAngularTwoPoint(CorrelationUtilities):
                 catalog_data, sample_conditions)
 
             with open(os.path.join(output_dir, 'galaxy_count.dat'), 'a') as f:
-                f.write('{} {}\n'.format(sample_name, len(tmp_catalog_data['ra'])))
+                f.write('{} {} {:.1f} sq. deg.\n'.format(sample_name, len(tmp_catalog_data['ra']),
+                                                          self.check_footprint(tmp_catalog_data))) #print area
 
             if not len(tmp_catalog_data['ra']):
                 continue

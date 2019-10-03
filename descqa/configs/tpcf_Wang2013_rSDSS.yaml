@@ -16,6 +16,7 @@ requested_columns:
     - mag_true_r_sdss
     - mag_true_r_des
     - mag_true_r_lsst
+    - mag_r_cModel
 
 # Definition of samples and cuts to apply.  The names of these columns must
 # match the simple column name definitions above.
