@@ -61,7 +61,7 @@ class ApparentMagFuncTest(BaseValidationTest):
                                'mag_true_{}_des',
                                'mag_{}_hsc',
                                'mag_true_{}_hsc',
-                               'mag_{}')
+                               'mag_{}_cModel')
         self.possible_mag_fields = [f.format(band) for f in possible_mag_fields]
 
         # attach some attributes to the test
