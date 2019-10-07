@@ -479,7 +479,9 @@ class CorrelationsAngularTwoPoint(CorrelationUtilities):
                                               requested_columns=self.requested_columns,
                                               test_samples=self.test_samples)
         if not catalog_data:
-            return TestResult(skipped=True, summary='Missing requested quantities')
+            cols = [i for c in self.requested_columns.values() for i in c]
+            return TestResult(skipped=True,
+                              summary='Missing requested quantities {}'.format(', '.join(cols)))
 
         if self.truncate_cat_name:
             catalog_name = re.split('_', catalog_name)[0]
