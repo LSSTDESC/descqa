@@ -107,6 +107,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
 
         #catalog quantities
         self.truncate_cat_name = kwargs.get('truncate_cat_name', False)
+        self.shorten_cat_name = kwargs.get('shorten_cat_name', True)
         self.title_in_legend = kwargs.get('title_in_legend', False)
         self.legend_location = kwargs.get('legend_location', 'upper left')
         self.font_size = kwargs.get('font_size', 16)
@@ -119,16 +120,16 @@ class NumberDensityVersusRedshift(BaseValidationTest):
                                    'Mag_true_{}_des_z0',
                                   )
         else:
-            possible_mag_fields = ('mag_{}_lsst',
+            possible_mag_fields = ('mag_{}_cModel',
+                                   'mag_{}_lsst',
                                    'mag_{}_sdss',
                                    'mag_{}_des',
                                    'mag_true_{}_lsst',
                                    'mag_true_{}_sdss',
                                    'mag_true_{}_des',
-                                   'mag_{}_cModel',
                                   )
         self.possible_mag_fields = [f.format(band) for f in possible_mag_fields]
-        self.possible_redshifts = ['redshift_true', 'redshift_true_galaxy']
+        self.possible_redshifts = ['redshift_true_galaxy', 'redshift_true']
         self.band = band
 
         #z-bounds and binning
@@ -251,6 +252,12 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         #setup plots
         if self.truncate_cat_name:
             catalog_name = re.split('_', catalog_name)[0]
+        elif self.shorten_cat_name: #remove some typical qualifiers
+            for q in ['small', 'image', 'object', 'matched', 'addon']:
+                catalog_name = re.sub(q, '', catalog_name)
+            catalog_name = re.sub('_+', '_', catalog_name)
+            catalog_name = re.sub('_$', '', catalog_name)
+                                                                                    
         fig, ax = plt.subplots(self.nrows, self.ncolumns, figsize=(self.figx_p, self.figy_p), sharex='col')
         catalog_color = next(self.colors)
         catalog_marker = next(self.markers)
@@ -266,7 +273,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
             # filter catalog data further for matched object catalogs
             if np.ma.isMaskedArray(catalog_data[self.zlabel]):
                 galmask = np.ma.getmask(catalog_data[self.zlabel])
-                catalog_data = {k:v[galmask] for (k,v) in catalog_data.items()}
+                catalog_data = {k: v[galmask] for k, v in catalog_data.items()}
 
             for n, (cut_lo, cut_hi, N, sumz) in enumerate(zip_longest(
                     self.mag_lo,
