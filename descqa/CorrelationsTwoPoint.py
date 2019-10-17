@@ -332,7 +332,6 @@ class CorrelationUtilities(BaseValidationTest):
         for nj in range(N_jack):
             catalog_data_jk = dict(zip(catalog_data.keys(), [v[(jack_labels != nj)] for v in catalog_data.values()]))
             rand_cat, rr = generate_randoms(catalog_data_jk) #get randoms for this footprint
-            #print('nj = {}, area = {:.2f}'.format(nj, self.check_footprint(catalog_data_jk))) #check footprint
             randoms[str(nj)] = {'ran': rand_cat, 'rr':rr}
 
         return jack_labels, randoms
@@ -488,8 +487,10 @@ class CorrelationsAngularTwoPoint(CorrelationUtilities):
 
         rand_cat, rr = self.generate_processed_randoms(catalog_data) #assumes ra and dec exist
         with open(os.path.join(output_dir, 'galaxy_count.dat'), 'a') as f:
-            f.write('Random (= catalog) Area = {:.1f} sq. deg.\n'.format(self.check_footprint(catalog_data)))
-            
+            f.write('Total (= catalog) Area = {:.1f} sq. deg.\n'.format(self.check_footprint(catalog_data)))
+            f.write('NOTE: 1) assuming catalog is of equal depth over the full area\n')
+            f.write('      2) assuming sample contains enough galaxies to measure area\n')
+
         if self.jackknife:                     #evaluate randoms for jackknife footprints
             jack_labels, randoms = self.get_jackknife_randoms(self.N_jack, catalog_data,
                                                               self.generate_processed_randoms)
@@ -498,10 +499,6 @@ class CorrelationsAngularTwoPoint(CorrelationUtilities):
         for sample_name, sample_conditions in self.test_samples.items():
             tmp_catalog_data = self.create_test_sample(
                 catalog_data, sample_conditions)
-
-            with open(os.path.join(output_dir, 'galaxy_count.dat'), 'a') as f:
-                f.write('{} {} {:.1f} sq. deg.\n'.format(sample_name, len(tmp_catalog_data['ra']),
-                                                          self.check_footprint(tmp_catalog_data))) #print area
 
             if not len(tmp_catalog_data['ra']):
                 continue
