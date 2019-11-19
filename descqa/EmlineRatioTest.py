@@ -160,7 +160,7 @@ class EmlineRatioTest(BaseValidationTest):
         # Begin Test and Plotting
         #=========================================
 
-        fig = plt.figure(figsize = (16,8))
+        fig = plt.figure(figsize = (16, 8))
         sp1 = fig.add_subplot(121)
         sp2 = fig.add_subplot(122)
 
@@ -187,11 +187,11 @@ class EmlineRatioTest(BaseValidationTest):
         dist1 = np.array(dist1)
         dist2 = np.array(dist2)
 
-        sp1.hist2d(*dist1, bins=50, range=[[-1.2, 1.2],[-1.25, 1]], norm=LogNorm(), cmap='plasma_r')
-        sp2.hist2d(*dist2, bins=50, range=[[-1.2, 1.2],[-1.25, 1]], norm=LogNorm(), cmap='plasma_r')
+        sp1.hist2d(*dist1, bins=50, range=[[-1.2, 1.2], [-1.25, 1]], norm=LogNorm(), cmap='plasma_r')
+        sp2.hist2d(*dist2, bins=50, range=[[-1.2, 1.2], [-1.25, 1]], norm=LogNorm(), cmap='plasma_r')
 
         sdss_draw_inds = np.random.choice(np.arange(len(dist1[0])), size=self.sdss_drawnum)
-        dist1 = dist1[:,sdss_draw_inds]
+        dist1 = dist1[:, sdss_draw_inds]
 
         medianshift = np.nanmedian(dist1, axis=1).reshape(2, 1) - np.nanmedian(dist2, axis=1).reshape(2, 1)
 
@@ -233,42 +233,38 @@ class EmlineRatioTest(BaseValidationTest):
 def fhCounts(x,edge):
     # computes local CDF at a given point considering all possible axis orderings
     
-    templist = [np.sum((x[0,0:] >= edge[0]) & (x[1,0:] >= edge[1])),
-                np.sum((x[0,0:] <= edge[0]) & (x[1,0:] >= edge[1])), 
-                np.sum((x[0,0:] <= edge[0]) & (x[1,0:] <= edge[1])),
-                np.sum((x[0,0:] >= edge[0]) & (x[1,0:] <= edge[1]))]
+    templist = [np.sum((x[0, 0:] >= edge[0]) & (x[1, 0:] >= edge[1])),
+                np.sum((x[0, 0:] <= edge[0]) & (x[1, 0:] >= edge[1])),
+                np.sum((x[0, 0:] <= edge[0]) & (x[1, 0:] <= edge[1])),
+                np.sum((x[0, 0:] >= edge[0]) & (x[1, 0:] <= edge[1]))]
     return templist
 
 def kstest_2d(dist1, dist2, alpha=0.05):
-    
+
     num1 = dist1.shape[1]
     num2 = dist2.shape[1]
-    
+
     KSstat = -np.inf
-    
+
     for iX in (np.arange(0, num1+num2)):
-        
+
         if iX < num1:
             edge = dist1[0:, iX]
         else:
             edge = dist2[0:, iX-num1]
-        
-#         vfCDF1 = np.sum(fhCounts(dist1, edge)) / num1
-#         vfCDF2 = np.sum(fhCounts(dist2, edge)) / num2
 
         vfCDF1 = np.array(fhCounts(dist1, edge)) / num1
         vfCDF2 = np.array(fhCounts(dist2, edge)) / num2
-        
+
         vfThisKSTS = np.abs(vfCDF1 - vfCDF2)
         fKSTS = np.amax(vfThisKSTS)
-        
+
         if (fKSTS > KSstat):
             KSstat = fKSTS
-            #print(KSstat, vfCDF1, vfCDF2)
 
     # Peacock Z calculation and P estimation
 
-    n =  num1 * num2 /(num1 + num2)
+    n = num1 * num2 /(num1 + num2)
     Zn = np.sqrt(n) * KSstat
     Zinf = Zn / (1 - 0.53 * n**(-0.9))
     pValue = 2 *np.exp(-2 * (Zinf - 0.5)**2)
@@ -276,9 +272,9 @@ def kstest_2d(dist1, dist2, alpha=0.05):
     # Clip invalid values for P
     if pValue > 1.0:
         pValue = 1.0
-        
+
 #     H = (pValue <= alpha)
-    
+
     return pValue, KSstat
 
 
@@ -300,7 +296,7 @@ class sdssdist:
         data_x = []
         data_y = []
         for thischoice, thiscount in zip(component_choices, counts):
-            cov = [[self.sigma_x[thischoice], self.cov[thischoice]],[self.cov[thischoice], self.sigma_y[thischoice]]]
+            cov = [[self.sigma_x[thischoice], self.cov[thischoice]], [self.cov[thischoice], self.sigma_y[thischoice]]]
             tempx, tempy = np.random.multivariate_normal([self.mu_x[thischoice], self.mu_y[thischoice]], cov, thiscount).T
             data_x = data_x + list(tempx)
             data_y = data_y + list(tempy)
@@ -326,7 +322,7 @@ class sdsscat:
                    'h_alpha_eqw_err', 'oiii_4959_eqw_err', 'oiii_5007_eqw_err', 'oii_3726_eqw_err', 'oii_3729_eqw_err', 'h_beta_eqw_err']
         newnames = ['z', 'z_err', 'oii_uncorr', 'oii_err_uncorr', 'oiii_uncorr', 'oiii_err_uncorr', 'ha_uncorr', 'ha_err_uncorr', 'hb_uncorr', 'hb_err_uncorr',
                     'logmstar', 'logmstar_lo', 'logmstar_hi', 'sfr', 'sfr_lo', 'sfr_hi', 'o_abundance', 'ha_ew_uncorr', 'oiii4959_ew_uncorr', 'oiii5007_ew_uncorr', 'oii3726_ew_uncorr', 'oii3729_ew_uncorr', 'hb_ew_uncorr',
-                    'ha_ew_err','oiii4959_ew_err_uncorr', 'oiii5007_ew_err_uncorr', 'oii3726_ew_err_uncorr', 'oii3729_ew_err_uncorr', 'hb_ew_err_uncorr']
+                    'ha_ew_err', 'oiii4959_ew_err_uncorr', 'oiii5007_ew_err_uncorr', 'oii3726_ew_err_uncorr', 'oii3729_ew_err_uncorr', 'hb_ew_err_uncorr']
 
         for col, name in zip(usecols, newnames):
             setattr(self, name, data[col].values)
@@ -346,7 +342,7 @@ class sdsscat:
         # A_hb = self.Calzetti2000(4863.) * self.EBV / 0.44
 
         for x, colname in enumerate(newnames):
-        
+
             if 'ha_' in colname:
                 wave = 6563.
             elif 'hb_' in colname:
@@ -363,16 +359,16 @@ class sdsscat:
                 wave = 4969.
             elif 'oiii5007_' in colname:
                 wave = 5007.
-            
+
             if 'uncorr' in colname and 'ew' not in colname:
 
                 A_line = self.Calzetti2000(wave) * self.EBV / 0.44
 
                 newflux = getattr(self, colname) * np.power(10, 0.4*A_line)
                 setattr(self, colname[:-7], newflux)
-            
+
             elif 'uncorr' in colname and 'ew' in colname:
-                
+
                 multiplier = np.power(10, 0.4 * self.Calzetti2000(wave) * self.EBV * ((1./.44) - 1.))
                 setattr(self, colname[:-7], getattr(self, colname)*multiplier)
 
@@ -388,7 +384,7 @@ class sdsscat:
         self.oii_ew = self.oii3726_ew + self.oii3729_ew
         self.oiii_ew_err = np.sqrt(self.oiii4959_ew_err**2. + self.oiii5007_ew_err**2.)
         self.oii_ew_err = np.sqrt(self.oii3726_ew_err**2. + self.oii3729_ew_err**2.)
-    
+
 
 
 
