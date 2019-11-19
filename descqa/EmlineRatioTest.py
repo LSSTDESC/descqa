@@ -1,3 +1,6 @@
+# pylint: disable=E1101,E0611
+# E1101 throws errors on my setattr() stuff and astropy.units.W and astropy.units.Hz
+# E0611 throws an error when importing astropy.cosmology.Planck15
 from __future__ import unicode_literals, absolute_import, division
 import os
 import numpy as np
