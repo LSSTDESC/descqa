@@ -29,7 +29,7 @@ class EmlineRatioTest(BaseValidationTest):
         self.emline_ratio2 = kwargs.get('emline_ratio2', 'hb/oiii') # Currently does not support other emission line ratios
         sdss_file = kwargs.get('sdss_file', 'sdss_emission_lines/sdss_query_snr10_ew.csv')
         # self.sdsscat = sdsscat(self.data_dir + '/' + sdss_file)
-        self.sdsscat = sdsscat('data/' + sdss_file)
+        self.sdsscat = sdsscat('descqa/data/' + sdss_file)
 
         self.sdss_drawnum = kwargs.get('sdss_drawnum', 30000)
         self.sim_drawnum = kwargs.get('sim_drawnum', 30000)
@@ -140,7 +140,7 @@ class EmlineRatioTest(BaseValidationTest):
         #=========================================
 
 
-        thisfig, pvalue, KSstat, medianshift = self.makeplot()
+        thisfig, pvalue, KSstat, medianshift = self.makeplot(catalog_name)
         self.figlist.append(thisfig)
         self.runcat_name.append(catalog_name)
 
@@ -155,7 +155,7 @@ class EmlineRatioTest(BaseValidationTest):
             return TestResult(pvalue, passed = False, summary = 'P-value must exceed 1e-4 and total median shift must be less than or equal to 0.25 dex.')
 
 
-    def makeplot(self):
+    def makeplot(self, catalog_name):
 
         #=========================================
         # Begin Test and Plotting
@@ -168,7 +168,7 @@ class EmlineRatioTest(BaseValidationTest):
         dist1 = [[],[]]
         dist2 = [[],[]]
 
-        for subplot, cat, dist in [[sp1, self, dist1],[sp2, self.sdsscat, dist2]]:
+        for subplot, cat, dist in [[sp2, self.sdsscat, dist1],[sp1, self, dist2]]:
 
             emline1 = getattr(cat, self.emline_ratio1.split('/')[0])
             emline2 = getattr(cat, self.emline_ratio1.split('/')[1])
@@ -191,8 +191,8 @@ class EmlineRatioTest(BaseValidationTest):
         sp1.hist2d(*dist1, bins = 50, range = [[-1.2, 1.2],[-1.25, 1]], norm = LogNorm(), cmap = 'plasma_r')
         sp2.hist2d(*dist2, bins = 50, range = [[-1.2, 1.2],[-1.25, 1]], norm = LogNorm(), cmap = 'plasma_r')
 
-        sdss_draw_inds = np.random.choice(np.arange(len(dist2[0])), size = self.sdss_drawnum)
-        dist2 = dist2[:,sdss_draw_inds]
+        sdss_draw_inds = np.random.choice(np.arange(len(dist1[0])), size = self.sdss_drawnum)
+        dist1 = dist1[:,sdss_draw_inds]
 
         medianshift = np.nanmedian(dist1, axis = 1).reshape(2,1) - np.nanmedian(dist2, axis = 1).reshape(2,1)
 
@@ -201,9 +201,9 @@ class EmlineRatioTest(BaseValidationTest):
 
         pvalue, KSstat = kstest_2d(dist1, medianmatch_dist2)
 
-        sp1.set_xlabel('log(' + self.emline_ratio1 + ')')
-        sp1.set_ylabel('log(' + self.emline_ratio2 + ')')
-        sp2.set_xlabel('log(' + self.emline_ratio1 + ')')
+        sp1.set_xlabel('log(' + self.emline_ratio1 + ')', fontsize = 20)
+        sp1.set_ylabel('log(' + self.emline_ratio2 + ')', fontsize = 20)
+        sp2.set_xlabel('log(' + self.emline_ratio1 + ')', fontsize = 20)
         sp1.set_xlim(-1.2, 1.2)
         sp1.set_ylim(-1.25, 1)
         sp2.set_xlim(-1.2, 1.2)
@@ -214,6 +214,9 @@ class EmlineRatioTest(BaseValidationTest):
         plt.subplots_adjust(wspace = 0.0)
 
         sp1.text(0.02, 0.98, 'log p = %.2f\nD = %.2f\nMed Shift = [%.2f, %.2f]' % (np.log10(pvalue), KSstat, *medianshift.T[0]), fontsize = 14, transform = sp1.transAxes, ha = 'left', va = 'top')
+
+        sp1.text(0.98, 0.02, 'SDSS', fontsize = 24, ha = 'right', va = 'bottom', transform = sp1.transAxes)
+        sp2.text(0.98, 0.02, catalog_name, fontsize = 24, ha = 'right', va = 'bottom', transform = sp2.transAxes)
 
         return fig, pvalue, KSstat, medianshift
 
