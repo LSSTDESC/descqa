@@ -1,6 +1,8 @@
-# pylint: disable=E1101,E0611
+# pylint: disable=E1101,E0611,W0231,W0201
 # E1101 throws errors on my setattr() stuff and astropy.units.W and astropy.units.Hz
 # E0611 throws an error when importing astropy.cosmology.Planck15
+# W0231 gives a warning because __init__() is not called for BaseValidationTest
+# W0201 gives a warning when defining attributes outside of __init__()
 from __future__ import unicode_literals, absolute_import, division
 import os
 import numpy as np
@@ -132,6 +134,7 @@ class EmlineRatioTest(BaseValidationTest):
         self.oii3729 = OII3729_small
         self.sii6716 = SII6716_small
         self.sii6731 = SII6731_small
+        self.siitot = SIItot_small
 
 
         #=========================================
@@ -139,7 +142,7 @@ class EmlineRatioTest(BaseValidationTest):
         #=========================================
 
 
-        thisfig, pvalue, KSstat, medianshift = self.makeplot(catalog_name)
+        thisfig, pvalue, medianshift = self.makeplot(catalog_name)
         self.figlist.append(thisfig)
         self.runcat_name.append(catalog_name)
 
@@ -167,7 +170,7 @@ class EmlineRatioTest(BaseValidationTest):
         dist1 = [[], []]
         dist2 = [[], []]
 
-        for subplot, cat, dist in [[sp2, self.sdsscat, dist1], [sp1, self, dist2]]:
+        for cat, dist in [[self.sdsscat, dist1], [self, dist2]]:
 
             emline1 = getattr(cat, self.emline_ratio1.split('/')[0])
             emline2 = getattr(cat, self.emline_ratio1.split('/')[1])
@@ -217,7 +220,7 @@ class EmlineRatioTest(BaseValidationTest):
         sp1.text(0.98, 0.02, 'SDSS', fontsize=24, ha='right', va='bottom', transform=sp1.transAxes)
         sp2.text(0.98, 0.02, catalog_name, fontsize=24, ha='right', va='bottom', transform=sp2.transAxes)
 
-        return fig, pvalue, KSstat, medianshift
+        return fig, pvalue, medianshift
 
 
 
@@ -239,7 +242,7 @@ def fhCounts(x,edge):
                 np.sum((x[0, 0:] >= edge[0]) & (x[1, 0:] <= edge[1]))]
     return templist
 
-def kstest_2d(dist1, dist2, alpha=0.05):
+def kstest_2d(dist1, dist2):
 
     num1 = dist1.shape[1]
     num2 = dist2.shape[1]
@@ -276,33 +279,6 @@ def kstest_2d(dist1, dist2, alpha=0.05):
 #     H = (pValue <= alpha)
 
     return pValue, KSstat
-
-
-
-
-
-
-
-class sdssdist:
-
-    def __init__(self, component_file='data/oii-oiii_hb-oiii_components.dat'):
-
-        self.weights, self.mu_x, self.mu_y, self.sigma_x, self.sigma_y, self.cov = np.loadtxt('components.dat', unpack=True)
-            
-
-
-    def draw_components(self, size):
-        component_choices, counts = np.unique(np.random.choice(np.arange(len(self.weights)), p=self.weights, size=size), return_counts=True)
-        data_x = []
-        data_y = []
-        for thischoice, thiscount in zip(component_choices, counts):
-            cov = [[self.sigma_x[thischoice], self.cov[thischoice]], [self.cov[thischoice], self.sigma_y[thischoice]]]
-            tempx, tempy = np.random.multivariate_normal([self.mu_x[thischoice], self.mu_y[thischoice]], cov, thiscount).T
-            data_x = data_x + list(tempx)
-            data_y = data_y + list(tempy)
-
-        return np.array([data_x, data_y])
-
 
 
 
