@@ -84,7 +84,7 @@ class EmlineRatioTest(BaseValidationTest):
 
         self.sdss_drawnum = kwargs.get('sdss_drawnum', 30000)
         self.sim_drawnum = kwargs.get('sim_drawnum', 30000)
-        
+
         self.figlist = []
         self.runcat_name = []
 
@@ -139,7 +139,7 @@ class EmlineRatioTest(BaseValidationTest):
                                                 'mag_r_lsst',
                                                 'mag_i_lsst',
                                                 'mag_z_lsst',
-                                                'mag_y_lsst'], filters=(uband_maglim | gband_maglim | rband_maglim | iband_maglim | zband_maglim | yband_maglim)) 
+                                                'mag_y_lsst'], filters=(uband_maglim | gband_maglim | rband_maglim | iband_maglim | zband_maglim | yband_maglim))
         sz = data['redshift']
         galaxyID = data['galaxyID']
         Halpha = data['emissionLines/totalLineLuminosity:balmerAlpha6563']* 4.4659e13*u.W/u.Hz
@@ -155,7 +155,7 @@ class EmlineRatioTest(BaseValidationTest):
         OIIItot = OIII5007 + OIII4959
         OIItot = OII3726 + OII3729
 
-        # Reduce the sample size by drawing self.sim_drawnum galaxies 
+        # Reduce the sample size by drawing self.sim_drawnum galaxies
 
         indices = np.random.choice(np.arange(len(Halpha)), size=self.sim_drawnum, replace=False)
 
@@ -165,7 +165,7 @@ class EmlineRatioTest(BaseValidationTest):
         lumdist_small = cosmo.luminosity_distance(sz_small)
 
         property_list = [Halpha, Hbeta, NII6584, OIII5007, OIII4959, OII3726, OII3729,
-                        SII6716, SII6731, SIItot, OIIItot, OIItot]
+                         SII6716, SII6731, SIItot, OIIItot, OIItot]
 
         # This loop needs to be formatted in this way (rather than using 'for thisproperty in property_list')
         # so that the changes persist outside of the loop
@@ -223,7 +223,7 @@ class EmlineRatioTest(BaseValidationTest):
         # Begin Test and Plotting
         #=========================================
 
-        fig = plt.figure(figsize = (16, 8))
+        fig = plt.figure(figsize=(16, 8))
         sp1 = fig.add_subplot(121)
         sp2 = fig.add_subplot(122)
 
@@ -268,7 +268,7 @@ class EmlineRatioTest(BaseValidationTest):
         sdss_draw_inds = np.random.choice(np.arange(len(dist1[0])), size=self.sdss_drawnum)
         dist1 = dist1[:, sdss_draw_inds]
 
-        # Shift the median of the simulated galaxies to match that of the SDSS galaxies 
+        # Shift the median of the simulated galaxies to match that of the SDSS galaxies
         # before performing the comparison
 
         medianshift = np.nanmedian(dist1, axis=1).reshape(2, 1) - np.nanmedian(dist2, axis=1).reshape(2, 1)
@@ -291,7 +291,7 @@ class EmlineRatioTest(BaseValidationTest):
 
         plt.subplots_adjust(wspace=0.0)
 
-        sp2.text(0.02, 0.98, 'log p = %.2f\nD$_\mathrm{KS}$ = %.2f\nMed Shift = [%.2f, %.2f]' % (np.log10(pvalue), KSstat, *medianshift.T[0]), fontsize=14, transform=sp2.transAxes, ha='left', va='top', bbox = dict(boxstyle='round', facecolor='white', alpha=0.8))
+        sp2.text(0.02, 0.98, 'log p = %.2f\n' % np.log10(pvalue) + r'D$_\mathrm{KS}$' + ' = %.2f\nMed Shift = [%.2f, %.2f]' % (KSstat, *medianshift.T[0]), fontsize=14, transform=sp2.transAxes, ha='left', va='top', bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
 
         sp1.text(0.98, 0.02, 'SDSS', fontsize=24, ha='right', va='bottom', transform=sp1.transAxes)
         sp2.text(0.98, 0.02, catalog_name, fontsize=24, ha='right', va='bottom', transform=sp2.transAxes)
@@ -341,9 +341,9 @@ class EmlineRatioTest(BaseValidationTest):
 
 
 
-def fhCounts(x,edge):
+def fhCounts(x, edge):
     # computes local CDF at a given point considering all possible axis orderings
-    
+
     templist = [np.sum((x[0, 0:] >= edge[0]) & (x[1, 0:] >= edge[1])),
                 np.sum((x[0, 0:] <= edge[0]) & (x[1, 0:] >= edge[1])),
                 np.sum((x[0, 0:] <= edge[0]) & (x[1, 0:] <= edge[1])),
@@ -359,7 +359,7 @@ def kstest_2d(dist1, dist2):
 
     KSstat = -np.inf
 
-    for iX in (np.arange(0, num1+num2)):
+    for iX in np.arange(0, num1+num2):
 
         if iX < num1:
             edge = dist1[0:, iX]
@@ -372,7 +372,7 @@ def kstest_2d(dist1, dist2):
         vfThisKSTS = np.abs(vfCDF1 - vfCDF2)
         fKSTS = np.amax(vfThisKSTS)
 
-        if (fKSTS > KSstat):
+        if fKSTS > KSstat:
             KSstat = fKSTS
 
     # Peacock Z calculation and P estimation
@@ -491,11 +491,11 @@ class sdsscat:
         # Rprime_v = 4.88 # pm 0.98 from Calzetti 1997b
         Rprime_v = 4.05
 
-        if 0.1200 < lam and 0.6300 > lam:
+        if lam > 0.1200 and lam < 0.6300:
 
             return 2.659 * (-2.156 + (1.509/lam) - (0.198/(lam**2.)) + (0.011/(lam**3.))) + Rprime_v
 
-        elif 0.6300 < lam and 2.2000 > lam:
+        elif lam > 0.6300 and lam < 2.2000:
 
             return 2.659 * (-1.857 + (1.04/lam)) + Rprime_v
 
