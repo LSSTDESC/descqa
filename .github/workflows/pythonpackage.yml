@@ -1,4 +1,4 @@
-name: Python package check
+name: Python package
 
 on: [push]
 
@@ -39,7 +39,7 @@ jobs:
       run: |
         pip install pylint
         # stop the build if there are Pylint errors
-        pylint --disable=I,C,R,W0511,W0231 --extension-pkg-whitelist=numpy descqa*
+        pylint --disable=I,C,R,W0511,W0231,E1136 --extension-pkg-whitelist=numpy descqa*
     - name: Test with pytest
       run: |
         pip install pytest
