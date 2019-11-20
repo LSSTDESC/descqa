@@ -26,9 +26,8 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install gfortran  # required by camb
       run: |
-        sudo apt-get update -y -q
-        sudo apt-get install gfortran-8 -y
-        sudo ln -s /usr/bin/gfortran-8 /usr/bin/gfortran
+        sudo apt-get update -qq
+        sudo apt-get install gfortran -y
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -44,6 +43,8 @@ jobs:
       run: |
         pip install pylint
         # stop the build if there are Pylint errors
+        # there is a bug with E1136 (https://github.com/PyCQA/pylint/issues/1498)
+        # so we temporarily disable it.
         pylint --disable=I,C,R,W0511,W0231,E1136 --extension-pkg-whitelist=numpy descqa*
     - name: Test with pytest
       run: |
