@@ -9,11 +9,12 @@ import numpy as np
 from astropy import units as u
 from astropy.cosmology import Planck15 as cosmo
 from matplotlib import pyplot as plt
-from descqa import BaseValidationTest, TestResult
+from matplotlib.colors import LogNorm
 from GCR import GCRQuery
 from pandas import read_csv
-from matplotlib.colors import LogNorm
+from descqa import BaseValidationTest, TestResult
 
+emline_names = {'ha': r'H$\alpha$', 'hb': r'H$\beta$', 'oii': '[OII]', 'oiii': '[OIII]'}
 
 __all__ = ['EmlineRatioTest']
 
@@ -229,6 +230,9 @@ class EmlineRatioTest(BaseValidationTest):
         dist1 = [[], []]
         dist2 = [[], []]
 
+        xlabel = ''
+        ylabel = ''
+
         # Generate each distribution
         # dist1 is SDSS data
         # dist2 is simulation data
@@ -249,6 +253,9 @@ class EmlineRatioTest(BaseValidationTest):
 
             dist[0] = er1[good_inds]
             dist[1] = er2[good_inds]
+
+        xlabel = r'$\log_{10}$(' + emline_names[self.emline_ratio1.split('/')[0]] + '/' + emline_names[self.emline_ratio1.split('/')[1]] + ')'
+        ylabel = r'$\log_{10}$(' + emline_names[self.emline_ratio2.split('/')[0]] + '/' + emline_names[self.emline_ratio2.split('/')[1]] + ')'
 
         dist1 = np.array(dist1)
         dist2 = np.array(dist2)
@@ -272,9 +279,9 @@ class EmlineRatioTest(BaseValidationTest):
 
         # Plotting stuff
 
-        sp1.set_xlabel('log(' + self.emline_ratio1 + ')', fontsize=20)
-        sp1.set_ylabel('log(' + self.emline_ratio2 + ')', fontsize=20)
-        sp2.set_xlabel('log(' + self.emline_ratio1 + ')', fontsize=20)
+        sp1.set_xlabel(xlabel, fontsize=20)
+        sp1.set_ylabel(ylabel, fontsize=20)
+        sp2.set_xlabel(xlabel, fontsize=20)
         sp1.set_xlim(-1.2, 1.2)
         sp1.set_ylim(-1.25, 1)
         sp2.set_xlim(-1.2, 1.2)
@@ -284,7 +291,7 @@ class EmlineRatioTest(BaseValidationTest):
 
         plt.subplots_adjust(wspace=0.0)
 
-        sp1.text(0.02, 0.98, 'log p = %.2f\nD = %.2f\nMed Shift = [%.2f, %.2f]' % (np.log10(pvalue), KSstat, *medianshift.T[0]), fontsize=14, transform=sp1.transAxes, ha='left', va='top')
+        sp2.text(0.02, 0.98, 'log p = %.2f\nD$_\mathrm{KS}$ = %.2f\nMed Shift = [%.2f, %.2f]' % (np.log10(pvalue), KSstat, *medianshift.T[0]), fontsize=14, transform=sp2.transAxes, ha='left', va='top', bbox = dict(boxstyle='round', facecolor='white', alpha=0.8))
 
         sp1.text(0.98, 0.02, 'SDSS', fontsize=24, ha='right', va='bottom', transform=sp1.transAxes)
         sp2.text(0.98, 0.02, catalog_name, fontsize=24, ha='right', va='bottom', transform=sp2.transAxes)
@@ -298,12 +305,31 @@ class EmlineRatioTest(BaseValidationTest):
         perform the test
         """
 
+        with open(os.path.join(output_dir, 'Emline_Lum_Ratio_Summary.txt'), 'w') as writefile:
+            writefile.write('Simulation Galaxies Drawn: %i\n' % self.sim_drawnum)
+            writefile.write('SDSS Galaxies Drawn: %i\n' % self.sdss_drawnum)
+            for thisband in ['u', 'g', 'r', 'i', 'z', 'y']:
+                writefile.write(thisband + '-band magnitude cut: %.1f\n' % getattr(self, 'mag_' + thisband + '_cut'))
+            writefile.write('\n')
+            writefile.write('=================\n')
+            writefile.write(' Catalogs Tested \n')
+            writefile.write('=================\n')
+
+
+            for thiscat in self.runcat_name:
+
+                writefile.write(thiscat + '\n')
+
 
 
 
 
 
     def conclude_test(self, output_dir):
+
+        # Save a summary file with the details of the test
+
+        self.summary_file(output_dir)
 
         # Save all of the summary plots into output_dir
 
