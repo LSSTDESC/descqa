@@ -19,7 +19,41 @@ __all__ = ['EmlineRatioTest']
 
 class EmlineRatioTest(BaseValidationTest):
     """
-    An example validation test
+    Validation test for the relaive luminosity of emission lines in a catalog
+
+    Parameters
+    ----------
+    emline_ratio1: str, optional, (default: 'oii/oiii')
+        The emission line luminosity ratio to be plotted on the x-axis
+    emline_ratio2: str, optional, (default: 'hb/oiii')
+        The emission line luminosity ratio to be plotted on the y-axis
+    sdss_file: str, optional, (default: 'sdss_emission_lines/sdss_query_snr10_ew.csv')
+        Location of the SDSS data file that will be passed into the sdsscat class.  Looks
+        in the 'data/' folder.
+    mag_u_cut: float, optional, (default: 26.3)
+        u-band magnitude cut.  Dimmer galaxies are excluded from the comparison.  Default
+        value is the 5-sigma detection limit from https://arxiv.org/pdf/0912.0201.pdf
+    mag_g_cut: float, optional, (default: 27.5)
+        g-band magnitude cut.  Dimmer galaxies are excluded from the comparison.  Default
+        value is the 5-sigma detection limit from https://arxiv.org/pdf/0912.0201.pdf
+    mag_r_cut: float, optional, (default: 27.7)
+        r-band magnitude cut.  Dimmer galaxies are excluded from the comparison.  Default
+        value is the 5-sigma detection limit from https://arxiv.org/pdf/0912.0201.pdf
+    mag_i_cut: float, optional, (default: 27.0)
+        i-band magnitude cut.  Dimmer galaxies are excluded from the comparison.  Default
+        value is the 5-sigma detection limit from https://arxiv.org/pdf/0912.0201.pdf
+    mag_z_cut: float, optional, (default: 26.2)
+        z-band magnitude cut.  Dimmer galaxies are excluded from the comparison.  Default
+        value is the 5-sigma detection limit from https://arxiv.org/pdf/0912.0201.pdf
+    mag_y_cut: float, optional, (default: 24.9)
+        y-band magnitude cut.  Dimmer galaxies are excluded from the comparison.  Default
+        value is the 5-sigma detection limit from https://arxiv.org/pdf/0912.0201.pdf
+    sdss_drawnum: int, optional, (default: 30000)
+        The number of galaxies to draw from the SDSS data file to perform the comparison.
+        The default number is chosen to (hopefully) not make the 2-D KS test too stringent.
+    sim_drawnum: int, optional, (default: 30000)
+        The number of galaxies to draw from the simulated data to perform the comparison.
+        The default number is chosen to (hopefully) not make the 2-D KS test too stringent.
     """
     def __init__(self, **kwargs):
 
@@ -27,15 +61,29 @@ class EmlineRatioTest(BaseValidationTest):
 
         # load test config options
         self.kwargs = kwargs
-        self.test_name = kwargs.get('test_name', 'emline_ratio_test')
         self.emline_ratio1 = kwargs.get('emline_ratio1', 'oii/oiii') # Currently does not support other emission line ratios
         self.emline_ratio2 = kwargs.get('emline_ratio2', 'hb/oiii') # Currently does not support other emission line ratios
         sdss_file = kwargs.get('sdss_file', 'sdss_emission_lines/sdss_query_snr10_ew.csv')
         # self.sdsscat = sdsscat(self.data_dir + '/' + sdss_file)
         self.sdsscat = sdsscat('descqa/data/' + sdss_file)
 
+        # The magnitude cuts for galaxies pulled from the catalog.  These numbers correspond to
+        # a 5-sigma cut based on https://arxiv.org/pdf/0912.0201.pdf
+
+        self.mag_u_cut = kwargs.get('mag_u_cut', 26.3)
+        self.mag_g_cut = kwargs.get('mag_g_cut', 27.5)
+        self.mag_r_cut = kwargs.get('mag_r_cut', 27.7)
+        self.mag_i_cut = kwargs.get('mag_i_cut', 27.0)
+        self.mag_z_cut = kwargs.get('mag_z_cut', 26.2)
+        self.mag_y_cut = kwargs.get('mag_y_cut', 24.9)
+
+        # These numbers dictate how large the two samples will be.  I have found that
+        # if the numbers get much larger than this, the 2-D KS test becomes more discriminatory
+        # than desired, but they can be changed if necessary
+
         self.sdss_drawnum = kwargs.get('sdss_drawnum', 30000)
         self.sim_drawnum = kwargs.get('sim_drawnum', 30000)
+        
         self.figlist = []
         self.runcat_name = []
 
@@ -64,14 +112,14 @@ class EmlineRatioTest(BaseValidationTest):
                                                 'emissionLines/totalLineLuminosity:oxygenIII5007',
                                                 'emissionLines/totalLineLuminosity:sulfurII6716',
                                                 'emissionLines/totalLineLuminosity:sulfurII6731']):
-            return TestResult(skipped=True, summary='do not have needed quantities')
+            return TestResult(skipped=True, summary='Necessary quantities are not present')
 
-        uband_maglim = GCRQuery((np.isfinite, 'mag_u_lsst'), 'mag_u_lsst < 26.3')
-        gband_maglim = GCRQuery((np.isfinite, 'mag_g_lsst'), 'mag_g_lsst < 27.5')
-        rband_maglim = GCRQuery((np.isfinite, 'mag_r_lsst'), 'mag_r_lsst < 27.7')
-        iband_maglim = GCRQuery((np.isfinite, 'mag_i_lsst'), 'mag_i_lsst < 27.0')
-        zband_maglim = GCRQuery((np.isfinite, 'mag_z_lsst'), 'mag_z_lsst < 26.2')
-        yband_maglim = GCRQuery((np.isfinite, 'mag_y_lsst'), 'mag_y_lsst < 24.9')
+        uband_maglim = GCRQuery((np.isfinite, 'mag_u_lsst'), 'mag_u_lsst < %.1f' % self.mag_u_cut)
+        gband_maglim = GCRQuery((np.isfinite, 'mag_g_lsst'), 'mag_g_lsst < %.1f' % self.mag_g_cut)
+        rband_maglim = GCRQuery((np.isfinite, 'mag_r_lsst'), 'mag_r_lsst < %.1f' % self.mag_r_cut)
+        iband_maglim = GCRQuery((np.isfinite, 'mag_i_lsst'), 'mag_i_lsst < %.1f' % self.mag_i_cut)
+        zband_maglim = GCRQuery((np.isfinite, 'mag_z_lsst'), 'mag_z_lsst < %.1f' % self.mag_z_cut)
+        yband_maglim = GCRQuery((np.isfinite, 'mag_y_lsst'), 'mag_y_lsst < %.1f' % self.mag_y_cut)
 
 
         data = catalog_instance.get_quantities(['galaxyID',
@@ -106,6 +154,8 @@ class EmlineRatioTest(BaseValidationTest):
         OIIItot = OIII5007 + OIII4959
         OIItot = OII3726 + OII3729
 
+        # Reduce the sample size by drawing self.sim_drawnum galaxies 
+
         indices = np.random.choice(np.arange(len(Halpha)), size=self.sim_drawnum, replace=False)
 
         sz_small = sz[indices]
@@ -115,6 +165,9 @@ class EmlineRatioTest(BaseValidationTest):
 
         property_list = [Halpha, Hbeta, NII6584, OIII5007, OIII4959, OII3726, OII3729,
                         SII6716, SII6731, SIItot, OIIItot, OIItot]
+
+        # This loop needs to be formatted in this way (rather than using 'for thisproperty in property_list')
+        # so that the changes persist outside of the loop
 
         for x in range(len(property_list)):
 
@@ -141,6 +194,10 @@ class EmlineRatioTest(BaseValidationTest):
         # End Reading in Data
         #=========================================
 
+        #=========================================
+        # Perform the Test and Return Results
+        #=========================================
+
 
         thisfig, pvalue, medianshift = self.makeplot(catalog_name)
         self.figlist.append(thisfig)
@@ -158,7 +215,9 @@ class EmlineRatioTest(BaseValidationTest):
 
 
     def makeplot(self, catalog_name):
-
+        """
+        Make a summary plot of the test results
+        """
         #=========================================
         # Begin Test and Plotting
         #=========================================
@@ -169,6 +228,10 @@ class EmlineRatioTest(BaseValidationTest):
 
         dist1 = [[], []]
         dist2 = [[], []]
+
+        # Generate each distribution
+        # dist1 is SDSS data
+        # dist2 is simulation data
 
         for cat, dist in [[self.sdsscat, dist1], [self, dist2]]:
 
@@ -193,15 +256,21 @@ class EmlineRatioTest(BaseValidationTest):
         sp1.hist2d(*dist1, bins=50, range=[[-1.2, 1.2], [-1.25, 1]], norm=LogNorm(), cmap='plasma_r')
         sp2.hist2d(*dist2, bins=50, range=[[-1.2, 1.2], [-1.25, 1]], norm=LogNorm(), cmap='plasma_r')
 
+        # Draw a number of SDSS galaxies equal to self.sdss_drawnum
+
         sdss_draw_inds = np.random.choice(np.arange(len(dist1[0])), size=self.sdss_drawnum)
         dist1 = dist1[:, sdss_draw_inds]
+
+        # Shift the median of the simulated galaxies to match that of the SDSS galaxies 
+        # before performing the comparison
 
         medianshift = np.nanmedian(dist1, axis=1).reshape(2, 1) - np.nanmedian(dist2, axis=1).reshape(2, 1)
 
         medianmatch_dist2 = dist2 + medianshift
 
-
         pvalue, KSstat = kstest_2d(dist1, medianmatch_dist2)
+
+        # Plotting stuff
 
         sp1.set_xlabel('log(' + self.emline_ratio1 + ')', fontsize=20)
         sp1.set_ylabel('log(' + self.emline_ratio2 + ')', fontsize=20)
@@ -223,8 +292,21 @@ class EmlineRatioTest(BaseValidationTest):
         return fig, pvalue, medianshift
 
 
+    def summary_file(self, output_dir):
+        """
+        Saves a summary file with information about the cuts performed on the data in order to
+        perform the test
+        """
+
+
+
+
+
 
     def conclude_test(self, output_dir):
+
+        # Save all of the summary plots into output_dir
+
         for thisfig, thiscat in zip(self.figlist, self.runcat_name):
             thisfig.savefig(os.path.join(output_dir, thiscat + '_emline_ratios.png'), bbox_inches='tight')
             plt.close(thisfig)
@@ -243,7 +325,9 @@ def fhCounts(x,edge):
     return templist
 
 def kstest_2d(dist1, dist2):
-
+    """
+    Perform the 2-D KS-test on dist1 and dist2.
+    """
     num1 = dist1.shape[1]
     num2 = dist2.shape[1]
 
@@ -284,6 +368,11 @@ def kstest_2d(dist1, dist2):
 
 
 class sdsscat:
+    """
+    This class holds the SDSS data in an easily accessible form, and also dust corrects
+    the emission lines using the Balmer Decrement.
+    """
+
 
     def __init__(self, infile):
 
