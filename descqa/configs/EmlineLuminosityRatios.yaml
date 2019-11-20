@@ -1,0 +1,13 @@
+subclass_name: EmlineRatioTest.EmlineRatioTest
+emline_ratio1: 'oii/oiii'
+emline_ratio2: 'hb/oiii'
+sdss_file: 'sdss_emission_lines/sdss_query_snr10_ew.csv'
+sdss_drawnum: 30000
+sim_drawnum: 30000
+mag_u_cut: 26.3
+mag_g_cut: 27.5
+mag_r_cut: 27.7
+mag_i_cut: 27.0
+mag_z_cut: 26.2
+mag_y_cut: 24.9
+description: 'Plots ratios of emission line luminosities from SDSS data and DESC simulations and compares the two 2-D distributions.'
