@@ -83,7 +83,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
             'usecols': (0, 1, 2, 3),
             'colnames': ('mag_hi_lim', 'mag_lo_lim', 'z0const', 'z0linear'),
             'skiprows': 1,
-            'label': 'DEEP2 (JAN, p.c.)',
+            'label': 'DEEP2',
         },
     }
 
@@ -411,6 +411,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
                 ax.yaxis.get_major_ticks()[0].label1.set_visible(False)
         else:
             ax.set_xlabel('$z$', size=self.fsize)
+            ax.tick_params(labelbottom=True)
             for axlabel in ax.get_xticklabels():
                 axlabel.set_visible(True)
         ax.legend(loc='best', fancybox=True, framealpha=0.5, fontsize=self.lsize, numpoints=1)
