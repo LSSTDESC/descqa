@@ -165,9 +165,6 @@ class EmlineRatioTest(BaseValidationTest):
 
         indices = np.random.choice(np.arange(len(Halpha)), size=self.sim_drawnum, replace=False)
 
-        sz_small = sz[indices]
-        galaxyID_small = galaxyID[indices]
-
         self.id = galaxyID[indices]
         self.ha = Halpha[indices]
         self.hb = Hbeta[indices]
