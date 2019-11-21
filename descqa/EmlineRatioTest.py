@@ -7,7 +7,6 @@ from __future__ import unicode_literals, absolute_import, division
 import os
 import numpy as np
 from astropy import units as u
-from astropy.cosmology import Planck15 as cosmo
 from matplotlib import pyplot as plt
 from matplotlib.colors import LogNorm
 from GCR import GCRQuery
@@ -55,6 +54,9 @@ class EmlineRatioTest(BaseValidationTest):
     sim_drawnum: int, optional, (default: 30000)
         The number of galaxies to draw from the simulated data to perform the comparison.
         The default number is chosen to (hopefully) not make the 2-D KS test too stringent.
+    truncate_cat_name: Bool, optional, (default: False)
+        Specifies whether the catalog name displayed in the summary figure should be 
+        shortened.
     """
     def __init__(self, **kwargs):
 
@@ -87,6 +89,8 @@ class EmlineRatioTest(BaseValidationTest):
 
         self.figlist = []
         self.runcat_name = []
+
+        self.truncate_cat_name = kwargs.get('truncate_cat_name', False)
 
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
@@ -142,15 +146,15 @@ class EmlineRatioTest(BaseValidationTest):
                                                 'mag_y_lsst'], filters=(uband_maglim | gband_maglim | rband_maglim | iband_maglim | zband_maglim | yband_maglim))
         sz = data['redshift']
         galaxyID = data['galaxyID']
-        Halpha = data['emissionLines/totalLineLuminosity:balmerAlpha6563']* 4.4659e13*u.W/u.Hz
-        Hbeta = data['emissionLines/totalLineLuminosity:balmerBeta4861']* 4.4659e13*u.W/u.Hz
-        NII6584 = data['emissionLines/totalLineLuminosity:nitrogenII6584']* 4.4659e13*u.W/u.Hz
-        OIII5007 = data['emissionLines/totalLineLuminosity:oxygenIII5007']* 4.4659e13*u.W/u.Hz
-        OIII4959 = data['emissionLines/totalLineLuminosity:oxygenIII4959']* 4.4659e13*u.W/u.Hz
-        OII3726 = data['emissionLines/totalLineLuminosity:oxygenII3726']* 4.4659e13*u.W/u.Hz
-        OII3729 = data['emissionLines/totalLineLuminosity:oxygenII3729']* 4.4659e13*u.W/u.Hz
-        SII6716 = data['emissionLines/totalLineLuminosity:sulfurII6716']* 4.4659e13*u.W/u.Hz
-        SII6731 = data['emissionLines/totalLineLuminosity:sulfurII6731']* 4.4659e13*u.W/u.Hz
+        Halpha = (data['emissionLines/totalLineLuminosity:balmerAlpha6563'] * 3.839e26*u.W).value
+        Hbeta = (data['emissionLines/totalLineLuminosity:balmerBeta4861'] * 3.839e26*u.W).value
+        NII6584 = (data['emissionLines/totalLineLuminosity:nitrogenII6584'] * 3.839e26*u.W).value
+        OIII5007 = (data['emissionLines/totalLineLuminosity:oxygenIII5007'] * 3.839e26*u.W).value
+        OIII4959 = (data['emissionLines/totalLineLuminosity:oxygenIII4959'] * 3.839e26*u.W).value
+        OII3726 = (data['emissionLines/totalLineLuminosity:oxygenII3726'] * 3.839e26*u.W).value
+        OII3729 = (data['emissionLines/totalLineLuminosity:oxygenII3729'] * 3.839e26*u.W).value
+        SII6716 = (data['emissionLines/totalLineLuminosity:sulfurII6716'] * 3.839e26*u.W).value
+        SII6731 = (data['emissionLines/totalLineLuminosity:sulfurII6731'] * 3.839e26*u.W).value
         SIItot = SII6716 + SII6731
         OIIItot = OIII5007 + OIII4959
         OIItot = OII3726 + OII3729
@@ -161,20 +165,6 @@ class EmlineRatioTest(BaseValidationTest):
 
         sz_small = sz[indices]
         galaxyID_small = galaxyID[indices]
-
-        lumdist_small = cosmo.luminosity_distance(sz_small)
-
-        property_list = [Halpha, Hbeta, NII6584, OIII5007, OIII4959, OII3726, OII3729,
-                         SII6716, SII6731, SIItot, OIIItot, OIItot]
-
-        # This loop needs to be formatted in this way (rather than using 'for thisproperty in property_list')
-        # so that the changes persist outside of the loop
-
-        for x in range(len(property_list)):
-
-            property_list[x] = (property_list[x][indices]/(4*np.pi*lumdist_small**2)).to('erg/s/cm**2/Hz').value
-
-        Halpha_small, Hbeta_small, NII6584_small, OIII5007_small, OIII4959_small, OII3726_small, OII3729_small, SII6716_small, SII6731_small, SIItot_small, OIIItot_small, OIItot_small = property_list
 
         self.id = galaxyID_small
         self.ha = Halpha_small
@@ -199,8 +189,11 @@ class EmlineRatioTest(BaseValidationTest):
         # Perform the Test and Return Results
         #=========================================
 
+        if self.truncate_cat_name:
+            thisfig, pvalue, medianshift = self.makeplot(catalog_name.split('_')[0])
+        else:
+            thisfig, pvalue, medianshift = self.makeplot(catalog_name)
 
-        thisfig, pvalue, medianshift = self.makeplot(catalog_name)
         self.figlist.append(thisfig)
         self.runcat_name.append(catalog_name)
 
