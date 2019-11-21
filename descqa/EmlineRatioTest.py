@@ -7,6 +7,7 @@ from __future__ import unicode_literals, absolute_import, division
 import os
 import numpy as np
 from astropy import units as u
+from astropy.cosmology import Planck15 as cosmo
 from matplotlib import pyplot as plt
 from matplotlib.colors import LogNorm
 from GCR import GCRQuery
@@ -166,19 +167,19 @@ class EmlineRatioTest(BaseValidationTest):
         sz_small = sz[indices]
         galaxyID_small = galaxyID[indices]
 
-        self.id = galaxyID_small
-        self.ha = Halpha_small
-        self.hb = Hbeta_small
-        self.oii = OIItot_small
-        self.oiii = OIIItot_small
-        self.nii6584 = NII6584_small
-        self.oiii5007 = OIII5007_small
-        self.oiii4959 = OIII4959_small
-        self.oii3726 = OII3726_small
-        self.oii3729 = OII3729_small
-        self.sii6716 = SII6716_small
-        self.sii6731 = SII6731_small
-        self.siitot = SIItot_small
+        self.id = galaxyID[indices]
+        self.ha = Halpha[indices]
+        self.hb = Hbeta[indices]
+        self.oii = OIItot[indices]
+        self.oiii = OIIItot[indices]
+        self.nii6584 = NII6584[indices]
+        self.oiii5007 = OIII5007[indices]
+        self.oiii4959 = OIII4959[indices]
+        self.oii3726 = OII3726[indices]
+        self.oii3729 = OII3729[indices]
+        self.sii6716 = SII6716[indices]
+        self.sii6731 = SII6731[indices]
+        self.siitot = SIItot[indices]
 
 
         #=========================================
