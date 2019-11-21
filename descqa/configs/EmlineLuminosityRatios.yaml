@@ -10,4 +10,5 @@ mag_r_cut: 27.7
 mag_i_cut: 27.0
 mag_z_cut: 26.2
 mag_y_cut: 24.9
+truncate_cat_name: False
 description: 'Plots ratios of emission line luminosities from SDSS data and DESC simulations and compares the two 2-D distributions.'

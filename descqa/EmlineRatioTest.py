@@ -147,6 +147,7 @@ class EmlineRatioTest(BaseValidationTest):
                                                 'mag_y_lsst'], filters=(uband_maglim | gband_maglim | rband_maglim | iband_maglim | zband_maglim | yband_maglim))
         sz = data['redshift']
         galaxyID = data['galaxyID']
+
         Halpha = (data['emissionLines/totalLineLuminosity:balmerAlpha6563'] * 3.839e26*u.W).value
         Hbeta = (data['emissionLines/totalLineLuminosity:balmerBeta4861'] * 3.839e26*u.W).value
         NII6584 = (data['emissionLines/totalLineLuminosity:nitrogenII6584'] * 3.839e26*u.W).value
