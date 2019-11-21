@@ -208,6 +208,7 @@ class EmlineRatioTest(BaseValidationTest):
             thisfig, pvalue, medianshift = self.makeplot(catalog_name.split('_')[0])
         else:
             thisfig, pvalue, medianshift = self.makeplot(catalog_name)
+
         self.figlist.append(thisfig)
         self.runcat_name.append(catalog_name)
 
