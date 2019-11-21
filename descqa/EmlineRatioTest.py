@@ -107,7 +107,6 @@ class EmlineRatioTest(BaseValidationTest):
                                                 'mag_i_lsst',
                                                 'mag_z_lsst',
                                                 'mag_y_lsst',
-                                                'galaxyID',
                                                 'emissionLines/totalLineLuminosity:oxygenII3726',
                                                 'emissionLines/totalLineLuminosity:oxygenII3729',
                                                 'redshift',
@@ -128,8 +127,7 @@ class EmlineRatioTest(BaseValidationTest):
         yband_maglim = GCRQuery((np.isfinite, 'mag_y_lsst'), 'mag_y_lsst < %.1f' % self.mag_y_cut)
 
 
-        data = catalog_instance.get_quantities(['galaxyID',
-                                                'emissionLines/totalLineLuminosity:oxygenII3726',
+        data = catalog_instance.get_quantities(['emissionLines/totalLineLuminosity:oxygenII3726',
                                                 'emissionLines/totalLineLuminosity:oxygenII3729',
                                                 'redshift',
                                                 'emissionLines/totalLineLuminosity:balmerAlpha6563',
@@ -145,8 +143,6 @@ class EmlineRatioTest(BaseValidationTest):
                                                 'mag_i_lsst',
                                                 'mag_z_lsst',
                                                 'mag_y_lsst'], filters=(uband_maglim | gband_maglim | rband_maglim | iband_maglim | zband_maglim | yband_maglim))
-        sz = data['redshift']
-        galaxyID = data['galaxyID']
 
         Halpha = (data['emissionLines/totalLineLuminosity:balmerAlpha6563'] * 3.839e26*u.W).value
         Hbeta = (data['emissionLines/totalLineLuminosity:balmerBeta4861'] * 3.839e26*u.W).value
@@ -165,7 +161,6 @@ class EmlineRatioTest(BaseValidationTest):
 
         indices = np.random.choice(np.arange(len(Halpha)), size=self.sim_drawnum, replace=False)
 
-        self.id = galaxyID[indices]
         self.ha = Halpha[indices]
         self.hb = Hbeta[indices]
         self.oii = OIItot[indices]
