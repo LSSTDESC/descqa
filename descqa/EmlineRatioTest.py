@@ -147,15 +147,15 @@ class EmlineRatioTest(BaseValidationTest):
                                                 'mag_y_lsst'], filters=(uband_maglim | gband_maglim | rband_maglim | iband_maglim | zband_maglim | yband_maglim))
         sz = data['redshift']
         galaxyID = data['galaxyID']
-        Halpha = data['emissionLines/totalLineLuminosity:balmerAlpha6563']* 4.4659e13*u.W/u.Hz
-        Hbeta = data['emissionLines/totalLineLuminosity:balmerBeta4861']* 4.4659e13*u.W/u.Hz
-        NII6584 = data['emissionLines/totalLineLuminosity:nitrogenII6584']* 4.4659e13*u.W/u.Hz
-        OIII5007 = data['emissionLines/totalLineLuminosity:oxygenIII5007']* 4.4659e13*u.W/u.Hz
-        OIII4959 = data['emissionLines/totalLineLuminosity:oxygenIII4959']* 4.4659e13*u.W/u.Hz
-        OII3726 = data['emissionLines/totalLineLuminosity:oxygenII3726']* 4.4659e13*u.W/u.Hz
-        OII3729 = data['emissionLines/totalLineLuminosity:oxygenII3729']* 4.4659e13*u.W/u.Hz
-        SII6716 = data['emissionLines/totalLineLuminosity:sulfurII6716']* 4.4659e13*u.W/u.Hz
-        SII6731 = data['emissionLines/totalLineLuminosity:sulfurII6731']* 4.4659e13*u.W/u.Hz
+        Halpha = data['emissionLines/totalLineLuminosity:balmerAlpha6563'] * 3.839e26*u.W
+        Hbeta = data['emissionLines/totalLineLuminosity:balmerBeta4861'] * 3.839e26*u.W
+        NII6584 = data['emissionLines/totalLineLuminosity:nitrogenII6584'] * 3.839e26*u.W
+        OIII5007 = data['emissionLines/totalLineLuminosity:oxygenIII5007'] * 3.839e26*u.W
+        OIII4959 = data['emissionLines/totalLineLuminosity:oxygenIII4959'] * 3.839e26*u.W
+        OII3726 = data['emissionLines/totalLineLuminosity:oxygenII3726'] * 3.839e26*u.W
+        OII3729 = data['emissionLines/totalLineLuminosity:oxygenII3729'] * 3.839e26*u.W
+        SII6716 = data['emissionLines/totalLineLuminosity:sulfurII6716'] * 3.839e26*u.W
+        SII6731 = data['emissionLines/totalLineLuminosity:sulfurII6731'] * 3.839e26*u.W
         SIItot = SII6716 + SII6731
         OIIItot = OIII5007 + OIII4959
         OIItot = OII3726 + OII3729
@@ -177,7 +177,7 @@ class EmlineRatioTest(BaseValidationTest):
 
         for x in range(len(property_list)):
 
-            property_list[x] = (property_list[x][indices]/(4*np.pi*lumdist_small**2)).to('erg/s/cm**2/Hz').value
+            property_list[x] = (property_list[x][indices]/(4*np.pi*lumdist_small**2)).to('erg/s/cm**2').value
 
         Halpha_small, Hbeta_small, NII6584_small, OIII5007_small, OIII4959_small, OII3726_small, OII3729_small, SII6716_small, SII6731_small, SIItot_small, OIIItot_small, OIItot_small = property_list
 
