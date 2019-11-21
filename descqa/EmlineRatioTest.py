@@ -67,9 +67,9 @@ class EmlineRatioTest(BaseValidationTest):
         self.kwargs = kwargs
         self.emline_ratio1 = kwargs.get('emline_ratio1', 'oii/oiii') # Currently does not support other emission line ratios
         self.emline_ratio2 = kwargs.get('emline_ratio2', 'hb/oiii') # Currently does not support other emission line ratios
-        sdss_file = kwargs.get('sdss_file', 'sdss_emission_lines/sdss_query_snr10_ew.csv')
+        sdss_file = kwargs.get('sdss_file', 'descqa/data/sdss_emission_lines/sdss_query_snr10_ew.csv')
         # self.sdsscat = sdsscat(self.data_dir + '/' + sdss_file)
-        self.sdsscat = sdsscat('descqa/data/' + sdss_file)
+        self.sdsscat = sdsscat(sdss_file)
 
         # The magnitude cuts for galaxies pulled from the catalog.  These numbers correspond to
         # a 5-sigma cut based on https://arxiv.org/pdf/0912.0201.pdf
@@ -268,13 +268,13 @@ class EmlineRatioTest(BaseValidationTest):
         dist1 = np.array(dist1)
         dist2 = np.array(dist2)
 
-        sp1.hist2d(*dist1, bins=50, range=[[-1.2, 1.2], [-1.25, 1]], norm=LogNorm(), cmap='plasma_r')
-        sp2.hist2d(*dist2, bins=50, range=[[-1.2, 1.2], [-1.25, 1]], norm=LogNorm(), cmap='plasma_r')
-
         # Draw a number of SDSS galaxies equal to self.sdss_drawnum
 
         sdss_draw_inds = np.random.choice(np.arange(len(dist1[0])), size=self.sdss_drawnum)
         dist1 = dist1[:, sdss_draw_inds]
+
+        sp1.hist2d(*dist1, bins=50, range=[[-1.2, 1.2], [-1.25, 1]], norm=LogNorm(), cmap='plasma_r')
+        sp2.hist2d(*dist2, bins=50, range=[[-1.2, 1.2], [-1.25, 1]], norm=LogNorm(), cmap='plasma_r')
 
         # Shift the median of the simulated galaxies to match that of the SDSS galaxies
         # before performing the comparison
