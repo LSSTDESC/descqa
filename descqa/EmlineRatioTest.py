@@ -55,6 +55,9 @@ class EmlineRatioTest(BaseValidationTest):
     sim_drawnum: int, optional, (default: 30000)
         The number of galaxies to draw from the simulated data to perform the comparison.
         The default number is chosen to (hopefully) not make the 2-D KS test too stringent.
+    truncate_cat_name: Bool, optional, (default: False)
+        Specifies whether the catalog name displayed in the summary figure should be 
+        shortened.
     """
     def __init__(self, **kwargs):
 
@@ -87,6 +90,8 @@ class EmlineRatioTest(BaseValidationTest):
 
         self.figlist = []
         self.runcat_name = []
+
+        self.truncate_cat_name = kwargs.get('truncate_cat_name', False)
 
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
@@ -199,8 +204,10 @@ class EmlineRatioTest(BaseValidationTest):
         # Perform the Test and Return Results
         #=========================================
 
-
-        thisfig, pvalue, medianshift = self.makeplot(catalog_name)
+        if self.truncate_cat_name:
+            thisfig, pvalue, medianshift = self.makeplot(catalog_name.split('_')[0])
+        else:
+            thisfig, pvalue, medianshift = self.makeplot(catalog_name)
         self.figlist.append(thisfig)
         self.runcat_name.append(catalog_name)
 
