@@ -109,7 +109,6 @@ class EmlineRatioTest(BaseValidationTest):
                                                 'mag_y_lsst',
                                                 'emissionLines/totalLineLuminosity:oxygenII3726',
                                                 'emissionLines/totalLineLuminosity:oxygenII3729',
-                                                'redshift',
                                                 'emissionLines/totalLineLuminosity:balmerAlpha6563',
                                                 'emissionLines/totalLineLuminosity:balmerBeta4861',
                                                 'emissionLines/totalLineLuminosity:nitrogenII6584',
@@ -247,13 +246,13 @@ class EmlineRatioTest(BaseValidationTest):
         dist1 = np.array(dist1)
         dist2 = np.array(dist2)
 
-        sp1.hist2d(*dist1, bins=50, range=[[-1.2, 1.2], [-1.25, 1]], norm=LogNorm(), cmap='plasma_r')
-        sp2.hist2d(*dist2, bins=50, range=[[-1.2, 1.2], [-1.25, 1]], norm=LogNorm(), cmap='plasma_r')
-
         # Draw a number of SDSS galaxies equal to self.sdss_drawnum
 
         sdss_draw_inds = np.random.choice(np.arange(len(dist1[0])), size=self.sdss_drawnum)
         dist1 = dist1[:, sdss_draw_inds]
+
+        sp1.hist2d(*dist1, bins=50, range=[[-1.2, 1.2], [-1.25, 1]], norm=LogNorm(), cmap='plasma_r')
+        sp2.hist2d(*dist2, bins=50, range=[[-1.2, 1.2], [-1.25, 1]], norm=LogNorm(), cmap='plasma_r')
 
         # Shift the median of the simulated galaxies to match that of the SDSS galaxies
         # before performing the comparison
