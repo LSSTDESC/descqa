@@ -67,9 +67,9 @@ class EmlineRatioTest(BaseValidationTest):
         self.kwargs = kwargs
         self.emline_ratio1 = kwargs.get('emline_ratio1', 'oii/oiii') # Currently does not support other emission line ratios
         self.emline_ratio2 = kwargs.get('emline_ratio2', 'hb/oiii') # Currently does not support other emission line ratios
-        sdss_file = kwargs.get('sdss_file', 'sdss_emission_lines/sdss_query_snr10_ew.csv')
+        sdss_file = kwargs.get('sdss_file', 'descqa/data/sdss_emission_lines/sdss_query_snr10_ew.csv')
         # self.sdsscat = sdsscat(self.data_dir + '/' + sdss_file)
-        self.sdsscat = sdsscat('descqa/data/' + sdss_file)
+        self.sdsscat = sdsscat(sdss_file)
 
         # The magnitude cuts for galaxies pulled from the catalog.  These numbers correspond to
         # a 5-sigma cut based on https://arxiv.org/pdf/0912.0201.pdf
