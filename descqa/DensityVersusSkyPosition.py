@@ -14,7 +14,7 @@ def create_hp_map(ra, dec, nside):
     It reads the ra and dec in degrees and returns a HEALPix map
     """
     pixnums = hp.ang2pix(nside, ra, dec, lonlat=True)
-    return np.bincount(pixnums, minlength=hp.nside2npix(nside)).astype(float)
+    return np.bincount(pixnums, minlength=hp.nside2npix(nside)).astype(float)  # pylint: disable=no-member
 
 class DensityVersusSkyPosition(BaseValidationTest):
     """
@@ -28,24 +28,24 @@ class DensityVersusSkyPosition(BaseValidationTest):
     nside (int): Healpix nside parameter in which to compute the density.
     xlabel (str): Name of the quantity read from validation_map_filename, it will
        serve as x-label axis of the validation plots
-    
+
     """
     def __init__(self,**kwargs): # pylint: disable=W0231
-        
+
         self.kwargs = kwargs
         self.test_name = kwargs['test_name']
         self.validation_path = kwargs['validation_map_filename']
-        self.nside = kwargs['nside'] 
+        self.nside = kwargs['nside']
         self.validation_data = hp.ud_grade(hp.read_map(self.validation_path), nside_out=self.nside)
         self.xlabel = kwargs['xlabel']
-     
+
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
-        
+
         if not catalog_instance.has_quantities(['ra', 'dec', 'extendedness']):
             return TestResult(skipped=True, summary='catalog does not have needed quantities')
 
         catalog_data = catalog_instance.get_quantities(['ra', 'dec', 'extendedness'], filters=['extendedness == 1'])
-        data_map = create_hp_map(catalog_data['ra'], catalog_data['dec'], self.nside) 
+        data_map = create_hp_map(catalog_data['ra'], catalog_data['dec'], self.nside)
         mask = data_map>0 # This is a good approximation if the pixels are big enough
         xmin, xmax = np.percentile(self.validation_data[mask], [5,95])
         data_map /= (3600*hp.nside2pixarea(self.nside, degrees=True)) # To get the density in arcmin^-2
@@ -56,7 +56,7 @@ class DensityVersusSkyPosition(BaseValidationTest):
         fig, ax = plt.subplots(1,1)
         ax.errorbar(bin_centers, mean_dens, std_dens/np.sqrt(counts), fmt='o')
         ax.set_xlabel(self.xlabel)
-        ax.set_ylabel('Mean density [arcmin$^{-2}$]')     
+        ax.set_ylabel('Mean density [arcmin$^{-2}$]')
         fig.savefig(os.path.join(output_dir, '%s_density_vs_extinction.png' % catalog_name))
 
         return TestResult(inspect_only=True)
