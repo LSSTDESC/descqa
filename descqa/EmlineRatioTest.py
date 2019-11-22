@@ -107,10 +107,8 @@ class EmlineRatioTest(BaseValidationTest):
                                                 'mag_i_lsst',
                                                 'mag_z_lsst',
                                                 'mag_y_lsst',
-                                                'galaxyID',
                                                 'emissionLines/totalLineLuminosity:oxygenII3726',
                                                 'emissionLines/totalLineLuminosity:oxygenII3729',
-                                                'redshift',
                                                 'emissionLines/totalLineLuminosity:balmerAlpha6563',
                                                 'emissionLines/totalLineLuminosity:balmerBeta4861',
                                                 'emissionLines/totalLineLuminosity:nitrogenII6584',
@@ -128,10 +126,8 @@ class EmlineRatioTest(BaseValidationTest):
         yband_maglim = GCRQuery((np.isfinite, 'mag_y_lsst'), 'mag_y_lsst < %.1f' % self.mag_y_cut)
 
 
-        data = catalog_instance.get_quantities(['galaxyID',
-                                                'emissionLines/totalLineLuminosity:oxygenII3726',
+        data = catalog_instance.get_quantities(['emissionLines/totalLineLuminosity:oxygenII3726',
                                                 'emissionLines/totalLineLuminosity:oxygenII3729',
-                                                'redshift',
                                                 'emissionLines/totalLineLuminosity:balmerAlpha6563',
                                                 'emissionLines/totalLineLuminosity:balmerBeta4861',
                                                 'emissionLines/totalLineLuminosity:nitrogenII6584',
@@ -145,17 +141,16 @@ class EmlineRatioTest(BaseValidationTest):
                                                 'mag_i_lsst',
                                                 'mag_z_lsst',
                                                 'mag_y_lsst'], filters=(uband_maglim | gband_maglim | rband_maglim | iband_maglim | zband_maglim | yband_maglim))
-        sz = data['redshift']
-        galaxyID = data['galaxyID']
-        Halpha = data['emissionLines/totalLineLuminosity:balmerAlpha6563'] * 3.839e26*u.W
-        Hbeta = data['emissionLines/totalLineLuminosity:balmerBeta4861'] * 3.839e26*u.W
-        NII6584 = data['emissionLines/totalLineLuminosity:nitrogenII6584'] * 3.839e26*u.W
-        OIII5007 = data['emissionLines/totalLineLuminosity:oxygenIII5007'] * 3.839e26*u.W
-        OIII4959 = data['emissionLines/totalLineLuminosity:oxygenIII4959'] * 3.839e26*u.W
-        OII3726 = data['emissionLines/totalLineLuminosity:oxygenII3726'] * 3.839e26*u.W
-        OII3729 = data['emissionLines/totalLineLuminosity:oxygenII3729'] * 3.839e26*u.W
-        SII6716 = data['emissionLines/totalLineLuminosity:sulfurII6716'] * 3.839e26*u.W
-        SII6731 = data['emissionLines/totalLineLuminosity:sulfurII6731'] * 3.839e26*u.W
+
+        Halpha = (data['emissionLines/totalLineLuminosity:balmerAlpha6563'] * 3.839e26*u.W).value
+        Hbeta = (data['emissionLines/totalLineLuminosity:balmerBeta4861'] * 3.839e26*u.W).value
+        NII6584 = (data['emissionLines/totalLineLuminosity:nitrogenII6584'] * 3.839e26*u.W).value
+        OIII5007 = (data['emissionLines/totalLineLuminosity:oxygenIII5007'] * 3.839e26*u.W).value
+        OIII4959 = (data['emissionLines/totalLineLuminosity:oxygenIII4959'] * 3.839e26*u.W).value
+        OII3726 = (data['emissionLines/totalLineLuminosity:oxygenII3726'] * 3.839e26*u.W).value
+        OII3729 = (data['emissionLines/totalLineLuminosity:oxygenII3729'] * 3.839e26*u.W).value
+        SII6716 = (data['emissionLines/totalLineLuminosity:sulfurII6716'] * 3.839e26*u.W).value
+        SII6731 = (data['emissionLines/totalLineLuminosity:sulfurII6731'] * 3.839e26*u.W).value
         SIItot = SII6716 + SII6731
         OIIItot = OIII5007 + OIII4959
         OIItot = OII3726 + OII3729
@@ -164,36 +159,18 @@ class EmlineRatioTest(BaseValidationTest):
 
         indices = np.random.choice(np.arange(len(Halpha)), size=self.sim_drawnum, replace=False)
 
-        sz_small = sz[indices]
-        galaxyID_small = galaxyID[indices]
-
-        lumdist_small = cosmo.luminosity_distance(sz_small)
-
-        property_list = [Halpha, Hbeta, NII6584, OIII5007, OIII4959, OII3726, OII3729,
-                         SII6716, SII6731, SIItot, OIIItot, OIItot]
-
-        # This loop needs to be formatted in this way (rather than using 'for thisproperty in property_list')
-        # so that the changes persist outside of the loop
-
-        for x in range(len(property_list)):
-
-            property_list[x] = (property_list[x][indices]/(4*np.pi*lumdist_small**2)).to('erg/s/cm**2').value
-
-        Halpha_small, Hbeta_small, NII6584_small, OIII5007_small, OIII4959_small, OII3726_small, OII3729_small, SII6716_small, SII6731_small, SIItot_small, OIIItot_small, OIItot_small = property_list
-
-        self.id = galaxyID_small
-        self.ha = Halpha_small
-        self.hb = Hbeta_small
-        self.oii = OIItot_small
-        self.oiii = OIIItot_small
-        self.nii6584 = NII6584_small
-        self.oiii5007 = OIII5007_small
-        self.oiii4959 = OIII4959_small
-        self.oii3726 = OII3726_small
-        self.oii3729 = OII3729_small
-        self.sii6716 = SII6716_small
-        self.sii6731 = SII6731_small
-        self.siitot = SIItot_small
+        self.ha = Halpha[indices]
+        self.hb = Hbeta[indices]
+        self.oii = OIItot[indices]
+        self.oiii = OIIItot[indices]
+        self.nii6584 = NII6584[indices]
+        self.oiii5007 = OIII5007[indices]
+        self.oiii4959 = OIII4959[indices]
+        self.oii3726 = OII3726[indices]
+        self.oii3729 = OII3729[indices]
+        self.sii6716 = SII6716[indices]
+        self.sii6731 = SII6731[indices]
+        self.siitot = SIItot[indices]
 
 
         #=========================================
