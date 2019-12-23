@@ -3,13 +3,13 @@ xcolor: 'ri'
 ycolor: 'gr'
 redshift_cut: 'redshift_true'
 mag_fields_to_check: ['mag_true_{}_sdss']
-path_val: '/global/projecta/projectdirs/lsst/groups/CS/descqa/data/rongpu/SpecPhoto_sdss_mgs_extinction_corrected.fits'
-#path_val: '/global/projecta/projectdirs/lsst/groups/CS/descqa/data/rongpu/DEEP2_uniq_Terapix_Subaru_trimmed_wights_added.fits'
-validation_catalog: 'SDSS' #'DEEP2' 
-redshift_cut_val: 'z' #'z_raw' #'z'
-mag_fields_val: 'modelMag_{}' #'{}' #
+#path_val: '/global/projecta/projectdirs/lsst/groups/CS/descqa/data/rongpu/SpecPhoto_sdss_mgs_extinction_corrected.fits'
+path_val: '/global/projecta/projectdirs/lsst/groups/CS/descqa/data/rongpu/DEEP2_uniq_Terapix_Subaru_trimmed_wights_added.fits'
+validation_catalog: 'DEEP2' #'SDSS' 
+redshift_cut_val: 'z_raw' #'z_raw'(DEEP2) #'z'(SDSS)
+mag_fields_val: '{}' #'modelMag_{}'(SDSS) #'{}'(DEEP2) 
 zlo: 0.1
-zhi: 0.5
+zhi: 0.9
 zbins: 5
 levels: 5
 description: Plot color combinations according to input  
