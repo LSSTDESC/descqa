@@ -4,7 +4,6 @@
 # W0231 gives a warning because __init__() is not called for BaseValidationTest
 # W0201 gives a warning when defining attributes outside of __init__()
 from __future__ import unicode_literals, absolute_import, division
-import os
 from os import path
 import numpy as np
 from astropy import units as u
@@ -553,5 +552,4 @@ class sdsscat:
             return_inds = np.array(return_inds, dtype = int)
 
             return return_inds
-
 
