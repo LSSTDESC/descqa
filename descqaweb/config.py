@@ -13,7 +13,7 @@ logo_filename = 'desc-logo-small.png'
 github_url = 'https://github.com/lsstdesc/descqa'
 
 general_info = '''
-This is DESCQA v2. You can also visit the previous version, <a class="everblue" href="https://portal.nersc.gov/project/lsst/descqa/v1/">DESCQA v1</a>.
+This is DESCQA v2. You can also visit the previous version, <a class="everblue" href="https://portal.nersc.gov/projecta/lsst/descqa/v1/">DESCQA v1</a>.
 <br><br>
 The DESCQA framework executes validation tests on mock galaxy catalogs.
 These tests and catalogs are contributed by LSST DESC collaborators.

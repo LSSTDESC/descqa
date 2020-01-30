@@ -116,4 +116,3 @@ class BaseValidationTest(object):
         output_dir: str
             output directory (all output must be under this directory)
         """
-        pass

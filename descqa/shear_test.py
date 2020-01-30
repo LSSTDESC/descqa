@@ -128,7 +128,7 @@ class ShearTest(BaseValidationTest):
                 self.integrand_lensing_limber, 1.e-10, chi_max, args=(i, galaxy_W_int, chi_int, p), epsrel=1.e-6)[0]
             phi_array.append(a)
         phi_array = np.array(phi_array)
-        #NOTE: comments here allow for small corrections on large and small scales, these can be used to check impact of pixelization on lensing maps and flat sky approximations in theory. 
+        #NOTE: comments here allow for small corrections on large and small scales, these can be used to check impact of pixelization on lensing maps and flat sky approximations in theory.
         prefactor = 1.0  #(l+2)*(l+1)*l*(l-1)  / (l+0.5)**4
         #import healpy as hp
         #pixwin = hp.pixwin(1024)[:lmax]
@@ -283,7 +283,7 @@ class ShearTest(BaseValidationTest):
         else:
             zhi = self.zhi
         chi_max = cosmo.comoving_distance(self.zhi+1.0).value
-        mask_mag = (catalog_data[self.mag][:]<self.maglim)  
+        mask_mag = (catalog_data[self.mag][:]<self.maglim)
 
         # read in shear values and check limits
         e1 = catalog_data[self.e1]
@@ -347,6 +347,7 @@ class ShearTest(BaseValidationTest):
                 sig_jack = np.zeros((self.nbins))
                 sigm_jack = np.zeros((self.nbins))
                 for i in range(self.nbins):
+                    # pylint: disable=no-member # TODO: check whether varxi should be varxip or varxim
                     sig_jack[i] = np.sqrt(gg.varxi[i])*1.e6
                     sigm_jack[i] = np.sqrt(gg.varxi[i])*1.e6
 
