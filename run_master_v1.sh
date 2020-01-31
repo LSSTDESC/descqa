@@ -13,7 +13,7 @@ export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$KCORRECT_DIR/lib"
 
 # set output directory
 OUTPUTDIR="/global/projecta/projectdirs/lsst/groups/CS/descqa/run/v1"
-URL="https://portal.nersc.gov/project/lsst/descqa/v1/"
+URL="https://portal.nersc.gov/projecta/lsst/descqa/v1/"
 
 # to allow wildcards in arguments go to master.py
 set -o noglob
