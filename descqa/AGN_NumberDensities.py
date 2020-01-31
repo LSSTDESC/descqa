@@ -14,20 +14,20 @@ from .base import BaseValidationTest, TestResult
 possible_observations = {
     'SDSS': {
         'filename_template': 'AGNdata/SDSS/richards_2006_table2.dat',
-        'usecols': {'g': {'dN/dm':(0, 1, 2, 5),
-                          'N<m':(0, 3, 4, 5),
+        'usecols': {'g': {'N<m':(0, 3, 4, 5),
+                          'dN/dm':(0, 1, 2, 5),
                          },
-                    'i': {'dN/dm':(0, 6, 7, 10),
-                          'N<m':(0, 8, 9, 10),
+                    'i': {'N<m':(0, 8, 9, 10),
+                          'dN/dm':(0, 6, 7, 10),
                          },
                    },
         'colnames': ('mag', 'n', 'err', 'N_Q'),
         'skiprows': 5,
         'missing_values':'...',
         'bin-width': 0.25,
-        'label': 'SDSS DR3',
+        'label': 'Richards et. al. (2006)\nSDSS',
         'color': 'r',
-        'title': 'Richards et. al. (2006)  $\\rm M^{{AGN+galaxy}}_{}<{}$, $\\rm {}<z<{}$',
+        'title': '$\\rm M_{}<{}$, $\\rm {}<z<{}$',
         'ytitle':{'dN/dm':'$\\rm N (deg^{{-2}} {}mag^{{-1}})$',
                   'N<m':'$\\rm N(<{}) (deg^{{-2}})$',
                  },
@@ -92,20 +92,23 @@ class AGN_NumberDensity(BaseValidationTest):
         self.z_lim = list(z_lim)
         self.duty_cycle_on = kwargs.get('duty_cycle_on', True)
         self.agn_flux_fraction = kwargs.get('agn_flux_fraction', 0.)
-        self.font_size = kwargs.get('font_size', 18)
+        self.font_size = kwargs.get('font_size', 20)
         self.title_size = kwargs.get('title_size', 20)
-        self.legend_size = kwargs.get('legend_size', 16)
+        self.legend_size = kwargs.get('legend_size', 18)
         self.no_title = kwargs.get('no_title', False)
+        self.no_legend_title = kwargs.get('no_legend_title', False)
+        self.truncate_legend_title = kwargs.get('truncate_legend', True)
         self.nrows = kwargs.get('nrows', 1)
-        self.ncolumns = kwargs.get('ncolumns', 2)
+        self.cumulative_only = kwargs.get('cumulative_only', False)
+        self.ncolumns = 1 if self.cumulative_only else kwargs.get('ncolumns', 2)
         self.mag_lo = kwargs.get('mag_lo', 14)
-        self.mag_hi = kwargs.get('mag_hi', 24)
+        self.mag_hi = kwargs.get('mag_hi', 22)
         self.validation_range = kwargs.get('validation_range', (16., 19.))
         self.truncate_cat_name = kwargs.get('truncate_cat_name', False)
-        self.figx_p = kwargs.get('figx_p', 11)
+        self.figx_p = kwargs.get('figx_p', 7)
         self.figy_p = kwargs.get('figy_p', 7)
         self.msize = kwargs.get('msize', 6)
-
+        
         # set color of lines in plots
         colors = plt.cm.jet(np.linspace(0, 1, 2)) # pylint: disable=no-member
         if band == 'g':
@@ -247,15 +250,29 @@ class AGN_NumberDensity(BaseValidationTest):
         results = {'catalog':{}, 'data':{}}
         colname = 'n'
 
-        legend_title = '; '.join(('Duty-cycle on' if self.duty_cycle_on else 'No duty-cycle',
-                                  fraction_txt,
-                                  'No AGN ext.' if self.no_agn_extinction else 'AGN ext.'))
-
+        legend_title = ''
+        if not self.no_legend_title:
+            if self.truncate_legend_title:
+                legend_title = 'Duty-cycle on'
+            else:
+                legend_title = '; '.join(('Duty-cycle on' if self.duty_cycle_on else 'No duty-cycle',
+                                          fraction_txt,
+                                          'No AGN ext.' if self.no_agn_extinction else 'AGN ext.'))
+        
+        if not self.cumulative_only:
+            mag_pts_list = [mag_bins[1:], mag_cen]
+            cat_data_list = [n_cum, dn]
+            ytitles = [self.band, dmag]
+            val_tuples = self.validation_data['data'].items()
+        else:
+            mag_pts_list = [mag_bins[1:]]
+            cat_data_list = [n_cum]
+            ytitles = [self.band]
+            val_tuples = [ (k, v) for k, v in self.validation_data['data'].items() if 'N<m' in k]
         for ax, summary_ax, mag_pts, cat_data, ytit, (k, val_data) in zip(axs, self.summary_axs, 
-                                                                          [mag_cen, mag_bins[1:]],
-                                                                          [dn, n_cum],
-                                                                          [dmag, self.band],
-                                                                          self.validation_data['data'].items()):
+                                                                          mag_pts_list,
+                                                                          cat_data_list, ytitles,
+                                                                          val_tuples):
             # plot
             ax[0].plot(mag_pts, cat_data, label=catalog_name, color=self.line_color)
             ax[0].errorbar(val_data['mag'], val_data['n'], yerr=val_data['err'], label=self.validation_data['label'],
@@ -278,7 +295,7 @@ class AGN_NumberDensity(BaseValidationTest):
             summary_ax[1].plot(mag_val_pts, delta, color=self.line_color, label='Frac. Diff.')
             self.decorate_plot(ax[1], ylabel=r'$\Delta n/n$', scale='linear',
                                xlabel=r'$\rm m_{}^{{{}}}$'.format(self.band, fluxid),
-                               legend_title=legend_title)
+                               legend_title=legend_title, legend_loc='lower right')
             if self.first_pass:
                 self.decorate_plot(summary_ax[1], ylabel=r'$\Delta n/n$', scale='linear',
                                    xlabel='$\\rm m_{}^{{{}}}$'.format(self.band, fluxid))
@@ -320,13 +337,15 @@ class AGN_NumberDensity(BaseValidationTest):
     def setup_subplots(self):
         """
         """
-        fig = plt.figure(figsize=(self.figx_p, self.figy_p))
+        fig = plt.figure(figsize=(self.figx_p*self.ncolumns, self.figy_p))
         gs = fig.add_gridspec(2*self.nrows, self.ncolumns, height_ratios=[3, 1])
         axs = []
         axs.append([fig.add_subplot(gs[0])])
-        axs[0].append(fig.add_subplot(gs[2], sharex=axs[0][0]))
-        axs.append([fig.add_subplot(gs[1])])
-        axs[1].append(fig.add_subplot(gs[3], sharex=axs[1][0]))
+        gs_index = 1 if self.cumulative_only else 2
+        axs[0].append(fig.add_subplot(gs[gs_index], sharex=axs[0][0]))
+        if not self.cumulative_only:
+            axs.append([fig.add_subplot(gs[1])])
+            axs[1].append(fig.add_subplot(gs[3], sharex=axs[1][0]))
 
         return fig, axs
 
@@ -345,13 +364,13 @@ class AGN_NumberDensity(BaseValidationTest):
         return mag_pts[val_mask], (cat_data[val_mask] - interp_data)/interp_data
 
 
-    def decorate_plot(self, ax, ylabel, scale='log', xlabel=None, legend_title=''):
+    def decorate_plot(self, ax, ylabel, scale='log', xlabel=None, legend_title='', legend_loc='upper left'):
         """
         """
         ax.set_ylabel(ylabel, size=self.font_size)
-        leg = ax.legend(loc='upper left', fancybox=True, framealpha=0.5,
+        leg = ax.legend(loc=legend_loc, fancybox=True, framealpha=0.5,
                         fontsize=self.legend_size, numpoints=1)
-        leg.set_title(legend_title, prop={'size':'medium'})
+        leg.set_title(legend_title, prop={'size':self.legend_size})
         ax.set_yscale(scale)
         if xlabel:
             ax.set_xlabel(xlabel, size=self.font_size)
