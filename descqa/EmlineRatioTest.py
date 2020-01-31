@@ -38,7 +38,7 @@ class EmlineRatioTest(BaseValidationTest):
     loz_hi: float, optional, (default: 0.0)
         This test allows for magnitude cuts in different filters over two redshift regions.
         This defines the high end of the low redshift region.
-    hioz_lo: float, optional, (default: 0.0)
+    hiz_lo: float, optional, (default: 0.0)
         This test allows for magnitude cuts in different filters over two redshift regions.
         This defines the low end of the high redshift region.
     hiz_hi: float, optional, (default: 0.0)
@@ -301,14 +301,14 @@ class EmlineRatioTest(BaseValidationTest):
         with open(path.join(output_dir, 'Emline_Lum_Ratio_Summary.txt'), 'w') as writefile:
             writefile.write('Simulation Galaxies Drawn: %i\n' % self.sim_drawnum)
             writefile.write('SDSS Galaxies Drawn: %i\n' % self.sdss_drawnum)
-            writefile.write('loz_lo: %.1f' % self.loz_lo)
-            writefile.write('loz_hi: %.1f' % self.loz_hi)
-            writefile.write('hiz_lo: %.1f' % self.hiz_lo)
-            writefile.write('hiz_hi: %.1f' % self.hiz_hi)
-            writefile.write('loz_band: ' + self.loz_band)
-            writefile.write('hiz_band: ' + self.hiz_band)
-            writefile.write('loz_magcut: %.1f' % self.loz_magcut)
-            writefile.write('hiz_magcut: %.1f' % self.hiz_magcut)
+            writefile.write('loz_lo: %.1f\n' % self.loz_lo)
+            writefile.write('loz_hi: %.1f\n' % self.loz_hi)
+            writefile.write('hiz_lo: %.1f\n' % self.hiz_lo)
+            writefile.write('hiz_hi: %.1f\n' % self.hiz_hi)
+            writefile.write('loz_band: ' + self.loz_band + '\n')
+            writefile.write('hiz_band: ' + self.hiz_band + '\n')
+            writefile.write('loz_magcut: %.1f' % self.loz_magcut + '\n')
+            writefile.write('hiz_magcut: %.1f' % self.hiz_magcut + '\n')
             writefile.write('\n')
             writefile.write('=================\n')
             writefile.write(' Catalogs Tested \n')
