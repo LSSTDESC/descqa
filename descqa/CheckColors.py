@@ -11,7 +11,7 @@ from scipy.spatial import distance_matrix
 import ot
 import progressbar 
 from numba import jit
-#import kernelCompare as kc
+import matplotlib as mpl
 
 __all__ = ['CheckColors']
 
