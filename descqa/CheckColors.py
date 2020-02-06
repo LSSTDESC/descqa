@@ -347,7 +347,7 @@ class CheckColors(BaseValidationTest):
                 ymin = 0.0
                 ymax = 2.0
                 hrange = [[xmin,xmax],[ymin,ymax]]
-                counts,xbins,ybins = np.histogram2d(xcolor_val,ycolor_val,range=hrange,bins=[30,30]) # pylint: disable=<pylint code>  # noqa: <flake8 code>
+                counts,xbins,ybins = np.histogram2d(xcolor_val,ycolor_val,range=hrange,bins=[30,30]) # pylint: disable=6  
                 cntr1 = ax.contour(counts.transpose(), extent=[xmin,xmax,ymin,ymax],
                                    colors='black',linestyles='solid',levels=self.levels)
                 h1,_ = cntr1.legend_elements()
