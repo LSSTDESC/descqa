@@ -9,7 +9,6 @@ from .plotting import plt
 from astropy.table import Table
 from scipy.spatial import distance_matrix
 import ot
-import progressbar 
 from numba import jit
 import matplotlib as mpl
 
@@ -286,7 +285,7 @@ class CheckColors(BaseValidationTest):
                 continue
             dataall = catalog_instance.get_quantities(quantity_list)
             labels = {band: mag_field.format(band) for band in self.bands}
-            datamag = {k: dataall[v] for k, v in labels.items()}
+            #datamag = {k: dataall[v] for k, v in labels.items()}
 
             ### Color transformation
             color_trans = None
