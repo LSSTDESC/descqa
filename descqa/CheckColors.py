@@ -4,7 +4,6 @@ import sys
 import numpy as np
 import numexpr as ne
 from .base import BaseValidationTest, TestResult
-from .base import BaseValidationTest, TestResult
 from .plotting import plt
 from astropy.table import Table
 from scipy.spatial import distance_matrix
@@ -367,11 +366,11 @@ class CheckColors(BaseValidationTest):
 
                 ax.set_xlabel('{} - {}'.format(mag_field.format(self.xcolor[0]), mag_field.format(self.xcolor[1])))
                 ax.set_ylabel('{} - {}'.format(mag_field.format(self.ycolor[0]), mag_field.format(self.ycolor[1])))
-                title = "{} = {} - {}".format(self.redshift_cut, zlo, zhi)
+                title = "{} = {:.2} - {:.2}".format(self.redshift_cut, zlo, zhi)
                 ax.text(0.05, 0.95, title, transform=ax.transAxes, 
                         verticalalignment='top', color='black', fontsize='small')
-                title1 = "Compare metric {} +- {}".format(cd[0],cd[1])
-                title2 = "Kernel comparison MMD {} p-value = {}".format(MMD,pValue)
+                title1 = "Compare metric {:.4} +- {:.4}".format(cd[0],cd[1])
+                title2 = "Kernel comparison MMD {:.4} p-value = {:.3}".format(MMD,pValue)
                 ax.text(0.05, 0.85, title1, transform=ax.transAxes, 
                         verticalalignment='top', color='black', fontsize='small')
                 ax.text(0.05, 0.80, title2, transform=ax.transAxes, 
