@@ -173,5 +173,5 @@ Then you can simply run `./run_master.sh`; however, there are many useful option
 
 As the master script is running, all the error messages will be printed out in real time if you have set `-v`. You can also go to the web interface to check you result:
 
-https://portal.nersc.gov/project/lsst/descqa/v2/?run=all
+https://portal.nersc.gov/projecta/lsst/descqa/v2/?run=all
 
