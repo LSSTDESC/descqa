@@ -284,7 +284,7 @@ class CheckColors(BaseValidationTest):
                 print('Catalog is missing a quantity from',quantity_list)
                 continue
             dataall = catalog_instance.get_quantities(quantity_list)
-            labels = {band: mag_field.format(band) for band in self.bands}
+            #labels = {band: mag_field.format(band) for band in self.bands}
             #datamag = {k: dataall[v] for k, v in labels.items()}
 
             ### Color transformation
@@ -362,16 +362,16 @@ class CheckColors(BaseValidationTest):
                 ### kernel comparison block
                 obj = kernelCompare(simdata, valdata)
                 MMD, pValue = obj.compute(iterations=self.kernel_iterations)
-                print("MMD statistics is %f" % MMD)
-                print("The p-value of the test is %f" % pValue)
+                print("MMD statistics is {}".format(MMD))
+                print("The p-value of the test is {}".format(pValue))
 
                 ax.set_xlabel('{} - {}'.format(mag_field.format(self.xcolor[0]), mag_field.format(self.xcolor[1])))
                 ax.set_ylabel('{} - {}'.format(mag_field.format(self.ycolor[0]), mag_field.format(self.ycolor[1])))
-                title = "%s = %.2f - %.2f" % (self.redshift_cut, zlo, zhi)
+                title = "{} = {} - {}".format(self.redshift_cut, zlo, zhi)
                 ax.text(0.05, 0.95, title, transform=ax.transAxes, 
                         verticalalignment='top', color='black', fontsize='small')
-                title1 = "Compare metric %.4f +- %.4f" % (cd[0],cd[1])
-                title2 = "Kernel comparison MMD %.4f p-value = %.3f" % (MMD,pValue)
+                title1 = "Compare metric {} +- {}".format(cd[0],cd[1])
+                title2 = "Kernel comparison MMD {} p-value = {}".format(MMD,pValue)
                 ax.text(0.05, 0.85, title1, transform=ax.transAxes, 
                         verticalalignment='top', color='black', fontsize='small')
                 ax.text(0.05, 0.80, title2, transform=ax.transAxes, 
