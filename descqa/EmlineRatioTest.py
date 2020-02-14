@@ -4,7 +4,7 @@
 # W0231 gives a warning because __init__() is not called for BaseValidationTest
 # W0201 gives a warning when defining attributes outside of __init__()
 from __future__ import unicode_literals, absolute_import, division
-import os
+from os import path
 import numpy as np
 from astropy import units as u
 from astropy.cosmology import Planck15 as cosmo
@@ -31,24 +31,26 @@ class EmlineRatioTest(BaseValidationTest):
     sdss_file: str, optional, (default: 'sdss_emission_lines/sdss_query_snr10_ew.csv')
         Location of the SDSS data file that will be passed into the sdsscat class.  Looks
         in the 'data/' folder.
-    mag_u_cut: float, optional, (default: 26.3)
-        u-band magnitude cut.  Dimmer galaxies are excluded from the comparison.  Default
-        value is the 5-sigma detection limit from https://arxiv.org/pdf/0912.0201.pdf
-    mag_g_cut: float, optional, (default: 27.5)
-        g-band magnitude cut.  Dimmer galaxies are excluded from the comparison.  Default
-        value is the 5-sigma detection limit from https://arxiv.org/pdf/0912.0201.pdf
-    mag_r_cut: float, optional, (default: 27.7)
-        r-band magnitude cut.  Dimmer galaxies are excluded from the comparison.  Default
-        value is the 5-sigma detection limit from https://arxiv.org/pdf/0912.0201.pdf
-    mag_i_cut: float, optional, (default: 27.0)
-        i-band magnitude cut.  Dimmer galaxies are excluded from the comparison.  Default
-        value is the 5-sigma detection limit from https://arxiv.org/pdf/0912.0201.pdf
-    mag_z_cut: float, optional, (default: 26.2)
-        z-band magnitude cut.  Dimmer galaxies are excluded from the comparison.  Default
-        value is the 5-sigma detection limit from https://arxiv.org/pdf/0912.0201.pdf
-    mag_y_cut: float, optional, (default: 24.9)
-        y-band magnitude cut.  Dimmer galaxies are excluded from the comparison.  Default
-        value is the 5-sigma detection limit from https://arxiv.org/pdf/0912.0201.pdf
+    loz_lo: float, optional, (default: 0.0)
+        This test allows for magnitude cuts in different filters over two redshift regions.
+        This defines the low end of the low redshift region.
+    loz_hi: float, optional, (default: 0.0)
+        This test allows for magnitude cuts in different filters over two redshift regions.
+        This defines the high end of the low redshift region.
+    hiz_lo: float, optional, (default: 0.0)
+        This test allows for magnitude cuts in different filters over two redshift regions.
+        This defines the low end of the high redshift region.
+    hiz_hi: float, optional, (default: 0.0)
+        This test allows for magnitude cuts in different filters over two redshift regions.
+        This defines the high end of the high redshift region.
+    loz_band: str, optional, (default: 'r')
+        The band name to which to apply the low redshift magnitude limit.
+    hiz_band: str, optional, (default: 'i')
+        The band name to which to apply the high redshift magnitude limit.
+    loz_magcut: float, optional, (default: 19.5)
+        The magnitude cut applied to the band specified by loz_band.
+    hiz_magcut: float, optional, (default: 19.9)
+        The magnitude cut applied to the band specified by hiz_band.
     sdss_drawnum: int, optional, (default: 30000)
         The number of galaxies to draw from the SDSS data file to perform the comparison.
         The default number is chosen to (hopefully) not make the 2-D KS test too stringent.
@@ -68,18 +70,23 @@ class EmlineRatioTest(BaseValidationTest):
         self.emline_ratio1 = kwargs.get('emline_ratio1', 'oii/oiii') # Currently does not support other emission line ratios
         self.emline_ratio2 = kwargs.get('emline_ratio2', 'hb/oiii') # Currently does not support other emission line ratios
         sdss_file = kwargs.get('sdss_file', 'descqa/data/sdss_emission_lines/sdss_query_snr10_ew.csv')
-        # self.sdsscat = sdsscat(self.data_dir + '/' + sdss_file)
         self.sdsscat = sdsscat(sdss_file)
 
         # The magnitude cuts for galaxies pulled from the catalog.  These numbers correspond to
-        # a 5-sigma cut based on https://arxiv.org/pdf/0912.0201.pdf
+        # SDSS spectroscopic detection limits in https://arxiv.org/pdf/1207.7326.pdf
 
-        self.mag_u_cut = kwargs.get('mag_u_cut', 26.3)
-        self.mag_g_cut = kwargs.get('mag_g_cut', 27.5)
-        self.mag_r_cut = kwargs.get('mag_r_cut', 27.7)
-        self.mag_i_cut = kwargs.get('mag_i_cut', 27.0)
-        self.mag_z_cut = kwargs.get('mag_z_cut', 26.2)
-        self.mag_y_cut = kwargs.get('mag_y_cut', 24.9)
+        self.loz_lo = kwargs.get('lowz_lo', 0.0)
+        self.loz_hi = kwargs.get('lowz_hi', 0.4)
+        self.hiz_lo = kwargs.get('hiz_lo', 0.4)
+        self.hiz_hi = kwargs.get('hiz_hi', 0.7)
+
+        self.loz_band = 'mag_' + kwargs.get('loz_band', 'r') + '_lsst'
+        self.hiz_band = 'mag_' + kwargs.get('hiz_band', 'i') + '_lsst'
+
+        self.loz_magcut = kwargs.get('loz_magcut', 19.5)
+        self.hiz_magcut = kwargs.get('hiz_magcut', 19.9)        
+
+        self.ha_cut = kwargs.get('ha_cut', 2.6e7)
 
         # These numbers dictate how large the two samples will be.  I have found that
         # if the numbers get much larger than this, the 2-D KS test becomes more discriminatory
@@ -101,12 +108,9 @@ class EmlineRatioTest(BaseValidationTest):
         #=========================================
 
         # check if needed quantities exist
-        if not catalog_instance.has_quantities(['mag_u_lsst',
-                                                'mag_g_lsst',
-                                                'mag_r_lsst',
-                                                'mag_i_lsst',
-                                                'mag_z_lsst',
-                                                'mag_y_lsst',
+        if not catalog_instance.has_quantities(['redshift_true',
+                                                self.loz_band,
+                                                self.hiz_band,
                                                 'emissionLines/totalLineLuminosity:oxygenII3726',
                                                 'emissionLines/totalLineLuminosity:oxygenII3729',
                                                 'emissionLines/totalLineLuminosity:balmerAlpha6563',
@@ -118,15 +122,16 @@ class EmlineRatioTest(BaseValidationTest):
                                                 'emissionLines/totalLineLuminosity:sulfurII6731']):
             return TestResult(skipped=True, summary='Necessary quantities are not present')
 
-        uband_maglim = GCRQuery((np.isfinite, 'mag_u_lsst'), 'mag_u_lsst < %.1f' % self.mag_u_cut)
-        gband_maglim = GCRQuery((np.isfinite, 'mag_g_lsst'), 'mag_g_lsst < %.1f' % self.mag_g_cut)
-        rband_maglim = GCRQuery((np.isfinite, 'mag_r_lsst'), 'mag_r_lsst < %.1f' % self.mag_r_cut)
-        iband_maglim = GCRQuery((np.isfinite, 'mag_i_lsst'), 'mag_i_lsst < %.1f' % self.mag_i_cut)
-        zband_maglim = GCRQuery((np.isfinite, 'mag_z_lsst'), 'mag_z_lsst < %.1f' % self.mag_z_cut)
-        yband_maglim = GCRQuery((np.isfinite, 'mag_y_lsst'), 'mag_y_lsst < %.1f' % self.mag_y_cut)
+
+        loz_filter = GCRQuery((np.isfinite, 'redshift_true'), 'redshift_true > %f' % self.loz_lo, 'redshift_true < %f' % self.loz_hi)
+        hiz_filter = GCRQuery((np.isfinite, 'redshift_true'), 'redshift_true > %f' % self.hiz_lo, 'redshift_true < %f' % self.hiz_hi)
+        loz_magcut_filter = GCRQuery((np.isfinite, self.loz_band), self.loz_band + ' < %.1f' % self.loz_magcut)
+        hiz_magcut_filter = GCRQuery((np.isfinite, self.hiz_band), self.hiz_band + ' < %.1f' % self.hiz_magcut)
+        ha_fluxlim = GCRQuery((np.isfinite, 'emissionLines/totalLineLuminosity:balmerAlpha6563'),(lambda x: x > self.ha_cut, 'emissionLines/totalLineLuminosity:balmerAlpha6563'))
 
 
-        data = catalog_instance.get_quantities(['emissionLines/totalLineLuminosity:oxygenII3726',
+        data = catalog_instance.get_quantities(['redshift_true',
+                                                'emissionLines/totalLineLuminosity:oxygenII3726',
                                                 'emissionLines/totalLineLuminosity:oxygenII3729',
                                                 'emissionLines/totalLineLuminosity:balmerAlpha6563',
                                                 'emissionLines/totalLineLuminosity:balmerBeta4861',
@@ -135,13 +140,12 @@ class EmlineRatioTest(BaseValidationTest):
                                                 'emissionLines/totalLineLuminosity:oxygenIII5007',
                                                 'emissionLines/totalLineLuminosity:sulfurII6716',
                                                 'emissionLines/totalLineLuminosity:sulfurII6731',
-                                                'mag_u_lsst',
-                                                'mag_g_lsst',
-                                                'mag_r_lsst',
-                                                'mag_i_lsst',
-                                                'mag_z_lsst',
-                                                'mag_y_lsst'], filters=(uband_maglim | gband_maglim | rband_maglim | iband_maglim | zband_maglim | yband_maglim))
+                                                self.loz_band,
+                                                self.hiz_band], filters=((loz_filter & loz_magcut_filter) | (hiz_filter & hiz_magcut_filter) & ha_fluxlim))
 
+        # data = data[data['emissionLines/totalLineLuminosity:balmerAlpha6563'] > self.ha_cut]
+
+        z = data['redshift_true']
         Halpha = (data['emissionLines/totalLineLuminosity:balmerAlpha6563'] * 3.839e26*u.W).value
         Hbeta = (data['emissionLines/totalLineLuminosity:balmerBeta4861'] * 3.839e26*u.W).value
         NII6584 = (data['emissionLines/totalLineLuminosity:nitrogenII6584'] * 3.839e26*u.W).value
@@ -157,8 +161,11 @@ class EmlineRatioTest(BaseValidationTest):
 
         # Reduce the sample size by drawing self.sim_drawnum galaxies
 
-        indices = np.random.choice(np.arange(len(Halpha)), size=self.sim_drawnum, replace=False)
+        # indices = np.random.choice(np.arange(len(Halpha)), size=self.sim_drawnum, replace=False)
 
+        indices = self.sdsscat.drawinds(z, size = self.sim_drawnum, catname = catalog_name)
+
+        self.z = z[indices]
         self.ha = Halpha[indices]
         self.hb = Hbeta[indices]
         self.oii = OIItot[indices]
@@ -290,11 +297,17 @@ class EmlineRatioTest(BaseValidationTest):
         perform the test
         """
 
-        with open(os.path.join(output_dir, 'Emline_Lum_Ratio_Summary.txt'), 'w') as writefile:
+        with open(path.join(output_dir, 'Emline_Lum_Ratio_Summary.txt'), 'w') as writefile:
             writefile.write('Simulation Galaxies Drawn: %i\n' % self.sim_drawnum)
             writefile.write('SDSS Galaxies Drawn: %i\n' % self.sdss_drawnum)
-            for thisband in ['u', 'g', 'r', 'i', 'z', 'y']:
-                writefile.write(thisband + '-band magnitude cut: %.1f\n' % getattr(self, 'mag_' + thisband + '_cut'))
+            writefile.write('loz_lo: %.1f\n' % self.loz_lo)
+            writefile.write('loz_hi: %.1f\n' % self.loz_hi)
+            writefile.write('hiz_lo: %.1f\n' % self.hiz_lo)
+            writefile.write('hiz_hi: %.1f\n' % self.hiz_hi)
+            writefile.write('loz_band: ' + self.loz_band + '\n')
+            writefile.write('hiz_band: ' + self.hiz_band + '\n')
+            writefile.write('loz_magcut: %.1f' % self.loz_magcut + '\n')
+            writefile.write('hiz_magcut: %.1f' % self.hiz_magcut + '\n')
             writefile.write('\n')
             writefile.write('=================\n')
             writefile.write(' Catalogs Tested \n')
@@ -319,7 +332,7 @@ class EmlineRatioTest(BaseValidationTest):
         # Save all of the summary plots into output_dir
 
         for thisfig, thiscat in zip(self.figlist, self.runcat_name):
-            thisfig.savefig(os.path.join(output_dir, thiscat + '_emline_ratios.png'), bbox_inches='tight')
+            thisfig.savefig(path.join(output_dir, thiscat + '_emline_ratios.png'), bbox_inches='tight')
             plt.close(thisfig)
 
 
@@ -487,3 +500,56 @@ class sdsscat:
         else:
 
             return np.NaN
+
+
+    def drawinds(self, z, size, catname = None, cache = 'descqa/data/sdss_emission_lines/cache/'):
+
+        if catname:
+            if path.isfile(cache + catname + str(int(size))):
+                print('WARNING: READING REDSHIFT MATCHES FROM FILE')
+                return np.loadtxt(cache + catname + str(int(size)), dtype = int)
+            else:
+
+                indices = np.arange(len(z))
+
+                sdss_z = np.copy(self.z)
+
+                np.random.shuffle(sdss_z)
+
+                sdss_z = sdss_z[:size]
+
+                return_inds = []
+
+                for thisz in sdss_z:
+
+                    close_inds = indices[np.where(np.abs(z-thisz) <= 0.01)]
+
+                    return_inds.append(np.random.choice(close_inds))
+
+                return_inds = np.array(return_inds, dtype = int)
+
+                np.savetxt(cache + catname + str(int(size)), return_inds, fmt = '%i')
+
+                return return_inds
+        else:
+
+            indices = np.arange(len(z))
+
+            sdss_z = np.copy(self.z)
+
+            np.random.shuffle(sdss_z)
+
+            sdss_z = sdss_z[:size]
+
+            return_inds = []
+
+            for thisz in sdss_z:
+
+                close_inds = indices[np.where(np.abs(z-thisz) <= 0.05)]
+
+                return_inds.append(np.random.choice(close_inds))
+
+            return_inds = np.array(return_inds, dtype = int)
+
+            return return_inds
+
