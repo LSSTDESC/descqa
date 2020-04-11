@@ -44,8 +44,6 @@ class ColorDistribution(BaseValidationTest):
     summary_output_file = 'summary.txt'
     plot_pdf_file = 'plot_pdf.png'
     plot_cdf_file = 'plot_cdf.png'
-    sdss_path = '/global/cfs/cdirs/lsst/groups/CS/descqa/data/rongpu/SpecPhoto_sdss_mgs_extinction_corrected.fits'
-    deep2_path = '/global/cfs/cdirs/lsst/groups/CS/descqa/data/rongpu/DEEP2_uniq_Terapix_Subaru_trimmed_wights_added.fits'
 
     def __init__(self, **kwargs): # pylint: disable=W0231
 
@@ -77,6 +75,9 @@ class ColorDistribution(BaseValidationTest):
         self.binsize = self.bins[1] - self.bins[0]
 
         # Load validation catalog and define catalog-specific properties
+        self.sdss_path = os.path.join(self.external_data_dir, 'rongpu', 'SpecPhoto_sdss_mgs_extinction_corrected.fits')
+        self.deep2_path = os.path.join(self.external_data_dir, 'rongpu', 'DEEP2_uniq_Terapix_Subaru_trimmed_wights_added.fits')
+
         if self.validation_catalog == 'SDSS':
             obs_path = self.sdss_path
             obscat = Table.read(obs_path)
