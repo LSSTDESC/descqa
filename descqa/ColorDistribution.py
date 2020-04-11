@@ -44,8 +44,8 @@ class ColorDistribution(BaseValidationTest):
     summary_output_file = 'summary.txt'
     plot_pdf_file = 'plot_pdf.png'
     plot_cdf_file = 'plot_cdf.png'
-    sdss_path = '/global/projecta/projectdirs/lsst/groups/CS/descqa/data/rongpu/SpecPhoto_sdss_mgs_extinction_corrected.fits'
-    deep2_path = '/global/projecta/projectdirs/lsst/groups/CS/descqa/data/rongpu/DEEP2_uniq_Terapix_Subaru_trimmed_wights_added.fits'
+    sdss_path = '/global/cfs/cdirs/lsst/groups/CS/descqa/data/rongpu/SpecPhoto_sdss_mgs_extinction_corrected.fits'
+    deep2_path = '/global/cfs/cdirs/lsst/groups/CS/descqa/data/rongpu/DEEP2_uniq_Terapix_Subaru_trimmed_wights_added.fits'
 
     def __init__(self, **kwargs): # pylint: disable=W0231
 

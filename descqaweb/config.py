@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 __all__ = ['site_title', 'root_dir', 'general_info', 'static_dir', 'run_per_page', 'logo_filename', 'github_url', 'months_to_search']
 
-root_dir = '/global/projecta/projectdirs/lsst/groups/CS/descqa/run/v2'
+root_dir = '/global/cfs/cdirs/lsst/groups/CS/descqa/run/v2'
 site_title = 'DESCQA (v2): LSST DESC Quality Assurance for Galaxy Catalogs'
 
 run_per_page = 20
