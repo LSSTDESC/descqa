@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 __all__ = ['site_title', 'root_dir', 'general_info', 'static_dir', 'run_per_page', 'logo_filename', 'github_url', 'months_to_search']
 
-root_dir = '/global/projecta/projectdirs/lsst/groups/CS/descqa/run/v2'
+root_dir = '/global/cfs/cdirs/lsst/groups/CS/descqa/run/v2'
 site_title = 'DESCQA (v2): LSST DESC Quality Assurance for Galaxy Catalogs'
 
 run_per_page = 20
@@ -13,7 +13,7 @@ logo_filename = 'desc-logo-small.png'
 github_url = 'https://github.com/lsstdesc/descqa'
 
 general_info = '''
-This is DESCQA v2. You can also visit the previous version, <a class="everblue" href="https://portal.nersc.gov/projecta/lsst/descqa/v1/">DESCQA v1</a>.
+This is DESCQA v2. You can also visit the previous version, <a class="everblue" href="https://portal.nersc.gov/cfs/lsst/descqa/v1/">DESCQA v1</a>.
 <br><br>
 The DESCQA framework executes validation tests on mock galaxy catalogs.
 These tests and catalogs are contributed by LSST DESC collaborators.
