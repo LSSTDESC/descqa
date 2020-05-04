@@ -108,7 +108,7 @@ class CheckQuantities(BaseValidationTest):
         self.relations_to_check = kwargs.get('relations_to_check', [])
         self.uniqueness_to_check = kwargs.get('uniqueness_to_check', [])
         self.catalog_filters = kwargs.get('catalog_filters', [])
-        self.lgndtitle_fontsize = kwargs.get('lgndtitle_fontsize', 12)
+        self.lgndtitle_fontsize = kwargs.get('lgndtitle_fontsize', 10)
         
         if not any((
                 self.quantities_to_check,
