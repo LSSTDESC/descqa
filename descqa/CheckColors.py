@@ -266,7 +266,8 @@ class CheckColors(BaseValidationTest):
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         has_results = False
         redshift_bins = np.linspace(self.zlo, self.zhi, num=self.zbins+1)
-        catval = Table.read(self.path_val)
+        cat_path = os.path.join(self.external_data_dir,  self.path_val)
+        catval = Table.read(cat_path)
         labels_val = {band: self.mag_fields_val.format(band) for band in self.bands_val}
         datamag_val = {k: catval[v] for k, v in labels_val.items()}
         camlist = ['lsst','des','cfht','sdss']
