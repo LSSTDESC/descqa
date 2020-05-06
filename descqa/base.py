@@ -74,6 +74,7 @@ class BaseValidationTest(object):
     """
 
     data_dir = os.path.join(os.path.dirname(__file__), 'data')
+    external_data_dir = "/global/cfs/cdirs/lsst/groups/CS/descqa/data"
 
     def __init__(self, **kwargs):
         pass

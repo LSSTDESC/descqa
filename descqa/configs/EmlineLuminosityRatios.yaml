@@ -4,11 +4,11 @@ emline_ratio2: 'hb/oiii'
 sdss_file: 'descqa/data/sdss_emission_lines/sdss_query_snr10_ew.csv'
 sdss_drawnum: 30000
 sim_drawnum: 30000
-mag_u_cut: 26.3
-mag_g_cut: 27.5
-mag_r_cut: 27.7
-mag_i_cut: 27.0
-mag_z_cut: 26.2
-mag_y_cut: 24.9
+loz_lo: 0.0
+loz_hi: 0.4
+hiz_lo: 0.4
+hiz_hi: 0.7
+loz_band: 'r'
+hiz_band: 'i'
 truncate_cat_name: False
 description: 'Plots ratios of emission line luminosities from SDSS data and DESC simulations and compares the two 2-D distributions.'
