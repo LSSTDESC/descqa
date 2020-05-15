@@ -197,11 +197,10 @@ def wass1dim(data1, data2, numBins = 200):
 def CompareDensity(data1, data2):
     ''' Compare two multi-dimensional arrays by the 
     Wasserstein metric (https://en.wikipedia.org/wiki/Wasserstein_metric).
-    The input data should have outliers removed before applying this funciton.
+    The input data should have outliers removed before applying this function.
     The multidimensional input data is projected onto multiple directions. 
     The Wasserstein metric is computed on each projected result. 
     This function returns the averaged metrics and its standard error. 
-    
     
     Parameters
     ----------
@@ -213,7 +212,7 @@ def CompareDensity(data1, data2):
         
     Outputs
     -------
-        mu, sigma: the average discrepency measure and its standard error.
+        mu, sigma: the average discrepancy measure and its standard error.
         
     '''
     K = 40 #4000
@@ -354,11 +353,11 @@ class CheckColors(BaseValidationTest):
                                    colors='black',linestyles='solid',levels=self.levels)
                 h1,_ = cntr1.legend_elements()
                 
-                ### CompareDensity block
+                ### CompareDensity block (Wasserstein metric)
                 simdata = np.column_stack([xcolor,ycolor])
                 valdata = np.column_stack([xcolor_val,ycolor_val])
                 cd = CompareDensity(simdata,valdata)
-                print('Compare density result',cd) 
+                print('Compare density with Wasserstein metric',cd) 
                 
                 ### kernel comparison block
                 obj = kernelCompare(simdata, valdata)
