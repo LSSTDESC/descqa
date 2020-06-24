@@ -126,11 +126,12 @@ class CheckQuantities(BaseValidationTest):
         if not all(d.get('quantity') for d in self.uniqueness_to_check):
             raise ValueError('yaml file error: `quantity` must exist for each item in `uniqueness_to_check`')
 
-        if not all(d.get('quantity') for d in self.catalog_filters):
-            raise ValueError('yaml file error: `quantity` must exist for each item in `catalog_filters`')
+        if self.catalog_filters:
+            if not all(d.get('quantity') for d in self.catalog_filters):
+                raise ValueError('yaml file error: `quantity` must exist for each item in `catalog_filters`')
 
-        if not all(d.get('min') for d in self.catalog_filters) or all(d.get('max') for d in self.catalog_filters):
-            raise ValueError('yaml file error: `min` or `max` must exist for each item in `catalog_filters`')
+            if not all(d.get('min') for d in self.catalog_filters) or all(d.get('max') for d in self.catalog_filters):
+                raise ValueError('yaml file error: `min` or `max` must exist for each item in `catalog_filters`')
         
         self.enable_individual_summary = bool(kwargs.get('enable_individual_summary', True))
         self.enable_aggregated_summary = bool(kwargs.get('enable_aggregated_summary', False))
