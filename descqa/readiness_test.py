@@ -126,7 +126,7 @@ class CheckQuantities(BaseValidationTest):
         if not all(d.get('quantity') for d in self.uniqueness_to_check):
             raise ValueError('yaml file error: `quantity` must exist for each item in `uniqueness_to_check`')
 
-        if len(self.catalog_filters) > 0:
+        if self.catalog_filters:
             if not all(d.get('quantity') for d in self.catalog_filters):
                 raise ValueError('yaml file error: `quantity` must exist for each item in `catalog_filters`')
 
