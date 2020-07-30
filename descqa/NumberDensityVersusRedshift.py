@@ -107,7 +107,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
 
         #catalog quantities
         self.truncate_cat_name = kwargs.get('truncate_cat_name', False)
-        self.shorten_cat_name = kwargs.get('shorten_cat_name', True)
+        self.replace_cat_name = kwargs.get('replace_cat_name', {})
         self.title_in_legend = kwargs.get('title_in_legend', False)
         self.legend_location = kwargs.get('legend_location', 'upper left')
         self.font_size = kwargs.get('font_size', 16)
@@ -252,11 +252,9 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         #setup plots
         if self.truncate_cat_name:
             catalog_name = re.split('_', catalog_name)[0]
-        elif self.shorten_cat_name: #remove some typical qualifiers
-            for q in ['small', 'image', 'object', 'matched', 'addon']:
-                catalog_name = re.sub(q, '', catalog_name)
-            catalog_name = re.sub('_+', '_', catalog_name)
-            catalog_name = re.sub('_$', '', catalog_name)
+        if self.replace_cat_name:
+            for k, v in self.replace_cat_name.items():
+                catalog_name = re.sub(k, v, catalog_name)
                                                                                     
         fig, ax = plt.subplots(self.nrows, self.ncolumns, figsize=(self.figx_p, self.figy_p), sharex='col')
         catalog_color = next(self.colors)

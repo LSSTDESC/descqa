@@ -64,6 +64,7 @@ class ColorDistribution(BaseValidationTest):
         self.exclude_agn = kwargs.get('exclude_agn', False)
         self.plot_shift = kwargs.get('plot_shift', True)
         self.truncate_cat_name = kwargs.get('truncate_cat_name', False)
+        self.replace_cat_name = kwargs.get('replace_cat_name', {})
         self.title_in_legend = kwargs.get('title_in_legend', False)
         self.legend_location = kwargs.get('legend_location', 'upper left')
         self.skip_statistic = kwargs.get('skip_statistic', False)
@@ -288,11 +289,9 @@ class ColorDistribution(BaseValidationTest):
             if self.truncate_cat_name:
                 catalog_name = re.split('_', catalog_name)[0]
                 spacing = ', '
-            elif self.shorten_cat_name: #remove some typical qualifiers
-                for q in ['small', 'image', 'object', 'matched', 'addon']:
-                    catalog_name = re.sub(q, '', catalog_name)
-                catalog_name = re.sub('_+', '_', catalog_name)
-                catalog_name = re.sub('_$', '', catalog_name)
+            if self.replace_cat_name:
+                for k, v in self.replace_cat_name.items():
+                    catalog_name = re.sub(k, v, catalog_name)
                 
             if cvm_omega.get(color, None) and not self.skip_statistic:
                 catalog_label = catalog_name + spacing + r'$\omega={:.3}$'.format(cvm_omega[color])
