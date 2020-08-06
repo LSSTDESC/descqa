@@ -1,0 +1,15 @@
+subclass_name: NumberDensityVersusRedshift.NumberDensityVersusRedshift
+band: r
+zlo: 0.
+zhi: 1.5
+N_zbins: 15
+observation: 'DEEP2_JAN'
+jackknife: True
+N_jack: 30
+truncate_cat_name: true
+replace_cat_name: {'dc2':'DC2'}
+legend_size: 12
+font_size: 18
+use_diagonal_only: True
+included_by_default: true
+description: 'Plot N(z) distributions for selected magnitude cuts in specified band and compare with fits to DEEP2 data from J. A. Newman (priv. comm.)'

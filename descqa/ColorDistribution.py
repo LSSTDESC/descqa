@@ -64,12 +64,14 @@ class ColorDistribution(BaseValidationTest):
         self.exclude_agn = kwargs.get('exclude_agn', False)
         self.plot_shift = kwargs.get('plot_shift', True)
         self.truncate_cat_name = kwargs.get('truncate_cat_name', False)
+        self.replace_cat_name = kwargs.get('replace_cat_name', {})
         self.title_in_legend = kwargs.get('title_in_legend', False)
         self.legend_location = kwargs.get('legend_location', 'upper left')
         self.skip_statistic = kwargs.get('skip_statistic', False)
         self.font_size = kwargs.get('font_size', 16)
         self.legend_size = kwargs.get('legend_size', 10)
-
+        self.shorten_cat_name = kwargs.get('shorten_cat_name', True)
+        
         # bins of color distribution
         self.bins = np.linspace(-1, 4, 2000)
         self.binsize = self.bins[1] - self.bins[0]
@@ -77,7 +79,8 @@ class ColorDistribution(BaseValidationTest):
         # Load validation catalog and define catalog-specific properties
         self.sdss_path = os.path.join(self.external_data_dir, 'rongpu', 'SpecPhoto_sdss_mgs_extinction_corrected.fits')
         self.deep2_path = os.path.join(self.external_data_dir, 'rongpu', 'DEEP2_uniq_Terapix_Subaru_trimmed_wights_added.fits')
-
+        
+        # Load validation catalog and define catalog-specific properties
         if self.validation_catalog == 'SDSS':
             obs_path = self.sdss_path
             obscat = Table.read(obs_path)
@@ -124,7 +127,7 @@ class ColorDistribution(BaseValidationTest):
             possible_names = ('Mag_{}_lsst', 'Mag_{}_sdss', 'Mag_true_{}_lsst_z0', 'Mag_true_{}_sdss_z0')
         else:
             possible_lsst_names = (('mag_{}_noagn_lsst', 'mag_true_{}_noagn_lsst')
-                                   if self.exclude_agn else ('mag_{}_lsst', 'mag_true_{}_lsst'))
+                                   if self.exclude_agn else ('mag_{}_cModel', 'mag_{}_lsst', 'mag_true_{}_lsst'))
             possible_non_lsst_names = ('mag_{}_sdss', 'mag_{}_des', 'mag_true_{}_sdss', 'mag_true_{}_des')
             if self.use_lsst:
                 print('Selecting lsst magnitudes if available')
@@ -144,7 +147,7 @@ class ColorDistribution(BaseValidationTest):
         filter_this = filters.pop()
 
         if self.lightcone:
-            labels['redshift'] = catalog_instance.first_available('redshift_true', 'redshift')
+            labels['redshift'] = catalog_instance.first_available('redshift_true_galaxy', 'redshift_true', 'redshift')
             if not labels['redshift']:
                 return TestResult(skipped=True, summary='mock catalog does not have redshift.')
 
@@ -156,13 +159,18 @@ class ColorDistribution(BaseValidationTest):
             redshift = catalog_instance.redshift
 
         data = catalog_instance.get_quantities(list(labels.values()), filters)
-        data = {k: data[v] for k, v in labels.items()}
+        # filter catalog data further for matched object catalogs 
+        if np.ma.isMaskedArray(data[labels['redshift']]):
+            galmask = np.ma.getmask(data[labels['redshift']])
+            data = {k:data[v][galmask] for k, v in labels.items()}
+        else:
+            data = {k: data[v] for k, v in labels.items()}
 
         # Color transformation
         color_trans = None
         if self.color_transformation_q:
             color_trans_name = None
-            if self.validation_catalog == 'DEEP2' and filter_this != 'lsst':
+            if self.validation_catalog == 'DEEP2' and (filter_this == 'sdss' or filter_this == 'des'):
                 color_trans_name = '{}2cfht'.format(filter_this)
             elif self.validation_catalog == 'SDSS' and filter_this == 'des':
                 color_trans_name = 'des2sdss'
@@ -281,6 +289,10 @@ class ColorDistribution(BaseValidationTest):
             if self.truncate_cat_name:
                 catalog_name = re.split('_', catalog_name)[0]
                 spacing = ', '
+            if self.replace_cat_name:
+                for k, v in self.replace_cat_name.items():
+                    catalog_name = re.sub(k, v, catalog_name)
+                
             if cvm_omega.get(color, None) and not self.skip_statistic:
                 catalog_label = catalog_name + spacing + r'$\omega={:.3}$'.format(cvm_omega[color])
             else:

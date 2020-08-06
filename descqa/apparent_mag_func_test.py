@@ -51,7 +51,8 @@ class ApparentMagFuncTest(BaseValidationTest):
         self.x_lower_limit = kwargs.get('x_lower_limit', 15)
         self.print_title = kwargs.get('print_title', False)
         self.min_mag = kwargs.get('min_mag', 19.)
-
+        self.replace_cat_name = kwargs.get('replace_cat_name', {})
+        
         # catalog quantities needed
         possible_mag_fields = ('mag_{}_cModel',
                                'mag_{}_lsst',
@@ -205,6 +206,10 @@ class ApparentMagFuncTest(BaseValidationTest):
         # plot on both this plot and any summary plots
         if self.truncate_cat_name:
             catalog_name = re.split('_', catalog_name)[0]
+        if self.replace_cat_name:
+            for k, v in self.replace_cat_name.items():      
+                catalog_name = re.sub(k, v, catalog_name)
+                
         upper_ax.plot(mag_bins, sampled_N, '-', label=catalog_name + sky_area_label)
         self.summary_upper_ax.plot(mag_bins, sampled_N, '-', label=catalog_name + sky_area_label)
 
