@@ -1,4 +1,4 @@
-#!/global/common/software/lsst/common/miniconda/current/envs/desc/bin/python
+#!/global/common/software/lsst/common/miniconda/desc-python-webapps/bin/python
 
 #import cgitb
 #cgitb.enable()
