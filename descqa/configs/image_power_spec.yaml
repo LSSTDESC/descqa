@@ -2,4 +2,4 @@ subclass_name: ImgPkTest.ImgPkTest
 description: 'Compute power spectrum of the background. It uses validation data from run #9 in DC2-production issue #140 (PhoSim full background model with sources in it)'
 included_by_default: true
 rebinning: 16
-validation_data_path: /global/projecta/projectdirs/lsst/groups/SSim/DC2/img_pk/reference_w_sources_R22.fits.gz
+validation_data_path: image_power_spec/reference_w_sources_R22.fits.gz

@@ -37,6 +37,7 @@ class ImgPkTest(BaseValidationTest):
         if validation_data_path is None:
             self.validation_data = None
         else:
+            validation_data_path = os.path.join(self.external_data_dir, validation_data_path)
             self.validation_data = Table.read(validation_data_path)
         self.validation_data_label = validation_data_label
         self.pixel_scale = pixel_scale
@@ -98,7 +99,7 @@ class ImgPkTest(BaseValidationTest):
             if sum((1 for data_this in data if data_this is not None)) == 9:
                 data = np.array(data)
                 xdim, ydim = data.shape[1:]
-                data = data.reshape(3, 3, xdim, ydim).swapaxes(1, 2).reshape(3*xdim, 3*ydim)
+                data = data.reshape(3, 3, xdim, ydim).swapaxes(1, 2).reshape(3*xdim, 3*ydim)  # pylint: disable=too-many-function-args
                 k, psd = self.calc_psd(data, rebinning)
                 ax[1].loglog(k, psd, label='all', c='k')
             else:

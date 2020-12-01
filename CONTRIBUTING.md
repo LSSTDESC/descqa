@@ -1,5 +1,7 @@
 # How to contribute to DESCQA?
 
+## Our GitHub workflow
+
 ### Step 1: Fork the DESCQA GitHub repo and clone a local copy on NERSC
 
 _Note_: You can skip this step and start with Step 2, if you already did it once.
@@ -72,6 +74,51 @@ First, push your changes to GitHub
 Then go to https://github.com/LSSTDESC/descqa/ to create a pull request.
 
 
+## Integration test
+
+We use [GitHub Actions](https://help.github.com/en/actions/automating-your-workflow-with-github-actions)
+to run integration tests on pull requests (PRs).
+Once you submit a PR, you will see whether your PR passes the integration test.
+
+Because it's difficult to directly test most of the DESCQA functionalities
+(as they need to be run on NERSC), we heavily rely on linters for integration
+tests. In particular we use flake8 and pylint to check any potential syntax or
+logic errors. PRs need to pass these tests before they can be merged.
+
+You can see our integration test workflow [here](.github/workflows/pythonpackage.yml).
+
+### How to fix the errors?
+
+Check the output of GitHub Actions and it'll tell you what's wrong.
+You can then fix the code accordingly.
+
+Note that linters are not perfect, sometimes they report false positive.
+Other times the code runs fine but has [anti-patterns](https://en.wikipedia.org/wiki/Anti-pattern)
+which trigger the linters.
+You should change your code to follow best practices and make linter happy.
+In cases where you are certain that the linter made a false positive report,
+you can add the follow comment in your code to disable specific errors.
+You should add these exceptions at where the error takes place.
+
+```python
+# pylint: disable=<pylint code>  # noqa: <flake8 code>
+```
+
+### Build failed due to dependencies
+
+If your test depends on additional python packages or other libraries,
+first you should ask yourself if these additional dependencies are _really_ needed.
+Even if we manage to include these dependencies in the integration test, we still
+need to add them to our NERSC environment, which may be difficult.
+
+If you need to add additional python packages as dependencies, they should be added to
+`setup.py`, under `extras_require` > `full`. The integration test will automatically
+install all the packages specified there.
+
+If you need to add non-python libraries as dependencies, please do make sure you
+_really_ need them. Discuss with other DESCQA developers.
+There's not simple intructions for how to add non-python libraries.
+
 
 ## How to run DESCQA?
 
@@ -126,5 +173,5 @@ Then you can simply run `./run_master.sh`; however, there are many useful option
 
 As the master script is running, all the error messages will be printed out in real time if you have set `-v`. You can also go to the web interface to check you result:
 
-https://portal.nersc.gov/project/lsst/descqa/v2/?run=all
+https://portal.nersc.gov/cfs/lsst/descqa/v2/?run=all
 

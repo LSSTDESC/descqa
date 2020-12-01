@@ -1,0 +1,67 @@
+subclass_name: CorrelationsTwoPoint.CorrelationsAngularTwoPoint
+
+# Catalog columns to attempt to load. The simplified names (e.g. ra, dec) are
+# the names that we be used to cut on in test_samples. Make sure these match.
+requested_columns:
+  ra:
+    - ra
+    - ra_true
+  dec:
+    - dec
+    - dec_true
+  mag:
+    - mag_r_sdss
+    - mag_r_des
+    - mag_r_lsst
+    - mag_true_r_sdss
+    - mag_true_r_des
+    - mag_true_r_lsst
+    - mag_r
+
+# Definition of samples and cuts to apply.  The names of these columns must
+# match the simple column name definitions above.
+test_samples:
+  r_17_18:
+    mag: {min: 17, max: 18}
+  r_18_19:
+    mag: {min: 18, max: 19}
+  r_19_20:
+    mag: {min: 19, max: 20}
+  r_20_21:
+    mag: {min: 20, max: 21}
+  r_17_21:
+    mag: {min: 17, max: 21}
+
+# Output file naming format for output of the resultant correlation values.
+output_filename_template: 'w_theta_r_{}.dat'
+
+# Name of file and columns to load and compare against the test samples.
+data_filename: 'tpcf/Wang_2013_MNRAS_stt450_Table2.txt'
+data_label: 'Y.Wang+2013'
+# Specify the columns to load from the data for comparison. The names here
+# should match the sample names from test_samples.
+test_data:
+  r_17_18: {data_col: 3, data_err_col: 4}
+  r_18_19: {data_col: 5, data_err_col: 6}
+  r_19_20: {data_col: 7, data_err_col: 8}
+  r_20_21: {data_col: 9, data_err_col: 10}
+  r_17_21: {data_col: 1, data_err_col: 2}
+
+# Plotting configuration.
+fig_xlabel: '$\theta\quad[{\rm deg}]}$'
+fig_ylabel: '$w(\theta)$'
+fig_ylim: [0.0001, 5.0]
+test_sample_labels:
+  r_17_18: '$17 < r < 18$'
+  r_18_19: '$18 < r < 19$'
+  r_19_20: '$19 < r < 20$'
+  r_20_21: '$20 < r < 21$'
+  r_17_21: '$17 < r < 21$'
+
+#Treecorr parameters
+min_sep: 0.01
+max_sep: 10
+bin_size: 0.25
+
+description: |
+  Compare angular correlation functions of catalog and Wang et al (2013) SDSS r-band observations
