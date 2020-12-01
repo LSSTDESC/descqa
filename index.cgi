@@ -1,4 +1,4 @@
-#!/global/common/cori/contrib/lsst/apps/anaconda/py3-envs/DESCQA/bin/python
+#!/global/common/software/lsst/common/miniconda/desc-python-webapps/bin/python
 
 #import cgitb
 #cgitb.enable()

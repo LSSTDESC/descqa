@@ -1,0 +1,64 @@
+subclass_name: ColorRedshiftTest.ColorRedshiftTest
+observation: ''
+description: 'Plotting galaxies as function of redshift with different cuts on galaxy population'
+
+
+# Optional settings for plotting:
+  # central: 
+    # selects centrals if true, satellites if false. 
+
+  # Mr_cut:
+    # rest frame r-band cut
+
+  # mr_cut:
+    # observer frame r-band cut
+
+  # stellar_mass_cut:
+    # minimum galaxy mass cut in log10 base
+
+  # halo_mass_cut: 
+    # minimum host halo mass in log10 base
+
+  # red_sequence_cut:
+    # if true, selects red sequence galaxies. If false, selects non-red sequence
+
+  # log_scale: 
+    # Sets the color scaling to be log in the density plot if set true. Deefault is true.
+    
+  # redshift_limit:
+    # Sets the maximum redshift to display. Default is effectively z<1. The default does not read
+    # high z data files to save time.
+
+  # redshift_block_limit:
+    # sets the limit on which z-range block of data to read. "1" reads 0<z<~1, "2" reads 0<z<~2,
+    # "3" reads 0<z<~3. Other values are not allowed. Default is "1". If redshift_limit is 
+    # specified, this value is ignored and the redshift blocks to read is determined from the
+    # redshift_limit. 
+
+plot_list:
+
+
+- frame: obs
+  color: u-g
+  filter: lsst
+  mr_cut: 24
+
+- frame: obs
+  color: g-r
+  filter: lsst
+  mr_cut: 24
+
+- frame: obs
+  color: r-i
+  filter: lsst
+  mr_cut: 24
+
+- frame: obs
+  color: i-z
+  filter: lsst
+  mr_cut: 24
+
+- frame: obs
+  color: z-y
+  filter: lsst
+  mr_cut: 24

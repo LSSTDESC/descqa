@@ -107,7 +107,9 @@ class CheckQuantities(BaseValidationTest):
         self.quantities_to_check = kwargs.get('quantities_to_check', [])
         self.relations_to_check = kwargs.get('relations_to_check', [])
         self.uniqueness_to_check = kwargs.get('uniqueness_to_check', [])
-
+        self.catalog_filters = kwargs.get('catalog_filters', [])
+        self.lgndtitle_fontsize = kwargs.get('lgndtitle_fontsize', 10)
+        
         if not any((
                 self.quantities_to_check,
                 self.relations_to_check,
@@ -124,6 +126,13 @@ class CheckQuantities(BaseValidationTest):
         if not all(d.get('quantity') for d in self.uniqueness_to_check):
             raise ValueError('yaml file error: `quantity` must exist for each item in `uniqueness_to_check`')
 
+        if self.catalog_filters:
+            if not all(d.get('quantity') for d in self.catalog_filters):
+                raise ValueError('yaml file error: `quantity` must exist for each item in `catalog_filters`')
+
+            if not all(d.get('min') for d in self.catalog_filters) or all(d.get('max') for d in self.catalog_filters):
+                raise ValueError('yaml file error: `min` or `max` must exist for each item in `catalog_filters`')
+        
         self.enable_individual_summary = bool(kwargs.get('enable_individual_summary', True))
         self.enable_aggregated_summary = bool(kwargs.get('enable_aggregated_summary', False))
         self.always_show_plot = bool(kwargs.get('always_show_plot', True))
@@ -223,6 +232,29 @@ class CheckQuantities(BaseValidationTest):
             individual_only=True,
         ))
 
+        # check filters
+        filters = []
+        filter_labels = ''
+        for d in self.catalog_filters:
+            fq = d.get('quantity')
+            if fq in all_quantities:
+                filter_label=''
+                qlabel = d.get('label') if d.get('label') else fq
+                if d.get('min') is not None:
+                    filters.append('{} >= {}'.format(fq, d.get('min')))
+                    filter_label = '{} <= {}'.format(d.get('min'), qlabel)
+                if d.get('max') is not None:
+                    filters.append('{} < {}'.format(fq, d.get('max')))
+                    flabel = '{} <= {}'.format(qlabel, d.get('max'))
+                    filter_label = flabel if len(filter_label)==0 else re.sub(str(d.get('label')), flabel, filter_label)
+                filter_labels = '$'+filter_label+'$' if len(filter_labels)==0 else ', '.join([filter_labels,
+                                                                                              '$'+filter_label+'$'])
+            else:
+                self.record_result('Found no matching quantity for filtering on {}'.format(fq), failed=True)
+                continue
+
+        print(filters, filter_labels)
+
         for i, checks in enumerate(self.quantities_to_check):
 
             quantity_patterns = checks['quantities'] if isinstance(checks['quantities'], (tuple, list)) else [checks['quantities']]
@@ -248,7 +280,11 @@ class CheckQuantities(BaseValidationTest):
             has_plot = False
 
             for quantity in quantities_this:
-                value = catalog_instance[quantity]
+                if len(filters) > 0:
+                    catalog_data = catalog_instance.get_quantities([quantity], filters=filters)
+                    value = catalog_data[quantity]
+                else:
+                    value = catalog_instance[quantity]
                 need_plot = False
 
                 if galaxy_count is None:
@@ -314,7 +350,8 @@ class CheckQuantities(BaseValidationTest):
                 ax.set_title('{} {}'.format(catalog_name, getattr(catalog_instance, 'version', '')), fontsize='small')
                 fig.tight_layout()
                 if len(quantities_this) <= 9:
-                    leg = ax.legend(loc='best', fontsize='x-small', ncol=3, frameon=True, facecolor='white')
+                    leg = ax.legend(loc='best', fontsize='x-small', ncol=3, frameon=True, facecolor='white',
+                                    title=filter_labels, title_fontsize=self.lgndtitle_fontsize)
                     leg.get_frame().set_alpha(0.5)
                 fig.savefig(os.path.join(output_dir, plot_filename))
             plt.close(fig)
