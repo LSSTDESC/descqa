@@ -36,7 +36,6 @@ class YaleCAMGalaxyCatalog(GalaxyCatalog):
 
         # set file type and location
         self.type_ext = 'hdf5'
-        self.root_path = '/global/project/projectdirs/lsst/descqa/'
 
         # set fixed properties
         self.lightcone = False
@@ -82,7 +81,7 @@ class YaleCAMGalaxyCatalog(GalaxyCatalog):
         Parameters
         ----------
         fn : string
-            filename of mock catalog located at self.root_path
+            filename of mock catalog
         """
 
         #extract mock parameters from filename
