@@ -18,7 +18,7 @@ log_file = 'log.txt'
 plot_pdf_file = 'plot_pdf.png'
 plot_cdf_file = 'plot_cdf.png'
 plot_pdf_cdf_file = 'plot_g-r_pdf_cdf.pdf'
-data_dir = '/global/projecta/projectdirs/lsst/groups/CS/descqa/data/rongpu/'
+data_dir = '/global/cfs/cdirs/lsst/groups/CS/descqa/data/rongpu/'
 data_name = 'SDSS'
 
 limiting_band_name = 'SDSS_r:rest:'

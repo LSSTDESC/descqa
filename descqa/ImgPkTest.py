@@ -37,6 +37,7 @@ class ImgPkTest(BaseValidationTest):
         if validation_data_path is None:
             self.validation_data = None
         else:
+            validation_data_path = os.path.join(self.external_data_dir, validation_data_path)
             self.validation_data = Table.read(validation_data_path)
         self.validation_data_label = validation_data_label
         self.pixel_scale = pixel_scale

@@ -34,7 +34,7 @@ class DensityVersusSkyPosition(BaseValidationTest):
 
         self.kwargs = kwargs
         self.test_name = kwargs['test_name']
-        self.validation_path = kwargs['validation_map_filename']
+        self.validation_path = os.path.join(self.external_data_dir, kwargs['validation_map_filename'])
         self.nside = kwargs['nside']
         self.validation_data = hp.ud_grade(hp.read_map(self.validation_path), nside_out=self.nside)
         self.xlabel = kwargs['xlabel']

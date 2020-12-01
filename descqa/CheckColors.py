@@ -197,11 +197,10 @@ def wass1dim(data1, data2, numBins = 200):
 def CompareDensity(data1, data2):
     ''' Compare two multi-dimensional arrays by the 
     Wasserstein metric (https://en.wikipedia.org/wiki/Wasserstein_metric).
-    The input data should have outliers removed before applying this funciton.
+    The input data should have outliers removed before applying this function.
     The multidimensional input data is projected onto multiple directions. 
     The Wasserstein metric is computed on each projected result. 
     This function returns the averaged metrics and its standard error. 
-    
     
     Parameters
     ----------
@@ -213,7 +212,7 @@ def CompareDensity(data1, data2):
         
     Outputs
     -------
-        mu, sigma: the average discrepency measure and its standard error.
+        mu, sigma: the average discrepancy measure and its standard error.
         
     '''
     K = 40 #4000
@@ -266,7 +265,8 @@ class CheckColors(BaseValidationTest):
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         has_results = False
         redshift_bins = np.linspace(self.zlo, self.zhi, num=self.zbins+1)
-        catval = Table.read(self.path_val)
+        cat_path = os.path.join(self.external_data_dir,  self.path_val)
+        catval = Table.read(cat_path)
         labels_val = {band: self.mag_fields_val.format(band) for band in self.bands_val}
         datamag_val = {k: catval[v] for k, v in labels_val.items()}
         camlist = ['lsst','des','cfht','sdss']
@@ -353,11 +353,11 @@ class CheckColors(BaseValidationTest):
                                    colors='black',linestyles='solid',levels=self.levels)
                 h1,_ = cntr1.legend_elements()
                 
-                ### CompareDensity block
+                ### CompareDensity block (Wasserstein metric)
                 simdata = np.column_stack([xcolor,ycolor])
                 valdata = np.column_stack([xcolor_val,ycolor_val])
                 cd = CompareDensity(simdata,valdata)
-                print('Compare density result',cd) 
+                print('Compare density with Wasserstein metric',cd) 
                 
                 ### kernel comparison block
                 obj = kernelCompare(simdata, valdata)
