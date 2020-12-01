@@ -11,10 +11,10 @@ module load gsl/2.1
 module load cray-fftw/3.3.6.2
 
 # activate python env
-PYTHON="/global/common/software/lsst/common/miniconda/current/bin/python"
+PYTHON="/global/common/software/lsst/common/miniconda/current/envs/desc/bin/python"
 
 # set output directory
-OUTPUTDIR="/global/projecta/projectdirs/lsst/groups/CS/descqa/run/v2"
+OUTPUTDIR="/global/cfs/cdirs/lsst/groups/CS/descqa/run/v2"
 
 # to allow wildcards in arguments go to master.py
 set -o noglob

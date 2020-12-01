@@ -244,3 +244,8 @@ relations_to_check:
   - 'ellipticity_1_true ** 2.0 + ellipticity_2_true ** 2.0 ~== ellipticity_true ** 2.0'
   - 'ellipticity_1_disk_true ** 2.0 + ellipticity_2_disk_true ** 2.0 ~== ellipticity_disk_true ** 2.0'
   - 'ellipticity_1_bulge_true ** 2.0 + ellipticity_2_bulge_true ** 2.0 ~== ellipticity_bulge_true ** 2.0'
+
+uniqueness_to_check:
+  - quantity: galaxy_id
+  - quantity: halo_id
+    mask: is_central

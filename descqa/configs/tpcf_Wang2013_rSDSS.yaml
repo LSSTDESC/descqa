@@ -12,6 +12,7 @@ requested_columns:
   mag:
     - mag_r_sdss
     - mag_r_des
+    - mag_r_cModel
     - mag_r_lsst
     - mag_true_r_sdss
     - mag_true_r_des

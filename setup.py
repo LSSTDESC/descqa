@@ -24,14 +24,14 @@ setup(
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.6',
     ],
     keywords='DESCQA',
     packages=['descqa'],
     install_requires=['future', 'pyyaml', 'jinja2'],
     extras_require={
-        'full': ['numpy', 'scipy', 'matplotlib', 'GCR>=0.6.2', 'healpy', 'treecorr', 'camb', 'scikit-learn'],
+        'full': ['numpy', 'scipy', 'matplotlib', 'GCR>=0.8.7', 'healpy', 'treecorr', 'camb', 'scikit-learn', 'pandas', 'astropy','POT','numba',
+                 'CatalogMatcher @ https://github.com/LSSTDESC/CatalogMatcher/archive/master.zip'],
     },
     package_data={'descqa': ['configs/*.yaml', 'data/*']},
 )

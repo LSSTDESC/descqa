@@ -1,0 +1,6 @@
+subclass_name: DensityVersusSkyPosition.DensityVersusSkyPosition
+test_name: Density versus sky position
+validation_map_filename: DensityVersusExtinction/lambda_sfd_ebv.fits
+nside: 1024
+xlabel: 'E(B-V)'
+description: Variation of mean density of detected objects as a function of extinction (or other map)

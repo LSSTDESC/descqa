@@ -6,6 +6,7 @@ except ImportError:
     from itertools import izip_longest as zip_longest
 from itertools import count
 
+import re
 import numpy as np
 from scipy.interpolate import interp1d
 from GCR import GCRQuery
@@ -78,6 +79,14 @@ class EllipticityDistribution(BaseValidationTest):
         #pylint: disable=W0231
         #catalog quantities
         self.filter_quantities = [z]
+        self.truncate_cat_name = kwargs.get('truncate_cat_name', False)
+        self.title_in_legend = kwargs.get('title_in_legend', False)
+        self.legend_location = kwargs.get('legend_location', 'lower left')
+        self.xfont_size = kwargs.get('xfont_size', 12)
+        self.yfont_size = kwargs.get('yfont_size', 14)
+        self.legend_size = kwargs.get('legend_size', 6)
+        self.legend_title_size = kwargs.get('legend_title_size', 8)
+
         possible_mag_fields = ('mag_{}_lsst',
                                'mag_{}_sdss',
                                'mag_{}_des',
@@ -246,7 +255,8 @@ class EllipticityDistribution(BaseValidationTest):
 
         #setup plots
         fig, ax = plt.subplots(self.nrows, self.ncolumns, sharex='col')
-        fig.text(self.yaxis_xoffset, self.yaxis_yoffset, self.yaxis, va='center', rotation='vertical') #setup a common axis label
+        fig.text(self.yaxis_xoffset, self.yaxis_yoffset, self.yaxis, va='center', rotation='vertical',
+                 fontsize=self.yfont_size) #setup a common axis label
 
         #initialize arrays for storing histogram sums
         N_array = np.zeros((self.nrows, self.ncolumns, len(self.ebins)-1), dtype=np.int)
@@ -256,6 +266,9 @@ class EllipticityDistribution(BaseValidationTest):
         #initialize boolean values for checking ellipticity endpoints
         any_low = False
         any_high = False
+
+        if self.truncate_cat_name:
+            catalog_name = re.split('_', catalog_name)[0]
         
         #get catalog data by looping over data iterator (needed for large catalogs) and aggregate histograms
         for catalog_data in catalog_instance.get_quantities(all_quantities, filters=self.filters, return_iterator=True):
@@ -287,12 +300,13 @@ class EllipticityDistribution(BaseValidationTest):
                     sume2 += np.histogram(e_this, bins=self.ebins, weights=e_this**2)[0]
                     
                     #check borders
-                    if np.min(e_this)<0:
-                        any_low = True
-                        print('Value<0 found for morphology {} in catalog {}: {}'.format(morphology, catalog_name, np.min(e_this)))
-                    if np.max(e_this)>1:
-                        any_high = True
-                        print('Value>1 found for morphology {} in catalog {}: {}'.format(morphology, catalog_name, np.max(e_this)))
+                    if len(e_this)>0:
+                        if np.min(e_this)<0:
+                            any_low = True
+                            print('Value<0 found for morphology {} in catalog {}: {}'.format(morphology, catalog_name, np.min(e_this)))
+                        if np.max(e_this)>1:
+                            any_high = True
+                            print('Value>1 found for morphology {} in catalog {}: {}'.format(morphology, catalog_name, np.max(e_this)))
 
         #check that catalog has entries for quantity to be plotted
         if not np.asarray([N.sum() for N in N_array]).sum():
@@ -311,12 +325,14 @@ class EllipticityDistribution(BaseValidationTest):
         )):
             if morphology is not None:
                 #get labels
-                cutlabel = '${} < {} < {}$; ${} < {}$; {}'.format(str(self.Mag_hi.get(morphology)), Mag_filtername, str(self.Mag_lo.get(morphology)),\
-                                                              mag_filtername, str(self.mag_lo.get(morphology)), morphology)
+                cutlabel = '${} < {} < {}$; ${} < {}$'.format(str(self.Mag_hi.get(morphology)), Mag_filtername, str(self.Mag_lo.get(morphology)),\
+                                                              mag_filtername, str(self.mag_lo.get(morphology)))
+                cutlabel = re.sub('-inf < ', '' , cutlabel) #truncate label with inf
+
                 ancillary_label = []
                 if self.ancillary_quantities is not None:
                     for key  in self.validation_data['cuts'].get('ancillary_keys'):
-                        ancillary_label.append('${} <$ {} $< {}$'.format(str(self.validation_data['cuts'][morphology].get(key+'_min')),\
+                        ancillary_label.append('${}<{}<{}$'.format(str(self.validation_data['cuts'][morphology].get(key+'_min')),\
                                                key, str(self.validation_data['cuts'][morphology].get(key+'_max'))))
                 ancillary_label = '; '.join(ancillary_label)
                 catalog_label = '; '.join((catalog_name, ancillary_label))
@@ -416,7 +432,7 @@ class EllipticityDistribution(BaseValidationTest):
     def decorate_subplot(self, ax, nplot, label=None):
         ax.tick_params(labelsize=8)
         ax.set_yscale('log')
-        if label:
+        if label and not self.title_in_legend:
             ax.set_title(label, fontsize='x-small')
 
        #add axes and legend
@@ -426,11 +442,12 @@ class EllipticityDistribution(BaseValidationTest):
                 #prevent overlapping yaxis labels
                 ax.yaxis.get_major_ticks()[0].label1.set_visible(False)
         else:
-            ax.set_xlabel(self.xaxis_label)
+            ax.set_xlabel(self.xaxis_label, size=self.xfont_size)
             for axlabel in ax.get_xticklabels():
                 axlabel.set_visible(True)
-        ax.legend(loc='lower left', fancybox=True, framealpha=0.5, numpoints=1, fontsize='x-small')
-
+        legend = ax.legend(loc=self.legend_location, fancybox=True, framealpha=0.5, numpoints=1, fontsize=self.legend_size)
+        if self.title_in_legend: 
+            legend.set_title(label, prop = {'size':self.legend_title_size})
 
     def validate_percentiles(self, data):
         cdf = np.zeros(self.N_ebins+1)
@@ -444,9 +461,9 @@ class EllipticityDistribution(BaseValidationTest):
                             percentiles, self.validation_percentiles['ranges'])]), percentiles
             
 
-    @staticmethod
-    def post_process_plot(fig):
-        pass
+    def post_process_plot(self, fig):
+        if self.title_in_legend:
+            fig.subplots_adjust(hspace=0)
 
     @staticmethod
     def save_quantities(keyname, results, filename, comment=''):
