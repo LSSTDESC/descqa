@@ -30,11 +30,9 @@ setup(
     packages=['descqa'],
     install_requires=['future', 'pyyaml', 'jinja2'],
     extras_require={
-        'full': ['numpy', 'scipy', 'matplotlib', 'GCR>=0.8.7', 'healpy', 'treecorr', 'camb', 'scikit-learn', 'CatalogMatcher', 'kmeans_radec==0.1'],
+        'full': ['numpy', 'scipy', 'matplotlib', 'GCR>=0.8.7', 'healpy', 'treecorr', 'camb', 'scikit-learn', 'pandas', 'astropy','POT','numba',
+                 'CatalogMatcher @ https://github.com/LSSTDESC/CatalogMatcher/archive/master.zip',
+                 'kmeans_radec @ https://github.com/esheldon/kmeans_radec/archive/master.zip#egg=kmeans_radec-0.1',],
     },
-    dependency_links=[
-        'https://github.com/LSSTDESC/CatalogMatcher/archive/master.zip#egg=CatalogMatcher-0.1.0.dev',
-        'https://github.com/esheldon/kmeans_radec/archive/master.zip#egg=kmeans_radec-0.1',
-    ],
     package_data={'descqa': ['configs/*.yaml', 'data/*']},
 )

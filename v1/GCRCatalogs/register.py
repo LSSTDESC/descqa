@@ -12,7 +12,7 @@ def load_yaml(yaml_file):
     Load *yaml_file*. Ruturn a dictionary.
     """
     with open(yaml_file) as f:
-        config = yaml.load(f)
+        config = yaml.safe_load(f)
     return config
 
 
@@ -55,7 +55,7 @@ def get_available_configs(config_dir, register=None):
     return register
 
 
-def get_available_catalogs():
+def get_available_catalogs(include_default_only=False): # pylint: disable=unused-argument
     """
     Return *available_catalogs* as a dictionary
     """

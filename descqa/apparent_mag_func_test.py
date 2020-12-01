@@ -1,7 +1,9 @@
 from __future__ import unicode_literals, absolute_import, division
 import os
+import re
 import numpy as np
 from scipy.interpolate import interp1d
+from .utils import get_sky_area
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
 
@@ -41,15 +43,27 @@ class ApparentMagFuncTest(BaseValidationTest):
         """
         # pylint: disable=super-init-not-called
 
+        self.truncate_cat_name = kwargs.get('truncate_cat_name', False)
+        self.title_in_legend = kwargs.get('title_in_legend', False)
+        self.skip_label_detail = kwargs.get('skip_label_detail', False)
+        self.font_size = kwargs.get('font_size', 16)
+        self.legend_size = kwargs.get('legend_size', 10)
+        self.x_lower_limit = kwargs.get('x_lower_limit', 15)
+        self.print_title = kwargs.get('print_title', False)
+        self.min_mag = kwargs.get('min_mag', 19.)
+        self.replace_cat_name = kwargs.get('replace_cat_name', {})
+        
         # catalog quantities needed
-        possible_mag_fields = ('mag_{}_lsst',
+        possible_mag_fields = ('mag_{}_cModel',
+                               'mag_{}_lsst',
                                'mag_true_{}_lsst',
                                'mag_{}_sdss',
                                'mag_true_{}_sdss',
                                'mag_{}_des',
                                'mag_true_{}_des',
                                'mag_{}_hsc',
-                               'mag_true_{}_hsc')
+                               'mag_true_{}_hsc',
+                              )
         self.possible_mag_fields = [f.format(band) for f in possible_mag_fields]
 
         # attach some attributes to the test
@@ -58,13 +72,13 @@ class ApparentMagFuncTest(BaseValidationTest):
         self.fractional_tol = fractional_tol
 
         # set color of lines in plots
-        colors = plt.cm.jet(np.linspace(0,1,5)) # pylint: disable=no-member
+        colors = plt.cm.jet(np.linspace(0, 1, 5)) # pylint: disable=no-member
         if band == 'g': self.line_color = colors[0]
         elif band == 'r': self.line_color = colors[1]
         elif band == 'i': self.line_color = colors[2]
         elif band == 'z': self.line_color = colors[3]
         elif band == 'y': self.line_color = colors[4]
-        else: self.line_color='black'
+        else: self.line_color = 'black'
 
         # check for validation observation
         if not observation:
@@ -76,8 +90,8 @@ class ApparentMagFuncTest(BaseValidationTest):
 
         # prepare summary plot
         self.summary_fig = plt.figure()
-        upper_rect = 0.2,0.4,0.7,0.55
-        lower_rect = 0.2,0.125,0.7,0.275
+        upper_rect = 0.2, 0.4, 0.7, 0.55
+        lower_rect = 0.2, 0.125, 0.7, 0.275
         self.summary_upper_ax, self.summary_lower_ax = self.summary_fig.add_axes(upper_rect), self.summary_fig.add_axes(lower_rect)
 
     def get_validation_data(self, band, observation):
@@ -96,7 +110,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         data = np.loadtxt(data_path, unpack=True, usecols=data_args['usecols'], skiprows=data_args['skiprows'])
 
         validation_data = dict(zip(data_args['colnames'], data))
-        validation_data['label'] = data_args['label']
+        validation_data['label'] = data_args['label'] if not self.skip_label_detail else data_args['label'].rpartition('(')[0]
 
         return validation_data
 
@@ -106,23 +120,27 @@ class ApparentMagFuncTest(BaseValidationTest):
         """
 
         #upper panel
-        upper_ax.legend(loc='upper left')
-        upper_ax.set_ylabel(r'$n(< {\rm mag}) ~[{\rm deg^{-2}}]$')
+        lgnd_title = ''
+        title = str(self.band_lim[0]) + ' < '+self.band + ' < ' + str(self.band_lim[1])
+        if self.title_in_legend:
+            lgnd_title = title
+        elif self.print_title:
+            upper_ax.set_title(title)
+        upper_ax.legend(loc='upper left', title=lgnd_title, fontsize=self.legend_size)
+        upper_ax.set_ylabel(r'$n(< {\rm mag}) ~[{\rm deg^{-2}}]$', size=self.font_size)
         upper_ax.xaxis.set_visible(False)
         upper_ax.set_ylim([1000, 10**7])
         upper_ax.fill_between([self.band_lim[0], self.band_lim[1]], [0, 0], [10**9, 10**9], alpha=0.1, color='grey')
         upper_ax.set_yscale('log')
-        upper_ax.set_title(str(self.band_lim[0]) + ' < '+self.band + ' < ' + str(self.band_lim[1]))
-        upper_ax.set_xlim([15,30])
+        upper_ax.set_xlim([self.x_lower_limit, 30])
 
         #lower panel
         lower_ax.fill_between([self.band_lim[0], self.band_lim[1]], [-1, -1], [1, 1], alpha=0.1, color='grey')
-        lower_ax.set_xlabel(self.band + ' magnitude')
-        lower_ax.set_ylabel(r'$\Delta n/n$')
-        lower_ax.set_ylim([-1,1])
-        lower_ax.set_yticks([-0.6,0.0,0.6])
-        lower_ax.set_xlim([15,30])
-
+        lower_ax.set_xlabel(self.band + ' magnitude', size=self.font_size)
+        lower_ax.set_ylabel(r'$\Delta n/n$', size=self.font_size)
+        lower_ax.set_ylim([-1, 1])
+        lower_ax.set_yticks([-0.6, 0.0, 0.6])
+        lower_ax.set_xlim([self.x_lower_limit, 30])
 
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
@@ -133,26 +151,33 @@ class ApparentMagFuncTest(BaseValidationTest):
         if not mag_field_key:
             return TestResult(skipped=True, summary='Catalog is missing requested quantity: {}'.format(self.possible_mag_fields))
 
+        # check to see if catalog is a light cone
+        # this is required since we must be able to calculate the angular area
+        # if attribute `lightcone` does not exist, allow the catalog to proceed
+        if not getattr(catalog_instance, 'lightcone', True):
+            return TestResult(skipped=True, summary="Catalog is not a light cone.")
+
+        # obtain or calculate sky area
+        sky_area = getattr(catalog_instance, 'sky_area', None)
+        if sky_area is None:
+            if not catalog_instance.has_quantities(['ra', 'dec']):
+                return TestResult(skipped=True, summary="'ra' and/or 'dec' not available to compute sky area")
+            sky_area = get_sky_area(catalog_instance) # compute area from ra and dec
+
+        sky_area_label = ' (Sky Area = {:.1f} $\\rm deg^2$)'.format(sky_area)
+
         #####################################################
         # caclulate the cumulative number density of galaxies
         #####################################################
 
+        # filter on extended sources if quantity is available in catalog (eg. in object catalog)
+        filters = ['extendedness == 1'] if catalog_instance.has_quantity('extendedness') else None
+
         # retreive data from mock catalog
-        d = catalog_instance.get_quantities([mag_field_key])
+        d = catalog_instance.get_quantities([mag_field_key], filters=filters)
         m = d[mag_field_key]
         m = np.sort(m)  # put into order--bright to faint
 
-        # check to see if catalog is a light cone
-        # this is required since we must be able to calculate the angular area
-        if not catalog_instance.lightcone:
-            return TestResult(skipped=True, summary="Catalog is not a light cone.")
-
-        # check to see the angular area if an attribute of the catalog
-        try:
-            sky_area = catalog_instance.sky_area
-        except AttributeError:
-            return TestResult(skipped=True, summary="Catalog needs an attribute 'sky_area'.")
-        
         # get the total number of galaxies in catalog
         N_tot = len(m)
         N = np.cumsum(np.ones(N_tot))/sky_area
@@ -160,11 +185,11 @@ class ApparentMagFuncTest(BaseValidationTest):
         # define the apparent magnitude bins for plotting purposes
         dmag = 0.1 # bin widths
         max_mag = self.band_lim[1] + 1.0  # go one mag beyond the limit
-        min_mag = self.band_lim[0] - 1.0  # start at bright galaxies
+        min_mag = self.min_mag  # start at bright galaxies
         mag_bins = np.arange(min_mag, max_mag, dmag)
 
         # calculate N(<mag) at the specified points
-        inds = np.searchsorted(m,mag_bins)
+        inds = np.searchsorted(m, mag_bins)
         mask = (inds >= len(m))
         inds[mask] = -1 # take care of edge case
         sampled_N = N[inds]
@@ -174,13 +199,19 @@ class ApparentMagFuncTest(BaseValidationTest):
         #################################################
 
         fig = plt.figure()
-        upper_rect = 0.2,0.4,0.7,0.55
-        lower_rect = 0.2,0.125,0.7,0.275
+        upper_rect = 0.2, 0.4, 0.7, 0.55
+        lower_rect = 0.2, 0.125, 0.7, 0.275
         upper_ax, lower_ax = fig.add_axes(upper_rect), fig.add_axes(lower_rect)
 
         # plot on both this plot and any summary plots
-        upper_ax.plot(mag_bins, sampled_N, '-', label=catalog_name)
-        self.summary_upper_ax.plot(mag_bins, sampled_N, '-', label=catalog_name)
+        if self.truncate_cat_name:
+            catalog_name = re.split('_', catalog_name)[0]
+        if self.replace_cat_name:
+            for k, v in self.replace_cat_name.items():      
+                catalog_name = re.sub(k, v, catalog_name)
+                
+        upper_ax.plot(mag_bins, sampled_N, '-', label=catalog_name + sky_area_label)
+        self.summary_upper_ax.plot(mag_bins, sampled_N, '-', label=catalog_name + sky_area_label)
 
         # plot validation data
         n = self.validation_data['n(<mag)']
@@ -193,7 +224,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         #################################
 
         # interpolate the validation data in order to compare to the mock catalog at same points
-        non_zero_mask = (self.validation_data['n(<mag)']>0.0)
+        non_zero_mask = (self.validation_data['n(<mag)'] > 0.0)
         x = self.validation_data['mag'][non_zero_mask]
         y = np.log10(self.validation_data['n(<mag)'])[non_zero_mask]
         f_xy = interp1d(x, y, fill_value='extrapolate')
@@ -214,7 +245,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         self.summary_lower_ax.plot(mag_bins, delta, '-', label=catalog_name)
 
         # apply 'passing' criterion
-        if max_frac_diff>self.fractional_tol:
+        if max_frac_diff > self.fractional_tol:
             score = max_frac_diff
             passed = False
         else:
