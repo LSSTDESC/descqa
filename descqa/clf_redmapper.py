@@ -1,16 +1,19 @@
 import os
 import sys
 import pickle
+
 import numpy as np
+
 try:
     import kmeans_radec
 except ImportError:
-    sys.exit(
-        "You need kmeans_radec install it from https://github.com/esheldon/kmeans_radec")
+    raise ImportError("You need kmeans_radec install it from https://github.com/esheldon/kmeans_radec")
+
 from .kcorrect_wrapper import kcorrect
-#from GCR import GCRQuery
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
+
+
 __all__ = ['ConditionalLuminosityFunction_redmapper']
 
 
@@ -164,6 +167,8 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         z = quant['redshift_true']
         kcorrect_path = self.data_dir+"/clf/kcorrect/"+catalog_name+"_kcorr.cache"
         if not os.path.exists(kcorrect_path):
+            if kcorrect is None:
+                raise RuntimeError("kcorrect is not available! Abort!")
             kcorr = kcorrect(mag, magerr, z, self.bandshift, filters=self.filters)
             np.savetxt(kcorrect_path, kcorr)
         else:
@@ -172,8 +177,8 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         # Preprocess for all quantity
         #get analysis band and do kcorrection
         analindex = self.band_kcorrect.index(self.band)
-        Mag = mag[:, analindex] - catalog_instance.cosmology.distmod(z).value - kcorr[:, analindex]
-#
+        Mag = mag[:, analindex] - catalog_instance.cosmology.distmod(z).value - kcorr[:, analindex]  # pylint: disable=unsubscriptable-object
+
         # Mask for central galaxy
         mask = (quant['richness'] > 1)
         limmag = quant['lim_limmag_dered'][mask]
@@ -184,18 +189,18 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
             quant['cluster_id'][mask], quant['cluster_id_member'], quant['ra_cluster'][mask], quant['dec_cluster'][mask], quant['ra'], quant['dec'], Mag)
         np.save("cenMag.npy", cenMag,)
         np.save("Mag.npy", Mag,)
-#        assert False
+
         # For halo run pcen are 1
         pcen_all = np.zeros(len(quant['ra']))
         pcen_all[cengalindex.flatten().astype(int)] = quant['p_cen'][mask]
-        ##
+
         # Prepare for jackknife
         jackList = self.make_jack_samples_simple(
             quant['ra_cluster'][mask], quant['dec_cluster'][mask])
 
         match_index_jack = self.getjackgal(
             jackList[0], quant['cluster_id'][mask], quant['cluster_id_member'])
-        ##
+
         # calculating clf
         cenclf, satclf, covar_cen, covar_sat = self.redm_clf(Mag, cenMag, pcen_all,
                                                              jackList, quant['cluster_id'][mask], quant['cluster_id_member'],
@@ -204,8 +209,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                                                              pcen=quant['p_cen'][mask],
                                                              cluster_lm=quant['richness'][mask],
                                                              cluster_z=quant['redshift_cluster'][mask])
-        ##
-         
+
         scores_shift = []
         scores_scatter = []
         for i in range(self.n_z_bins):
@@ -251,10 +255,8 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                         loaded_data = np.loadtxt(self.data_dir + "/clf/{5}/clf_{4}_z_{0}_{1}_lm_{2}_{3}.dat".format(zrange[0], zrange[1], lambdlow, lambdhigh, name, self.compared_survey))
                         loaded_data[:, 0] += 5*np.log10(h) #kcorrect distmodule assume h=1, so we need to adjust it to match h in simulation
                         data[galtype].append(loaded_data)
-                    except IOError as e:
+                    except IOError:
                         data[galtype].append(None)
-                    except: #handle other exceptions such as attribute errors
-                        print("Unexpected error:", sys.exc_info()[0])
         newdata={}
         for item in data.keys():
            newdata[item] = np.array(data[item]).reshape(self.n_z_bins, self.nlambd_bins, -1, 3)
