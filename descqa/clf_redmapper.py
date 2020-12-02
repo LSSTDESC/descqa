@@ -167,8 +167,6 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         z = quant['redshift_true']
         kcorrect_path = self.data_dir+"/clf/kcorrect/"+catalog_name+"_kcorr.cache"
         if not os.path.exists(kcorrect_path):
-            if kcorrect is None:
-                raise RuntimeError("kcorrect is not available! Abort!")
             kcorr = kcorrect(mag, magerr, z, self.bandshift, filters=self.filters)
             np.savetxt(kcorrect_path, kcorr)
         else:
