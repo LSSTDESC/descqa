@@ -126,17 +126,12 @@ class DeltaSigma(BaseValidationTest):
                size=len(inds) - int(self.max_background_galaxies),
                replace=False)]] = False
 
-        ra_s = res['ra'][mask_source]
-        dec_s = res['dec'][mask_source]
         coords = SkyCoord(ra=res['ra']*u.degree, dec=res['dec']*u.degree)
         coords_s = coords[mask_source]
-        g1 = res['shear_1'][mask_source]
-        g2 = res['shear_2'][mask_source]
-
 
         # run gammat in thin redshift bins, loop over lens bins of different stellar mass and colors
         for i in range(len(Mask_lens)):
-	        
+
             nlens = len(np.where(Mask_lens[i])[0]) / catalog_instance.sky_area
             with open(os.path.join(output_dir, 'galaxy_density_'+str(self.data)+'.dat'), 'a') as f:
                         f.write('{} \n'.format(nlens))
