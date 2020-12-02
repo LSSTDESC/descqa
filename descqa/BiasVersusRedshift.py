@@ -2,13 +2,14 @@ from __future__ import print_function, division, unicode_literals, absolute_impo
 import os
 import numpy as np
 import scipy.optimize as op
+
 from GCR import GCRQuery
 import pyccl as ccl
+
 from .base import TestResult
 from .CorrelationsTwoPoint import CorrelationsAngularTwoPoint
 from .plotting import plt
-import scipy.optimize as op
-import pyccl as ccl
+
 
 __all__ = ['BiasValidation']
 
@@ -21,7 +22,7 @@ class BiasValidation(CorrelationsAngularTwoPoint):
     """
 
     def __init__(self, **kwargs): #pylint: disable=W0231
-        super(CorrelationsAngularTwoPoint, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.data_label = kwargs['data_label']
         self.output_filename_template = kwargs['output_filename_template']
         self.label_template = kwargs['label_template']
@@ -39,7 +40,6 @@ class BiasValidation(CorrelationsAngularTwoPoint):
 
         for sample_name, color in zip(self.test_samples, colors):
             sample_corr = corr_data[sample_name]
-            sample_data = self.test_data[sample_name]
             sample_label = self.test_sample_labels.get(sample_name)
             sample_th = corr_theory[sample_name]
             ax[0].loglog(sample_corr[0], sample_th, c=color, label=sample_label)
