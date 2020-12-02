@@ -4,7 +4,7 @@ from .base import BaseValidationTest, TestResult
 import numpy as np 
 import matplotlib
 from matplotlib.colors import LogNorm
-from astropy.cosmology import WMAP7 as cosmo
+from astropy.cosmology import WMAP7 as cosmo  # pylint: disable=E0611
 import astropy.stats as stat
 import os
 import pdb
