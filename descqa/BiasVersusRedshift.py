@@ -31,6 +31,7 @@ class BiasValidation(CorrelationsAngularTwoPoint):
         self.fig_ylim = kwargs['fig_ylim']
         self.test_name = kwargs['test_name']
         self.fit_range = kwargs['fit_range']
+        self.ell_max = kwargs['ell_max'] if 'ell_max' in kwargs.keys() else 20000
         validation_filepath = os.path.join(self.data_dir, kwargs['data_filename'])
         self.validation_data = np.loadtxt(validation_filepath, skiprows=2)
     
@@ -103,22 +104,23 @@ class BiasValidation(CorrelationsAngularTwoPoint):
                 output_file_name=output_treecorr_filepath)
             
             correlation_data[sample_name] = (xi_rad, xi, xi_sig)
-            nz, be = np.histogram(tmp_catalog_data['redshift'], range=(0,2), bins=100)
+            nz, be = np.histogram(tmp_catalog_data['redshift'], range=(0, 2), bins=100)
             zcent = 0.5*(be[1:]+be[:-1])
             nz_data[sample_name] = (zcent, nz*1.0)
             
             # Generate CCL tracer object to compute Cls -> w(theta)
-            tracer = ccl.ClTracerNumberCounts(cosmo, has_rsd=False, has_magnification=False,
-                                              bias=np.ones_like(zcent), z=zcent, n=nz)
+            tracer = ccl.NumberCountsTracer(cosmo, has_rsd=False, dndz=(zcent, nz),
+                                              bias=(zcent, np.ones_like(zcent)))
 
-            ells = np.arange(0,5000)
+            ells = np.arange(0, self.ell_max) # Reduce ell_max to speed-up
            
-            cls = ccl.angular_cl(cosmo,tracer,tracer,ells)
-            print(xi_rad)
-            w_th = ccl.correlation(cosmo,ells,cls,xi_rad)
+            cls = ccl.angular_cl(cosmo, tracer, tracer, ells)
+            w_th = ccl.correlation(cosmo, ells, cls, xi_rad)
             angles = (xi_rad > self.fit_range[sample_name]['min_theta']) & \
                      (xi_rad < self.fit_range[sample_name]['max_theta']) # Select the fitting range 
-            result = op.minimize(neglnlike,[1.0],args=(w_th[angles],xi[angles],xi_sig[angles]),bounds=[(0.1,10)])
+            result = op.minimize(neglnlike, [1.0], 
+                                 args=(w_th[angles], xi[angles], 
+                                       xi_sig[angles]), bounds=[(0.1, 10)])
             best_bias = result['x']
             correlation_theory[sample_name] = best_bias**2*w_th
             best_fit_bias.append(best_bias)
@@ -133,5 +135,5 @@ class BiasValidation(CorrelationsAngularTwoPoint):
 
         passed = np.all((best_fit_bias[1:]-best_fit_bias[:-1]) > 0) 
         score = np.count_nonzero((best_fit_bias[:-1]-best_fit_bias[1:])>0)*1.0/(len(best_fit_bias)-1.0)
-        return TestResult(score=score,passed=passed,
+        return TestResult(score=score, passed=passed,
                   summary="Resulting linear bias obtained from the 2pcf")
