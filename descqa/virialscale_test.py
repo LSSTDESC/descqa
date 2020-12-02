@@ -181,8 +181,8 @@ class VirialScaling(BaseValidationTest):
         self.summary_ax.set_ylim(np.min(vel_dispersion[mask_num])*.3, np.max(vel_dispersion[mask_num])*5)
         self.summary_ax.set_xlim(smallest*.75, largest*1.5)
         self.summary_ax.set_yscale('log')
-        self.summary_ax.set_xlabel('$h(z)M\_halo  (M_{\odot})$')
-        self.summary_ax.set_ylabel('$\sigma_v  (km/s)$')
+        self.summary_ax.set_xlabel(r'$h(z)M\_halo  (M_{\odot})$')
+        self.summary_ax.set_ylabel(r'$\sigma_v  (km/s)$')
         #label color axis depending on what you want to show
         if(self.c_axis == 'number'):
             bar.ax.set_ylabel('galaxies per cluster')
