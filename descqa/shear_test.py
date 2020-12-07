@@ -50,8 +50,11 @@ class ShearTest(BaseValidationTest):
                  **kwargs):
         #pylint: disable=W0231
 
-        plt.rcParams['font.size'] = 9
-
+        #plt.rcParams['font.size'] = 9
+        self.axsize = kwargs.get('axsize', 16)
+        self.title_size = kwargs.get('title_size', 18)
+        self.legend_size = kwargs.get('legend_size', 10)
+        
         self.z = z
         #sep-bounds and binning
         self.min_sep = min_sep
@@ -76,7 +79,8 @@ class ShearTest(BaseValidationTest):
         self.z_range = z_range
         self.zlo = zlo
         self.zhi = zhi
-
+        self.zmeans = np.linspace(self.zlo, self.zhi, self.ntomo+2)[1:-1]
+        
     def compute_nz(self, n_z):
         '''create interpolated n(z) distribution'''
         z_bins = np.linspace(self.zlo, self.zhi, 301)
@@ -87,6 +91,7 @@ class ShearTest(BaseValidationTest):
         n2 = interp1d(z, n / n2_sum, bounds_error=False, fill_value=0.0, kind='cubic')
         return n2
 
+    
 
     def theory_corr(self, n_z2, xvals, lmax2, chi_max, zlo2, zhi2, cosmo_cat):
         '''compute the correlation function from limber integration over the CAMB power spectrum'''
@@ -206,11 +211,11 @@ class ShearTest(BaseValidationTest):
 
     # define theory from within this class
 
-    def post_process_plot(self, ax):
+    def post_process_plot(self, ax, fig):
         '''
         Post-processing routines on plot
         '''
-        zmeans = np.linspace(self.zlo, self.zhi, self.ntomo+2)[1:-1]
+        #zmeans = np.linspace(self.zlo, self.zhi, self.ntomo+2)[1:-1]
 
         # vmin and vmax are very rough DES-like limits (maximum and minimum scales)
         for i in range(self.ntomo):
@@ -218,14 +223,14 @@ class ShearTest(BaseValidationTest):
                 ax_this.set_xscale('log')
                 ax_this.axvline(vmin, ls='--', c='k')
                 ax_this.axvline(vmax, ls='--', c='k')
-            ax[-1][i].set_xlabel(r'$\theta \; {\rm (arcmin)}$')
-            ax[0][i].set_title('z = '+str(zmeans[i]))
-            ax[0][i].legend()
-            ax[-1][i].legend()
-        ax[0][0].set_ylabel(r'$\chi_{{{}}} \; (10^{{-6}})$'.format('+'))
-        ax[-1][0].set_ylabel(r'$\chi_{{{}}} \; (10^{{-6}})$'.format('-'))
+            ax[-1][i].set_xlabel(r'$\theta \; {\rm (arcmin)}$', size=self.axsize)
+            ax[0][i].set_title('z = {:.2f}'.format(self.zmeans[i]), size=self.title_size)
+            ax[0][i].legend(fontsize=self.legend_size)
+            ax[-1][i].legend(fontsize=self.legend_size)
+        ax[0][0].set_ylabel(r'$\chi_{{{}}} \; (10^{{-6}})$'.format('+'), size=self.axsize)
+        ax[-1][0].set_ylabel(r'$\chi_{{{}}} \; (10^{{-6}})$'.format('-'), size=self.axsize)
 
-
+        fig.subplots_adjust(hspace=0)
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         '''
@@ -335,6 +340,8 @@ class ShearTest(BaseValidationTest):
             print(theory_minus)
             print(xip)
             print(xim)
+            print(r)
+            print(xvals)
 
 	    #The following are further treecorr correlation functions that could be added in later to extend the test
 	    #treecorr.NNCorrelation(nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin')
@@ -348,7 +355,18 @@ class ShearTest(BaseValidationTest):
                 ax_this[1, ii].errorbar(r, xim, sigm_jack, lw=0.6, marker='o', ls='', color="#3f9b0b", label=r'$\chi_{-}$')
                 ax_this[1, ii].plot(xvals, theory_minus, 'o', color="#9a0eea", label=r'$\chi_{-}$' + " theory")
 
-        self.post_process_plot(ax)
+            results = {'theta':r, 'xip  ':xip, 'xim  ':xim, 'theta_theory':xvals, 'xip_theory':theory_plus, 'xim_theory':theory_minus, 'npairs':gg.npairs}
+            if do_jackknife:
+                results['xip_err'] = sig_jack
+                results['xim_err'] = sigm_jack
+            #save results for catalog and validation data in txt files
+            filelabel = 'z_{:.2f}'.format(self.zmeans[ii])
+            theory_keys = [k for k in results.keys() if 'theory' in k]
+            keys = ['theta'] + [k for k in results.keys() if 'xi' in k and 'theory' not in k] + theory_keys + ['npairs']
+            with open(os.path.join(output_dir, 'Shear_vs_theta_' + filelabel + '.txt'), 'ab') as f_handle: #open file in append binary mode
+                self.save_quantities(keys, results, f_handle, comment='z = {:.2f}'.format(self.zmeans[ii]))
+                        
+        self.post_process_plot(ax, fig)
         fig.savefig(os.path.join(output_dir, 'plot.png'))
         plt.close(fig)
 
@@ -360,6 +378,12 @@ class ShearTest(BaseValidationTest):
             return TestResult(score, inspect_only=True)
         else:
             return TestResult(score, passed=False)
+
+    @staticmethod
+    def save_quantities(keys, results, filename, comment=''):
+            header = 'Data columns for {} are:\n  {}'.format(comment, '  '.join(keys))
+            np.savetxt(filename, np.vstack((results[k] for k in keys)).T, fmt='%12.4e', header=header)
+
 
     def conclude_test(self, output_dir):
         self.post_process_plot(self.summary_ax)
