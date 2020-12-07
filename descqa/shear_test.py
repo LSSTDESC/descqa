@@ -386,6 +386,6 @@ class ShearTest(BaseValidationTest):
 
 
     def conclude_test(self, output_dir):
-        self.post_process_plot(self.summary_ax)
+        self.post_process_plot(self.summary_ax, self.summary_fig)
         self.summary_fig.savefig(os.path.join(output_dir, 'summary.png'))
         plt.close(self.summary_fig)
