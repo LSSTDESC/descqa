@@ -215,7 +215,6 @@ class ShearTest(BaseValidationTest):
         '''
         Post-processing routines on plot
         '''
-        #zmeans = np.linspace(self.zlo, self.zhi, self.ntomo+2)[1:-1]
 
         # vmin and vmax are very rough DES-like limits (maximum and minimum scales)
         for i in range(self.ntomo):
