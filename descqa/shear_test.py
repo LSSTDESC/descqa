@@ -50,7 +50,6 @@ class ShearTest(BaseValidationTest):
                  **kwargs):
         #pylint: disable=W0231
 
-        #plt.rcParams['font.size'] = 9
         self.axsize = kwargs.get('axsize', 16)
         self.title_size = kwargs.get('title_size', 18)
         self.legend_size = kwargs.get('legend_size', 10)
