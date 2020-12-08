@@ -1,6 +1,7 @@
 from __future__ import print_function, unicode_literals, absolute_import, division
 import os
 import sys
+import re
 import numpy as np
 import numexpr as ne
 from .base import BaseValidationTest, TestResult
@@ -242,6 +243,8 @@ class CheckColors(BaseValidationTest):
         self.redshift_cut_val = kwargs['redshift_cut_val'] 
         self.mag_fields_val = kwargs['mag_fields_val']
         self.path_val = kwargs['path_val']
+        self.truncate_cat_name = kwargs.get('truncate_cat_name', False)
+
 
         if len(kwargs['xcolor']) != 2 or len(kwargs['ycolor']) != 2:
             print('Warning: color string is longer than 2 characters. Only first and second bands will be used.')
@@ -271,6 +274,11 @@ class CheckColors(BaseValidationTest):
         datamag_val = {k: catval[v] for k, v in labels_val.items()}
         camlist = ['lsst','des','cfht','sdss']
         filter_this = None
+        
+        # plot on both this plot and any summary plots
+        if self.truncate_cat_name:
+            catalog_name = re.split('_', catalog_name)[0]
+        
         for mag_field in self.mag_fields_to_check:
             for cam in camlist:
                 if cam in mag_field:
@@ -340,17 +348,21 @@ class CheckColors(BaseValidationTest):
 
                 ### plot hexbin plot for catalog
                 fig, ax = plt.subplots()
-                ax.hexbin(xcolor, ycolor, gridsize=(100), cmap='GnBu', mincnt=1, bins='log')
+                hb = ax.hexbin(xcolor, ycolor, gridsize=(100), cmap='GnBu', mincnt=1, bins='log')
+                cb = fig.colorbar(hb, ax=ax)
+                cb.set_label(catalog_name)
                 # plot contour plot for validation
-                xmin = -0.5
-                xmax = 1.0
-                ymin = 0.0
-                ymax = 2.0
+                xmin = -1.0
+                xmax = 1.5
+                ymin = -0.5
+                ymax = 3.0
+
                 hrange = [[xmin,xmax],[ymin,ymax]]
                 counts,xbins,ybins = np.histogram2d(xcolor_val,ycolor_val,range=hrange,bins=[30,30]) 
                 print(xbins,ybins)
                 cntr1 = ax.contour(counts.transpose(), extent=[xmin,xmax,ymin,ymax],
                                    colors='black',linestyles='solid',levels=self.levels)
+                
                 h1,_ = cntr1.legend_elements()
                 
                 ### CompareDensity block (Wasserstein metric)
@@ -371,14 +383,17 @@ class CheckColors(BaseValidationTest):
                 ax.text(0.05, 0.95, title, transform=ax.transAxes, 
                         verticalalignment='top', color='black', fontsize='small')
                 title1 = "Compare metric {:.4} +- {:.4}".format(cd[0],cd[1])
-                title2 = "Kernel comparison MMD {:.4} p-value = {:.3}".format(MMD,pValue)
+                title2 = "Kernel comparison MMD {:.4}".format(MMD)
+                title3 = "p-value = {:.3}".format(pValue)
                 ax.text(0.05, 0.85, title1, transform=ax.transAxes, 
                         verticalalignment='top', color='black', fontsize='small')
                 ax.text(0.05, 0.80, title2, transform=ax.transAxes, 
                         verticalalignment='top', color='black', fontsize='small')
-                ax.set_title('Color inspection for {} vs {}'.format(catalog_name, self.validation_catalog))
+                ax.text(0.05, 0.75, title3, transform=ax.transAxes, 
+                        verticalalignment='top', color='black', fontsize='small')
+                #ax.set_title('{} vs {}'.format(catalog_name, self.validation_catalog))
 
-                plt.legend([h1[0]], [self.validation_catalog])
+                plt.legend([h1[0]], [self.validation_catalog], loc=4)
                 fig.tight_layout()
                 fig.savefig(os.path.join(output_dir, '{}_{}_{}_{}.png'.format(self.xcolor,               self.ycolor,str(i),mag_field.replace('_{}_', '_'))))
                 plt.close(fig)
