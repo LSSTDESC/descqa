@@ -1,15 +1,7 @@
 import os
 import pickle
-
 import numpy as np
-
-try:
-    import kmeans_radec
-except ImportError:
-    raise ImportError(
-        "You need kmeans_radec install it from https://github.com/esheldon/kmeans_radec"
-    )
-
+import treecorr
 from .kcorrect_wrapper import kcorrect
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
@@ -496,16 +488,12 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
 
     def make_jack_samples_simple(self, RA, DEC):
         # do jackknife
-        radec = np.zeros((len(RA), 2))
-        radec[:, 0] = RA.flatten()
-        radec[:, 1] = DEC.flatten()
-        _maxiter = 100
-        _tol = 1.0e-5
-        _km = kmeans_radec.kmeans_sample(radec, self.njack, maxiter=_maxiter, tol=_tol)
-        uniquelabel = np.unique(_km.labels)
+        cat = treecorr.Catalog(ra=RA.flatten(), dec=DEC.flatten(), ra_units='deg', dec_units='deg')
+        labels, _ = cat.getNField().run_kmeans(self.njack)
+        uniquelabel = np.unique(labels)
         jacklist = np.empty(self.njack, dtype=np.object)
         for i in range(self.njack):
-            jacklist[i] = np.where(_km.labels != uniquelabel[i])[0]
+            jacklist[i] = np.where(labels != uniquelabel[i])[0]
         return jacklist
 
     def getjackgal(self, jackclusterList, c_mem_id, g_mem_id, match_index=None):
