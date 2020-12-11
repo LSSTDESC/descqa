@@ -34,7 +34,6 @@ setup(
           'numpy', 'scipy', 'matplotlib', 'pandas', 'astropy', 'scikit-learn', 'numba', 
           'GCR>=0.8.7', 'healpy', 'treecorr', 'camb', 'POT', 'pyccl', 
           'CatalogMatcher @ https://github.com/LSSTDESC/CatalogMatcher/archive/master.zip',
-          'kmeans_radec @ https://github.com/esheldon/kmeans_radec/archive/master.zip#egg=kmeans_radec-0.1',
         ],
     },
     package_data={'descqa': ['configs/*.yaml', 'data/*']},
