@@ -113,6 +113,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         self.font_size = kwargs.get('font_size', 16)
         self.legend_size = kwargs.get('legend_size', 10)
         self.tick_size = kwargs.get('tick_size', 12)
+        self.adjust_ylim = kwargs.get('adjust_ylim', 1.25)
         self.rest_frame = rest_frame
         if self.rest_frame:
             possible_mag_fields = ('Mag_true_{}_lsst_z0',
@@ -418,8 +419,9 @@ class NumberDensityVersusRedshift(BaseValidationTest):
 
     def catalog_subplot(self, ax, meanz, data, errors, catalog_color, catalog_marker, catalog_label):
         ax.errorbar(meanz, data, yerr=errors, label=catalog_label, color=catalog_color, fmt=catalog_marker, ms=self.msize)
-
-
+        ymax = np.max(data + errors)
+        ax.set_ylim(0., self.adjust_ylim*ymax)
+        
     def validation_subplot(self, ax, meanz, z0, z0err, validation_label):
         #plot validation data if available
         ndata = meanz**2*np.exp(-meanz/z0)
