@@ -5,6 +5,7 @@ import treecorr
 from .kcorrect_wrapper import kcorrect
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
+import warnings
 
 
 __all__ = ["ConditionalLuminosityFunction_redmapper"]
@@ -158,7 +159,6 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
             TestResult(skipped=True)
         magnitude_fields, magnitude_err_fields, quantities_needed = prepared
         quant = catalog_instance.get_quantities(quantities_needed)
-        data = self.read_compared_data(catalog_instance.cosmology.h)
         # Abundance matching
         if self.is_abundance_matching:
             self.abundance_matching(
@@ -177,7 +177,8 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         kcorrect_path = self.data_dir + "/clf/kcorrect/" + catalog_name + "_kcorr.cache"
         if not os.path.exists(kcorrect_path):
             kcorr = kcorrect(mag, magerr, z, self.bandshift, filters=self.filters)
-            np.savetxt(kcorrect_path, kcorr)
+            if kcorr is not None:
+                np.savetxt(kcorrect_path, kcorr)
         else:
             kcorr = np.loadtxt(kcorrect_path)
 
@@ -187,9 +188,9 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         Mag = (
             mag[:, analindex]  # pylint: disable=unsubscriptable-object
             - catalog_instance.cosmology.distmod(z).value
-            - kcorr[:, analindex]
         )
-
+        if kcorr is not None :
+            Mag -= kcorr[:, analindex]
         # Mask for central galaxy
         mask = quant["richness"] > 1
         limmag = quant["lim_limmag_dered"][mask]
@@ -244,7 +245,8 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
             cluster_lm=quant["richness"][mask],
             cluster_z=quant["redshift_cluster"][mask],
         )
-
+        #Read compare data
+        data = self.read_compared_data(catalog_instance.cosmology.h, kcorr is None)
         scores_shift = []
         scores_scatter = []
         for i in range(self.n_z_bins):
@@ -277,11 +279,15 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         scores = [np.max(scores_shift), np.max(scores_scatter)]
         clf = {"satellites": satclf, "centrals": cenclf}
         covar = {"satellites": covar_sat, "centrals": covar_cen}
+        if kcorr is None:
+            name = catalog_name + " no kcorrect"
+        else:
+            name = catalog_name + " kcorrect z={0}".format(self.bandshift)
         self.make_plot(
             clf,
             covar,
             data,
-            catalog_name + " kcorrect z={0}".format(self.bandshift),
+            name,
             os.path.join(output_dir, "clf_redmapper.png"),
         )
         if (scores[0] < 0.5) & (scores[1] < 0.5):
@@ -289,7 +295,13 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         else:
             return TestResult(np.max(scores), passed=False)
 
-    def read_compared_data(self, h):
+    def read_compared_data(self, h, nokcorr):
+        #check whether kcorrect is available
+        if nokcorr:
+            warnings.warn("no kcorrection availabel, comparing to non-kcorrected data")
+            kcorrectfield = "_nokcorrected"
+        else:
+            kcorrectfield = ""
         # read the data to be compared to
         zmin = np.array(self.data_z_mins)
         zmax = np.array(self.data_z_maxs)
@@ -307,14 +319,13 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                         name = "sat"
                     try:
                         loaded_data = np.loadtxt(
-                            self.data_dir
-                            + "/clf/{5}/clf_{4}_z_{0}_{1}_lm_{2}_{3}.dat".format(
+                            self.data_dir + "/clf/{5}/clf_{4}_z_{0}_{1}_lm_{2}_{3}{6}.dat".format(
                                 zrange[0],
                                 zrange[1],
                                 lambdlow,
                                 lambdhigh,
                                 name,
-                                self.compared_survey,
+                                self.compared_survey, kcorrectfield
                             )
                         )
                         loaded_data[:, 0] += 5 * np.log10(

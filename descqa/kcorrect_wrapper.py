@@ -11,6 +11,8 @@ __all__ = ["kcorrect"]
 
 
 def kcorrect(mags, magerrs, redshifts, bandshift, filters="des_filters.dat"):
+    if kc is None:
+        return None
     try:
         kc.load_templates()
         kc.load_filters(f=filters)
