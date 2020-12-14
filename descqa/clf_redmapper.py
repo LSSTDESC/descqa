@@ -92,8 +92,8 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         self.band = kwargs.get("band1", "i")
         self.band_kcorrect = kwargs.get("band_kcorrect", "u, g, r, i, z")
         self.band_kcorrect = [x.strip() for x in self.band_kcorrect.split(",")]
-        self.possible_mag_fields = ("mag_{0}_lsst",)
-        self.possible_magerr_fields = ("magerr_{0}_lsst",)
+        self.possible_mag_fields = ("mag_{0}_sdss", "mag_{0}_lsst",)
+        self.possible_magerr_fields = ("magerr_{0}_sdss", "magerr_{0}_lsst",)
         self.bandshift = kwargs.get("bandshift", 0.3)
         self.njack = kwargs.get("njack", 20)
         self.z_bins = np.array(kwargs.get("z_bins", (0.1, 0.3, 1.0)))
@@ -148,7 +148,8 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
             quantities_needed.add(field[0])
             quantities_needed.add(field[1])
         if not gc.has_quantities(quantities_needed):
-            print(quantities_needed)
+            print("all quantities:", gc.list_all_quantities())
+            print("all quantities needed:", quantities_needed)
             return
         return magnitude_fields, magnitude_err_fields, quantities_needed
 
@@ -174,13 +175,17 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         magerr = np.array(magerr).T
         # get k correction
         z = quant["redshift_true"]
-        kcorrect_path = self.data_dir + "/clf/kcorrect/" + catalog_name + "_kcorr.cache"
-        if not os.path.exists(kcorrect_path):
-            kcorr = kcorrect(mag, magerr, z, self.bandshift, filters=self.filters)
-            if kcorr is not None:
-                np.savetxt(kcorrect_path, kcorr)
+        if "sdss" in magnitude_fields[0]:
+            kcorr=None
+            assert(0)
         else:
-            kcorr = np.loadtxt(kcorrect_path)
+            kcorrect_path = self.data_dir + "/clf/kcorrect/" + catalog_name + "_kcorr.cache"
+            if not os.path.exists(kcorrect_path):
+                kcorr = kcorrect(mag, magerr, z, self.bandshift, filters=self.filters)
+                if kcorr is not None:
+                    np.savetxt(kcorrect_path, kcorr)
+            else:
+                kcorr = np.loadtxt(kcorrect_path)
 
         # Preprocess for all quantity
         # get analysis band and do kcorrection
