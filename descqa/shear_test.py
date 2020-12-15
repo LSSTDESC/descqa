@@ -7,6 +7,8 @@ from scipy.interpolate import interp1d
 from scipy.integrate import quad
 from sklearn.cluster import k_means
 import treecorr
+import pyccl as ccl
+
 import camb
 import camb.correlations
 import astropy.units as u
@@ -48,8 +50,10 @@ class ShearTest(BaseValidationTest):
                  **kwargs):
         #pylint: disable=W0231
 
-        plt.rcParams['font.size'] = 9
-
+        self.axsize = kwargs.get('axsize', 16)
+        self.title_size = kwargs.get('title_size', 18)
+        self.legend_size = kwargs.get('legend_size', 10)
+        
         self.z = z
         #sep-bounds and binning
         self.min_sep = min_sep
@@ -74,7 +78,8 @@ class ShearTest(BaseValidationTest):
         self.z_range = z_range
         self.zlo = zlo
         self.zhi = zhi
-
+        self.zmeans = np.linspace(self.zlo, self.zhi, self.ntomo+2)[1:-1]
+        
     def compute_nz(self, n_z):
         '''create interpolated n(z) distribution'''
         z_bins = np.linspace(self.zlo, self.zhi, 301)
@@ -85,62 +90,36 @@ class ShearTest(BaseValidationTest):
         n2 = interp1d(z, n / n2_sum, bounds_error=False, fill_value=0.0, kind='cubic')
         return n2
 
-    @staticmethod
-    def integrand_w(x, n, chi, chi_int, cosmo):
-        ''' This is the inner bit of GWL lensing kernel - z is related to x, not chi'''
-        z = chi_int(x)
-        H_z = cosmo.H(z).to(1./u.s).value
-        dchidz = const.c.to(u.Mpc/u.s).value/H_z  # pylint: disable=no-member
-        return n(z) / dchidz * (x - chi) / x
+    
 
-    def galaxy_W(self, z, n, chi_int, cosmo, chi_max):
-        ''' galaxy window function'''
-        #pylint: disable=E1101
-        chi = cosmo.comoving_distance(z).value  # can be array
-        cst = 3. / 2. * cosmo.H(0).to(1. / u.s)**2 / const.c.to(u.Mpc / u.s)**2 * cosmo.Om(
-            0)
-        prefactor = cst * chi * (1. + z) * u.Mpc
-        val_array = []
-        for chi_this in chi:
-            val_array.append(quad(self.integrand_w, chi_this, chi_max, args=(n, chi_this, chi_int, cosmo))[0])
-        W = np.array(val_array) * prefactor * (u.Mpc)  # now unitless
-        return W
+    def theory_corr(self, n_z2, xvals, lmax2, chi_max, zlo2, zhi2, cosmo_cat):
+        '''compute the correlation function from limber integration over the CAMB power spectrum'''
+        nz_int = self.compute_nz(n_z2)
+        z_vals = np.linspace(zlo2,zhi2,1000)
+        n_vals = nz_int(z_vals)
 
-    @staticmethod
-    def integrand_lensing_limber(chi, l, galaxy_W_int, chi_int, p):
-        '''return overall integrand for one value of l'''
-        z = chi_int(chi)
-        k = (l + 0.5) / chi
-        integrand = p(z, k, grid=False) * galaxy_W_int(z)**2 / chi**2
-        return integrand
 
-    def phi(self, lmax, n_z, cosmo, p, chi_max):
-        z_array = np.logspace(-3, np.log10(self.zhi+1.0), 200)
-        chi_array = cosmo.comoving_distance(z_array).value
-        chi_int = interp1d(chi_array, z_array, bounds_error=False, fill_value=0.0)
-        n = self.compute_nz(n_z)
-        galaxy_W_int = interp1d(z_array, self.galaxy_W(z_array, n, chi_int, cosmo, chi_max), bounds_error=False, fill_value=0.0)
-        phi_array = []
-        l = range(0, lmax, 1)
-        l = np.array(l)
-        for i in l:
-            a = quad(
-                self.integrand_lensing_limber, 1.e-10, chi_max, args=(i, galaxy_W_int, chi_int, p), epsrel=1.e-6)[0]
-            phi_array.append(a)
-        phi_array = np.array(phi_array)
-        #NOTE: comments here allow for small corrections on large and small scales, these can be used to check impact of pixelization on lensing maps and flat sky approximations in theory.
-        prefactor = 1.0  #(l+2)*(l+1)*l*(l-1)  / (l+0.5)**4
-        #import healpy as hp
-        #pixwin = hp.pixwin(1024)[:lmax]
-        return l, phi_array * prefactor#*pixwin**2
+        ns = getattr(cosmo_cat, 'n_s', 0.963)
+        s8 = getattr(cosmo_cat, 'sigma8', 0.8)
 
-    def theory_corr(self, n_z2, xvals, lmax2, cosmo, p, chi_max):
-        ll, pp = self.phi(lmax=lmax2, n_z=n_z2, cosmo=cosmo, p=p, chi_max=chi_max)
+        Omega_c = (cosmo_cat.Om0 - cosmo_cat.Ob0)
+        Omega_b = cosmo_cat.Ob0
+        h = cosmo_cat.H0.value/100.
+
+
+
+        cosmo_ccl = ccl.Cosmology(Omega_c=Omega_c, Omega_b=Omega_b, h=h, sigma8 = s8, n_s = ns)#, transfer_function='boltzmann_class', matter_power_spectrum='emu')
+                
+        ll = np.arange(0, 15000)
+        lens1 = ccl.WeakLensingTracer(cosmo_ccl, dndz=(z_vals, n_vals))
+        pp = ccl.angular_cl(cosmo_ccl, lens1, lens1, ll)
+
         pp3_2 = np.zeros((lmax2, 4))
         pp3_2[:, 1] = pp[:] * (ll * (ll + 1.)) / (2. * np.pi)
         cxvals = np.cos(xvals / (60.) / (180. / np.pi))
         vals = camb.correlations.cl2corr(pp3_2, cxvals)
         return xvals, vals[:, 1], vals[:, 2]
+
 
     def get_score(self, measured, theory, cov, opt='diagonal'):
         if opt == 'cov':
@@ -231,11 +210,10 @@ class ShearTest(BaseValidationTest):
 
     # define theory from within this class
 
-    def post_process_plot(self, ax):
+    def post_process_plot(self, ax, fig):
         '''
         Post-processing routines on plot
         '''
-        zmeans = np.linspace(self.zlo, self.zhi, self.ntomo+2)[1:-1]
 
         # vmin and vmax are very rough DES-like limits (maximum and minimum scales)
         for i in range(self.ntomo):
@@ -243,14 +221,14 @@ class ShearTest(BaseValidationTest):
                 ax_this.set_xscale('log')
                 ax_this.axvline(vmin, ls='--', c='k')
                 ax_this.axvline(vmax, ls='--', c='k')
-            ax[-1][i].set_xlabel(r'$\theta \; {\rm (arcmin)}$')
-            ax[0][i].set_title('z = '+str(zmeans[i]))
-            ax[0][i].legend()
-            ax[-1][i].legend()
-        ax[0][0].set_ylabel(r'$\chi_{{{}}} \; (10^{{-6}})$'.format('+'))
-        ax[-1][0].set_ylabel(r'$\chi_{{{}}} \; (10^{{-6}})$'.format('-'))
+            ax[-1][i].set_xlabel(r'$\theta \; {\rm (arcmin)}$', size=self.axsize)
+            ax[0][i].set_title('z = {:.2f}'.format(self.zmeans[i]), size=self.title_size)
+            ax[0][i].legend(fontsize=self.legend_size)
+            ax[-1][i].legend(fontsize=self.legend_size)
+        ax[0][0].set_ylabel(r'$\chi_{{{}}} \; (10^{{-6}})$'.format('+'), size=self.axsize)
+        ax[-1][0].set_ylabel(r'$\chi_{{{}}} \; (10^{{-6}})$'.format('-'), size=self.axsize)
 
-
+        fig.subplots_adjust(hspace=0)
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         '''
@@ -267,14 +245,7 @@ class ShearTest(BaseValidationTest):
             catalog_instance, [self.z, self.ra, self.dec, self.e1, self.e2, self.kappa, self.mag], filters=self.filters)
 
         cosmo = getattr(catalog_instance, 'cosmology', WMAP7)
-        ns = getattr(cosmo, 'n_s', 0.963)
-        s8 = getattr(cosmo, 'sigma8', 0.8)
-        print(cosmo)
 
-        pars.set_cosmology(H0=cosmo.H0.value, ombh2=cosmo.Ob0*cosmo.h**2, omch2=(cosmo.Om0-cosmo.Ob0)*cosmo.h**2)
-        pars.InitPower.set_params(ns=ns, As=2.168e-9*(s8/0.8)**2)
-        camb.set_halofit_version(version='takahashi') # pylint: disable=no-member
-        p = camb.get_matter_power_interpolator(pars, nonlinear=True, k_hunit=False, hubble_units=False, kmax=100., zmax=self.zhi+1., k_per_logint=False).P
         z_max = np.max(catalog_data[self.z])
         if self.zhi>z_max:
             print("updating zhi to "+ str(z_max)+ " from "+ str(self.zhi))
@@ -283,7 +254,7 @@ class ShearTest(BaseValidationTest):
         else:
             zhi = self.zhi
         chi_max = cosmo.comoving_distance(self.zhi+1.0).value
-        mask_mag = (catalog_data[self.mag][:]<self.maglim)
+        mask_mag = (catalog_data[self.mag][:]<self.maglim)  
 
         # read in shear values and check limits
         e1 = catalog_data[self.e1]
@@ -330,7 +301,6 @@ class ShearTest(BaseValidationTest):
 
             print("npairs  = ")
             print(gg.npairs)
-	    #sig = np.sqrt(gg.varxi)  # this is shape noise only - should be very low for simulation data
 
             do_jackknife = self.do_jackknife
 	    # Diagonal covariances for error bars on the plots. Use full covariance matrix for chi2 testing.
@@ -347,12 +317,15 @@ class ShearTest(BaseValidationTest):
                 sig_jack = np.zeros((self.nbins))
                 sigm_jack = np.zeros((self.nbins))
                 for i in range(self.nbins):
-                    # pylint: disable=no-member # TODO: check whether varxi should be varxip or varxim
-                    sig_jack[i] = np.sqrt(gg.varxi[i])*1.e6
-                    sigm_jack[i] = np.sqrt(gg.varxi[i])*1.e6
+                    sig_jack[i] = np.sqrt(gg.varxip[i])*1.e6
+                    sigm_jack[i] = np.sqrt(gg.varxip[i])*1.e6
 
             n_z = catalog_data[self.z][mask]
-            xvals, theory_plus, theory_minus = self.theory_corr(n_z, r, 15000, cosmo, p, chi_max)
+            cosmo_cat = getattr(catalog_instance, 'cosmology', WMAP7)
+
+
+            xvals, theory_plus, theory_minus = self.theory_corr(n_z, r, 15000, chi_max,zlo2,zhi2, cosmo_cat)
+
             theory_plus = theory_plus * 1.e6
             theory_minus = theory_minus * 1.e6
 
@@ -365,6 +338,8 @@ class ShearTest(BaseValidationTest):
             print(theory_minus)
             print(xip)
             print(xim)
+            print(r)
+            print(xvals)
 
 	    #The following are further treecorr correlation functions that could be added in later to extend the test
 	    #treecorr.NNCorrelation(nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin')
@@ -378,7 +353,18 @@ class ShearTest(BaseValidationTest):
                 ax_this[1, ii].errorbar(r, xim, sigm_jack, lw=0.6, marker='o', ls='', color="#3f9b0b", label=r'$\chi_{-}$')
                 ax_this[1, ii].plot(xvals, theory_minus, 'o', color="#9a0eea", label=r'$\chi_{-}$' + " theory")
 
-        self.post_process_plot(ax)
+            results = {'theta':r, 'xip  ':xip, 'xim  ':xim, 'theta_theory':xvals, 'xip_theory':theory_plus, 'xim_theory':theory_minus, 'npairs':gg.npairs}
+            if do_jackknife:
+                results['xip_err'] = sig_jack
+                results['xim_err'] = sigm_jack
+            #save results for catalog and validation data in txt files
+            filelabel = 'z_{:.2f}'.format(self.zmeans[ii])
+            theory_keys = [k for k in results.keys() if 'theory' in k]
+            keys = ['theta'] + [k for k in results.keys() if 'xi' in k and 'theory' not in k] + theory_keys + ['npairs']
+            with open(os.path.join(output_dir, 'Shear_vs_theta_' + filelabel + '.txt'), 'ab') as f_handle: #open file in append binary mode
+                self.save_quantities(keys, results, f_handle, comment='z = {:.2f}'.format(self.zmeans[ii]))
+                        
+        self.post_process_plot(ax, fig)
         fig.savefig(os.path.join(output_dir, 'plot.png'))
         plt.close(fig)
 
@@ -391,7 +377,13 @@ class ShearTest(BaseValidationTest):
         else:
             return TestResult(score, passed=False)
 
+    @staticmethod
+    def save_quantities(keys, results, filename, comment=''):
+            header = 'Data columns for {} are:\n  {}'.format(comment, '  '.join(keys))
+            np.savetxt(filename, np.vstack((results[k] for k in keys)).T, fmt='%12.4e', header=header)
+
+
     def conclude_test(self, output_dir):
-        self.post_process_plot(self.summary_ax)
+        self.post_process_plot(self.summary_ax, self.summary_fig)
         self.summary_fig.savefig(os.path.join(output_dir, 'summary.png'))
         plt.close(self.summary_fig)

@@ -6,11 +6,15 @@
 # make sure all commands are executed
 set -e
 
+# load needed modules
+module load gsl
+module load cray-fftw
+
 # activate python env
-PYTHON="/global/common/software/lsst/common/miniconda/current/envs/stack/bin/python"
+PYTHON="/global/common/software/lsst/common/miniconda/current/envs/desc/bin/python"
 
 # set output directory
-OUTPUTDIR="/global/projecta/projectdirs/lsst/groups/CS/descqa/run/v2"
+OUTPUTDIR="/global/cfs/cdirs/lsst/groups/CS/descqa/run/v2"
 
 # to allow wildcards in arguments go to master.py
 set -o noglob

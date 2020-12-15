@@ -7,7 +7,7 @@
 
 This repository contains the DESCQA framework that validates simulated galaxy catalogs. For more information about this framework, please check out the [DESCQA paper](https://arxiv.org/abs/1709.09665).
 
-A [web interface](https://portal.nersc.gov/projecta/lsst/descqa/) hosted on NERSC displays recent validation results from the DESCQA framework.
+A [web interface](https://portal.nersc.gov/cfs/lsst/descqa/) hosted on NERSC displays recent validation results from the DESCQA framework.
 
 **! Important !** Starting from DESCQA v2 (current version), we have separated the configurations and readers of catalogs from DESCQA and moved them to a standalone repo, the [GCRCatalogs](https://github.com/LSSTDESC/gcr-catalogs) repo. We have also changed much of the validation tests. If you are looking for the catalogs and tests in DESCQA v1 (as presented in the [companion paper](https://arxiv.org/abs/1709.09665)), please see the [v1 subdiectory](v1).
 
@@ -20,7 +20,7 @@ A [web interface](https://portal.nersc.gov/projecta/lsst/descqa/) hosted on NERS
 
 3. Now that you are able to make some plots, think about how to "validate" the catalogs (i.e., are there any observation/theory data that can be plotted on the same figure for comparison? How to decide whether a catalog is satisfactory?)
 
-4. Now we can integrate your work into the [DESCQA web interface](https://portal.nersc.gov/projecta/lsst/descqa/v2/)! This step is slightly more involved, but you can follow [the instruction here](CONTRIBUTING.md).
+4. Now we can integrate your work into the [DESCQA web interface](https://portal.nersc.gov/cfs/lsst/descqa/v2/)! This step is slightly more involved, but you can follow [the instruction here](CONTRIBUTING.md).
 
 
 
