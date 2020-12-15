@@ -72,7 +72,6 @@ class ShearTest(BaseValidationTest):
         self.N_clust = N_clust
         self.do_jackknife = do_jackknife
         # cut in redshift
-        self.filters = [(lambda z: (z > zlo) & (z < zhi), self.z)]
         self.summary_fig, self.summary_ax = plt.subplots(nrows=2, ncols=ntomo, sharex=True, squeeze=False, figsize=(ntomo*5, 5))
         self.ntomo = ntomo
         self.z_range = z_range
@@ -241,42 +240,45 @@ class ShearTest(BaseValidationTest):
             return TestResult(skipped=True, summary='do not have needed shear quantities')
         if not catalog_instance.has_quantities([self.mag]):
             return TestResult(skipped=True, summary='do not have required magnitude quantities for cuts')
-        catalog_data = self.get_catalog_data(
-            catalog_instance, [self.z, self.ra, self.dec, self.e1, self.e2, self.kappa, self.mag], filters=self.filters)
 
         cosmo = getattr(catalog_instance, 'cosmology', WMAP7)
-
-        z_max = np.max(catalog_data[self.z])
-        if self.zhi>z_max:
-            print("updating zhi to "+ str(z_max)+ " from "+ str(self.zhi))
-            self.zhi = z_max
-            zhi = z_max
-        else:
-            zhi = self.zhi
-        chi_max = cosmo.comoving_distance(self.zhi+1.0).value
-        mask_mag = (catalog_data[self.mag][:]<self.maglim)  
-
-        # read in shear values and check limits
-        e1 = catalog_data[self.e1]
-        max_e1 = np.max(e1)
-        min_e1 = np.min(e1)
-        e2 = catalog_data[self.e2]
-        max_e2 = np.max(e2)
-        min_e2 = np.min(e2)
-        if ((min_e1 < (-1.)) or (max_e1 > 1.0)):
-            return TestResult(skipped=True, summary='e1 values out of range [-1,+1]')
-        if ((min_e2 < (-1.)) or (max_e2 > 1.0)):
-            return TestResult(skipped=True, summary='e2 values out of range [-1,+1]')
         ntomo = self.ntomo
         fig, ax = plt.subplots(nrows=2, ncols=ntomo, sharex=True, squeeze=False, figsize=(ntomo*5, 5))
-        zmeans = np.linspace(self.zlo, zhi, ntomo+2)[1:-1]
+        zmeans = np.linspace(self.zlo, self.zhi, ntomo+2)[1:-1]
+        #zmeans = np.linspace(self.zlo, zhi, ntomo+2)[1:-1]
         for ii in range(ntomo):
+            
             z_mean = zmeans[ii]
             zlo2 = z_mean - self.z_range
             zhi2 = z_mean + self.z_range
             print(zlo2, zhi2)
-            zmask = (catalog_data[self.z] < zhi2) & (catalog_data[self.z] > zlo2)
-            mask = zmask & mask_mag
+            
+            filter_tomo = [(lambda z: (z > zlo2) & (z < zhi2), self.z)]
+            catalog_data = self.get_catalog_data(
+                catalog_instance, [self.z, self.ra, self.dec, self.e1, self.e2, self.kappa, self.mag], filters=filter_tomo)
+
+            # before this made sense since it was for the full catalog but now it doesnt for each tomo bin.
+            #z_max = np.max(catalog_data[self.z])
+            #if self.zhi>z_max:
+            #    print("updating zhi to "+ str(z_max)+ " from "+ str(self.zhi))
+            #    self.zhi = z_max
+            #    zhi = z_max
+            #else:
+            #    zhi = self.zhi
+            chi_max = cosmo.comoving_distance(self.zhi+1.0).value
+            
+            mask = (catalog_data[self.mag][:]<self.maglim)  
+
+            # read in shear values and check limits
+            max_e1 = np.max(catalog_data[self.e1])
+            min_e1 = np.min(catalog_data[self.e1])
+            max_e2 = np.max(catalog_data[self.e2])
+            min_e2 = np.min(catalog_data[self.e2])
+            if ((min_e1 < (-1.)) or (max_e1 > 1.0)):
+                return TestResult(skipped=True, summary='e1 values out of range [-1,+1]')
+            if ((min_e2 < (-1.)) or (max_e2 > 1.0)):
+                return TestResult(skipped=True, summary='e2 values out of range [-1,+1]')
+
             # compute shear auto-correlation
             cat_s = treecorr.Catalog(
                 ra=catalog_data[self.ra][mask],
