@@ -6,12 +6,9 @@
 # make sure all commands are executed
 set -e
 
-# load needed modules
-module load gsl
-module load cray-fftw
-
-# activate python env
-PYTHON="/global/common/software/lsst/common/miniconda/current/envs/desc/bin/python"
+# activate DESC python environment
+source /global/common/software/lsst/common/miniconda/setup_current_python.sh ""
+PYTHON='python'
 
 # set output directory
 OUTPUTDIR="/global/cfs/cdirs/lsst/groups/CS/descqa/run/v2"
