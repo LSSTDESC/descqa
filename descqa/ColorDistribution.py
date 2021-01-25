@@ -44,6 +44,14 @@ class ColorDistribution(BaseValidationTest):
     summary_output_file = 'summary.txt'
     plot_pdf_file = 'plot_pdf.png'
     plot_cdf_file = 'plot_cdf.png'
+    summary_pdf = 'summary.png'
+    summary_cdf = 'summary_cdf.png'
+
+
+    default_colors = ['orange', 'g', 'm', 'r', 'navy', 'y', 'purple', 'gray', 'c',\
+                      'blue', 'violet', 'coral', 'gold', 'orchid', 'maroon', 'tomato', \
+                      'sienna', 'chartreuse', 'firebrick', 'SteelBlue']
+    validation_color = 'black'
 
     def __init__(self, **kwargs): # pylint: disable=W0231
 
@@ -71,6 +79,10 @@ class ColorDistribution(BaseValidationTest):
         self.font_size = kwargs.get('font_size', 16)
         self.legend_size = kwargs.get('legend_size', 10)
         self.shorten_cat_name = kwargs.get('shorten_cat_name', True)
+        self.adjust_ylim = kwargs.get('adjust_ylim', 1.25)
+        self.suptitle_y =  kwargs.get('suptitle_y', 1.0)
+        self.title_size = kwargs.get('title_size', 16)
+        self.add_suptitle = kwargs.get('add_suptitle', False)
         
         # bins of color distribution
         self.bins = np.linspace(-1, 4, 2000)
@@ -120,6 +132,12 @@ class ColorDistribution(BaseValidationTest):
         if self.validation_catalog is not None:
             self.obs_color_dist = self.get_color_dist(obscat, obs_translate, weights)
 
+        #setup a check for the one-time creation of summary plots and addition of validation data
+        self.first_pass = True
+
+        #init colors
+        self.plot_colors = iter(self.default_colors)
+        
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
 
         bands = set(sum((c.split('-') for c in self.colors), []))
@@ -220,10 +238,12 @@ class ColorDistribution(BaseValidationTest):
 
         redshift_title = '{:.2f} < z < {:.2f}'.format(self.zlo,
                                                       self.zhi) if self.lightcone else 'z = {:.2f}'.format(redshift)
-
+        catalog_color = next(self.plot_colors)
         self.make_plots(mock_color_dist, color_shift, cvm_omega, cvm_omega_shift, catalog_name,
-                        output_dir, filter_title, redshift_title)
-
+                        output_dir, filter_title, redshift_title, catalog_color)
+        self.make_plots(mock_color_dist, color_shift, cvm_omega, cvm_omega_shift, catalog_name,
+                        output_dir, filter_title, redshift_title, catalog_color, summary=True)
+        
         # Write to summary file
         fn = os.path.join(output_dir, self.summary_output_file)
         with open(fn, 'a') as f:
@@ -247,14 +267,31 @@ class ColorDistribution(BaseValidationTest):
 
         return TestResult(inspect_only=True)
 
-
-    def make_plots(self, mock_color_dist, color_shift, cvm_omega, cvm_omega_shift, catalog_name,
-                   output_dir, filter_title, redshift_title):
-        available_colors = [c for c in self.colors if c in mock_color_dist]
-
+    @staticmethod
+    def init_plots(available_colors):
         nrows = int(np.ceil(len(available_colors)/2.))
         fig_pdf, axes_pdf = plt.subplots(nrows, 2, figsize=(8, 3.5*nrows))
         fig_cdf, axes_cdf = plt.subplots(nrows, 2, figsize=(8, 3.5*nrows))
+
+        return fig_pdf, axes_pdf, fig_cdf, axes_cdf
+
+    
+    def make_plots(self, mock_color_dist, color_shift, cvm_omega, cvm_omega_shift, catalog_name,
+                   output_dir, filter_title, redshift_title, catalog_color, summary=False):
+        available_colors = [c for c in self.colors if c in mock_color_dist]
+
+        if summary:
+            if self.first_pass:
+                fig_pdf, axes_pdf, fig_cdf, axes_cdf = self.init_plots(available_colors)
+                self.summary_fig_pdf, self.summary_ax_pdf = fig_pdf, axes_pdf
+                self.summary_fig_cdf, self.summary_axes_cdf = fig_cdf, axes_cdf
+            else:
+                fig_pdf, axes_pdf = self.summary_fig_pdf, self.summary_ax_pdf
+                fig_cdf, axes_cdf = self.summary_fig_cdf, self.summary_axes_cdf
+            filter_title = ''
+        else:
+            fig_pdf, axes_pdf, fig_cdf, axes_cdf = self.init_plots(available_colors)
+
         title = ''
         if self.obs_r_mag_limit:
             title = '$m_r^{{{}}} < {:2.1f},  {}$'.format(filter_title, self.obs_r_mag_limit, redshift_title)
@@ -297,54 +334,73 @@ class ColorDistribution(BaseValidationTest):
                 catalog_label = catalog_name + spacing + r'$\omega={:.3}$'.format(cvm_omega[color])
             else:
                 catalog_label = catalog_name
-            ax_pdf.step(mbinctr, mpdf_smooth, where="mid", label=catalog_label, color='C1')
+            ax_pdf.step(mbinctr, mpdf_smooth, where="mid", label=catalog_label, color=catalog_color)
             if self.validation_catalog:
                 # validation data
-                ax_pdf.step(obinctr, opdf_smooth, where="mid", label=self.validation_catalog, color='C0')
+                if not summary or (summary and self.first_pass):
+                    ax_pdf.step(obinctr, opdf_smooth, where="mid", label=self.validation_catalog, color=self.validation_color)
                 # color distribution after constant shift
                 if self.plot_shift:
                     ax_pdf.step(mbinctr + color_shift[color], mpdf_smooth,
                                 label=catalog_name+' shifted\n'+r'$\omega={:.3}$'.format(cvm_omega_shift[color]),
-                                linestyle='--', color='C2')
+                                linestyle='--', color=catalog_color)
             ax_pdf.set_xlabel('${}$'.format(color), size=self.font_size)
             ax_pdf.set_xlim(xmin, xmax)
-            ax_pdf.set_ylim(bottom=0.)
+            # adjust y-limit of plot if needed
+            data_max = self.adjust_ylim*max(np.max(mpdf_smooth), np.max(opdf_smooth))
+            _, plot_max = ax_pdf.get_ylim()
+            plot_max = plot_max if plot_max > data_max else data_max
+            ax_pdf.set_ylim(bottom=0., top=plot_max)
             if not self.title_in_legend:
-                ax_pdf.set_title(title)
+                if not summary:
+                    ax_pdf.set_title(title)
+                elif self.first_pass and self.add_suptitle:
+                    fig_pdf.suptitle(title, y=self.suptitle_y, fontsize=self.title_size)
             else:
                 lgnd_title = title
             ax_pdf.legend(loc=self.legend_location, title=lgnd_title, fontsize=self.legend_size, frameon=False)
 
             # Plot CDF
             # catalog distribution
-            ax_cdf.step(mbinctr, mcdf, where="mid", label=catalog_label, color='C1')
+            ax_cdf.step(mbinctr, mcdf, where="mid", label=catalog_label, color=catalog_color)
             if self.validation_catalog:
                 # validation distribution
-                ax_cdf.step(obinctr, ocdf, label=self.validation_catalog, color='C0')
+                if not summary or (summary and self.first_pass):
+                    ax_cdf.step(obinctr, ocdf, label=self.validation_catalog, color=self.validation_color)
                 # color distribution after constant shift
                 if self.plot_shift:
                     ax_cdf.step(mbinctr + color_shift[color], mcdf, where="mid",
                                 label=catalog_name+' shifted\n'+r'$\omega={:.3}$'.format(cvm_omega_shift[color]),
-                                linestyle='--', color='C2')
+                                linestyle='--', color=catalog_color)
             ax_cdf.set_xlabel('${}$'.format(color), size=self.font_size)
             if not self.title_in_legend:
-                ax_cdf.set_title(title)
+                if not summary:
+                    ax_cdf.set_title(title)
+                elif self.first_pass and self.add_suptitle:
+                    fig_cdf.suptitle(title, y=self.suptitle_y, fontsize=self.title_size)
             else:
                 lgnd_title = title
             ax_cdf.set_xlim(xmin, xmax)
             ax_cdf.set_ylim(0, 1)
             ax_cdf.legend(loc=self.legend_location, title=lgnd_title, fontsize=self.legend_size, frameon=False)
 
-        if self.plot_pdf_q:
-            fig_pdf.tight_layout()
-            fig_pdf.savefig(os.path.join(output_dir, self.plot_pdf_file))
-        plt.close(fig_pdf)
+        if self.plot_pdf_q and not summary:
+            self.post_process_plot(fig_pdf, output_dir, self.plot_pdf_file)
 
-        if self.plot_cdf_q:
-            fig_cdf.tight_layout()
-            fig_cdf.savefig(os.path.join(output_dir, self.plot_cdf_file))
-        plt.close(fig_cdf)
+        if self.plot_cdf_q and not summary:
+            self.post_process_plot(fig_cdf, output_dir, self.plot_cdf_file)
 
+        if summary and self.first_pass:
+            self.first_pass = False
+
+            
+    @staticmethod
+    def post_process_plot(fig, output_dir, filename):
+        fig.tight_layout()
+        fig.savefig(os.path.join(output_dir, filename))
+        print('Saving {} in {}'.format(filename, output_dir))
+        plt.close(fig)
+        
 
     def get_color_dist(self, cat, translate=None, weights=None):
         '''
@@ -384,3 +440,7 @@ class ColorDistribution(BaseValidationTest):
             color_dist[color]['median'] = np.median((cat[band1]-cat[band2])[cat_mask])
 
         return color_dist
+
+    def conclude_test(self, output_dir):
+        self.post_process_plot(self.summary_fig_pdf, output_dir, self.summary_pdf)
+        self.post_process_plot(self.summary_fig_cdf, output_dir, self.summary_cdf)
