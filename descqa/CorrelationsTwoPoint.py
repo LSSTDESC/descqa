@@ -205,7 +205,7 @@ class CorrelationUtilities(BaseValidationTest):
             Full path of the directory to write results to.
         """
         # pylint: disable=no-member
-        fig, ax_all = plt.subplots(self.fig_subplots_nrows, self.fig_subplots_ncols, squeeze=False)
+        fig, ax_all = plt.subplots(self.fig_subplots_nrows, self.fig_subplots_ncols, squeeze=False, figsize=(10,10))
 
         for ax, this_group in zip(ax_all.flat, self.fig_subplot_groups):
             if this_group is None:
