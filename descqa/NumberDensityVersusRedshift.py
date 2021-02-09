@@ -129,7 +129,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
                                    'mag_true_{}_des',
                                   )
         self.possible_mag_fields = [f.format(band) for f in possible_mag_fields]
-        self.possible_redshifts = ['redshift_true_galaxy', 'redshift_true']
+        self.possible_redshifts = ['redshift_true_galaxy', 'redshift_true', 'redshift_truth']
         self.band = band
 
         #z-bounds and binning
