@@ -22,8 +22,6 @@ class StellarMassTest(BaseValidationTest):
     number density of galaxies per square degree as the 
     score to pass the test.
     """
-
-    DC2 = FlatLambdaCDM(H0=71, Om0=0.265, Ob0=0.0448)
     
     def __init__(self, catalog_instance, catSize, **kwargs):
         pass
@@ -45,9 +43,8 @@ class StellarMassTest(BaseValidationTest):
         '''
         # pylint: disable=no-member
         
-        DC2 = self.DC2
-        
         gc         = catalog_instance
+        catSize    = gc.sky_area
         data       = gc.get_quantities(['stellar_mass', 'mag_true_i_lsst', 'mag_true_r_lsst', 'mag_true_g_lsst', 'x','y','z'])
         smass      = data['stellar_mass']
         x, y, z    = data['x'], data['y'], data['z']
@@ -61,13 +58,13 @@ class StellarMassTest(BaseValidationTest):
         min_indx = np.where(com_dist == np.min(com_dist ))[0][0]
         max_indx = np.where(com_dist == np.max(com_dist ))[0][0]
 
-        zmin = z_at_value(DC2.comoving_distance, com_dist[min_indx] )
-        zmax = z_at_value(DC2.comoving_distance, com_dist[max_indx] )
+        cosmology = gc.cosmology
+        zmin = z_at_value(cosmology.comoving_distance, com_dist[min_indx] )
+        zmax = z_at_value(cosmology.comoving_distance, com_dist[max_indx] )
 
         zgrid     = np.logspace(np.log10(zmin), np.log10(zmax), 50)
-        cosmology = DC2
 
-        CDgrid = cosmology.comoving_distance(zgrid)*(DC2.H0/(100.*u.km/u.s/u.Mpc)) #This has units of Mpc
+        CDgrid = cosmology.comoving_distance(zgrid)*(cosmology.H0/(100.*u.km/u.s/u.Mpc)) #This has units of Mpc
         
         #  use interpolation to get redshifts for satellites only
         new_redshifts = np.interp(com_dist, CDgrid, zgrid)
@@ -96,9 +93,9 @@ class StellarMassTest(BaseValidationTest):
         return log10smass, np.log10(smass_cmass_cut), new_redshifts, numDen
     
     
-    def run_on_single_catalog(self, catalog_instance, catSize, output_dir):
+    def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         
-        log_smass_DC2, _, _, numDen = self.get_smass(catalog_instance, catSize)
+        log_smass_DC2, log_smass_cmass_DC2, _, numDen = self.get_smass(catalog_instance)
         
         cmass = np.loadtxt("CMASS_data.txt")
         
