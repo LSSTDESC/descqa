@@ -43,6 +43,7 @@ class StellarMassTest(BaseValidationTest):
         - redshift
         - number density of galaxies (galaxies per square degree)
         '''
+        # pylint: disable=no-member
         
         DC2 = self.DC2
         
@@ -65,7 +66,6 @@ class StellarMassTest(BaseValidationTest):
 
         zgrid     = np.logspace(np.log10(zmin), np.log10(zmax), 50)
         cosmology = DC2
-
 
         CDgrid = cosmology.comoving_distance(zgrid)*(DC2.H0/(100.*u.km/u.s/u.Mpc)) #This has units of Mpc
         
@@ -93,12 +93,12 @@ class StellarMassTest(BaseValidationTest):
         print
         
         numDen = len(smass_cmass_cut) / float(catSize)
-        return np.log10(smass), np.log10(smass_cmass_cut), new_redshifts, numDen
+        return log10smass, np.log10(smass_cmass_cut), new_redshifts, numDen
     
     
     def run_on_single_catalog(self, catalog_instance, catSize, output_dir):
         
-        log_smass_DC2, log_smass_cmass_DC2, redshift, numDen = self.get_smass(catalog_instance, catSize)
+        log_smass_DC2, _, _, numDen = self.get_smass(catalog_instance, catSize)
         
         cmass = np.loadtxt("CMASS_data.txt")
         
