@@ -39,6 +39,7 @@ class StellarMassTest(BaseValidationTest):
         - number density of galaxies (galaxies per square degree)
         """
         gc = catalog_instance
+        sky_area = float(gc.sky_area)
 
         cols = {
             "smass": gc.first_available("stellar_mass"),
@@ -46,6 +47,8 @@ class StellarMassTest(BaseValidationTest):
             "r": gc.first_available("mag_true_r_lsst"),
             "i": gc.first_available("mag_true_i_lsst"),
         }
+        if not all(cols.values()):
+            raise KeyError("Not all needed quantities exist!!")
 
         valid_smass = GCRQuery("{smass} > 0".format(**cols))
         cmass_cuts = GCRQuery(
@@ -63,7 +66,7 @@ class StellarMassTest(BaseValidationTest):
         print("maximum cmass-cut = ", np.max(log_smass_cmass))
         print()
 
-        numDen = len(log_smass_cmass) / float(gc.sky_area)
+        numDen = len(log_smass_cmass) / sky_area
         return log_smass_cmass, numDen
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
