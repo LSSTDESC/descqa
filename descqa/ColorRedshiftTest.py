@@ -1,5 +1,6 @@
 from __future__ import unicode_literals, absolute_import, division
 import os
+import re
 import numpy as np
 import matplotlib.colors as clr
 from .base import BaseValidationTest, TestResult
@@ -22,6 +23,9 @@ class ColorRedshiftTest(BaseValidationTest):
         super(ColorRedshiftTest, self).__init__()
         # load test config options
         self.kwargs = kwargs
+        self.truncate_cat_name = kwargs.get('truncate_cat_name', False)
+        self.title_in_legend = kwargs.get('title_in_legend', True)
+        self.font_size = kwargs.get('font_size', 16)
         with open(os.path.join(self.data_dir, 'README.md')) as f:
             self.validation_data = f.readline().strip()
         self.plot_list = kwargs.get("plot_list", [])
@@ -55,6 +59,9 @@ class ColorRedshiftTest(BaseValidationTest):
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         plot_num = 0
+        if self.truncate_cat_name:
+            catalog_name = re.split('_', catalog_name)[0]
+            
         for plot_param in self.plot_list:
             plot_num += 1
             if plot_param["frame"] == "rest":
@@ -81,6 +88,7 @@ class ColorRedshiftTest(BaseValidationTest):
             slct, title = self._get_selection_and_title(catalog_instance, title, plot_param,
                                                         redshift_limit=plot_param['redshift_limit'],
                                                         redshift_block_limit=plot_param['redshift_block_limit'])
+            print(title)
             fig, ax = plt.subplots()
             # for ax_this in (ax, self.summary_ax):
             if plot_param['redshift_limit'] is not None:
@@ -93,17 +101,22 @@ class ColorRedshiftTest(BaseValidationTest):
             h, xbins, ybins = np.histogram2d(redshift[slct], clr_val[slct],
                                              bins=(redshift_bins, np.linspace(-0.4, 2.2, 256)))
             if plot_param["log_scale"]:
-                pc = ax.pcolor(xbins, ybins, h.T+3.0, norm=clr.LogNorm())
-                fig.colorbar(pc, ax=ax).set_label("Population Density + 3")
+                pc = ax.pcolor(xbins, ybins, h.T+1.0, norm=clr.LogNorm())
+                fig.colorbar(pc, ax=ax).set_label("Population Density + 1")
             else:
                 pc = ax.pcolor(xbins, ybins, h.T)
                 fig.colorbar(pc, ax=ax).set_label("Population Density")
-            ax.set_ylabel('{} - {}'.format(mag1_str, mag2_str))
-            ax.set_xlabel('redshift')
+            mag1 = re.split('_', mag1_str)[1]  #get filter
+            mag2 = re.split('_', mag2_str)[1]  #get filter
+            ax.set_ylabel('{} - {}'.format(mag1,  mag2), size=self.font_size)
+            ax.set_xlabel('z', size=self.font_size)
+            if self.title_in_legend:
+                title = '{}\n{}'.format(catalog_name, title)
+            else:
+                ax.set_title(catalog_name)
             ax.text(0.05, 0.95, title, transform=ax.transAxes,
                     verticalalignment='top', color='white',
                     fontsize='small')
-            ax.set_title(catalog_name)
             fig.savefig(os.path.join(output_dir, 'plot_{}.png'.format(plot_num)))
             plt.close(fig)
 
@@ -179,7 +192,7 @@ class ColorRedshiftTest(BaseValidationTest):
                                     redshift_limit=redshift_limit,
                                     redshift_block_limit=redshift_block_limit)
             slct = slct & (np.log10(sm) > plot_param["stellar_mass_cut"])
-            title += "M$_{{*}}$ > {}, ".format(plot_param["stellar_mass_cut"])
+            title += "$\log_{{10}}(M_{{*}}/M_\odot) > {}$, ".format(plot_param["stellar_mass_cut"])
             title_elem += 1
             if title_elem % title_elem_per_line == 0:
                 title += "\n"
@@ -188,7 +201,7 @@ class ColorRedshiftTest(BaseValidationTest):
                                            redshift_limit=redshift_limit,
                                            redshift_block_limit=redshift_block_limit)
             slct = slct & (np.log10(halo_mass) > plot_param["halo_mass_cut"])
-            title += "M$_{{halo}}$ > {}, ".format(plot_param["halo_mass_cut"])
+            title += "$\log_{{10}}(M_{{halo}}/M_\odot) > {}$, ".format(plot_param["halo_mass_cut"])
             title_elem += 1
             if title_elem % title_elem_per_line == 0:
                 title += "\n"
@@ -208,13 +221,14 @@ class ColorRedshiftTest(BaseValidationTest):
                                     redshift_limit=redshift_limit,
                                     redshift_block_limit=redshift_block_limit)
             slct = slct & (rs == plot_param["red_sequence_cut"])
-            title += "red seq = {}, ".format(plot_param["red_sequence_cut"])
+            title += "red sequence = {}, ".format(plot_param["red_sequence_cut"])
             title_elem += 1
             if title_elem % title_elem_per_line == 0:
                 title += "\n"
-
+        #remove trailing ", "        
+        title = title[0:-2]
+        
         return slct, title
-
 
 
     def conclude_test(self, output_dir):

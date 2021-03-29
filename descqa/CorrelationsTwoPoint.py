@@ -51,20 +51,22 @@ class CorrelationUtilities(BaseValidationTest):
         self.requested_columns = kwargs['requested_columns']
         self.test_samples = kwargs['test_samples']
         self.test_sample_labels = kwargs['test_sample_labels']
-
+        self.Mag_units = kwargs.get('Mag_units', None)
+        
         self.output_filename_template = kwargs['output_filename_template']
 
         validation_filepath = os.path.join(self.data_dir, kwargs['data_filename'])
         self.validation_data = np.loadtxt(validation_filepath, skiprows=2)
         self.data_label = kwargs['data_label']
         self.test_data = kwargs['test_data']
-
+        
         self.fig_xlabel = kwargs['fig_xlabel']
         self.fig_ylabel = kwargs['fig_ylabel']
         self.fig_ylim = kwargs.get('fig_ylim', None)
         self.fig_subplots_nrows, self.fig_subplots_ncols = kwargs.get('fig_subplots', (1, 1))
         self.fig_subplot_groups = kwargs.get('fig_subplot_groups', [None])
         self.fig_xlim = kwargs.get('fig_xlim', None)
+        self.tick_size = kwargs.get('tick_size', 12)
 
         self.treecorr_config = {
             'min_sep': kwargs['min_sep'],
@@ -93,9 +95,10 @@ class CorrelationUtilities(BaseValidationTest):
         self.legend_size = kwargs.get('legend_size', 10)
         self.survey_label = kwargs.get('survey_label', '')
         self.no_title = kwargs.get('no_title', False)
-
+        self.legend_title = kwargs.get('legend_title', '')
+        
     @staticmethod
-    def load_catalog_data(catalog_instance, requested_columns, test_samples):
+    def load_catalog_data(catalog_instance, requested_columns, test_samples, h=1):
         """ Load requested columns from a Generic Catalog Reader instance and
         trim to the min and max of the requested cuts in test_samples.
 
@@ -107,14 +110,13 @@ class CorrelationUtilities(BaseValidationTest):
             with values of lists containing string names to try to load from
             the GCR catalog instance.
             Example:
-                {'mag': ['Mag_true_r_sdss_z0', 'Mag_true_r_des_z0'], ...}
+                {Mag': ['Mag_true_r_sdss_z0', 'Mag_true_r_des_z0'], ...}
         test_samples : dictionary of dictionaries
             Dictionaries containing simple column names and min max values to
             cut on.
             Examples:
-                {'Mr_-23_-22": {'mag': {'min':    -23, 'max': -22}
-                                'z':   {'min': 0.1031, 'max': 0.2452}}}
-
+                {'Mr_-23_-22": {'Mag': {'min':    -23, 'max': -22}
+                                'z':   {'min': 0.1031, 'max': 0.2452}}
         Returns
         -------
         GRC catalog instance containing simplified column names and cut to the
@@ -129,6 +131,9 @@ class CorrelationUtilities(BaseValidationTest):
 
         col_value_mins = defaultdict(list)
         col_value_maxs = defaultdict(list)
+        Mag_shift = 5*np.log10(h)   # Magnitude shift to adjust for h=1 units in data (eg Zehavi et. al.)
+        print('Magnitude shift for h={:.2f} = {:.2f}'.format(h, Mag_shift))
+        
         for conditions in test_samples.values():
             for col_key, condition in conditions.items():
                 if not isinstance(condition, dict):
@@ -137,18 +142,23 @@ class CorrelationUtilities(BaseValidationTest):
                     col_value_mins[col_key].append(condition['min'])
                 if 'max' in condition:
                     col_value_maxs[col_key].append(condition['max'])
-
+                
         filters = [(np.isfinite, c) for c in colnames.values()]
 
         if catalog_instance.has_quantity('extendedness'):
             filters.append('extendedness == 1')
 
+        # can remove ultra-faint synthetics if present in catalog by cutting on negative halo_id
+            
         for col_key, col_name in colnames.items():
             if col_key in col_value_mins and col_value_mins[col_key]:
-                filters.append('{} >= {}'.format(col_name, min(col_value_mins[col_key])))
+                min_value = min(col_value_mins[col_key]) + Mag_shift if 'Mag' in col_key else min(col_value_mins[col_key])
+                filters.append('{} >= {}'.format(col_name, min_value))
             if col_key in col_value_maxs and col_value_maxs[col_key]:
-                filters.append('{} < {}'.format(col_name, max(col_value_maxs[col_key])))
-
+                max_value = max(col_value_maxs[col_key]) + Mag_shift if 'Mag' in col_key else max(col_value_maxs[col_key])
+                filters.append('{} < {}'.format(col_name, max_value))
+        print('Catalog filters:', filters)
+                
         catalog_data = catalog_instance.get_quantities(list(colnames.values()), filters=filters)
         catalog_data = {k: catalog_data[v] for k, v in colnames.items()}
 
@@ -156,7 +166,7 @@ class CorrelationUtilities(BaseValidationTest):
 
 
     @staticmethod
-    def create_test_sample(catalog_data, test_sample):
+    def create_test_sample(catalog_data, test_sample, h=1):
         """ Select a subset of the catalog data an input test sample.
 
         This function should be overloaded in inherited classes for more
@@ -169,7 +179,7 @@ class CorrelationUtilities(BaseValidationTest):
             A dictionary specifying the columns to cut on and the min/max values of
             the cut.
             Example:
-                {mag: {min: -23,    max: -22}
+                {Mag: {min: -23,    max: -22}
                  z:   {min: 0.1031, max: 0.2452}}
 
         Returns
@@ -177,14 +187,22 @@ class CorrelationUtilities(BaseValidationTest):
         A GenericCatalogReader catalog instance cut to the requested bounds.
         """
         filters = []
+        Mag_shift = 5*np.log10(h)   # Magnitude shift to adjust for h=1 units in data (eg Zehavi et. al.)
         for key, condition in test_sample.items():
             if isinstance(condition, dict):
                 if 'max' in condition:
-                    filters.append('{} < {}'.format(key, condition['max']))
+                    max_value = condition['max'] + Mag_shift if 'Mag' in key else condition['max']
+                    filters.append('{} < {}'.format(key, max_value))
                 if 'min' in condition:
-                    filters.append('{} >= {}'.format(key, condition['min']))
+                    min_value =	condition['min'] + Mag_shift if 'Mag' in key else condition['min']
+                    filters.append('{} >= {}'.format(key, min_value))
             else: #customized filter
+                if 'Mag_shift' in condition:
+                    condition =	re.sub('Mag_shift', '{:0.2f}'.format(Mag_shift), condition)
+                    print('Substituted filter to adjust for Mag shifts: {}'.format(condition))
                 filters.append(condition)
+        print('Test sample filters for {}'.format(test_sample), filters)
+
         return GCRQuery(*filters).filter(catalog_data)
 
 
@@ -205,18 +223,26 @@ class CorrelationUtilities(BaseValidationTest):
             Full path of the directory to write results to.
         """
         # pylint: disable=no-member
-        fig, ax_all = plt.subplots(self.fig_subplots_nrows, self.fig_subplots_ncols, squeeze=False, figsize=(10,10))
+        fig_xsize = 5 if self.fig_subplots_ncols==1 else 7  #widen figure for subplots
+        fig_ysize = 5 if self.fig_subplots_ncols==1 else 4  #narrow y-axis for subplots
+        fig, ax_all = plt.subplots(self.fig_subplots_nrows, self.fig_subplots_ncols, squeeze=False,
+                                   figsize=(min(2, self.fig_subplots_ncols)*fig_xsize, min(2, self.fig_subplots_nrows)*fig_ysize))
 
-        for ax, this_group in zip(ax_all.flat, self.fig_subplot_groups):
+        for nx, (ax, this_group) in enumerate(zip(ax_all.flat, self.fig_subplot_groups)):
             if this_group is None:
                 this_group = self.test_samples
             colors = plt.cm.plasma_r(np.linspace(0.1, 1, len(this_group)))
 
+            if not this_group:
+                ax.set_visible(False)
+                continue
+            
             for sample_name, color in zip(this_group, colors):
+                cat_data = True
                 try:
                     sample_corr = corr_data[sample_name]
                 except KeyError:
-                    continue
+                    cat_data = False
                 sample_data = self.test_data[sample_name]
                 sample_label = self.test_sample_labels.get(sample_name)
 
@@ -232,13 +258,15 @@ class CorrelationUtilities(BaseValidationTest):
                     if self.fig_xlim is not None:
                         y2[y2 <= 0] = self.fig_ylim[0]*0.9
                     ax.fill_between(self.validation_data[:, 0], y1, y2, lw=0, color=color, alpha=0.25)
-                ax.errorbar(sample_corr[0], sample_corr[1], sample_corr[2],
-                            label=' '.join([catalog_name, sample_label]),
-                            marker='o', ls='', c=color)
+                if cat_data:
+                    ax.errorbar(sample_corr[0], sample_corr[1], sample_corr[2],
+                                label=' '.join([catalog_name, sample_label]),
+                                marker='o', ls='', c=color)
 
-            self.decorate_plot(ax, catalog_name)
+            self.decorate_plot(ax, catalog_name, n=nx)
 
         fig.tight_layout()
+        fig.subplots_adjust(hspace=0, wspace=0)
         fig.savefig(os.path.join(output_dir, '{:s}.png'.format(self.test_name)), bbox_inches='tight')
         plt.close(fig)
 
@@ -272,19 +300,38 @@ class CorrelationUtilities(BaseValidationTest):
         return legend_title + max_title
 
 
-    def decorate_plot(self, ax, catalog_name):
+    def decorate_plot(self, ax, catalog_name, n=0):
         """
         Decorates plot with axes labels, title, etc.
         """
         title = '{} vs. {}'.format(catalog_name, self.data_label)
-        lgnd_title = self.get_legend_title(self.test_samples) if self.title_in_legend else None
+        lgnd_title = None
+        if self.title_in_legend:
+            lgnd_title = self.get_legend_title(self.test_samples) if not self.legend_title else self.legend_title
         ax.legend(loc='lower left', fontsize=self.legend_size, title=lgnd_title)
-        ax.set_xlabel(self.fig_xlabel, size=self.font_size)
+
+        ax.tick_params(labelsize=self.tick_size)
+        # check for multiple subplots and label
+        if n+1 >= self.fig_subplots_ncols*(self.fig_subplots_nrows - 1):
+            ax.tick_params(labelbottom=True)
+            for axlabel in ax.get_xticklabels():
+                axlabel.set_visible(True)
+            ax.set_xlabel(self.fig_xlabel, size=self.font_size)
+        else:
+            for axlabel in ax.get_xticklabels():
+                axlabel.set_visible(False)
+            
         if self.fig_ylim is not None:
             ax.set_ylim(*self.fig_ylim)
         if self.fig_xlim is not None:
             ax.set_xlim(*self.fig_xlim)
-        ax.set_ylabel(self.fig_ylabel, size=self.font_size)
+
+        # suppress labels for multiple subplots
+        if n % self.fig_subplots_ncols == 0:  #1st column
+            ax.set_ylabel(self.fig_ylabel, size=self.font_size)
+        else:
+            for axlabel in ax.get_yticklabels():
+                axlabel.set_visible(False)
         if not self.no_title:
             ax.set_title(title, fontsize='medium')
 
@@ -399,7 +446,7 @@ class CorrelationsAngularTwoPoint(CorrelationUtilities):
         super(CorrelationsAngularTwoPoint, self).__init__(**kwargs)
         self.treecorr_config['metric'] = 'Arc'
         self.treecorr_config['sep_units'] = 'deg'
-
+        print(self.legend_title)
 
     def generate_processed_randoms(self, catalog_data):
         """ Create and process random data for the 2pt correlation function.
@@ -543,9 +590,11 @@ class CorrelationsProjectedTwoPoint(CorrelationUtilities):
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
 
+        h = catalog_instance.cosmology.H(0).value/100 if self.Mag_units == 'h1' else 1
+
         catalog_data = self.load_catalog_data(catalog_instance=catalog_instance,
                                               requested_columns=self.requested_columns,
-                                              test_samples=self.test_samples)
+                                              test_samples=self.test_samples, h=h)
 
         if not catalog_data:
             return TestResult(skipped=True, summary='Missing requested quantities')
@@ -566,8 +615,8 @@ class CorrelationsProjectedTwoPoint(CorrelationUtilities):
                 output_dir, self.output_filename_template.format(sample_name))
 
             tmp_catalog_data = self.create_test_sample(
-                catalog_data, sample_conditions)
-
+                catalog_data, sample_conditions, h=h)
+            
             with open(os.path.join(output_dir, 'galaxy_count.dat'), 'a') as f:
                 f.write('{} {}\n'.format(sample_name, len(tmp_catalog_data['ra'])))
 
