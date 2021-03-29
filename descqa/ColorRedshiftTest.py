@@ -192,7 +192,7 @@ class ColorRedshiftTest(BaseValidationTest):
                                     redshift_limit=redshift_limit,
                                     redshift_block_limit=redshift_block_limit)
             slct = slct & (np.log10(sm) > plot_param["stellar_mass_cut"])
-            title += "$\log_{{10}}(M_{{*}}/M_\odot) > {}$, ".format(plot_param["stellar_mass_cut"])
+            title += "$\\log_{{10}}(M_{{*}}/M_\\odot) > {}$, ".format(plot_param["stellar_mass_cut"])
             title_elem += 1
             if title_elem % title_elem_per_line == 0:
                 title += "\n"
@@ -201,7 +201,7 @@ class ColorRedshiftTest(BaseValidationTest):
                                            redshift_limit=redshift_limit,
                                            redshift_block_limit=redshift_block_limit)
             slct = slct & (np.log10(halo_mass) > plot_param["halo_mass_cut"])
-            title += "$\log_{{10}}(M_{{halo}}/M_\odot) > {}$, ".format(plot_param["halo_mass_cut"])
+            title += "$\\log_{{10}}(M_{{halo}}/M_\\odot) > {}$, ".format(plot_param["halo_mass_cut"])
             title_elem += 1
             if title_elem % title_elem_per_line == 0:
                 title += "\n"

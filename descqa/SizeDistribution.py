@@ -102,8 +102,8 @@ class SizeDistribution(BaseValidationTest):
         xname = key if not self.truncate_key_name else re.split('_', key)[0]
         hist_ax.hist(np.log10(sizes), color=catalog_color, edgecolor='black', alpha=0.75,
                      density=True, bins=20)
-        hist_ax.set_xlabel("$\log_{{10}}({})$".format(xname), fontsize=self.fontsize)
-        hist_ax.set_ylabel("$dN/d\log_{{10}}({})$".format(xname), fontsize=self.fontsize)
+        hist_ax.set_xlabel("$\\log_{{10}}({})$".format(xname), fontsize=self.fontsize)
+        hist_ax.set_ylabel("$dN/d\\log_{{10}}({})$".format(xname), fontsize=self.fontsize)
         
         # plot the CDF and the line fit
         cumul_ax.plot(size_pts, cumul_N_norm, color=catalog_color, label='{}: ${:.2f}$'.format(catalog_name, data_slope))
