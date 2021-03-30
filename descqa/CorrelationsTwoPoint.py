@@ -141,7 +141,6 @@ class CorrelationUtilities(BaseValidationTest):
                     col_value_mins[col_key].append(condition['min'])
                 if 'max' in condition:
                     col_value_maxs[col_key].append(condition['max'])
-                
         filters = [(np.isfinite, c) for c in colnames.values()]
 
         if catalog_instance.has_quantity('extendedness'):
