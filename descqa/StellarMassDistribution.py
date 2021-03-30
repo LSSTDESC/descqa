@@ -87,7 +87,7 @@ class StellarMassTest(BaseValidationTest):
         x = self.validation_data[:, 0]
         y = self.validation_data[:, 1]
 
-        fig = plt.figure(1, figsize=(12, 6))
+        plt.figure(1, figsize=(12, 6))
         plt.hist(x, bins=x, weights=y, histtype="step", color="teal", density=True, linewidth=2, label="CMASS")
         plt.hist(log_smass_cmass, bins=np.linspace(self.Mlo, self.Mhi, 50), color="orange", linewidth=2, density=True,
                  histtype="step", label=catalog_name)
