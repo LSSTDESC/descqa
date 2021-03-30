@@ -59,7 +59,6 @@ class CorrelationUtilities(BaseValidationTest):
         self.validation_data = np.loadtxt(validation_filepath, skiprows=2)
         self.data_label = kwargs['data_label']
         self.test_data = kwargs['test_data']
-        
         self.fig_xlabel = kwargs['fig_xlabel']
         self.fig_ylabel = kwargs['fig_ylabel']
         self.fig_ylim = kwargs.get('fig_ylim', None)
