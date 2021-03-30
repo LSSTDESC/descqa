@@ -1,3 +1,4 @@
+
 from __future__ import print_function, division, unicode_literals, absolute_import
 import os
 try:
@@ -33,7 +34,7 @@ class StellarMassFunction(BaseValidationTest):
             },
             'zrange': (0.0, 1.0),
             'colnames': ('logM', 'log_phi', 'dlog_phi+', 'dlog_phi-'),
-            'label': 'Moustakas et. al. 2013',
+            'label': 'PRIMUS 2013',
             'missingdata': '...',
         },
     }
@@ -51,6 +52,13 @@ class StellarMassFunction(BaseValidationTest):
                  observation='', zlo=0., zhi=1.0, zint=0.2, ncolumns=2, **kwargs):
         #pylint: disable=W0231
 
+        self.font_size = kwargs.get('font_size', 20)
+        self.legend_size = kwargs.get('legend_size', 13)
+        self.truncate_cat_name = kwargs.get('truncate_cat_name', False)
+        self.fig_xsize = kwargs.get('fig_xsize', 10)
+        self.fig_ysize = kwargs.get('fig_ysize', 14)
+        self.text_size = kwargs.get('text_size', 20.)
+        
         #catalog quantities
         self.zlabel = z
         self.Mlabel = mass
@@ -85,8 +93,10 @@ class StellarMassFunction(BaseValidationTest):
         self.filters = [(lambda z: (z > zmin) & (z < zmax), self.zlabel)]
 
         #setup summary plot
-        self.summary_fig, self.summary_ax = plt.subplots(self.nrows, self.ncolumns, sharex='col')
-        self.summary_fig.text(self.yaxis_xoffset, self.yaxis_yoffset, self.yaxis, va='center', rotation='vertical') #setup a common axis label
+        self.summary_fig, self.summary_ax = plt.subplots(self.nrows, self.ncolumns, sharex='col',
+                                                         figsize=(self.fig_xsize, self.fig_ysize))
+        self.summary_fig.text(self.yaxis_xoffset, self.yaxis_yoffset, self.yaxis, va='center', rotation='vertical',
+                              fontsize=self.text_size) #setup a common axis label
         #could plot summary validation data here if available but would need to evaluate labels, bin values etc.
         #otherwise setup a check so that validation data is plotted only once on summary plot
         self.first_pass = True
@@ -110,8 +120,8 @@ class StellarMassFunction(BaseValidationTest):
 
         #other plotting variables
         self.markers = iter(self.default_markers)
-        self.yaxis = r'$d\phi/d\log M (Mpc^{-3} dex^{-1})$'
-        self.xaxis = '$M^*$'
+        self.yaxis = r'$d\phi/d\log_{10}(M/M_\odot)\quad[Mpc^{-3} dex^{-1}]$'
+        self.xaxis = '$M^*/M_\\odot$'
 
         return z_lo, z_hi
 
@@ -146,9 +156,12 @@ class StellarMassFunction(BaseValidationTest):
             return TestResult(skipped=True, summary='Missing required quantity {} or {}'.format(self.zlabel, self.Mlabel))
 
         #setup plots
-        fig, ax = plt.subplots(self.nrows, self.ncolumns, sharex='col')
-        fig.text(self.yaxis_xoffset, self.yaxis_yoffset, self.yaxis, va='center', rotation='vertical') #setup a common axis label
-
+        fig, ax = plt.subplots(self.nrows, self.ncolumns, sharex='col', figsize=(self.fig_xsize, self.fig_ysize))
+        fig.text(self.yaxis_xoffset, self.yaxis_yoffset, self.yaxis, va='center', rotation='vertical',
+                 fontsize=self.text_size) #setup a common axis label
+        if self.truncate_cat_name:
+            catalog_name = catalog_name.partition("_")[0]
+        
         #initialize arrays for storing histogram sums
         N_array = np.zeros((self.nrows, self.ncolumns, len(self.Mbins)-1), dtype=np.int)
         sumM_array = np.zeros((self.nrows, self.ncolumns, len(self.Mbins)-1))
@@ -197,7 +210,7 @@ class StellarMassFunction(BaseValidationTest):
                 if not zkey:
                     zkey = '{:.1f} < z < {:.1f}'.format(cut_lo, cut_hi)
                 cut_label = '${}$'.format(zkey)
-                Mvalues = get_opt_binpoints(N, sumM, sumM2, self.Mbins)
+                Mvalues = sumM/N
                 sumN = N.sum()
                 total = '(# of galaxies = {})'.format(sumN)
                 Nerrors = np.sqrt(N)
@@ -251,7 +264,8 @@ class StellarMassFunction(BaseValidationTest):
             phi = np.power(10, validation_data['log_phi'])
             dphi_hi = np.power(10, validation_data['log_phi'] + validation_data['dlog_phi+']) - phi
             dphi_lo = -np.power(10, validation_data['log_phi'] + validation_data['dlog_phi-']) + phi
-            ax.errorbar(M, phi, yerr=[dphi_lo, dphi_hi], color=self.validation_color, marker=self.validation_marker, label=validation_label, ms=self.msize)
+            ax.errorbar(M, phi, yerr=[dphi_lo, dphi_hi], color=self.validation_color, marker=self.validation_marker,
+                        linestyle="", label=validation_label, ms=self.msize)
             results['data'] = phi
             results['Mdata'] = M
             results['data+'] = dphi_hi
@@ -263,11 +277,12 @@ class StellarMassFunction(BaseValidationTest):
 
 
     def decorate_subplot(self, ax, nplot, label=None):
-        ax.tick_params(labelsize=8)
+        ax.tick_params(labelsize=14)
         ax.set_xscale('log')
         ax.set_yscale('log')
         if label:
-            ax.text(0.95, 0.95, label, horizontalalignment='right', verticalalignment='top', transform=ax.transAxes)
+            ax.text(0.95, 0.95, label, horizontalalignment='right', verticalalignment='top',
+                    fontsize=self.text_size, transform=ax.transAxes)
 
         #add axes and legend
         if nplot+1 <= self.nplots-self.ncolumns:  #x scales for last ncol plots only
@@ -277,10 +292,11 @@ class StellarMassFunction(BaseValidationTest):
                 #prevent overlapping yaxis labels
                 ax.yaxis.get_major_ticks()[0].label1.set_visible(False)
         else:
-            ax.set_xlabel(self.xaxis)
+            ax.set_xlabel(self.xaxis, size=self.font_size)
             for axlabel in ax.get_xticklabels():
                 axlabel.set_visible(True)
-        ax.legend(loc='lower left', fancybox=True, framealpha=0.5, numpoints=1)
+            ax.xaxis.set_tick_params(which='major', labelbottom=True)
+        ax.legend(loc='lower left', fancybox=True, framealpha=0.5, numpoints=1, fontsize=self.legend_size)
 
 
     @staticmethod
