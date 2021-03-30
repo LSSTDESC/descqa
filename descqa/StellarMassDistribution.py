@@ -25,7 +25,14 @@ class StellarMassTest(BaseValidationTest):
         # load validation data
         path = os.path.join(self.data_dir, "stellar_mass_dist", "CMASS_data.txt")
         self.validation_data = np.loadtxt(path)
-
+        self.truncate_cat_name = kwargs.get('truncate_cat_name', False)
+        self.legend_location = kwargs.get('legend_location', 'upper right')
+        self.font_size = kwargs.get('font_size', 22)
+        self.text_size = kwargs.get('text_size', 20)
+        self.legend_size = kwargs.get('legend_size', 18)
+        self.Mlo = kwargs.get('Mlo', 10.)
+        self.Mhi = kwargs.get('Mhi', 12.5)
+        
     @staticmethod
     def get_smass(catalog_instance):
         """
@@ -73,16 +80,25 @@ class StellarMassTest(BaseValidationTest):
 
         log_smass_cmass, numDen = self.get_smass(catalog_instance)
 
+        if self.truncate_cat_name:
+            catalog_name = catalog_name.partition("_")[0]
+
+        print(catalog_name)
         x = self.validation_data[:, 0]
         y = self.validation_data[:, 1]
 
-        plt.figure(1, figsize=(12, 6))
-        plt.hist(x, bins=x, weights=y, histtype="step", color="orange", density=True, linewidth=2, label="CMASS")
-        plt.hist(log_smass_cmass, bins=np.linspace(10, 12.5, 50), color="teal", linewidth=2, density=True, histtype="step", label=catalog_name)
-        plt.title(f"n[{catalog_name} = {numDen:.1f} , CMASS = 101] gals/sq deg")
-        plt.xlabel(r"$\log(M_{\star}/M_{\odot})$", fontsize=20)
-        plt.ylabel("N", fontsize=20)
-        plt.legend(loc="best")
+        fig = plt.figure(1, figsize=(12, 6))
+        plt.hist(x, bins=x, weights=y, histtype="step", color="teal", density=True, linewidth=2, label="CMASS")
+        plt.hist(log_smass_cmass, bins=np.linspace(self.Mlo, self.Mhi, 50), color="orange", linewidth=2, density=True,
+                 histtype="step", label=catalog_name)
+        text = '{}: {:.1f} gals/sq. deg.\nCMASS: 101 gals/sq. deg.'.format(catalog_name, numDen)
+        #plt.title(f"n[{catalog_name} = {numDen:.1f} , CMASS = 101] gals/sq deg")
+        ax = plt.gca()
+        plt.text(0.01, 0.86, text, fontsize=self.text_size, transform=ax.transAxes)
+        plt.xlabel(r"$\log_{10}(M^*/M_{\odot})$", fontsize=self.font_size)
+        plt.ylabel("$N$", fontsize=self.font_size)
+        plt.xlim(self.Mlo + 0.3, self.Mhi - 0.3)
+        plt.legend(loc=self.legend_location, fontsize=self.legend_size)
         plt.show()
         plt.savefig(os.path.join(output_dir, "Mstellar_distribution.png"))
         plt.close()
