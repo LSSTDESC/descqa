@@ -615,7 +615,6 @@ class CorrelationsProjectedTwoPoint(CorrelationUtilities):
 
             tmp_catalog_data = self.create_test_sample(
                 catalog_data, sample_conditions, h=h)
-            
             with open(os.path.join(output_dir, 'galaxy_count.dat'), 'a') as f:
                 f.write('{} {}\n'.format(sample_name, len(tmp_catalog_data['ra'])))
 
