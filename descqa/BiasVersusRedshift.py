@@ -85,7 +85,7 @@ class BiasValidation(CorrelationsAngularTwoPoint):
             return TestResult(skipped=True, summary='Missing requested quantities')
 
         if self.truncate_cat_name:
-            catalog_name = re.split('_', catalog_name)[0]
+            catalog_name = catalog_name.partition("_")[0]
 
         # Initialize catalog's cosmology
         cosmo = ccl.Cosmology(Omega_c=catalog_instance.cosmology.Om0-catalog_instance.cosmology.Ob0,

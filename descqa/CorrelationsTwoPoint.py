@@ -59,7 +59,6 @@ class CorrelationUtilities(BaseValidationTest):
         self.validation_data = np.loadtxt(validation_filepath, skiprows=2)
         self.data_label = kwargs['data_label']
         self.test_data = kwargs['test_data']
-        
         self.fig_xlabel = kwargs['fig_xlabel']
         self.fig_ylabel = kwargs['fig_ylabel']
         self.fig_ylim = kwargs.get('fig_ylim', None)
@@ -142,7 +141,6 @@ class CorrelationUtilities(BaseValidationTest):
                     col_value_mins[col_key].append(condition['min'])
                 if 'max' in condition:
                     col_value_maxs[col_key].append(condition['max'])
-                
         filters = [(np.isfinite, c) for c in colnames.values()]
 
         if catalog_instance.has_quantity('extendedness'):
@@ -616,7 +614,6 @@ class CorrelationsProjectedTwoPoint(CorrelationUtilities):
 
             tmp_catalog_data = self.create_test_sample(
                 catalog_data, sample_conditions, h=h)
-            
             with open(os.path.join(output_dir, 'galaxy_count.dat'), 'a') as f:
                 f.write('{} {}\n'.format(sample_name, len(tmp_catalog_data['ra'])))
 
