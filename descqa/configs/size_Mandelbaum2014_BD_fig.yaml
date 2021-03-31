@@ -1,0 +1,41 @@
+subclass_name: SizeStellarMassLuminosity.SizeStellarMassLuminosity
+
+#observation: either protodc or buzzard
+observation: twocomp
+
+possible_mag_fields:
+  - Mag_true_i_lsst_z0
+  - Mag_true_i_sdss_z0
+  - Mag_true_i_des_z0
+
+mag_bin_separation: 1
+  
+output_filename_template: 'size_{}_z_{}_{}.dat'
+
+label_template: '${} < z < {}$'
+
+data_filename: 'size/Mandelbaum2014_LumF814W_size_bulge_disk.txt'
+data_label: 'Mandelbaum+2014'
+survey_label: 'COSMOS F814W'
+
+z_bins:
+  - {z_min: 0.0, z_max: 0.5}
+  - {z_min: 0.5, z_max: 1.0}
+  - {z_min: 1.0, z_max: 1.5}
+  - {z_min: 1.5, z_max: 2.0}
+
+fig_xlabel: '$\log_{10}(L/L_{\odot})$'
+fig_ylabel: '$\log_{10}(R_e)$ (kpc)'
+ncolumns: 2
+fig_ylim: [4e-1, 100]
+fig_xlim: [9, 12.5]
+legend_location: 'upper left'
+no_title: true
+font_size: 16
+legend_size: 10
+truncate_cat_name: true
+
+chisq_max: 1.2
+
+description: |
+  Compare evolution of bulge and disk sizes as a function of i-band magnitude of LSST and redshift and comparing to Mandelbaum et al (2015) HST COSMOS F814W observations

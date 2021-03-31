@@ -38,9 +38,9 @@ test_samples:
   Mr_-20_-19:
     Mag: {min: -20, max: -19}
     z: {min: 0.0269, max: 0.0642}
-#  Mr_-19_-18:
-#    Mag: {min: -19, max: -18}
-#    z: {min: 0.0173, max: 0.0417}
+  Mr_-19_-18:
+    Mag: {min: -19, max: -18}
+    z: {min: 0.0173, max: 0.0417}
 #  Mr_-18_-17:
 #    Mag: {min: -18, max: -17}
 #    z: {min: 0.0107, max: 0.0262}
@@ -58,7 +58,7 @@ test_data:
   Mr_-22_-21: {data_col: 3, data_err_col: 4}
   Mr_-21_-20: {data_col: 5, data_err_col: 6}
   Mr_-20_-19: {data_col: 7, data_err_col: 8}
-#  Mr_-19_-18: {data_col: 9, data_err_col: 10}
+  Mr_-19_-18: {data_col: 9, data_err_col: 10}
 #  Mr_-18_-17: {data_col: 11, data_err_col: 12}
   
 # Plotting configuration.
@@ -75,7 +75,7 @@ test_sample_labels:
   Mr_-22_-21: '$-22 < M_r^h < -21$'
   Mr_-21_-20: '$-21 < M_r^h < -20$'
   Mr_-20_-19: '$-20 < M_r^h < -19$'
-#  Mr_-19_-18: '$-19 < M_r^h < -18$'
+  Mr_-19_-18: '$-19 < M_r^h < -18$'
 #  Mr_-18_-17: '$-18 < M_r^h < -17$'
   
 pi_maxes: # Line of sight, wp(rp) binning for each sample.
@@ -83,7 +83,7 @@ pi_maxes: # Line of sight, wp(rp) binning for each sample.
   Mr_-22_-21: 60.0
   Mr_-21_-20: 60.0
   Mr_-20_-19: 60.0
-#  Mr_-19_-18: 60.0
+  Mr_-19_-18: 60.0
 #  Mr_-18_-17: 60.0
 
 #Treecorr parameters

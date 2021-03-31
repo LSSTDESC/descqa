@@ -130,6 +130,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         upper_ax.set_ylabel(r'$n(< {\rm mag}) ~[{\rm deg^{-2}}]$', size=self.font_size)
         upper_ax.xaxis.set_visible(False)
         upper_ax.set_ylim([1000, 10**7])
+        #upper_ax.set_ylim([1, 10**5]) #use to check bright end of ditribution
         upper_ax.fill_between([self.band_lim[0], self.band_lim[1]], [0, 0], [10**9, 10**9], alpha=0.1, color='grey')
         upper_ax.set_yscale('log')
         upper_ax.set_xlim([self.x_lower_limit, 30])
@@ -139,6 +140,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         lower_ax.set_xlabel(self.band + ' magnitude', size=self.font_size)
         lower_ax.set_ylabel(r'$\Delta n/n$', size=self.font_size)
         lower_ax.set_ylim([-1, 1])
+        #lower_ax.set_ylim([0.0, 10]) #use to check bright end of ditribution
         lower_ax.set_yticks([-0.6, 0.0, 0.6])
         lower_ax.set_xlim([self.x_lower_limit, 30])
 

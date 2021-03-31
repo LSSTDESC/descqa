@@ -19,6 +19,7 @@ class PositionAngle(BaseValidationTest):
        
         self.acceptable_keys = kwargs['possible_position_angle_fields']
         self.cutoff = kwargs['p_cutoff']
+        self.max_size = kwargs.get('max_size', 5e6)
 
         self._color_iterator = ('C{}'.format(i) for i in count())
 
@@ -32,16 +33,32 @@ class PositionAngle(BaseValidationTest):
             summary = 'Missing required quantity ' + ' or '.join(['{}']*len(self.acceptable_keys))
             return TestResult(skipped=True, summary=summary.format(*self.acceptable_keys))
 
+        # remove ultra-faint synthetics if present in catalog
+        if catalog_instance.has_quantity('baseDC2/halo_id'):
+            filters = [(lambda z: (z > -20), 'baseDC2/halo_id')]
+        elif catalog_instance.has_quantity('base5000/halo_id'):
+            filters = [(lambda z: (z > -20), 'base5000/halo_id')]
+        else:
+            filters = None
+
         # get data
-        catalog_data = catalog_instance.get_quantities(key)
+        catalog_data = catalog_instance.get_quantities(key, filters=filters)
         pos_angles = catalog_data[key]
         is_degrees = np.max(pos_angles) > 2*np.pi
         good_data_mask = np.logical_not(np.logical_or(np.isinf(pos_angles), np.isnan(pos_angles)))
 
+        # downsample data to max_size to get reliable p values
+        dlen = len(pos_angles)
+        sample=np.random.sample(dlen)
+        fraction = min(self.max_size/float(dlen), 1.0)
+        index=(sample<fraction)
+        test_angles = pos_angles[index]
+        print('Downsampling catalog data to {} for p-value statistic'.format(self.max_size))
+        
         if is_degrees:
-            ks_results = scipy.stats.kstest(pos_angles, self.uniform_degrees)
+            ks_results = scipy.stats.kstest(test_angles, self.uniform_degrees)
         else:
-            ks_results = scipy.stats.kstest(pos_angles, self.uniform_radians)
+            ks_results = scipy.stats.kstest(test_angles, self.uniform_radians)
 
         fig = plt.figure()
         ax = fig.add_subplot(111)

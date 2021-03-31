@@ -204,13 +204,19 @@ class SizeStellarMassLuminosity(BaseValidationTest):
                 if self.fig_xlim is not None:
                     ax.set_ylim(self.fig_ylim)
                 ax.legend(loc=self.legend_location, title=legend_title, fontsize=self.legend_size)
-
-            fig.add_subplot(111, frameon=False)
+                ax.tick_params(labelbottom=True)
+                for axlabel in ax.get_xticklabels():
+                    axlabel.set_visible(True)
+                
+            #fig.add_subplot(111, frameon=False)
             # hide tick and tick label of the big axes
-            plt.tick_params(labelcolor='none', which='both', top='off', bottom='off', left='off', right='off')
-            plt.grid(False)
-            plt.xlabel(self.fig_xlabel, size=self.font_size)
-            plt.ylabel(self.fig_ylabel, size=self.font_size)
+            #plt.tick_params(labelcolor='none', which='both', top='off', bottom='off', left='off', right='off')
+            #plt.grid(False)
+            # center axis labels
+            fig.text(0.05, 0.5, self.fig_ylabel, fontsize=self.font_size, ha="center", va="center", rotation=90)
+            fig.text(0.5, 0.05, self.fig_xlabel, fontsize=self.font_size, ha="center", va="center")
+            #plt.xlabel(self.fig_xlabel, size=self.font_size)
+            #plt.ylabel(self.fig_ylabel, size=self.font_size)
             fig.subplots_adjust(hspace=0, wspace=0)
             if not self.no_title:
                 fig.suptitle('{} vs. {}'.format(catalog_name, self.data_label), fontsize='medium', y=0.93)

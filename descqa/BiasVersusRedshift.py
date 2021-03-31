@@ -2,6 +2,7 @@ from __future__ import print_function, division, unicode_literals, absolute_impo
 import os
 import numpy as np
 import scipy.optimize as op
+import re
 
 from GCR import GCRQuery
 import pyccl as ccl
@@ -31,30 +32,42 @@ class BiasValidation(CorrelationsAngularTwoPoint):
         self.fig_ylim = kwargs['fig_ylim']
         self.test_name = kwargs['test_name']
         self.fit_range = kwargs['fit_range']
+        self.font_size = kwargs.get('font_size', 16)
+        self.legend_size = kwargs.get('legend_size', 10)
         self.ell_max = kwargs['ell_max'] if 'ell_max' in kwargs.keys() else 20000
         validation_filepath = os.path.join(self.data_dir, kwargs['data_filename'])
         self.validation_data = np.loadtxt(validation_filepath, skiprows=2)
-    
+        self.truncate_cat_name = kwargs.get('truncate_cat_name', False)
+        self.title_in_legend = kwargs.get('title_in_legend', True)
+        
     def plot_bias_results(self, corr_data, corr_theory, bias, z, catalog_name, output_dir):
-        fig, ax = plt.subplots(1,2)
+        fig, ax = plt.subplots(1, 2, gridspec_kw={'width_ratios': [5, 2]})
         colors = plt.cm.plasma_r(np.linspace(0.1, 1, len(self.test_samples))) # pylint: disable=no-member
 
         for sample_name, color in zip(self.test_samples, colors):
             sample_corr = corr_data[sample_name]
             sample_label = self.test_sample_labels.get(sample_name)
             sample_th = corr_theory[sample_name]
-            ax[0].loglog(sample_corr[0], sample_th, c=color, label=sample_label)
-            ax[0].errorbar(sample_corr[0], sample_corr[1], sample_corr[2], marker='o', ls='', c=color)
-            
-        ax[0].legend(loc='best')
-        ax[0].set_xlabel(self.fig_xlabel)
+            ax[0].loglog(sample_corr[0], sample_th, c=color)
+            ax[0].errorbar(sample_corr[0], sample_corr[1], sample_corr[2], marker='o', ls='', c=color,
+                           label=sample_label)
+
+        if self.title_in_legend:
+            lgnd_title = catalog_name
+            title = self.data_label
+        else:
+            lgnd_title = None
+            title = '{} vs. {}'.format(catalog_name, self.data_label)
+        ax[0].legend(loc='lower left', title=lgnd_title, framealpha=0.5, fontsize=self.legend_size)
+        ax[0].set_xlabel(self.fig_xlabel, size=self.font_size)
         ax[0].set_ylim(*self.fig_ylim)
-        ax[0].set_ylabel(self.fig_ylabel)
-        ax[0].set_title('{} vs. {}'.format(catalog_name, self.data_label), fontsize='medium')
+        ax[0].set_ylabel(self.fig_ylabel, size=self.font_size)
+        ax[0].set_title(title, fontsize='medium')
         ax[1].plot(z,bias)
         ax[1].set_title('Bias vs redshift', fontsize='medium')
-        ax[1].set_xlabel('$z$')
-        ax[1].set_ylabel('$b(z)$')
+        ax[1].set_xlabel('$z$', size=self.font_size)
+        ax[1].set_ylabel('$b(z)$', size=self.font_size)
+        plt.subplots_adjust(wspace=.05)
         fig.tight_layout()
         fig.savefig(os.path.join(output_dir, '{:s}.png'.format(self.test_name)), bbox_inches='tight')
         plt.close(fig)
@@ -70,6 +83,9 @@ class BiasValidation(CorrelationsAngularTwoPoint):
 
         if not catalog_data:
             return TestResult(skipped=True, summary='Missing requested quantities')
+
+        if self.truncate_cat_name:
+            catalog_name = catalog_name.partition("_")[0]
 
         # Initialize catalog's cosmology
         cosmo = ccl.Cosmology(Omega_c=catalog_instance.cosmology.Om0-catalog_instance.cosmology.Ob0,

@@ -113,7 +113,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         self.font_size = kwargs.get('font_size', 16)
         self.legend_size = kwargs.get('legend_size', 10)
         self.tick_size = kwargs.get('tick_size', 12)
-        self.adjust_ylim = kwargs.get('adjust_ylim', 1.25)
+        self.adjust_ylim = kwargs.get('adjust_ylim', 1.3)
         self.rest_frame = rest_frame
         if self.rest_frame:
             possible_mag_fields = ('Mag_true_{}_lsst_z0',

@@ -244,6 +244,8 @@ class CheckColors(BaseValidationTest):
         self.mag_fields_val = kwargs['mag_fields_val']
         self.path_val = kwargs['path_val']
         self.truncate_cat_name = kwargs.get('truncate_cat_name', False)
+        self.truncate_z_label = kwargs.get('truncate_z_label', False)
+        self.truncate_color_labels = kwargs.get('truncate_color_labels', False)
 
 
         if len(kwargs['xcolor']) != 2 or len(kwargs['ycolor']) != 2:
@@ -376,10 +378,16 @@ class CheckColors(BaseValidationTest):
                 MMD, pValue = obj.compute(iterations=self.kernel_iterations)
                 print("MMD statistics is {}".format(MMD))
                 print("The p-value of the test is {}".format(pValue))
-
-                ax.set_xlabel('{} - {}'.format(mag_field.format(self.xcolor[0]), mag_field.format(self.xcolor[1])))
-                ax.set_ylabel('{} - {}'.format(mag_field.format(self.ycolor[0]), mag_field.format(self.ycolor[1])))
-                title = "{} = {:.2} - {:.2}".format(self.redshift_cut, zlo, zhi)
+                if self.truncate_color_labels:
+                    ax.set_xlabel('${} - {}$'.format(self.xcolor[0], self.xcolor[1]))
+                    ax.set_ylabel('${} - {}$'.format(self.ycolor[0], self.ycolor[1]))
+                else:
+                    ax.set_xlabel('{} - {}'.format(mag_field.format(self.xcolor[0]), mag_field.format(self.xcolor[1])))
+                    ax.set_ylabel('{} - {}'.format(mag_field.format(self.ycolor[0]), mag_field.format(self.ycolor[1])))
+                if self.truncate_z_label:
+                    title = '${:.2} < z < {:.2}$'.format(zlo, zhi)
+                else:
+                    title = "{} = {:.2} - {:.2}".format(self.redshift_cut, zlo, zhi)
                 ax.text(0.05, 0.95, title, transform=ax.transAxes, 
                         verticalalignment='top', color='black', fontsize='small')
                 title1 = "Compare metric {:.4} +- {:.4}".format(cd[0],cd[1])
