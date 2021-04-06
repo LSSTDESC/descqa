@@ -92,8 +92,8 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         self.band = kwargs.get("band1", "i")
         self.band_kcorrect = kwargs.get("band_kcorrect", "u, g, r, i, z")
         self.band_kcorrect = [x.strip() for x in self.band_kcorrect.split(",")]
-        self.possible_mag_fields = ("mag_{0}_sdss", "mag_{0}_lsst",)
-        self.possible_magerr_fields = ("magerr_{0}_sdss", "magerr_{0}_lsst",)
+        self.possible_mag_fields = ("mag_{0}_sdss_member", "mag_{0}_lsst_member",)
+        self.possible_magerr_fields = ("magerr_{0}_sdss_member", "magerr_{0}_lsst_member",)
         self.bandshift = kwargs.get("bandshift", 0.3)
         self.njack = kwargs.get("njack", 20)
         self.z_bins = np.array(kwargs.get("z_bins", (0.1, 0.3, 1.0)))
@@ -118,17 +118,17 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         quantities_needed = {
             "cluster_id_member",
             "cluster_id",
+            "ra_member",
+            "dec_member",
             "ra",
             "dec",
-            "ra_cluster",
-            "dec_cluster",
             "richness",
-            "redshift_true",
-            "lim_limmag_dered",
-            "p_mem",
+            "redshift_true_member",
+            "clusters/lim_limmag",
+            "p_member",
             "scaleval",
-            "p_cen",
-            "redshift_cluster",
+            "p_cen_0","p_cen_1","p_cen_2","p_cen_3","p_cen_4",
+            "redshift",
         }
         try:
             magnitude_fields = []
@@ -160,6 +160,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
             TestResult(skipped=True)
         magnitude_fields, magnitude_err_fields, quantities_needed = prepared
         quant = catalog_instance.get_quantities(quantities_needed)
+        sorting_member = np.argsort(quant["cluster_id_member"])
         # Abundance matching
         if self.is_abundance_matching:
             self.abundance_matching(
@@ -171,21 +172,22 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         for magzip in zip(magnitude_fields, magnitude_err_fields):
             mag.append(quant[magzip[0]])
             magerr.append(quant[magzip[1]])
-        mag = np.array(mag).T
-        magerr = np.array(magerr).T
+        mag = np.array(mag).T[sorting_member]
+        magerr = np.array(magerr).T[sorting_member]
         # get k correction
-        z = quant["redshift_true"]
+        z = quant["redshift_true_member"][sorting_member]
         if "sdss" in magnitude_fields[0]:
             kcorr=None
             assert(0)
         else:
-            kcorrect_path = self.data_dir + "/clf/kcorrect/" + catalog_name + "_kcorr.cache"
-            if not os.path.exists(kcorrect_path):
-                kcorr = kcorrect(mag, magerr, z, self.bandshift, filters=self.filters)
-                if kcorr is not None:
-                    np.savetxt(kcorrect_path, kcorr)
-            else:
-                kcorr = np.loadtxt(kcorrect_path)
+            kcorr=None
+            #kcorrect_path = self.data_dir + "/clf/kcorrect/" + catalog_name + "_kcorr.cache"
+            #if not os.path.exists(kcorrect_path):
+            #    kcorr = kcorrect(mag, magerr, z, self.bandshift, filters=self.filters)
+            #    if kcorr is not None:
+            #        np.savetxt(kcorrect_path, kcorr)
+            #else:
+            #    kcorr = np.loadtxt(kcorrect_path)
 
         # Preprocess for all quantity
         # get analysis band and do kcorrection
@@ -198,18 +200,19 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
             Mag -= kcorr[:, analindex]
         # Mask for central galaxy
         mask = quant["richness"] > 1
-        limmag = quant["lim_limmag_dered"][mask]
+        sorting = np.argsort(quant["cluster_id"][mask])
+        limmag = quant["clusters/lim_limmag"][mask][sorting]
         limmag = (
             limmag
-            - catalog_instance.cosmology.distmod(quant["redshift_cluster"]).value[mask]
+            - catalog_instance.cosmology.distmod(quant["redshift"]).value[mask][sorting]
         )
         cenMag, cengalindex = self.get_central_mag_id(
-            quant["cluster_id"][mask],
-            quant["cluster_id_member"],
-            quant["ra_cluster"][mask],
-            quant["dec_cluster"][mask],
-            quant["ra"],
-            quant["dec"],
+            quant["cluster_id"][mask][sorting],
+            quant["cluster_id_member"][sorting_member],
+            quant["ra"][mask][sorting],
+            quant["dec"][mask][sorting],
+            quant["ra_member"][sorting_member],
+            quant["dec_member"][sorting_member],
             Mag,
         )
         np.save(
@@ -222,16 +225,16 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         )
 
         # For halo run pcen are 1
-        pcen_all = np.zeros(len(quant["ra"]))
-        pcen_all[cengalindex.flatten().astype(int)] = quant["p_cen"][mask]
+        pcen_all = np.zeros(len(quant["ra_member"]))
+        pcen_all[cengalindex.flatten().astype(int)] = quant["p_cen_0"][mask][sorting]
 
         # Prepare for jackknife
         jackList = self.make_jack_samples_simple(
-            quant["ra_cluster"][mask], quant["dec_cluster"][mask]
+            quant["ra"][mask][sorting], quant["dec"][mask][sorting]
         )
 
         match_index_jack = self.getjackgal(
-            jackList[0], quant["cluster_id"][mask], quant["cluster_id_member"]
+            jackList[0], quant["cluster_id"][mask][sorting], quant["cluster_id_member"][sorting_member]
         )
 
         # calculating clf
@@ -240,15 +243,15 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
             cenMag,
             pcen_all,
             jackList,
-            quant["cluster_id"][mask],
-            quant["cluster_id_member"],
+            quant["cluster_id"][mask][sorting],
+            quant["cluster_id_member"][sorting_member],
             match_index=match_index_jack,
             limmag=limmag,
-            scaleval=quant["scaleval"][mask],
-            pmem=quant["p_mem"],
-            pcen=quant["p_cen"][mask],
-            cluster_lm=quant["richness"][mask],
-            cluster_z=quant["redshift_cluster"][mask],
+            scaleval=quant["scaleval"][mask][sorting],
+            pmem=quant["p_member"][sorting_member],
+            pcen=quant["p_cen_0"][mask][sorting],
+            cluster_lm=quant["richness"][mask][sorting],
+            cluster_z=quant["redshift"][mask][sorting],
         )
         #Read compare data
         data = self.read_compared_data(catalog_instance.cosmology.h, kcorr is None)
@@ -264,8 +267,14 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                     data["satellites"][i, j, :, 0],
                     weights=data["satellites"][i, j, :, 1],
                 )
-                meancen = np.average(self.mag_center, weights=cenclf[i, j])
-                meansat = np.average(self.mag_center, weights=satclf[i, j])
+                if np.sum(cenclf[i, j])==0:
+                    meancen=0
+                else:
+                    meancen = np.average(self.mag_center, weights=cenclf[i, j])
+                if np.sum(satclf[i, j])==0:
+                    meansat=0
+                else:
+                    meansat = np.average(self.mag_center, weights=satclf[i, j])
                 scores_shift.append(
                     np.abs(meancen - meansat - (meancen_ref - meansat_ref))
                 )
@@ -277,9 +286,12 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                         weights=data["centrals"][i, j, :, 1],
                     )
                 )
-                std_cen = np.sqrt(
-                    np.average((self.mag_center - meancen) ** 2, weights=cenclf[i, j])
-                )
+                if np.sum(cenclf[i, j])==0:
+                    std_cent = 0
+                else:
+                    std_cen = np.sqrt(
+                        np.average((self.mag_center - meancen) ** 2, weights=cenclf[i, j])
+                    )
                 scores_scatter.append(np.abs(std_cen - std_cen_ref))
         scores = [np.max(scores_shift), np.max(scores_scatter)]
         clf = {"satellites": satclf, "centrals": cenclf}
@@ -293,6 +305,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
             covar,
             data,
             name,
+            catalog_name,
             os.path.join(output_dir, "clf_redmapper.png"),
         )
         if (scores[0] < 0.5) & (scores[1] < 0.5):
@@ -315,7 +328,10 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         for galtype in galaxytype:
             data[galtype] = []
         for i, zrange in enumerate(zip(zmin, zmax)):
-            lambds = self.lambd_bins[i]
+            if self.is_abundance_matching:
+                lambds = self.old_lambd_bins[i]
+            else:
+                lambds = self.lambd_bins[i]
             for lambdlow, lambdhigh in zip(lambds[:-1], lambds[1:]):
                 for galtype in galaxytype:
                     if galtype == "centrals":
@@ -372,14 +388,14 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         self.lambd_bins = newlambda_bins
         return
 
-    def make_plot(self, clf, covar, data, name, save_to):
+    def make_plot(self, clf, covar, data, name, catalog_name, save_to):
         # plot the result
         fig, ax = plt.subplots(
             self.nlambd_bins,
             self.n_z_bins,
             sharex=True,
             sharey=True,
-            figsize=(12, 10),
+            figsize=(12, 12),
             dpi=100,
         )
         if len(ax.shape) == 1:
@@ -392,7 +408,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                         self.mag_center,
                         clf[k][i, j],
                         yerr=np.sqrt(np.diag(covar[k][i, j])),
-                        label=k,
+                        label=k + " ({0})".format(catalog_name.split("_")[0]),
                         fmt=fmt,
                     )
                     newdata = data[k][i, j]
@@ -401,10 +417,13 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                             newdata[:, 0],
                             newdata[:, 1],
                             yerr=newdata[:, 2],
-                            label=k + "_" + self.compared_survey,
+                            label=k + " ({0})".format(self.compared_survey),
                             fmt=fmt,
                         )
-                ax_this.set_ylim(0.05, 50)
+                ax_this.set_ylim(0.05, 100)
+                ax_this.set_xlim(-25, -19.5)
+                ax_this.xaxis.set_tick_params(labelsize=20)
+                ax_this.yaxis.set_tick_params(labelsize=20)
                 if self.old_lambd_bins is not None:
                     bins = (
                         self.old_lambd_bins[i][j],
@@ -424,19 +443,19 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                         self.data_z_maxs[i],
                     )
                 ax_this.text(
-                    -25,
-                    10,
+                    -24.7,
+                    5,
                     (
-                        r"${:.1E} \leq \lambda <{:.1E}$"
+                        r"${:.0f} \leq \lambda <{:.0f}$"
                         + "\n"
                         + r"${:g} \leq z<{:g}$"
                         + "\n"
-                        + self.compared_survey
-                        + r": ${:g} \leq z<{:g}$"
-                    ).format(*bins),
+                        #+ self.compared_survey
+                        #+ r": ${:g} \leq z<{:g}$"
+                    ).format(*bins), fontsize=25
                 )
                 ax_this.set_yscale("log")
-        ax_this.legend(loc="lower right", frameon=False, fontsize="medium")
+        ax_this.legend(loc="lower right", frameon=False, fontsize="large")
 
         ax = fig.add_subplot(111, frameon=False)
         ax.tick_params(
@@ -454,12 +473,14 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
             r"$\phi(M_{{{}}}\,|\,\lambda,z)\quad[{{\rm Mag}}^{{-1}}]$".format(
                 self.band
             ),
-            labelpad=30,
+            labelpad=50, fontsize=30
         )
-        ax.set_xlabel(r"$M_{{{}}}\quad[{{\rm Mag}}]$".format(self.band), labelpad=30)
-        ax.set_title(name)
+        ax.set_xlabel(r"$M_{{{}}}\quad[{{\rm Mag}}]$".format(self.band), labelpad=30, fontsize=30)
+        #ax.set_title(name)
 
         fig.tight_layout()
+        fig.subplots_adjust(hspace=0) 
+        fig.subplots_adjust(wspace=0) 
         fig.savefig(save_to)
         plt.close(fig)
 
@@ -498,7 +519,6 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                     continue
                 cenmag[i][j] = mag[count_lo + place[0]]
                 cengalindex[i][j] = count_lo + place[0]
-
             count_lo = count_hi
         return cenmag, cengalindex
 
@@ -558,7 +578,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
     ):
         # calculate clf for single bins
         dlum = lumbins[1] - lumbins[0]
-        clf = np.zeros_like(lumbins).astype(int)
+        clf = np.zeros_like(lumbins).astype(float)
 
         clist = np.where((z >= zmin) & (z < zmax) & (lm >= lm_min) & (lm < lm_max))[0]
 
@@ -573,7 +593,6 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         [nclusters_lum, binlist] = cluster_Lcount(lumbins, limmag[clist])
         for i, c in enumerate(clist):
             clf[: binlist[i]] = clf[: binlist[i]] + count_arr[c, : binlist[i]]
-
         clf = clf / nclusters_lum / dlum
 
         return clf
@@ -626,6 +645,8 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                     zmax[i],
                     limmag=limmag,
                 )
+
+
                 satclf[i, j] = self.make_single_clf(
                     cluster_lm,
                     cluster_z,
@@ -640,7 +661,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         njack = len(jacklist)
         cenclf_jack = np.zeros([njack, nz, nlambda, nlum])
         satclf_jack = np.zeros([njack, nz, nlambda, nlum])
-
+        
         for i, jack in enumerate(jacklist):
             gjack = self.getjackgal(jack, cluster_id, cluster_id_member, match_index)
             sat_count_arr_b = count_galaxies_p(
