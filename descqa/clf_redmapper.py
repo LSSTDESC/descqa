@@ -180,14 +180,13 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
             kcorr=None
             assert(0)
         else:
-            kcorr=None
-            #kcorrect_path = self.data_dir + "/clf/kcorrect/" + catalog_name + "_kcorr.cache"
-            #if not os.path.exists(kcorrect_path):
-            #    kcorr = kcorrect(mag, magerr, z, self.bandshift, filters=self.filters)
-            #    if kcorr is not None:
-            #        np.savetxt(kcorrect_path, kcorr)
-            #else:
-            #    kcorr = np.loadtxt(kcorrect_path)
+            kcorrect_path = self.data_dir + "/clf/kcorrect/" + catalog_name + "_kcorr.cache"
+            if not os.path.exists(kcorrect_path):
+                kcorr = kcorrect(mag, magerr, z, self.bandshift, filters=self.filters)
+                if kcorr is not None:
+                    np.savetxt(kcorrect_path, kcorr)
+            else:
+                kcorr = np.loadtxt(kcorrect_path)
 
         # Preprocess for all quantity
         # get analysis band and do kcorrection
@@ -287,7 +286,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                     )
                 )
                 if np.sum(cenclf[i, j])==0:
-                    std_cent = 0
+                    std_cen = 0
                 else:
                     std_cen = np.sqrt(
                         np.average((self.mag_center - meancen) ** 2, weights=cenclf[i, j])
@@ -452,10 +451,10 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                         + "\n"
                         #+ self.compared_survey
                         #+ r": ${:g} \leq z<{:g}$"
-                    ).format(*bins), fontsize=25
+                    ).format(*bins), fontsize=20
                 )
                 ax_this.set_yscale("log")
-        ax_this.legend(loc="lower right", frameon=False, fontsize="large")
+        ax[0,0].legend(loc="upper right", frameon=False, fontsize="large")
 
         ax = fig.add_subplot(111, frameon=False)
         ax.tick_params(
