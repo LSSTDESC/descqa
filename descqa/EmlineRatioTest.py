@@ -99,7 +99,7 @@ class EmlineRatioTest(BaseValidationTest):
         self.runcat_name = []
 
         self.truncate_cat_name = kwargs.get('truncate_cat_name', False)
-
+        self.legend_size = kwargs.get('legend_size', 14)
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
 
@@ -215,7 +215,7 @@ class EmlineRatioTest(BaseValidationTest):
         # Begin Test and Plotting
         #=========================================
 
-        fig = plt.figure(figsize=(16, 8))
+        fig = plt.figure(figsize=(16, 6.5))
         sp1 = fig.add_subplot(121)
         sp2 = fig.add_subplot(122)
 
@@ -283,7 +283,8 @@ class EmlineRatioTest(BaseValidationTest):
 
         plt.subplots_adjust(wspace=0.0)
 
-        sp2.text(0.02, 0.98, 'log p = %.2f\n' % np.log10(pvalue) + r'D$_\mathrm{KS}$' + ' = %.2f\nMed Shift = [%.2f, %.2f]' % (KSstat, *medianshift.T[0]), fontsize=14, transform=sp2.transAxes, ha='left', va='top', bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+        sp2.text(0.02, 0.98, 'log p = %.2f\n' % np.log10(pvalue) + r'D$_\mathrm{KS}$' + ' = %.2f\nMed Shift = [%.2f, %.2f]' % (KSstat, *medianshift.T[0]),
+                 fontsize=18, transform=sp2.transAxes, ha='left', va='top', bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
 
         sp1.text(0.98, 0.02, 'SDSS', fontsize=24, ha='right', va='bottom', transform=sp1.transAxes)
         sp2.text(0.98, 0.02, catalog_name, fontsize=24, ha='right', va='bottom', transform=sp2.transAxes)

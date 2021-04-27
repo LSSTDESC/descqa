@@ -62,8 +62,6 @@ test_data:
 #  Mr_-18_-17: {data_col: 11, data_err_col: 12}
   
 # Plotting configuration.
-truncate_cat_name: true
-no_title: true
 survey_label: SDSS
 font_size: 16
 legend_size: 8
@@ -91,6 +89,9 @@ min_sep: 0.15
 max_sep: 40
 bin_size: 0.45
 random_mult: 6
+var_method: jackknife
+#Patches for covariance estimate
+npatch: 20
 
 description: |
   Compare projected correlation functions of catalog and Zehavi et al (2011) SDSS r-band observations

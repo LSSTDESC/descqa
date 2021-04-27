@@ -17,6 +17,9 @@ __all__ = ['BiasValidation']
 def neglnlike(b, x, y, yerr):
     return 0.5*np.sum((b**2*x-y)**2/yerr**2) # We ignore the covariance
 
+def wtheta(x, b):
+    return b**2*x
+
 class BiasValidation(CorrelationsAngularTwoPoint):
     """
     Validation test of 2pt correlation function
@@ -40,7 +43,7 @@ class BiasValidation(CorrelationsAngularTwoPoint):
         self.truncate_cat_name = kwargs.get('truncate_cat_name', False)
         self.title_in_legend = kwargs.get('title_in_legend', True)
         
-    def plot_bias_results(self, corr_data, corr_theory, bias, z, catalog_name, output_dir):
+    def plot_bias_results(self, corr_data, corr_theory, bias, z, catalog_name, output_dir, err=None):
         fig, ax = plt.subplots(1, 2, gridspec_kw={'width_ratios': [5, 2]})
         colors = plt.cm.plasma_r(np.linspace(0.1, 1, len(self.test_samples))) # pylint: disable=no-member
 
@@ -49,9 +52,16 @@ class BiasValidation(CorrelationsAngularTwoPoint):
             sample_label = self.test_sample_labels.get(sample_name)
             sample_th = corr_theory[sample_name]
             ax[0].loglog(sample_corr[0], sample_th, c=color)
-            ax[0].errorbar(sample_corr[0], sample_corr[1], sample_corr[2], marker='o', ls='', c=color,
-                           label=sample_label)
-
+            markers, caps, bars = ax[0].errorbar(sample_corr[0], sample_corr[1], sample_corr[2], marker='o', ls='', c=color,
+                                                 label=sample_label)
+            # add transparency for error bars
+            [bar.set_alpha(0.2) for bar in bars]
+            [cap.set_alpha(0.2) for cap in caps]
+            #add shaded band for fit range
+            ax[0].fill_between([self.fit_range[sample_name]['min_theta'], self.fit_range[sample_name]['max_theta']],
+                                [self.fig_ylim[0], self.fig_ylim[0]], [self.fig_ylim[1], self.fig_ylim[1]],
+                                alpha=0.07, color='grey')
+            
         if self.title_in_legend:
             lgnd_title = catalog_name
             title = self.data_label
@@ -64,6 +74,7 @@ class BiasValidation(CorrelationsAngularTwoPoint):
         ax[0].set_ylabel(self.fig_ylabel, size=self.font_size)
         ax[0].set_title(title, fontsize='medium')
         ax[1].plot(z,bias)
+        ax[1].errorbar(z, bias, err, marker='o', ls='')
         ax[1].set_title('Bias vs redshift', fontsize='medium')
         ax[1].set_xlabel('$z$', size=self.font_size)
         ax[1].set_ylabel('$b(z)$', size=self.font_size)
@@ -102,6 +113,7 @@ class BiasValidation(CorrelationsAngularTwoPoint):
         correlation_theory = dict()
         best_fit_bias = []
         z_mean = []
+        best_fit_err = []
         for sample_name, sample_conditions in self.test_samples.items():
             tmp_catalog_data = self.create_test_sample(
                 catalog_data, sample_conditions)
@@ -138,16 +150,25 @@ class BiasValidation(CorrelationsAngularTwoPoint):
                                  args=(w_th[angles], xi[angles], 
                                        xi_sig[angles]), bounds=[(0.1, 10)])
             best_bias = result['x']
+            #extract covariance matrix
+            #use curve_fit to get error on fit which has documented normalization for covariance matrix
+            cfit = op.curve_fit(wtheta, w_th[angles], xi[angles], p0=1.0, sigma=xi_sig[angles], bounds=(0.1, 10))
+            #best_bias_obj = result.hess_inv*np.identity(1)[0] #unknown relative normalization
+            best_bias_err = np.sqrt(cfit[1][0][0])
             correlation_theory[sample_name] = best_bias**2*w_th
             best_fit_bias.append(best_bias)
+            best_fit_err.append(best_bias_err)
+            
         z_mean = np.array(z_mean)
         best_fit_bias = np.array(best_fit_bias)
+        best_fit_err = np.array(best_fit_err)
         self.plot_bias_results(corr_data=correlation_data,
-                                  catalog_name=catalog_name,
-                                  corr_theory=correlation_theory,
-                                  bias=best_fit_bias,
-                                  z=z_mean,
-                                  output_dir=output_dir)
+                               catalog_name=catalog_name,
+                               corr_theory=correlation_theory,
+                               bias=best_fit_bias,
+                               z=z_mean,
+                               output_dir=output_dir,
+                               err=best_fit_err)
 
         passed = np.all((best_fit_bias[1:]-best_fit_bias[:-1]) > 0) 
         score = np.count_nonzero((best_fit_bias[:-1]-best_fit_bias[1:])>0)*1.0/(len(best_fit_bias)-1.0)
