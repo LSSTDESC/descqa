@@ -51,6 +51,7 @@ fig_xlabel: '$\theta\quad[{\rm deg}]}$'
 fig_ylabel: '$w(\theta)$'
 fig_ylim: [0.0001, 2.0]
 truncate_cat_name: true
+observations: ['nicola_25.3']
 
 #Treecorr parameters
 min_sep: 0.001

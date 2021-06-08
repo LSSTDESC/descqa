@@ -263,6 +263,7 @@ class CheckQuantities(BaseValidationTest):
                 continue
 
         print(filters, filter_labels)
+        lgnd_loc_dflt ='best'
 
         for i, checks in enumerate(self.quantities_to_check):
 
@@ -359,7 +360,11 @@ class CheckQuantities(BaseValidationTest):
                 ax.set_title('{} {}'.format(catalog_name, version), fontsize=self.title_size)
                 fig.tight_layout()
                 if len(quantities_this) <= 9:
-                    leg = ax.legend(loc='best', fontsize=self.legend_size, ncol=3, frameon=True, facecolor='white',
+                    #check for special legend location
+                    lgnd_loc = lgnd_loc_dflt
+                    if checks.get('lgnd_loc') is not None: 
+                        lgnd_loc = checks.get('lgnd_loc')
+                    leg = ax.legend(loc=lgnd_loc, fontsize=self.legend_size, ncol=3, frameon=True, facecolor='white',
                                     title=filter_labels, title_fontsize=self.lgndtitle_fontsize)
                     leg.get_frame().set_alpha(0.5)
                 fig.savefig(os.path.join(output_dir, plot_filename))

@@ -35,6 +35,7 @@ description: 'Plotting galaxy as function of redshift with different cuts on gal
     # redshift_limit. 
 
 truncate_cat_name: True
+observations: ['des_fit', 'des_y1']
 plot_list:
 
 - frame: obs

@@ -58,6 +58,8 @@ class StellarMassFunction(BaseValidationTest):
         self.fig_xsize = kwargs.get('fig_xsize', 10)
         self.fig_ysize = kwargs.get('fig_ysize', 14)
         self.text_size = kwargs.get('text_size', 20.)
+        self.Mlo = kwargs.get('Mlo', 7e8)
+        self.Mhi = kwargs.get('Mhi', 2e12)
         
         #catalog quantities
         self.zlabel = z
@@ -192,10 +194,13 @@ class StellarMassFunction(BaseValidationTest):
             raise ValueError('No data found for quantity {}'.format(self.Mlabel))
 
         #loop over magnitude cuts and make plots
+        #change plot order so that successive redshift bins are plotted columnwise
         results = {}
         for n, (ax_this, summary_ax_this, cut_lo, cut_hi, N, sumM, sumM2, zkey) in enumerate(zip_longest(
             ax.flat,
+            #np.transpose(ax).flat,
             self.summary_ax.flat,
+            #np.transpose(self.summary_ax).flat,
             self.z_lo,
             self.z_hi,
             N_array.reshape(-1, N_array.shape[-1]),
@@ -277,31 +282,30 @@ class StellarMassFunction(BaseValidationTest):
 
 
     def decorate_subplot(self, ax, nplot, label=None):
-        ax.tick_params(labelsize=14)
+        ax.tick_params(labelsize=18)
         ax.set_xscale('log')
         ax.set_yscale('log')
+        ax.set_xlim(self.Mlo, self.Mhi)
         if label:
-            ax.text(0.95, 0.95, label, horizontalalignment='right', verticalalignment='top',
+            ax.text(0.99, 0.99, label, horizontalalignment='right', verticalalignment='top',
                     fontsize=self.text_size, transform=ax.transAxes)
 
         #add axes and legend
         if nplot+1 <= self.nplots-self.ncolumns:  #x scales for last ncol plots only
-            #print "noticks",nplot
-            for axlabel in ax.get_xticklabels():
-                axlabel.set_visible(False)
-                #prevent overlapping yaxis labels
-                ax.yaxis.get_major_ticks()[0].label1.set_visible(False)
+            ax.tick_params(direction='in', which='both')
+            #ax.set_xticks([])
+            ax.yaxis.get_major_ticks()[0].label1.set_visible(False)
         else:
             ax.set_xlabel(self.xaxis, size=self.font_size)
-            for axlabel in ax.get_xticklabels():
-                axlabel.set_visible(True)
-            ax.xaxis.set_tick_params(which='major', labelbottom=True)
+            #for axlabel in ax.get_xticklabels():
+            #    axlabel.set_visible(True)
+            ax.tick_params(labelbottom=True)
         ax.legend(loc='lower left', fancybox=True, framealpha=0.5, numpoints=1, fontsize=self.legend_size)
 
 
     @staticmethod
     def post_process_plot(fig):
-        fig.subplots_adjust(hspace=0)
+        fig.subplots_adjust(hspace=0.0)
 
 
     @staticmethod

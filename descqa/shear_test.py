@@ -223,8 +223,8 @@ class ShearTest(BaseValidationTest):
                 ax_this.axvline(vmax, ls='--', c='k')
             ax[-1][i].set_xlabel(r'$\theta \; {\rm (arcmin)}$', size=self.axsize)
             ax[0][i].set_title('z = {:.2f}'.format(self.zmeans[i]), size=self.title_size)
-            ax[0][i].legend(fontsize=self.legend_size)
-            ax[-1][i].legend(fontsize=self.legend_size)
+            ax[0][i].legend(fontsize=self.legend_size, frameon=True)
+            ax[-1][i].legend(fontsize=self.legend_size, frameon=True)
         ax[0][0].set_ylabel(r'$\xi_{{{}}} \; (10^{{-6}})$'.format('+'), size=self.axsize)
         ax[-1][0].set_ylabel(r'$\xi_{{{}}} \; (10^{{-6}})$'.format('-'), size=self.axsize)
 

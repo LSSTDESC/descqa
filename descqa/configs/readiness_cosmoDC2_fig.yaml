@@ -35,6 +35,7 @@ quantities_to_check:
     f_nan: 0
     f_inf: 0
     f_outlier: [0, 0.001]
+    lgnd_loc: 'upper left'
 
   - quantities: 'ellipticity_[12]*'
     label: ellipticity

@@ -364,7 +364,7 @@ class CheckColors(BaseValidationTest):
                 print(xbins,ybins)
                 cntr1 = ax.contour(counts.transpose(), extent=[xmin,xmax,ymin,ymax],
                                    colors='black',linestyles='solid',levels=self.levels)
-                
+                ax.clabel(cntr1, inline=True, fmt='%1.1f', fontsize=10)                
                 h1,_ = cntr1.legend_elements()
                 
                 ### CompareDensity block (Wasserstein metric)

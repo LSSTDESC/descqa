@@ -3,7 +3,10 @@ subclass_name: SizeStellarMassLuminosity.SizeStellarMassLuminosity
 observation: onecomp
 
 possible_native_luminosities:
+  - otherLuminosities/totalLuminositiesStellar:V:rest:dustAtlas
   - otherLuminosities/totalLuminositiesStellar:V:rest
+
+use_mag: False
 
 possible_mag_fields:
   - Mag_true_g_sdss_z0
@@ -24,7 +27,7 @@ label_template: '${} < z < {}$'
 
 data_filename: 'size/van_der_Wel_2014_ApJ_788_28_Table5_VLuminosity.txt'
 data_label: 'van der Wel+2014'
-survey_label: 'HST-3D+CANDELS'
+survey_label: '3D-HST+CANDELS'
 
 z_bins:
   - {z_min: 0.0, z_max: 0.5}
@@ -34,13 +37,13 @@ z_bins:
   - {z_min: 2.0, z_max: 2.5}
   - {z_min: 2.5, z_max: 3.0}
 
-fig_xlabel: '$\log_{10}(L/L_{\odot})$'
+fig_xlabel: '$\log_{10}(L_V/L_{\odot})$'
 fig_ylabel: '$\log_{10}(R_e) [{\rm kpc}]$'
 fig_ylim: [1e-1, 25]
-legend_location: 'upper left'
+legend_location: 'best'
 no_title: true
-font_size: 18
-legend_size: 10
+font_size: 20
+legend_size: 13
 truncate_cat_name: true
 
 chisq_max: 1.2

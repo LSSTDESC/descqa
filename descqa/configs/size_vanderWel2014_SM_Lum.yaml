@@ -3,6 +3,7 @@ subclass_name: SizeStellarMassLuminosity.SizeStellarMassLuminosity
 observation: onecomp
 
 possible_native_luminosities:
+  - otherLuminosities/totalLuminositiesStellar:V:rest:dustAtlas
   - otherLuminosities/totalLuminositiesStellar:V:rest
 
 possible_mag_fields:
