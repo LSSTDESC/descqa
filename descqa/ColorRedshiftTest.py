@@ -177,8 +177,8 @@ class ColorRedshiftTest(BaseValidationTest):
                 elif v['format'] == 'data':
                     if color in v.keys():
                         zbins = np.asarray(v['bins'])
-                        mean, edge, num = bs(v['z'], v[color], bins=zbins)
-                        std, edge, num = bs(v['z'], v[color], bins=zbins, statistic='std')
+                        mean, _, num = bs(v['z'], v[color], bins=zbins)
+                        std, _, num = bs(v['z'], v[color], bins=zbins, statistic='std')
                         fmask = np.isfinite(mean)
                         z_cen = 0.5*(zbins[1:]+zbins[:-1])
                         ax.errorbar(z_cen[fmask], mean[fmask], ls='', marker='o',
