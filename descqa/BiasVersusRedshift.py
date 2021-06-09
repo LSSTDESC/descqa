@@ -94,7 +94,7 @@ class BiasValidation(CorrelationsAngularTwoPoint):
             sample_label = self.test_sample_labels.get(sample_name)
             sample_th = corr_theory[sample_name]
             ax[0].loglog(sample_corr[0], sample_th, c=color)
-            markers, caps, bars = ax[0].errorbar(sample_corr[0], sample_corr[1], sample_corr[2], marker='o', ls='', c=color,
+            _, caps, bars = ax[0].errorbar(sample_corr[0], sample_corr[1], sample_corr[2], marker='o', ls='', c=color,
                                                  label=sample_label)
             # add transparency for error bars
             [bar.set_alpha(0.2) for bar in bars]
