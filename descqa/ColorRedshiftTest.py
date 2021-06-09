@@ -164,7 +164,7 @@ class ColorRedshiftTest(BaseValidationTest):
             mag1 = re.split('_', mag1_str)[1]  #get filter
             mag2 = re.split('_', mag2_str)[1]  #get filter
             # plot observations
-            for k,v in self.validation_data.items():
+            for v in self.validation_data.values():
                 color=mag1 + '-' + mag2
                 if v['format'] == 'fit':
                     coeffs = v[color]
