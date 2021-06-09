@@ -120,7 +120,7 @@ class BiasValidation(CorrelationsAngularTwoPoint):
         if not self.observations:
             ax[1].plot(z, bias)
         #add validation data
-        for k, v in self.validation_data.items():
+        for v in self.validation_data.values():
             colz = v['colnames'][0]
             colb = v['colnames'][1]
             zmask = (v[colz] < np.max(z)*1.25)
