@@ -8,6 +8,8 @@ possible_mag_fields:
   - Mag_true_i_sdss_z0
   - Mag_true_i_des_z0
 
+use_mag: true
+
 mag_bin_separation: 1
   
 output_filename_template: 'size_{}_z_{}_{}.dat'

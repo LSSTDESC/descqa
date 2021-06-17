@@ -14,14 +14,40 @@ from .plotting import plt
 
 __all__ = ['BiasValidation']
 
+
+
 def neglnlike(b, x, y, yerr):
     return 0.5*np.sum((b**2*x-y)**2/yerr**2) # We ignore the covariance
+
+def wtheta(x, b):
+    return b**2*x
 
 class BiasValidation(CorrelationsAngularTwoPoint):
     """
     Validation test of 2pt correlation function
     """
 
+    possible_observations = {'SRD':{
+                                'filename_template': 'galaxy_bias/bias_SRD.txt',
+                                'label': 'SRD ($i<25.3$)',
+                                'colnames': ('z', 'bias'),
+                                'skip':2,
+                               },
+                   'nicola_27':{
+                                'filename_template': 'galaxy_bias/bias_nicola_mlim27.txt',
+                                'label': 'Nicola et al. \n($i<27$)',
+                                'colnames': ('z', 'bias'),
+                                'skip':2,
+                               },
+                 'nicola_25.3':{
+                              	'filename_template': 'galaxy_bias/bias_nicola_mlim25.3.txt',
+                      	      	'label': 'Nicola et al. \n($i<25.3$)',
+                                'colnames': ('z', 'bias'),
+                                'skip':2,
+                      	       },  
+                            }
+
+    
     def __init__(self, **kwargs): #pylint: disable=W0231
         super().__init__(**kwargs)
         self.data_label = kwargs['data_label']
@@ -39,9 +65,28 @@ class BiasValidation(CorrelationsAngularTwoPoint):
         self.validation_data = np.loadtxt(validation_filepath, skiprows=2)
         self.truncate_cat_name = kwargs.get('truncate_cat_name', False)
         self.title_in_legend = kwargs.get('title_in_legend', True)
+        self.observations = kwargs.get('observations', [])
+
+        self.validation_data = self.get_validation_data(self.observations)
+
+    def get_validation_data(self, observations):
+    
+        validation_data = {}
+        if observations:
+            for obs in observations:
+                print(obs)
+                data_args = self.possible_observations[obs]
+                fn = os.path.join(self.data_dir, data_args['filename_template'])
+                validation_data[obs] = dict(zip(data_args['colnames'], np.loadtxt(fn, skiprows=data_args['skip'], unpack=True)))
+                validation_data[obs]['label'] = data_args['label']
+                validation_data[obs]['colnames'] = data_args['colnames']
+            
+            print(validation_data)
+        return validation_data
+
         
-    def plot_bias_results(self, corr_data, corr_theory, bias, z, catalog_name, output_dir):
-        fig, ax = plt.subplots(1, 2, gridspec_kw={'width_ratios': [5, 2]})
+    def plot_bias_results(self, corr_data, corr_theory, bias, z, catalog_name, output_dir, err=None):
+        fig, ax = plt.subplots(1, 2, gridspec_kw={'width_ratios': [5, 3]})
         colors = plt.cm.plasma_r(np.linspace(0.1, 1, len(self.test_samples))) # pylint: disable=no-member
 
         for sample_name, color in zip(self.test_samples, colors):
@@ -49,9 +94,16 @@ class BiasValidation(CorrelationsAngularTwoPoint):
             sample_label = self.test_sample_labels.get(sample_name)
             sample_th = corr_theory[sample_name]
             ax[0].loglog(sample_corr[0], sample_th, c=color)
-            ax[0].errorbar(sample_corr[0], sample_corr[1], sample_corr[2], marker='o', ls='', c=color,
-                           label=sample_label)
-
+            _, caps, bars = ax[0].errorbar(sample_corr[0], sample_corr[1], sample_corr[2], marker='o', ls='', c=color,
+                                                 label=sample_label)
+            # add transparency for error bars
+            [bar.set_alpha(0.2) for bar in bars]
+            [cap.set_alpha(0.2) for cap in caps]
+            #add shaded band for fit range
+            ax[0].fill_between([self.fit_range[sample_name]['min_theta'], self.fit_range[sample_name]['max_theta']],
+                                [self.fig_ylim[0], self.fig_ylim[0]], [self.fig_ylim[1], self.fig_ylim[1]],
+                                alpha=0.07, color='grey')
+            
         if self.title_in_legend:
             lgnd_title = catalog_name
             title = self.data_label
@@ -63,10 +115,21 @@ class BiasValidation(CorrelationsAngularTwoPoint):
         ax[0].set_ylim(*self.fig_ylim)
         ax[0].set_ylabel(self.fig_ylabel, size=self.font_size)
         ax[0].set_title(title, fontsize='medium')
-        ax[1].plot(z,bias)
+
+        ax[1].errorbar(z, bias, err, marker='o', ls='', label=catalog_name)
+        if not self.observations:
+            ax[1].plot(z, bias)
+        #add validation data
+        for v in self.validation_data.values():
+            colz = v['colnames'][0]
+            colb = v['colnames'][1]
+            zmask = (v[colz] < np.max(z)*1.25)
+            ax[1].plot(v[colz][zmask], v[colb][zmask], label=v['label'])
+            
         ax[1].set_title('Bias vs redshift', fontsize='medium')
         ax[1].set_xlabel('$z$', size=self.font_size)
         ax[1].set_ylabel('$b(z)$', size=self.font_size)
+        ax[1].legend(loc='upper right', framealpha=0.5, frameon=True, fontsize=self.legend_size)
         plt.subplots_adjust(wspace=.05)
         fig.tight_layout()
         fig.savefig(os.path.join(output_dir, '{:s}.png'.format(self.test_name)), bbox_inches='tight')
@@ -102,6 +165,7 @@ class BiasValidation(CorrelationsAngularTwoPoint):
         correlation_theory = dict()
         best_fit_bias = []
         z_mean = []
+        best_fit_err = []
         for sample_name, sample_conditions in self.test_samples.items():
             tmp_catalog_data = self.create_test_sample(
                 catalog_data, sample_conditions)
@@ -138,16 +202,25 @@ class BiasValidation(CorrelationsAngularTwoPoint):
                                  args=(w_th[angles], xi[angles], 
                                        xi_sig[angles]), bounds=[(0.1, 10)])
             best_bias = result['x']
+            #extract covariance matrix
+            #use curve_fit to get error on fit which has documented normalization for covariance matrix
+            cfit = op.curve_fit(wtheta, w_th[angles], xi[angles], p0=1.0, sigma=xi_sig[angles], bounds=(0.1, 10))
+            #best_bias_obj = result.hess_inv*np.identity(1)[0] #unknown relative normalization
+            best_bias_err = np.sqrt(cfit[1][0][0])
             correlation_theory[sample_name] = best_bias**2*w_th
             best_fit_bias.append(best_bias)
+            best_fit_err.append(best_bias_err)
+            
         z_mean = np.array(z_mean)
         best_fit_bias = np.array(best_fit_bias)
+        best_fit_err = np.array(best_fit_err)
         self.plot_bias_results(corr_data=correlation_data,
-                                  catalog_name=catalog_name,
-                                  corr_theory=correlation_theory,
-                                  bias=best_fit_bias,
-                                  z=z_mean,
-                                  output_dir=output_dir)
+                               catalog_name=catalog_name,
+                               corr_theory=correlation_theory,
+                               bias=best_fit_bias,
+                               z=z_mean,
+                               output_dir=output_dir,
+                               err=best_fit_err)
 
         passed = np.all((best_fit_bias[1:]-best_fit_bias[:-1]) > 0) 
         score = np.count_nonzero((best_fit_bias[:-1]-best_fit_bias[1:])>0)*1.0/(len(best_fit_bias)-1.0)

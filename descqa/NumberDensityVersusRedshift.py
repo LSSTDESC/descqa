@@ -449,16 +449,13 @@ class NumberDensityVersusRedshift(BaseValidationTest):
             ax.set_ylabel(self.yaxis, size=self.font_size)
 
         if nplot+1 <= self.nplots-self.ncolumns:  #x scales for last ncol plots only
-            #print "noticks",nplot
-            for axlabel in ax.get_xticklabels():
-                axlabel.set_visible(False)
-                #prevent overlapping yaxis labels
-                ax.yaxis.get_major_ticks()[0].label1.set_visible(False)
+            ax.tick_params(direction='in', which='both')
+            #prevent overlapping yaxis labels
+            ax.yaxis.get_major_ticks()[0].label1.set_visible(False)
         else:
+            print(nplot, ' visible')
             ax.set_xlabel('z', size=self.font_size)
             ax.tick_params(labelbottom=True)
-            for axlabel in ax.get_xticklabels():
-                axlabel.set_visible(True)
         ax.legend(loc='best', fancybox=True, framealpha=0.5, fontsize=self.legend_size, numpoints=1)
 
 
@@ -494,7 +491,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
 
     @staticmethod
     def post_process_plot(fig):
-        fig.subplots_adjust(hspace=0)
+        fig.subplots_adjust(hspace=0.0)
 
 
     @staticmethod

@@ -15,7 +15,7 @@ bands_val: {'u','g','r','i','z'}
 zlo: 0.1
 zhi: 0.9
 zbins: 4
-levels: 4
+levels: [0.3, 3, 30, 100]
 kernel_iterations: 1000
 description: Plot color combinations according to input  
 truncate_cat_name: true

@@ -102,20 +102,21 @@ class SizeDistribution(BaseValidationTest):
         xname = key if not self.truncate_key_name else re.split('_', key)[0]
         hist_ax.hist(np.log10(sizes), color=catalog_color, edgecolor='black', alpha=0.75,
                      density=True, bins=20)
-        hist_ax.set_xlabel("$\\log_{{10}}({})$".format(xname), fontsize=self.fontsize)
-        hist_ax.set_ylabel("$dN/d\\log_{{10}}({})$".format(xname), fontsize=self.fontsize)
+        hist_ax.set_xlabel("$\\log_{{10}}(\\rm{{{}/arcsec}})$".format(xname), fontsize=self.fontsize)
+        hist_ax.set_ylabel("$dN/d\\log_{{10}}(\\rm{{{}/arcsec}})$".format(xname), fontsize=self.fontsize)
         
         # plot the CDF and the line fit
-        cumul_ax.plot(size_pts, cumul_N_norm, color=catalog_color, label='{}: ${:.2f}$'.format(catalog_name, data_slope))
-        cumul_ax.plot(size_pts[mask], (data_intercept+data_slope*size_pts[mask]), color='gray',
+        cumul_ax.plot(np.log10(size_pts), cumul_N_norm,
+                      color=catalog_color, label='{}: ${:.2f}$'.format(catalog_name, data_slope))
+        cumul_ax.plot(np.log10(size_pts[mask]), (data_intercept+data_slope*size_pts[mask]), color='gray',
                       label='COSMOS: ${:.2f}$'.format(validation_slope))
-        cumul_ax.set_xscale('log')
+        #cumul_ax.set_xscale('log')
         #cumul_ax.text(0.95, 0.96,
         #              'COSMOS: ${:.2f}$\n{}: ${:.2f}$'.format(validation_slope, catalog_name, data_slope),
         #              horizontalalignment='right', verticalalignment='top',
         #              transform=cumul_ax.transAxes)
-        cumul_ax.set_xlabel("${}$".format(xname), fontsize=self.fontsize)
-        cumul_ax.set_ylabel("$N({}$)".format(xname), fontsize=self.fontsize)
+        cumul_ax.set_xlabel("$\\log_{{10}}(\\rm{{{}/arcsec}})$".format(xname), fontsize=self.fontsize)
+        cumul_ax.set_ylabel("$N(\\rm{{{}}}$)".format(xname), fontsize=self.fontsize)
         cumul_ax.legend(loc='upper right', title='Slopes', fontsize=self.lgnd_fontsize)
         cumul_ax.set_ylim(-0.05, 1.4) #force room for legend
         

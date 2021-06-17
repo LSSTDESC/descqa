@@ -66,12 +66,17 @@ class CorrelationUtilities(BaseValidationTest):
         self.fig_subplot_groups = kwargs.get('fig_subplot_groups', [None])
         self.fig_xlim = kwargs.get('fig_xlim', None)
         self.tick_size = kwargs.get('tick_size', 12)
-
+        self.mask_large_errors = kwargs.get('mask_large_errors', False)
+        
         self.treecorr_config = {
             'min_sep': kwargs['min_sep'],
             'max_sep': kwargs['max_sep'],
             'bin_size': kwargs['bin_size'],
         }
+        if kwargs.get('var_method', None):
+            self.treecorr_config['var_method'] = kwargs['var_method']
+        self.npatch = kwargs.get('npatch', 1)
+                      
         self.random_nside = kwargs.get('random_nside', 1024)
         self.random_mult = kwargs.get('random_mult', 3)
 
@@ -224,7 +229,8 @@ class CorrelationUtilities(BaseValidationTest):
         fig_xsize = 5 if self.fig_subplots_ncols==1 else 7  #widen figure for subplots
         fig_ysize = 5 if self.fig_subplots_ncols==1 else 4  #narrow y-axis for subplots
         fig, ax_all = plt.subplots(self.fig_subplots_nrows, self.fig_subplots_ncols, squeeze=False,
-                                   figsize=(min(2, self.fig_subplots_ncols)*fig_xsize, min(2, self.fig_subplots_nrows)*fig_ysize))
+                                   figsize=(min(2, self.fig_subplots_ncols)*fig_xsize,
+                                            min(2, self.fig_subplots_nrows)*fig_ysize))
 
         for nx, (ax, this_group) in enumerate(zip(ax_all.flat, self.fig_subplot_groups)):
             if this_group is None:
@@ -253,11 +259,15 @@ class CorrelationUtilities(BaseValidationTest):
                           self.validation_data[:, sample_data['data_err_col']])
                     y2 = (self.validation_data[:, sample_data['data_col']] -
                           self.validation_data[:, sample_data['data_err_col']])
-                    if self.fig_xlim is not None:
+                    if self.fig_ylim is not None:
                         y2[y2 <= 0] = self.fig_ylim[0]*0.9
                     ax.fill_between(self.validation_data[:, 0], y1, y2, lw=0, color=color, alpha=0.25)
                 if cat_data:
-                    ax.errorbar(sample_corr[0], sample_corr[1], sample_corr[2],
+                    if self.mask_large_errors and self.fig_ylim is not None:
+                        mask = (sample_corr[1] - sample_corr[2]) > min(self.fig_ylim)
+                    else:
+                        mask = np.ones(len(sample_corr[1]), dtype=bool)
+                    ax.errorbar(sample_corr[0][mask], sample_corr[1][mask], sample_corr[2][mask],
                                 label=' '.join([catalog_name, sample_label]),
                                 marker='o', ls='', c=color)
 
@@ -463,7 +473,9 @@ class CorrelationsAngularTwoPoint(CorrelationUtilities):
             get_healpixel_footprint(catalog_data['ra'], catalog_data['dec'], self.random_nside),
             self.random_nside,
         )
-        rand_cat = treecorr.Catalog(ra=rand_ra, dec=rand_dec, ra_units='deg', dec_units='deg')
+        rand_cat = treecorr.Catalog(ra=rand_ra, dec=rand_dec, ra_units='deg', dec_units='deg',
+                                    npatch= self.npatch,
+                                   )
         rr = treecorr.NNCorrelation(**self.treecorr_config)
         rr.process(rand_cat)
 
@@ -497,6 +509,7 @@ class CorrelationsAngularTwoPoint(CorrelationUtilities):
             dec=catalog_data['dec'],
             ra_units='deg',
             dec_units='deg',
+            npatch= self.npatch,
         )
 
         dd = treecorr.NNCorrelation(**self.treecorr_config)
@@ -672,6 +685,7 @@ class CorrelationsProjectedTwoPoint(CorrelationUtilities):
             dec=catalog_data['dec'],
             ra_units='deg',
             dec_units='deg',
+            npatch=self.npatch,
             r=redshift2dist(catalog_data['z'], cosmology),
         )
 
@@ -683,6 +697,7 @@ class CorrelationsProjectedTwoPoint(CorrelationUtilities):
             dec=rand_dec,
             ra_units='deg',
             dec_units='deg',
+            npatch=self.npatch,
             r=generate_uniform_random_dist(
                 rand_ra.size, *redshift2dist(np.array([z_min, z_max]), cosmology)),
         )

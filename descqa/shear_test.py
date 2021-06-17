@@ -50,9 +50,10 @@ class ShearTest(BaseValidationTest):
                  **kwargs):
         #pylint: disable=W0231
 
-        self.axsize = kwargs.get('axsize', 16)
+        self.axsize = kwargs.get('axsize', 17)
         self.title_size = kwargs.get('title_size', 18)
-        self.legend_size = kwargs.get('legend_size', 10)
+        self.legend_size = kwargs.get('legend_size', 15)
+        self.truncate_cat_name = kwargs.get('truncate_cat_name', True)
         
         self.z = z
         #sep-bounds and binning
@@ -222,10 +223,10 @@ class ShearTest(BaseValidationTest):
                 ax_this.axvline(vmax, ls='--', c='k')
             ax[-1][i].set_xlabel(r'$\theta \; {\rm (arcmin)}$', size=self.axsize)
             ax[0][i].set_title('z = {:.2f}'.format(self.zmeans[i]), size=self.title_size)
-            ax[0][i].legend(fontsize=self.legend_size)
-            ax[-1][i].legend(fontsize=self.legend_size)
-        ax[0][0].set_ylabel(r'$\chi_{{{}}} \; (10^{{-6}})$'.format('+'), size=self.axsize)
-        ax[-1][0].set_ylabel(r'$\chi_{{{}}} \; (10^{{-6}})$'.format('-'), size=self.axsize)
+            ax[0][i].legend(fontsize=self.legend_size, frameon=True)
+            ax[-1][i].legend(fontsize=self.legend_size, frameon=True)
+        ax[0][0].set_ylabel(r'$\xi_{{{}}} \; (10^{{-6}})$'.format('+'), size=self.axsize)
+        ax[-1][0].set_ylabel(r'$\xi_{{{}}} \; (10^{{-6}})$'.format('-'), size=self.axsize)
 
         fig.subplots_adjust(hspace=0)
 
@@ -246,6 +247,9 @@ class ShearTest(BaseValidationTest):
         fig, ax = plt.subplots(nrows=2, ncols=ntomo, sharex=True, squeeze=False, figsize=(ntomo*5, 5))
         zmeans = np.linspace(self.zlo, self.zhi, ntomo+2)[1:-1]
         #zmeans = np.linspace(self.zlo, zhi, ntomo+2)[1:-1]
+        if self.truncate_cat_name:
+            catalog_name = catalog_name.partition('_')[0]
+
         for ii in range(ntomo):
             
             z_mean = zmeans[ii]
@@ -350,10 +354,10 @@ class ShearTest(BaseValidationTest):
 	    #treecorr.KKCorrelation(nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin')  # count-kappa  (i.e. <kappa>(R))
 
             for ax_this in (ax, self.summary_ax):
-                ax_this[0, ii].errorbar(r, xip, sig_jack, lw=0.6, marker='o', ls='', color="#3f9b0b", label=r'$\chi_{+}$')
-                ax_this[0, ii].plot(xvals, theory_plus, 'o', color="#9a0eea", label=r'$\chi_{+}$' + " theory")
-                ax_this[1, ii].errorbar(r, xim, sigm_jack, lw=0.6, marker='o', ls='', color="#3f9b0b", label=r'$\chi_{-}$')
-                ax_this[1, ii].plot(xvals, theory_minus, 'o', color="#9a0eea", label=r'$\chi_{-}$' + " theory")
+                ax_this[0, ii].errorbar(r, xip, sig_jack, lw=0.6, marker='o', ls='', color="#3f9b0b", label=r'$\xi_{+}$ ' + catalog_name)
+                ax_this[0, ii].plot(xvals, theory_plus, 'o', color="#9a0eea", label=r'$\xi_{+}$' + " theory")
+                ax_this[1, ii].errorbar(r, xim, sigm_jack, lw=0.6, marker='o', ls='', color="#3f9b0b", label=r'$\xi_{-}$ ' + catalog_name)
+                ax_this[1, ii].plot(xvals, theory_minus, 'o', color="#9a0eea", label=r'$\xi_{-}$' + " theory")
 
             results = {'theta':r, 'xip  ':xip, 'xim  ':xim, 'theta_theory':xvals, 'xip_theory':theory_plus, 'xim_theory':theory_minus, 'npairs':gg.npairs}
             if do_jackknife:

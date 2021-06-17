@@ -2,6 +2,7 @@ from __future__ import unicode_literals, absolute_import, division
 import os
 import re
 import numpy as np
+from scipy.stats import binned_statistic as bs
 import matplotlib.colors as clr
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
@@ -19,6 +20,28 @@ class ColorRedshiftTest(BaseValidationTest):
     """
     This test plots various color-redshfit diagnostics
     """
+
+    possible_observations = {
+        'des_fit': {'filename_template':'red_sequence/des/rykoff_et_al_1026',
+                'keys': (0),
+                'coefficients': (1, 2, 3, 4),
+                'skip': 7,
+                'label': 'DES fit',
+                'zmin': 0.2,
+                'zmax': 0.9,
+                'format': 'fit',
+                },
+         'des_y1':{'filename_template':'red_sequence/des/des_y1_redshift_ri_color.txt',
+                   'skip': 1,
+                   'usecols': (0,1),
+                   'colnames': ('z', 'r-i'),
+                   'label':'DES Y1',
+                   'format': 'data',
+                   'bins': [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.9],
+                },
+         }
+
+    
     def __init__(self, **kwargs):
         super(ColorRedshiftTest, self).__init__()
         # load test config options
@@ -26,8 +49,12 @@ class ColorRedshiftTest(BaseValidationTest):
         self.truncate_cat_name = kwargs.get('truncate_cat_name', False)
         self.title_in_legend = kwargs.get('title_in_legend', True)
         self.font_size = kwargs.get('font_size', 16)
-        with open(os.path.join(self.data_dir, 'README.md')) as f:
-            self.validation_data = f.readline().strip()
+        self.text_size = kwargs.get('text_size', 12)
+        self.legend_size = kwargs.get('legend_size', 13)
+        self.observations = kwargs.get('observations', None)
+        
+        #with open(os.path.join(self.data_dir, 'README.md')) as f:
+        #    self.validation_data = f.readline().strip()
         self.plot_list = kwargs.get("plot_list", [])
         for plot_param in self.plot_list:
             color = plot_param['color']
@@ -51,6 +78,34 @@ class ColorRedshiftTest(BaseValidationTest):
             plot_param["redshift_limit"] = plot_param.get("redshift_limit", None)
             plot_param["redshift_block_limit"] = plot_param.get("redshift_block_limit", 1)
             assert plot_param['redshift_block_limit'] in [1, 2, 3], "redshift_block_limit must be set to 1,2 or 3. It is set to: {}".format(plot_param['redshift_block_limit'])
+
+        #read in validation data
+        self.validation_data = self.get_validation_data(self.observations)
+            
+    def get_validation_data(self, observations):
+        validation_data = {}
+        if observations:
+            for obs in observations:
+                data_args = self.possible_observations[obs]
+                fn = os.path.join(self.data_dir, data_args['filename_template'])
+                if 'keys' in data_args.keys():
+                    keys = np.genfromtxt(fn, skip_header=data_args['skip'], usecols=data_args['keys'], dtype=str)
+                    coefficients = np.genfromtxt(fn, skip_header=data_args['skip'], usecols=data_args['coefficients'])
+                    validation_data[obs] = dict(zip(keys, coefficients))
+                else:
+                    validation_data[obs] = dict(zip(data_args['colnames'],
+                                               np.loadtxt(fn, skiprows=data_args['skip'],
+                                                          unpack=True, usecols=data_args['usecols'])))
+                validation_data[obs]['label'] = data_args['label']
+                validation_data[obs]['format'] = data_args['format']
+                if 'zmin' in data_args.keys():
+                    validation_data[obs]['zmin'] = data_args['zmin']
+                if 'zmax' in data_args.keys():
+                    validation_data[obs]['zmax'] = data_args['zmax']
+                if 'bins' in data_args.keys():
+                    validation_data[obs]['bins'] = data_args['bins']
+
+        return validation_data
 
     def post_process_plot(self, ax):
         pass
@@ -88,7 +143,7 @@ class ColorRedshiftTest(BaseValidationTest):
             slct, title = self._get_selection_and_title(catalog_instance, title, plot_param,
                                                         redshift_limit=plot_param['redshift_limit'],
                                                         redshift_block_limit=plot_param['redshift_block_limit'])
-            print(title)
+
             fig, ax = plt.subplots()
             # for ax_this in (ax, self.summary_ax):
             if plot_param['redshift_limit'] is not None:
@@ -108,15 +163,41 @@ class ColorRedshiftTest(BaseValidationTest):
                 fig.colorbar(pc, ax=ax).set_label("Population Density")
             mag1 = re.split('_', mag1_str)[1]  #get filter
             mag2 = re.split('_', mag2_str)[1]  #get filter
+            # plot observations
+            for v in self.validation_data.values():
+                color=mag1 + '-' + mag2
+                if v['format'] == 'fit':
+                    coeffs = v[color]
+                    zmask = (redshift_bins >= v['zmin']) & (redshift_bins <= v['zmax'])
+                    obs = np.zeros(len(redshift_bins[zmask]))
+                    for n, coeff in enumerate(coeffs):
+                        obs += coeff*redshift_bins[zmask]**(len(coeffs)-1-n)
+
+                    ax.plot(redshift_bins[zmask], obs, color='r', label=v['label'])
+                elif v['format'] == 'data':
+                    if color in v.keys():
+                        zbins = np.asarray(v['bins'])
+                        mean, _, num = bs(v['z'], v[color], bins=zbins)
+                        std, _, num = bs(v['z'], v[color], bins=zbins, statistic='std')
+                        fmask = np.isfinite(mean)
+                        z_cen = 0.5*(zbins[1:]+zbins[:-1])
+                        ax.errorbar(z_cen[fmask], mean[fmask], ls='', marker='o',
+                                    yerr=np.sqrt(std[fmask]), c='orange', label=v['label'])
+                        counts = [np.sum(num==i+1) for i in range(len(zbins))]
+                        print(z_cen[fmask], mean[fmask], std[fmask], counts)
+                        
+                legend = ax.legend(loc='lower right', fontsize=self.legend_size)
+                plt.setp(legend.get_texts(), color='w')
+                
             ax.set_ylabel('{} - {}'.format(mag1,  mag2), size=self.font_size)
-            ax.set_xlabel('z', size=self.font_size)
+            ax.set_xlabel('Redshift $z$', size=self.font_size)
             if self.title_in_legend:
                 title = '{}\n{}'.format(catalog_name, title)
             else:
                 ax.set_title(catalog_name)
             ax.text(0.05, 0.95, title, transform=ax.transAxes,
                     verticalalignment='top', color='white',
-                    fontsize='small')
+                    fontsize=self.text_size)
             fig.savefig(os.path.join(output_dir, 'plot_{}.png'.format(plot_num)))
             plt.close(fig)
 
@@ -221,7 +302,8 @@ class ColorRedshiftTest(BaseValidationTest):
                                     redshift_limit=redshift_limit,
                                     redshift_block_limit=redshift_block_limit)
             slct = slct & (rs == plot_param["red_sequence_cut"])
-            title += "red sequence = {}, ".format(plot_param["red_sequence_cut"])
+            if plot_param["red_sequence_cut"]:
+                title += "red sequence galaxies, "
             title_elem += 1
             if title_elem % title_elem_per_line == 0:
                 title += "\n"

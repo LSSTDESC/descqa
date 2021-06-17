@@ -1,0 +1,10 @@
+#Coefficients provided by Joe DeRose
+#    Obtained fron fitting DES data 
+#    with convenient polynomial approximations.
+#    For an example showing how the polynomial fitting was done:
+#    c3_ri, c2_ri, c1_ri, c0_ri = np.polyfit(z_table, mean_colors['ri'], 3)
+#    where z_table, mean_colors are taken from DES fits data files
+#      p0   p1   p2 p3
+g-r  2.91 -6.63 4.98 0.48
+r-i  -3.54 5.66 -1.42 0.49
+i-z  1.83 -1.90 0.79 0.21

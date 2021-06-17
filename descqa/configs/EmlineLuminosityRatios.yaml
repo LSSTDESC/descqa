@@ -10,5 +10,5 @@ hiz_lo: 0.4
 hiz_hi: 0.7
 loz_band: 'r'
 hiz_band: 'i'
-truncate_cat_name: False
+truncate_cat_name: True
 description: 'Plots ratios of emission line luminosities from SDSS data and DESC simulations and compares the two 2-D distributions.'

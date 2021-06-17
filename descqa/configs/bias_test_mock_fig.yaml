@@ -41,21 +41,25 @@ label_template: '${} < z < {}$'
 data_filename: 'tpcf/Wang_2013_MNRAS_stt450_Table2.txt'
 data_label: 'Best fit bias'
 fit_range:
-  z_02_04: {min_theta: 0.01, max_theta: 0.7}
-  z_04_06: {min_theta: 0.01, max_theta: 0.6}
-  z_06_08: {min_theta: 0.01, max_theta: 0.5}
-  z_08_10: {min_theta: 0.01, max_theta: 0.3}
+  z_02_04: {min_theta: 0.01, max_theta: 0.6}
+  z_04_06: {min_theta: 0.01, max_theta: 0.4}
+  z_06_08: {min_theta: 0.01, max_theta: 0.3}
+  z_08_10: {min_theta: 0.01, max_theta: 0.2}
 
 need_distance: false
 fig_xlabel: '$\theta\quad[{\rm deg}]}$'
 fig_ylabel: '$w(\theta)$'
 fig_ylim: [0.0001, 2.0]
 truncate_cat_name: true
+observations: ['nicola_25.3']
 
 #Treecorr parameters
 min_sep: 0.001
 max_sep: 10
-bin_size: 0.05
+bin_size: 0.5
+var_method: jackknife
+#Patches for covariance estimate
+npatch: 80
 
 description: |
   Compare predicted and computed correlation function

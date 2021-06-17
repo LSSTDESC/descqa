@@ -108,7 +108,12 @@ class CheckQuantities(BaseValidationTest):
         self.relations_to_check = kwargs.get('relations_to_check', [])
         self.uniqueness_to_check = kwargs.get('uniqueness_to_check', [])
         self.catalog_filters = kwargs.get('catalog_filters', [])
-        self.lgndtitle_fontsize = kwargs.get('lgndtitle_fontsize', 10)
+        self.lgndtitle_fontsize = kwargs.get('lgndtitle_fontsize', 12)
+        self.truncate_cat_name = kwargs.get('truncate_cat_name', False)
+        self.no_version = kwargs.get('no_version', False)
+        self.title_size = kwargs.get('title_size', 'small')
+        self.font_size	= kwargs.get('font_size', 12)
+        self.legend_size = kwargs.get('legend_size', 'x-small')
         
         if not any((
                 self.quantities_to_check,
@@ -232,6 +237,10 @@ class CheckQuantities(BaseValidationTest):
             individual_only=True,
         ))
 
+        if self.truncate_cat_name:
+            catalog_name = catalog_name.partition("_")[0]
+        version = getattr(catalog_instance, 'version', '') if not self.no_version else ''
+
         # check filters
         filters = []
         filter_labels = ''
@@ -254,6 +263,7 @@ class CheckQuantities(BaseValidationTest):
                 continue
 
         print(filters, filter_labels)
+        lgnd_loc_dflt ='best'
 
         for i, checks in enumerate(self.quantities_to_check):
 
@@ -341,16 +351,20 @@ class CheckQuantities(BaseValidationTest):
                     has_plot = True
 
             if has_plot:
-                ax.set_xlabel(('log ' if checks.get('log') else '') + quantity_group_label)
+                ax.set_xlabel(('log ' if checks.get('log') else '') + quantity_group_label, size=self.font_size)
                 ax.yaxis.set_ticklabels([])
                 if checks.get('plot_min') is not None: #zero values fail otherwise
                     ax.set_xlim(left=checks.get('plot_min'))
                 if checks.get('plot_max') is not None:
                     ax.set_xlim(right=checks.get('plot_max'))
-                ax.set_title('{} {}'.format(catalog_name, getattr(catalog_instance, 'version', '')), fontsize='small')
+                ax.set_title('{} {}'.format(catalog_name, version), fontsize=self.title_size)
                 fig.tight_layout()
                 if len(quantities_this) <= 9:
-                    leg = ax.legend(loc='best', fontsize='x-small', ncol=3, frameon=True, facecolor='white',
+                    #check for special legend location
+                    lgnd_loc = lgnd_loc_dflt
+                    if checks.get('lgnd_loc') is not None: 
+                        lgnd_loc = checks.get('lgnd_loc')
+                    leg = ax.legend(loc=lgnd_loc, fontsize=self.legend_size, ncol=3, frameon=True, facecolor='white',
                                     title=filter_labels, title_fontsize=self.lgndtitle_fontsize)
                     leg.get_frame().set_alpha(0.5)
                 fig.savefig(os.path.join(output_dir, plot_filename))

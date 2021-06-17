@@ -25,7 +25,11 @@ class VirialScaling(BaseValidationTest):
         self.c_axis = c_axis
         self.disp_func = disp_func
         self.summary_fig, self.summary_ax = plt.subplots()
-		
+        self.truncate_cat_name = kwargs.get('truncate_cat_name', False)
+        self.font_size = kwargs.get('font_size', 16)
+        self.legend_size = kwargs.get('legend_size', 10)
+        self.convert_fof = kwargs.get('convert_fof', 1.0)
+        
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         '''collect quantities and plot the relationship between velocity dispersion and halo mass'''
 
@@ -153,17 +157,21 @@ class VirialScaling(BaseValidationTest):
         #fig, ax = plt.subplots(nrows=1,ncols=1)
         #make different plots depending on what you want the color axis to show
 
-        x_axis = np.multiply(mass[mask_num], (cosmo.H(median_r[mask_num])/100))
+        x_axis = np.multiply(mass[mask_num], (cosmo.H(median_r[mask_num]).value/100))
 
+        if self.truncate_cat_name:
+            catalog_name = catalog_name.partition('_')[0]
+        else:
+            catalog_name + ' cluster'
         if (self.c_axis == 'number'):
-           img = self.summary_ax.scatter(x_axis, vel_dispersion[mask_num], c = galaxy_num_list[mask_num], norm = LogNorm(), label = catalog_name + ' cluster') 
+           img = self.summary_ax.scatter(x_axis, vel_dispersion[mask_num], c = galaxy_num_list[mask_num], norm = LogNorm(), label = catalog_name)
 
         elif(self.c_axis == 'redshift'):
-           img =self.summary_ax.scatter(x_axis, vel_dispersion[mask_num], c = median_r[mask_num], norm = LogNorm(), label = catalog_name + ' cluster')	
+           img =self.summary_ax.scatter(x_axis, vel_dispersion[mask_num], c = median_r[mask_num], norm = LogNorm(), label = catalog_name)	
 
         #save halo masses, normalized hubble parameters, and velocity dispersion of galaxies for each cluster
         self.mass_col = mass[mask_num]
-        self.norm_h_col = cosmo.H(median_r[mask_num])/100
+        self.norm_h_col = cosmo.H(median_r[mask_num]).value/100
         self.vel_disp_col = vel_dispersion[mask_num]
         self.median_r_col = median_r[mask_num]
         self.galaxy_num_col = np.around(galaxy_num_list[mask_num], decimals = 0)
@@ -174,20 +182,22 @@ class VirialScaling(BaseValidationTest):
 
         #make plot
         x = np.linspace(smallest*.75, largest*1.5)
-        self.summary_ax.plot(x, eval("1082*(x/10**15)**.3361"), c = "red", label = "Evrard et al. 2007")
-        self.summary_ax.legend()
+        self.summary_ax.plot(x, eval("1082*(x/10**15)**.3361*{:.2f}".format(self.convert_fof)), c = "red",
+                             label = "{:.2f}*(Evrard et. al. 2008)".format(self.convert_fof))
+        self.summary_ax.legend(loc='best', fontsize=self.legend_size)
+        print(self.legend_size)
         bar = self.summary_fig.colorbar(img, ax = self.summary_ax)
         self.summary_ax.set_xscale('log')
         self.summary_ax.set_ylim(np.min(vel_dispersion[mask_num])*.3, np.max(vel_dispersion[mask_num])*5)
         self.summary_ax.set_xlim(smallest*.75, largest*1.5)
         self.summary_ax.set_yscale('log')
-        self.summary_ax.set_xlabel(r'$h(z)M\_halo  (M_{\odot})$')
-        self.summary_ax.set_ylabel(r'$\sigma_v  (km/s)$')
+        self.summary_ax.set_xlabel(r'$h(z)M_{\rm FoF}\quad [M_{\odot}]$', size=self.font_size)
+        self.summary_ax.set_ylabel(r'$\sigma_v\quad {\rm [km/s]}$', size=self.font_size)
         #label color axis depending on what you want to show
         if(self.c_axis == 'number'):
-            bar.ax.set_ylabel('galaxies per cluster')
+            bar.ax.set_ylabel('galaxies per cluster', size=self.font_size)
         else:
-            bar.ax.set_ylabel('median redshift')
+            bar.ax.set_ylabel('median redshift', size=self.font_size)
         plt.tight_layout()
         plt.savefig(os.path.join(output_dir, 'mass_virial_scaling.png'))
         plt.close()
