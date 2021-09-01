@@ -9,19 +9,25 @@ requested_columns:
     - redshift
   halo_id:
     - halo_id
+  mag:
+    - mag_i_lsst
 test_samples:
   z_02_04:
     redshift: {min: 0.2, max: 0.4}
     halo_id: {min: 0, max: 999999999999999999}
+    mag: {min: 16, max: 25.3}
   z_04_06:
     redshift: {min: 0.4, max: 0.6}
     halo_id: {min: 0, max: 999999999999999999}
+    mag: {min: 16, max: 25.3}
   z_06_08:
     redshift: {min: 0.6, max: 0.8}
     halo_id: {min: 0, max: 999999999999999999}
+    mag: {min: 16, max: 25.3}
   z_08_10:
     redshift: {min: 0.8, max: 1.0}
     halo_id: {min: 0, max: 999999999999999999}
+    mag: {min: 16, max: 25.3}
 
 test_sample_labels:
   z_02_04: '$0.2 < z < 0.4$'
@@ -51,7 +57,7 @@ fig_xlabel: '$\theta\quad[{\rm deg}]}$'
 fig_ylabel: '$w(\theta)$'
 fig_ylim: [0.0001, 2.0]
 truncate_cat_name: true
-observations: ['nicola_25.3']
+observations: ['nicola_25.3_errors']
 
 #Treecorr parameters
 min_sep: 0.001
