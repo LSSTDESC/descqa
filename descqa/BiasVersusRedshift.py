@@ -138,7 +138,7 @@ class BiasValidation(CorrelationsAngularTwoPoint):
             print(v['colnames'])
             if 'b_lo'in v['colnames'] and 'b_hi' in v['colnames']:
                 print('band', v[colz][zmask], v['b_lo'][zmask], v['b_hi'][zmask])
-                ax[1].fill_between(v[colz][zmask], v['b_lo'][zmask], v['b_hi'][zmask], alpha=.3)#, color='grey')
+                ax[1].fill_between(v[colz][zmask], v['b_lo'][zmask], v['b_hi'][zmask], alpha=.3, color='grey')
         ax[1].set_title('Bias vs redshift', fontsize='medium')
         ax[1].set_xlabel('$z$', size=self.font_size)
         ax[1].set_ylabel('$b(z)$', size=self.font_size)

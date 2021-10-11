@@ -15,31 +15,36 @@ test_samples:
   z_02_04:
     redshift: {min: 0.2, max: 0.4}
     halo_id: {min: 0, max: 999999999999999999}
-    mag: {min: 16, max: 25.3}
+    mag: {min: 0, max: 25.3}
   z_04_06:
     redshift: {min: 0.4, max: 0.6}
     halo_id: {min: 0, max: 999999999999999999}
-    mag: {min: 16, max: 25.3}
+    mag: {min: 0, max: 25.3}
   z_06_08:
     redshift: {min: 0.6, max: 0.8}
     halo_id: {min: 0, max: 999999999999999999}
-    mag: {min: 16, max: 25.3}
+    mag: {min: 0, max: 25.3}
   z_08_10:
     redshift: {min: 0.8, max: 1.0}
     halo_id: {min: 0, max: 999999999999999999}
-    mag: {min: 16, max: 25.3}
+    mag: {min: 0, max: 25.3}
+  z_10_12:
+    redshift: {min: 1.0, max: 1.2}
+    halo_id: {min: 0, max: 999999999999999999}
+    mag: {min: 0, max: 25.3}
 
 test_sample_labels:
   z_02_04: '$0.2 < z < 0.4$'
   z_04_06: '$0.4 < z < 0.6$'
   z_06_08: '$0.6 < z < 0.8$'
-  z_08_10: '$0.8 < r < 1.0$'
-
+  z_08_10: '$0.8 < z < 1.0$'
+  z_10_12: '$1.0 < z < 1.2$'
 test_data:
   z_02_04: {data_col: 3, data_err_col: 4}
   z_04_06: {data_col: 5, data_err_col: 6}
   z_06_08: {data_col: 7, data_err_col: 8}
   z_08_10: {data_col: 9, data_err_col: 10}
+  z_10_12: {data_col: 11, data_Err_col: 12}
 
 output_filename_template: 'w_theta_{}.dat'
 label_template: '${} < z < {}$'
@@ -51,6 +56,7 @@ fit_range:
   z_04_06: {min_theta: 0.01, max_theta: 0.4}
   z_06_08: {min_theta: 0.01, max_theta: 0.3}
   z_08_10: {min_theta: 0.01, max_theta: 0.2}
+  z_10_12: {min_theta: 0.01, max_theta: 0.2}
 
 need_distance: false
 fig_xlabel: '$\theta\quad[{\rm deg}]}$'
