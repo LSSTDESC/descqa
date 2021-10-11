@@ -230,9 +230,7 @@ class EllipticityDistribution(BaseValidationTest):
         #check catalog data for required quantities
         required_quantities = []
         for pgroup in self.possible_quantities:
-            print(pgroup)
             found_quantity = catalog_instance.first_available(*pgroup)
-            print(found_quantity)
             if found_quantity is not None:
                 required_quantities.append(found_quantity)
         if not catalog_instance.has_quantities(required_quantities + self.filter_quantities):
