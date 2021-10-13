@@ -142,8 +142,7 @@ class ShearTest(BaseValidationTest):
         # note also that this is comparing against the (low) variance in the catalog which might not be a great comparison -no shape noise
         N_clust = self.N_clust
         nn = np.stack((catalog_data[self.ra][mask], catalog_data[self.dec][mask]), axis=1)
-        _, labs, _ = k_means(
-            n_clusters=N_clust, random_state=0, X=nn, n_jobs=-1)  # check random state, n_jobs is in debugging mode
+        _, labs, _ = k_means(n_clusters=N_clust, random_state=0, X=nn)  # check random state
         print("computing jack-knife errors")
         time_jack = time.time()
         # jack-knife code
