@@ -144,7 +144,7 @@ class BiasValidation(CorrelationsAngularTwoPoint):
         ax[1].set_ylabel('$b(z)$', size=self.font_size)
         ax[1].legend(loc='upper right', framealpha=0.5, frameon=True, fontsize=self.legend_size-2)
         if chisq:
-            ax[1].text(0.95, 0.05, '$\chi^2/\\rm{{d.o.f}}={}$'.format(', '.join(['{:.2g}'.format(c) for c in chisq])),
+            ax[1].text(0.95, 0.05, r'$\chi^2/\rm{{d.o.f}}={}$'.format(', '.join(['{:.2g}'.format(c) for c in chisq])),
                        horizontalalignment='right', verticalalignment='bottom',
                        transform=ax[1].transAxes)
         plt.subplots_adjust(wspace=.05)
