@@ -5,6 +5,7 @@ import treecorr
 from .kcorrect_wrapper import kcorrect
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
+import matplotlib.ticker as tck
 import warnings
 
 
@@ -299,6 +300,13 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
             name = catalog_name + " no kcorrect"
         else:
             name = catalog_name + " kcorrect z={0}".format(self.bandshift)
+        np.save("./test_plot.npy", [            clf,
+            covar,
+            data,
+            name,
+            catalog_name,
+            os.path.join(output_dir, "clf_redmapper.png")])
+		
         self.make_plot(
             clf,
             covar,
@@ -307,6 +315,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
             catalog_name,
             os.path.join(output_dir, "clf_redmapper.png"),
         )
+
         if (scores[0] < 0.5) & (scores[1] < 0.5):
             return TestResult(np.max(scores), passed=True)
         else:
@@ -390,25 +399,25 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
     def make_plot(self, clf, covar, data, name, catalog_name, save_to):
         # plot the result
         fig, ax = plt.subplots(
-            self.nlambd_bins,
             self.n_z_bins,
+            self.nlambd_bins,
             sharex=True,
             sharey=True,
-            figsize=(12, 12),
+            figsize=(14, 8),
             dpi=100,
         )
         if len(ax.shape) == 1:
             ax = ax.reshape(-1, 1)
         for i in range(self.n_z_bins):
             for j in range(self.nlambd_bins):
-                ax_this = ax[j, i]
+                ax_this = ax[i, j]
                 for k, fmt in zip(("satellites", "centrals"), ("^", "o")):
                     ax_this.errorbar(
                         self.mag_center,
                         clf[k][i, j],
                         yerr=np.sqrt(np.diag(covar[k][i, j])),
-                        label=k + " ({0})".format(catalog_name.split("_")[0]),
-                        fmt=fmt,
+                        label=k, #+ " ({0})".format(catalog_name.split("_")[0]),
+                        fmt=fmt, markersize=8
                     )
                     newdata = data[k][i, j]
                     if newdata is not None:
@@ -417,12 +426,16 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                             newdata[:, 1],
                             yerr=newdata[:, 2],
                             label=k + " ({0})".format(self.compared_survey),
-                            fmt=fmt,
+                            fmt=fmt, markersize=8
                         )
-                ax_this.set_ylim(0.05, 100)
+                ax_this.set_ylim(0.05, 120)
                 ax_this.set_xlim(-25, -19.5)
+                ax_this.yaxis.set_major_locator(tck.LogLocator(base = 10.0, subs = np.arange(1.0, 10.0)*0.1, numticks = 10))
+                ax_this.yaxis.set_minor_locator(tck.LogLocator(base = 10.0, subs = np.arange(1.0, 10.0)*0.1, numticks = 10))
                 ax_this.xaxis.set_tick_params(labelsize=20)
-                ax_this.yaxis.set_tick_params(labelsize=20)
+                ax_this.set_yticks([1,10,100])
+                ax_this.set_yticklabels(["$10^0$", "$10^1$", r"$10^2$"], fontsize=20)
+
                 if self.old_lambd_bins is not None:
                     bins = (
                         self.old_lambd_bins[i][j],
@@ -442,7 +455,7 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                         self.data_z_maxs[i],
                     )
                 ax_this.text(
-                    -24.7,
+                    -24.9,
                     5,
                     (
                         r"${:.0f} \leq \lambda <{:.0f}$"
@@ -451,10 +464,10 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
                         + "\n"
                         #+ self.compared_survey
                         #+ r": ${:g} \leq z<{:g}$"
-                    ).format(*bins), fontsize=20
+                    ).format(*bins), fontsize=18
                 )
                 ax_this.set_yscale("log")
-        ax[0,0].legend(loc="upper right", frameon=False, fontsize="large")
+        ax[0,0].legend(loc="upper right", frameon=False, fontsize=15)
 
         ax = fig.add_subplot(111, frameon=False)
         ax.tick_params(
@@ -467,14 +480,15 @@ class ConditionalLuminosityFunction_redmapper(BaseValidationTest):
         )
         ax.yaxis.set_major_locator(plt.NullLocator())
         ax.xaxis.set_major_locator(plt.NullLocator())
+        ax.yaxis.set_minor_locator(plt.NullLocator())
         ax.grid(False)
         ax.set_ylabel(
             r"$\phi(M_{{{}}}\,|\,\lambda,z)\quad[{{\rm Mag}}^{{-1}}]$".format(
                 self.band
             ),
-            labelpad=50, fontsize=30
+            labelpad=55, fontsize=25
         )
-        ax.set_xlabel(r"$M_{{{}}}\quad[{{\rm Mag}}]$".format(self.band), labelpad=30, fontsize=30)
+        ax.set_xlabel(r"$M_{{{}}}\quad[{{\rm Mag}}]$".format(self.band), labelpad=30, fontsize=25)
         #ax.set_title(name)
 
         fig.tight_layout()
