@@ -1,0 +1,10 @@
+subclass_name: readiness_test_parallel.CheckQuantities
+description: 'Plot histograms of listed quantities and perform range, finiteness, mean and standard deviation checks.'
+included_by_default: false
+
+quantities_to_check:
+  - quantities: ['dec_true', 'dec']
+    label: 'deg'
+    min: [-55, -54]
+    max: [-20, -19]
+    f_inf: 0

@@ -1,0 +1,59 @@
+subclass_name: readiness_test_parallel.CheckQuantities
+description: 'Plot histograms of listed quantities and perform range, finiteness, mean and standard deviation checks.'
+included_by_default: true
+
+quantities_to_check:
+  - quantities: ['ra', 'dec']
+    label: 'deg'
+    min: [-2.51, -2.49]
+    max: [2.49, 2.51]
+    f_inf: 0
+
+  - quantities: ['galaxy_ra', 'galaxy_dec']
+    label: 'deg'
+    min: [-2.51, -2.49]
+    max: [2.49, 2.51]
+    f_inf: 0
+
+  - quantities: ['galaxy_redshift']
+    label: redshift
+    min: [-0.05, 0.05]
+    max: [0.95, 1.05]
+    f_inf: 0
+
+  - quantities: 'galaxy_ellipticity_*'
+    label: 'Ellipticity'
+    min: [-0.2, 0]
+    max: [0, 0.2]
+    f_inf: 0
+
+
+  - quantities: 'galaxy_theta'
+    label: 'position angle'
+    min: [0, 0.001]
+    max: [179.99, 180]
+    f_inf: 0
+
+  - quantities: 'galaxy_mag_*'
+    label: mag
+    min: [null, 15]
+    max: [25, null]
+    f_inf: 0
+
+
+  - quantities: galaxy_A_v
+    min: [0.001, 3.1]
+    max: [0.001, 3.1]
+    f_inf: 0
+
+  - quantities: galaxy_R_v
+    min: [1, 5]
+    max: [1, 5]
+    f_inf: 0
+
+  - quantities: galaxy_bulge_fraction
+    min: [0, 1]
+    max: [0, 1]
+    f_inf: 0
+
+
