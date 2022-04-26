@@ -12,6 +12,12 @@ import collections
 import fnmatch
 import subprocess
 
+from mpi4py import MPI
+comm = MPI.COMM_WORLD()
+size = comm.Get_size()
+rank = comm.Get_rank()
+
+
 try:
     from StringIO import StringIO
 except ImportError:
@@ -76,7 +82,7 @@ class CatchExceptionAndStdStream():
             elif output:
                 self._logger.debug('Below are stdout/stderr{}:\n{}'.format(self._during, output))
 
-        if self._filenames and output:
+        if self._filenames and output and rank==0:
             for filename in self._filenames:
                 with open(filename, 'a') as f:
                     f.write(output)
@@ -123,7 +129,7 @@ def make_output_dir(root_output_dir):
 
     new_dir_name = time.strftime('%Y-%m-%d')
     parent_dir = pjoin(root_output_dir, new_dir_name.rpartition('-')[0])
-    if not os.path.exists(parent_dir):
+    if not os.path.exists(parent_dir) and rank==0:
         os.mkdir(parent_dir)
         subprocess.check_call(['chmod', 'a+rx,g+ws,o-w', parent_dir])
 
@@ -132,7 +138,9 @@ def make_output_dir(root_output_dir):
         i = max((int(s.partition('_')[-1] or 0) for s in os.listdir(parent_dir) if s.startswith(new_dir_name)))
         output_dir += '_{}'.format(i+1)
 
-    os.mkdir(output_dir)
+    if rank==0:
+        os.mkdir(output_dir)
+
     return output_dir
 
 
@@ -145,20 +153,21 @@ def get_username():
 
 
 def print_available_and_exit(catalogs, validations):
-    print(_horizontal_rule)
-    print('Available catalogs')
-    print(_horizontal_rule)
-    for c in sorted(catalogs):
-        print(c, '*' if catalogs[c].get('included_by_default') or catalogs[c].get('include_in_default_catalog_list') else '')
-    print()
+    if rank==0:
+        print(_horizontal_rule)
+        print('Available catalogs')
+        print(_horizontal_rule)
+        for c in sorted(catalogs):
+            print(c, '*' if catalogs[c].get('included_by_default') or catalogs[c].get('include_in_default_catalog_list') else '')
+        print()
 
-    print(_horizontal_rule)
-    print('Available validations')
-    print(_horizontal_rule)
-    for v in sorted(validations):
-        print(v, '*' if validations[v].get('included_by_default') else '')
-    print()
-
+        print(_horizontal_rule)
+        print('Available validations')
+        print(_horizontal_rule)
+        for v in sorted(validations):
+            print(v, '*' if validations[v].get('included_by_default') else '')
+        print()
+    
     sys.exit(0)
 
 
@@ -206,15 +215,16 @@ class DescqaTask(object):
 
 
     def make_all_subdirs(self):
-        for validation in self.validations_to_run:
-            os.mkdir(self.get_path(validation))
+        if rank==0:
+            for validation in self.validations_to_run:
+                os.mkdir(self.get_path(validation))
 
-            for catalog in self.catalogs_to_run:
-                os.mkdir(self.get_path(validation, catalog))
+                for catalog in self.catalogs_to_run:
+                    os.mkdir(self.get_path(validation, catalog))
 
-            with open(pjoin(self.get_path(validation), self.config_basename), 'w') as f:
-                f.write(yaml.dump(descqa.available_validations[validation], default_flow_style=False))
-                f.write('\n')
+                with open(pjoin(self.get_path(validation), self.config_basename), 'w') as f:
+                    f.write(yaml.dump(descqa.available_validations[validation], default_flow_style=False))
+                    f.write('\n')
 
 
     def get_description(self, description_key='description'):
@@ -442,14 +452,19 @@ def main():
 
     logger.debug('creating root output directory...')
     output_dir = make_output_dir(args.root_output_dir)
-    open(pjoin(output_dir, '.lock'), 'w').close()
+
+    if rank==0:
+        open(pjoin(output_dir, '.lock'), 'w').close()
 
     try: # we want to remove ".lock" file even if anything went wrong
 
         logger.info('output of this run is stored in %s', output_dir)
         logger.debug('creating code snapshot...')
         snapshot_dir = pjoin(output_dir, '_snapshot')
-        os.mkdir(snapshot_dir)
+        if rank==0:
+            os.mkdir(snapshot_dir)
+
+        #PL: not sure if this will crash
         check_copy(descqa.__path__[0], pjoin(snapshot_dir, 'descqa'))
         check_copy(GCRCatalogs.__path__[0], pjoin(snapshot_dir, 'GCRCatalogs'))
         if hasattr(GCRCatalogs, 'GCR'):
@@ -466,17 +481,19 @@ def main():
         descqa_task.run()
 
         logger.debug('finishing up...')
+
         master_status['status_count'], master_status['status_count_group_by_catalog'] = descqa_task.count_status()
         master_status['end_time'] = time.time()
-        with open(pjoin(output_dir, 'STATUS.json'), 'w') as f:
-            json.dump(master_status, f, indent=True)
-
-        logger.info('All done! Status report:\n%s', descqa_task.get_status_report())
+        if rank==0:
+            with open(pjoin(output_dir, 'STATUS.json'), 'w') as f:
+                json.dump(master_status, f, indent=True)
+            logger.info('All done! Status report:\n%s', descqa_task.get_status_report())
 
     finally:
-        os.unlink(pjoin(output_dir, '.lock'))
-        subprocess.check_call(['chmod', '-R', 'a+rX,o-w', output_dir])
-        logger.info('Web output: %s?run=%s', args.web_base_url, os.path.basename(output_dir))
+        if rank==0:
+            os.unlink(pjoin(output_dir, '.lock'))
+            subprocess.check_call(['chmod', '-R', 'a+rX,o-w', output_dir])
+            logger.info('Web output: %s?run=%s', args.web_base_url, os.path.basename(output_dir))
 
 
 if __name__ == '__main__':
