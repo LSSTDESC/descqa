@@ -12,6 +12,10 @@ from mpi4py import MPI
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
 
+comm = MPI.COMM_WORLD
+size = comm.Get_size()
+rank = comm.Get_rank()
+
 
 __all__ = ['CheckQuantities']
 
@@ -67,7 +71,7 @@ def calc_frac(x, func, total=None):
     total = total or len(x)
     return np.count_nonzero(func(x)) / total
 
-def calc_frac_p(x, func, total=None, comm=None):
+def calc_frac_p(x, func, total=None):
     """
     calculate the fraction of entries in *x* that satisfy *func*
     and places output into rank 0 only
@@ -77,7 +81,7 @@ def calc_frac_p(x, func, total=None, comm=None):
     tot_nonzero = comm.bcast(tot_nonzero,root=0)
     return tot_nonzero/total
 
-def calc_max_p(x,comm=None):
+def calc_max_p(x):
     """
     calculate the maximum in parallel
     """
@@ -86,7 +90,7 @@ def calc_max_p(x,comm=None):
     max_tot = comm.bcast(max_tot,root=0)
     return max_tot
 
-def calc_min_p(x,comm=None):
+def calc_min_p(x):
     """
     calculate the minimum in parallel
     """
@@ -95,7 +99,7 @@ def calc_min_p(x,comm=None):
     min_tot = comm.bcast(min_tot,root=0)
     return min_tot#comm.reduce(np.min(x),op=MPI.MIN,root=0)
 
-def calc_mean_p(x,total=None,comm=None):
+def calc_mean_p(x,total=None):
     """
     """
     sum_tot = comm.reduce(np.sum(x),op=MPI.SUM,root=0)
@@ -291,11 +295,8 @@ class CheckQuantities(BaseValidationTest):
             self._individual_header.clear()
             self._individual_table.clear()
 
-    def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir,comm):
+    def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
 
-        rank = comm.Get_rank()
-        size = comm.Get_size()
-        
         all_quantities = sorted(map(str, catalog_instance.list_all_quantities(True)))
 
         self.prop_cycle = cycle(iter(plt.rcParams['axes.prop_cycle']))
@@ -374,11 +375,11 @@ class CheckQuantities(BaseValidationTest):
                 a = time.time()
                 if len(filters) > 0:
                     print('filtered')
-                    catalog_data = catalog_instance.get_quantities([quantity], filters=filters, comm=comm)
+                    catalog_data = catalog_instance.get_quantities([quantity], filters=filters)
                     value = catalog_data[quantity]
                 else:
                     print('unfiltered')
-                    catalog_data = catalog_instance.get_quantities([quantity],return_iterator=False, comm=comm)
+                    catalog_data = catalog_instance.get_quantities([quantity],return_iterator=False)
                     value = catalog_data[quantity]
 
                 #else:
@@ -420,14 +421,14 @@ class CheckQuantities(BaseValidationTest):
                     b = time.time()
                     # PL: note there are many faster ways to do this
                     if s == 'f_outlier':
-                        s_value_rank = calc_frac_p(value_finite, func, galaxy_count,comm)
+                        s_value_rank = calc_frac_p(value_finite, func, galaxy_count)
                     elif s.startswith('f_'):
-                        s_value = calc_frac_p(value, func, total=galaxy_count, comm=comm)
+                        s_value = calc_frac_p(value, func, total=galaxy_count)
                     else:
-                        s_value = func(value_finite,comm=comm)
+                        s_value = func(value_finite)
                     print(time.time()-b,s)
-                    val_min = calc_min_p(value_finite,comm=comm)
-                    val_max = calc_max_p(value_finite,comm=comm)
+                    val_min = calc_min_p(value_finite)
+                    val_max = calc_max_p(value_finite)
                     
                     flag = False
                     if rank==0:
@@ -537,7 +538,7 @@ class CheckQuantities(BaseValidationTest):
                 continue
 
             #PL: note separate read
-            data = catalog_instance.get_quantities(quantities_needed,comm=comm)
+            data = catalog_instance.get_quantities(quantities_needed)
             if rank==0:
                 if check_uniqueness(data[quantity], data.get(mask)):
                     self.record_result('{} is all unique'.format(label))

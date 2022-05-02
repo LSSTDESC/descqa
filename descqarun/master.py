@@ -13,7 +13,7 @@ import fnmatch
 import subprocess
 
 from mpi4py import MPI
-comm = MPI.COMM_WORLD()
+comm = MPI.COMM_WORLD
 size = comm.Get_size()
 rank = comm.Get_rank()
 
@@ -137,7 +137,7 @@ def make_output_dir(root_output_dir):
     if os.path.exists(output_dir):
         i = max((int(s.partition('_')[-1] or 0) for s in os.listdir(parent_dir) if s.startswith(new_dir_name)))
         output_dir += '_{}'.format(i+1)
-
+    
     if rank==0:
         os.mkdir(output_dir)
 
@@ -270,7 +270,8 @@ class DescqaTask(object):
             raise ValueError('Must specify *validation* and/or *catalog*')
 
         if key in self._results:
-            self.logger.debug('Warning: result of {} has been set already!'.format(key))
+            if self.logger:
+                self.logger.debug('Warning: result of {} has been set already!'.format(key))
             return
 
         if _is_string_like(test_result):
@@ -351,17 +352,20 @@ class DescqaTask(object):
                 output_dir_this = self.get_path(validation, catalog)
                 logfile = pjoin(output_dir_this, self.logfile_basename)
                 msg = 'running validation `{}` on catalog `{}`'.format(validation, catalog)
-                self.logger.debug(msg)
+                if self.logger:
+                    self.logger.debug(msg)
 
                 test_result = None
                 with CatchExceptionAndStdStream(logfile, self.logger, msg):
                     test_result = validation_instance.run_on_single_catalog(catalog_instance, catalog, output_dir_this)
 
-                self.set_result(test_result or 'RUN_VALIDATION_TEST_ERROR', validation, catalog)
+                if rank==0:
+                    self.set_result(test_result or 'RUN_VALIDATION_TEST_ERROR', validation, catalog)
 
         if not run_at_least_one_catalog:
             msg = 'No valid catalog to run! Abort!'
-            self.logger.error(msg)
+            if self.logger:
+                self.logger.error(msg)
             raise RuntimeError(msg)
 
 
@@ -381,20 +385,22 @@ class DescqaTask(object):
 
 
     def run(self):
-        self.logger.debug('creating subdirectories in output_dir...')
-        self.make_all_subdirs()
+        if rank==0:
+            self.logger.debug('creating subdirectories in output_dir...')
+            self.make_all_subdirs()
+            if all(self.get_validation_instance(validation) is None for validation in self.validations_to_run):
+                self.logger.info('No valid validation tests. End program.')
+                self.check_status()
+                return
 
-        if all(self.get_validation_instance(validation) is None for validation in self.validations_to_run):
-            self.logger.info('No valid validation tests. End program.')
-            self.check_status()
-            return
+            self.logger.debug('starting to run all validation tests...')
 
-        self.logger.debug('starting to run all validation tests...')
         self.run_tests()
-        self.check_status()
 
-        self.logger.debug('starting to conclude all validation tests...')
-        self.conclude_tests()
+        if rank==0:
+            self.check_status()
+            self.logger.debug('starting to conclude all validation tests...')
+            self.conclude_tests()
 
 
 def main():
@@ -423,7 +429,11 @@ def main():
 
     args = parser.parse_args()
 
-    logger = create_logger(verbose=args.verbose)
+    # logger only created for rank 0 
+    if rank==0:
+        logger = create_logger(verbose=args.verbose)
+    else:
+        logger = None
 
     master_status = dict()
     master_status['user'] = get_username()
@@ -432,12 +442,27 @@ def main():
         master_status['comment'] = args.comment
     master_status['versions'] = dict()
 
-    logger.debug('Importing DESCQA and GCR Catalogs...')
+    
+    if logger:
+        logger.debug('Importing DESCQA and GCR Catalogs...')
     if args.paths:
         sys.path = [make_path_absolute(path) for path in args.paths] + sys.path
 
+
+
     global GCRCatalogs #pylint: disable=W0601
+    sys.path.insert(0,'/global/homes/p/plarsen/plarsen_git/gcr-catalogs')
     GCRCatalogs = importlib.import_module('GCRCatalogs')
+
+    #PL: note added assert, should do this for GCR too
+    assert(GCRCatalogs.__path__==['/global/homes/p/plarsen/plarsen_git/gcr-catalogs/GCRCatalogs'])
+    if hasattr(GCRCatalogs,'GCR'):
+        assert(GCRCatalogs.GCR.__path__==['/global/homes/p/plarsen/plarsen_git/generic-catalog-reader/GCR'])
+
+
+    '''global GCRCatalogs #pylint: disable=W0601
+    GCRCatalogs = importlib.import_module('GCRCatalogs')
+    '''
 
     global descqa #pylint: disable=W0601
     descqa = importlib.import_module('descqa')
@@ -449,41 +474,47 @@ def main():
 
     if args.list:
         print_available_and_exit(GCRCatalogs.get_available_catalogs(False), descqa.available_validations)
-
-    logger.debug('creating root output directory...')
+    if logger:
+        logger.debug('creating root output directory...')
     output_dir = make_output_dir(args.root_output_dir)
 
+    # only create .lock file on rank 0 
     if rank==0:
         open(pjoin(output_dir, '.lock'), 'w').close()
 
     try: # we want to remove ".lock" file even if anything went wrong
-
-        logger.info('output of this run is stored in %s', output_dir)
-        logger.debug('creating code snapshot...')
-        snapshot_dir = pjoin(output_dir, '_snapshot')
         if rank==0:
+            logger.info('output of this run is stored in %s', output_dir)
+            logger.debug('creating code snapshot...')
+            snapshot_dir = pjoin(output_dir, '_snapshot')
             os.mkdir(snapshot_dir)
 
-        #PL: not sure if this will crash
-        check_copy(descqa.__path__[0], pjoin(snapshot_dir, 'descqa'))
-        check_copy(GCRCatalogs.__path__[0], pjoin(snapshot_dir, 'GCRCatalogs'))
-        if hasattr(GCRCatalogs, 'GCR'):
-            if getattr(GCRCatalogs.GCR, '__path__', None):
-                check_copy(GCRCatalogs.GCR.__path__[0], pjoin(snapshot_dir, 'GCR'))
-            else:
-                check_copy(GCRCatalogs.GCR.__file__, pjoin(snapshot_dir, 'GCR.py'))
+            #PL: not sure if this will crash
+            check_copy(descqa.__path__[0], pjoin(snapshot_dir, 'descqa'))
+            check_copy(GCRCatalogs.__path__[0], pjoin(snapshot_dir, 'GCRCatalogs'))
+            if hasattr(GCRCatalogs, 'GCR'):
+                if getattr(GCRCatalogs.GCR, '__path__', None):
+                    check_copy(GCRCatalogs.GCR.__path__[0], pjoin(snapshot_dir, 'GCR'))
+                else:
+                    check_copy(GCRCatalogs.GCR.__file__, pjoin(snapshot_dir, 'GCR.py'))
 
-        logger.debug('preparing to run validation tests...')
+            logger.debug('preparing to run validation tests...')
+            
         descqa_task = DescqaTask(output_dir, args.validations_to_run, args.catalogs_to_run, logger)
         master_status.update(descqa_task.get_description())
 
-        logger.info('running validation tests...')
+        if logger:
+            logger.info('running validation tests...')
+
+        # note: you want this to run in parallel for the data read
         descqa_task.run()
 
-        logger.debug('finishing up...')
+        if logger:
+            logger.debug('finishing up...')
 
         master_status['status_count'], master_status['status_count_group_by_catalog'] = descqa_task.count_status()
         master_status['end_time'] = time.time()
+
         if rank==0:
             with open(pjoin(output_dir, 'STATUS.json'), 'w') as f:
                 json.dump(master_status, f, indent=True)
