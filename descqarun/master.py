@@ -134,9 +134,11 @@ def make_output_dir(root_output_dir):
         subprocess.check_call(['chmod', 'a+rx,g+ws,o-w', parent_dir])
 
     output_dir = pjoin(parent_dir, new_dir_name)
-    if os.path.exists(output_dir):
+    if os.path.exists(output_dir) and rank==0:
         i = max((int(s.partition('_')[-1] or 0) for s in os.listdir(parent_dir) if s.startswith(new_dir_name)))
         output_dir += '_{}'.format(i+1)
+    output_dir = comm.bcast(output_dir,root=0)
+    print(output_dir,rank)
     
     if rank==0:
         os.mkdir(output_dir)

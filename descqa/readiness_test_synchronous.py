@@ -50,19 +50,6 @@ def find_outlier(x):
     d = (h-l) * 0.5
     return (x > (m + d*3)) | (x < (m - d*3))
 
-def find_outlier_p(x):
-    """
-    return a bool array indicating outliers or not in *x*, parallel version
-    """
-    # note: percentile calculation should be robust to outliers so doesn't need the full sample. This speeds the calculation up a lot. There is a chance of repeated values but for large datasets this is not significant. 
-    if len(x)>100000:
-        x_small = np.random.choice(x,size=10000)
-        l, m, h = np.percentile(x_small, norm.cdf([-1, 0, 1])*100)
-    else:
-        l, m, h = np.percentile(x_small, norm.cdf([-1, 0, 1])*100)
-    d = (h-l) * 0.5
-    return (x > (m + d*3)) | (x < (m - d*3))
-
 
 def calc_frac(x, func, total=None):
     """
@@ -70,40 +57,6 @@ def calc_frac(x, func, total=None):
     """
     total = total or len(x)
     return np.count_nonzero(func(x)) / total
-
-def calc_frac_p(x, func, total=None):
-    """
-    calculate the fraction of entries in *x* that satisfy *func*
-    and places output into rank 0 only
-    """
-    rank_nonzero = np.count_nonzero(func(x))
-    tot_nonzero = comm.reduce(rank_nonzero,op=MPI.SUM,root=0)
-    tot_nonzero = comm.bcast(tot_nonzero,root=0)
-    return tot_nonzero/total
-
-def calc_max_p(x):
-    """
-    calculate the maximum in parallel
-    """
-    max_rank = np.max(x)
-    max_tot = comm.reduce(max_rank,op=MPI.MAX,root=0)
-    max_tot = comm.bcast(max_tot,root=0)
-    return max_tot
-
-def calc_min_p(x):
-    """
-    calculate the minimum in parallel
-    """
-    min_rank = np.min(x)
-    min_tot = comm.reduce(np.min(x),op=MPI.MIN,root=0)
-    min_tot = comm.bcast(min_tot,root=0)
-    return min_tot#comm.reduce(np.min(x),op=MPI.MIN,root=0)
-
-def calc_mean_p(x,total=None):
-    """
-    """
-    sum_tot = comm.reduce(np.sum(x),op=MPI.SUM,root=0)
-    return sum_tot/total
 
 
 def calc_median(x):
@@ -160,8 +113,8 @@ class CheckQuantities(BaseValidationTest):
     """
 
     stats = OrderedDict((
-        ('min', calc_min_p),
-        ('max', calc_max_p),
+        ('min', np.min),
+        ('max', np.max),
         ('f_inf', np.isinf),
     ))
 
@@ -261,7 +214,7 @@ class CheckQuantities(BaseValidationTest):
         return '<span {1}>{0}</span>'.format(results, 'class="fail"' if failed else '')
 
     def generate_summary(self, output_dir, aggregated=False):
-        if aggregated:
+        if aggreated:
             if not self.enable_aggregated_summary:
                 return
             header = self._aggregated_header
@@ -344,7 +297,11 @@ class CheckQuantities(BaseValidationTest):
         import time 
 
 
+        quantity_tot =[]
+        label_tot=[]
+        plots_tot=[]
         for i, checks in enumerate(self.quantities_to_check):
+            # total list of quantities 
 
             quantity_patterns = checks['quantities'] if isinstance(checks['quantities'], (tuple, list)) else [checks['quantities']]
 
@@ -359,13 +316,37 @@ class CheckQuantities(BaseValidationTest):
                 continue
 
             quantities_this = sorted(quantities_this, key=split_for_natural_sort)
+            quantity_tot.append(quantities_this)
 
             if 'label' in checks:
                 quantity_group_label = checks['label']
             else:
                 quantity_group_label = re.sub('_+', '_', re.sub(r'\W+', '_', quantity_pattern)).strip('_')
             plot_filename = 'p{:02d}_{}.png'.format(i, quantity_group_label)
+            label_tot.append(quantity_group_label)
+            plots_tot.append(plot_filename)
 
+
+        quantities_this_new=[]
+        for q in quantity_tot:
+            print(q)
+            if len(q)>1:
+                for j in q:
+                    quantities_this_new.append(j)
+            else:
+                quantities_this_new.append(q[0])
+        quantities_this_new = tuple(quantities_this_new)
+        print(quantities_this_new)
+        #quantities_this_new = np.array(quantities_this_new)
+
+
+        if len(filters) > 0:
+            catalog_data = catalog_instance.get_quantities(quantities_this_new,filters=filters,return_iterator=False, rank=rank, size=size)
+        else:
+            catalog_data = catalog_instance.get_quantities(quantities_this_new,return_iterator=False, rank=rank, size=size)
+        a = time.time()
+
+        for quantities_this in quantity_tot:
             fig = None; ax=None;
             if rank==0:
                 fig, ax = plt.subplots()
@@ -373,89 +354,81 @@ class CheckQuantities(BaseValidationTest):
 
             #option 1
             
-            quantities_this_new = np.array(list(quantities_this))
-            if len(filters) > 0:
-                catalog_data = catalog_instance.get_quantities(quantities_this_new,filters=filters,return_iterator=False)
-            else: 
-                catalog_data = catalog_instance.get_quantities(quantities_this_new,return_iterator=False)
-            a = time.time()
+            #quantities_this_new = np.array(list(quantities_this))
+            #if len(filters) > 0:
+            #    catalog_data = catalog_instance.get_quantities(quantities_this_new,filters=filters,return_iterator=False, rank=rank, size=size)
+            #else: 
+            #    catalog_data = catalog_instance.get_quantities(quantities_this_new,return_iterator=False, rank=rank, size=size)
+            #a = time.time()
 
             for quantity in quantities_this:
-                value = catalog_data[quantity]
-                
-                '''for quantity in quantities_this:
-                a = time.time()
-                if len(filters) > 0:
-                    print('filtered')
-                    catalog_data = catalog_instance.get_quantities([quantity], filters=filters)
-                    value = catalog_data[quantity]
+                #PL : only currently works for doubles 
+                value = catalog_data[quantity] 
+                count = len(value)
+                tot_num = comm.reduce(count)
+                counts = comm.allgather(count)
+
+                if rank==0:
+                    recvbuf = np.zeros(tot_num)
                 else:
-                    print('unfiltered')
-                    catalog_data = catalog_instance.get_quantities([quantity],return_iterator=False)
-                    value = catalog_data[quantity]'''
-                
-                #else:
-                #    # note: this should be fairly fast. Let's add some timings around this
-                #    value = catalog_instance[quantity]
+                    recvbuf = None
+                displs = np.array([sum(counts[:p]) for p in range(size)])
+
+                if rank==0:
+                    comm.Gatherv([value,MPI.DOUBLE], [recvbuf,counts,displs,MPI.DOUBLE],root=0)
+                else:
+                    comm.Gatherv([value,MPI.DOUBLE], [recvbuf,counts,displs,MPI.DOUBLE],root=0)
+
                 need_plot = False
+
+                if rank==0:
+                    print("received elements: ",len(recvbuf)," for rank: ",rank)
                 if rank==0:
                     print(time.time()-a,'read data',rank)
 
                 a = time.time()
                 
-                if galaxy_count is None:
-                    galaxy_count_rank = len(value)
-                    galaxy_count = comm.reduce(galaxy_count_rank, op=MPI.SUM, root=0)
-                    galaxy_count = comm.bcast(galaxy_count,root=0)
-                    if rank==0:
-                        self.record_result('Found {} entries in this catalog.'.format(galaxy_count))
-                #elif galaxy_count_rank != len(value):
-                #    #PL: note, need to work out what to do in this case
-                #    if rank==0:
-                #        self.record_result('"{}" has {} entries (different from {})'.format(quantity, len(value), galaxy_count), failed=True)
-                #        need_plot = True
                 if rank==0:
+                    galaxy_count = len(recvbuf)
+                    self.record_result('Found {} entries in this catalog.'.format(galaxy_count))
                     print(time.time()-a,'found entries')
-                a = time.time()
-                if checks.get('log'):
-                    value = np.log10(value)
-
-                value_finite = value[np.isfinite(value)]
-                if rank==0:
-                    print(time.time()-a,'value_finite')
-                a = time.time()
-                result_this_quantity = {}
-                
-                for s, func in self.stats.items():
-                    if rank==0:
-                        print(s)
-                    
-                    b = time.time()
-                    # PL: note there are many faster ways to do this
-                    if s == 'f_outlier':
-                        s_value_rank = calc_frac_p(value_finite, func, galaxy_count)
-                    elif s.startswith('f_'):
-                        s_value = calc_frac_p(value, func, total=galaxy_count)
+                    a = time.time()
+                    if checks.get('log'):
+                        value = np.log10(recvbuf)
                     else:
-                        s_value = func(value_finite)
-                    print(time.time()-b,s)
-                    val_min = calc_min_p(value_finite)
-                    val_max = calc_max_p(value_finite)
-                    
-                    flag = False
-                    if rank==0:
-                        if s in checks:
-                            try:
-                                min_value, max_value = checks[s]
-                            except (TypeError, ValueError):
-                                flag |= (s_value != checks[s])
-                            else:
-                                if min_value is not None:
-                                    flag |= (s_value < min_value)
-                                if max_value is not None:
-                                    flag |= (s_value > max_value)
+                        value = recvbuf
+                    value_finite = value[np.isfinite(value)]
+                    print(time.time()-a,'value_finite')
+                    a = time.time()
+                    result_this_quantity = {}
+                    for s, func in self.stats.items():
+                        print(s)
+                        b = time.time()
+                        # PL: note there are many faster ways to do this
+                        if s == 'f_outlier':
+                            s_value_rank = calc_frac(value_finite, func)
+                        elif s.startswith('f_'):
+                            s_value = calc_frac(value, func)
                         else:
-                            flag = None
+                            s_value = func(value_finite)
+                        print(time.time()-b,s)
+                        val_min = np.min(value_finite)
+                        val_max = np.max(value_finite)
+                    
+                        flag = False
+                        if rank==0:
+                            if s in checks:
+                                try:
+                                    min_value, max_value = checks[s]
+                                except (TypeError, ValueError):
+                                    flag |= (s_value != checks[s])
+                                else:
+                                    if min_value is not None:
+                                        flag |= (s_value < min_value)
+                                    if max_value is not None:
+                                        flag |= (s_value > max_value)
+                            else:
+                                flag = None
 
                         result_this_quantity[s] = (
                              s_value,
@@ -464,100 +437,32 @@ class CheckQuantities(BaseValidationTest):
                         )
                         if flag:
                             need_plot = True
-                print(time.time()-a,'stats checks')
-                
-                if rank==0:
+                    print(time.time()-a,'stats checks')
                     quantity_hashes[tuple(result_this_quantity[s][0] for s in self.stats)].add(quantity)
                     self.record_result(
                         result_this_quantity,
                         quantity + (' [log]' if checks.get('log') else ''),
                         plot_filename
-                   )
-
-                need_plot = comm.bcast(need_plot,root=0)
-                if need_plot or self.always_show_plot:
-                    bin_vals = np.linspace(val_min,val_max,self.nbins)
-                    hist_vals, bin_edges = np.histogram(value_finite, bins=bin_vals)
-                    recvbuf = None 
-                    if rank==0:
-                        recvbuf = np.empty([size,self.nbins-1],dtype=np.int64)
-                    comm.Gather(hist_vals,recvbuf, root=0)
-                    if rank==0:
-                        hist_vals_tot = np.sum(recvbuf,0)
-                        ax.plot(bin_vals[1:],hist_vals_tot,label=quantity)#,**next(self.prop_cycle))
-                        has_plot = True 
-
-                    #if need_plot or self.always_show_plot:
+                    )
+                    
+                    if (need_plot or self.always_show_plot) and rank==0:
                     #    # PL: Changed - need to change this to a numpy function and then communicate it before plotting
-                    #    ax.hist(value_finite, np.linspace(val_min,val_max,self.nbins), histtype='step', fill=False, label=quantity, **next(self.prop_cycle))
-                    #    has_plot = True
-                
-            b = time.time()
+                        ax.hist(value_finite, bins=100, histtype='step', fill=False, label=quantity, **next(self.prop_cycle))
+                        has_plot = True
+                    b = time.time()
             
-            if has_plot and (rank==0):
-                ax.set_xlabel(('log ' if checks.get('log') else '') + quantity_group_label, size=self.font_size)
-                ax.yaxis.set_ticklabels([])
-                if checks.get('plot_min') is not None: #zero values fail otherwise
-                    ax.set_xlim(left=checks.get('plot_min'))
-                if checks.get('plot_max') is not None:
-                    ax.set_xlim(right=checks.get('plot_max'))
-                ax.set_title('{} {}'.format(catalog_name, version), fontsize=self.title_size)
-                fig.tight_layout()
-                if len(quantities_this) <= 9:
-                    #check for special legend location
-                    lgnd_loc = lgnd_loc_dflt
-                    if checks.get('lgnd_loc') is not None: 
-                        lgnd_loc = checks.get('lgnd_loc')
-                    leg = ax.legend(loc=lgnd_loc, fontsize=self.legend_size, ncol=3, frameon=True, facecolor='white',
-                                    title=filter_labels, title_fontsize=self.lgndtitle_fontsize)
-                    leg.get_frame().set_alpha(0.5)
-                fig.savefig(os.path.join(output_dir, plot_filename))
-            if rank==0:
-                plt.close(fig)
-            print(time.time()-b)
-        '''if rank==0:
-            for same_quantities in quantity_hashes.values():
-                if len(same_quantities) > 1:
-                    self.record_result('{} seem be to identical!'.format(', '.join(same_quantities)), failed=True)
+                if has_plot and (rank==0):
+                    ax.set_xlabel(('log ' if checks.get('log') else '') + quantity_group_label, size=self.font_size)
+                    ax.yaxis.set_ticklabels([])
+                    if checks.get('plot_min') is not None: #zero values fail otherwise
+                       ax.set_xlim(left=checks.get('plot_min'))
+                    if checks.get('plot_max') is not None:
+                        ax.set_xlim(right=checks.get('plot_max'))
+                    ax.set_title('{} {}'.format(catalog_name, version), fontsize=self.title_size)
+                    fig.tight_layout()
+                    fig.savefig(os.path.join(output_dir, plot_filename))
+                    plt.close(fig)
 
-        for relation in self.relations_to_check:
-            try:
-                result = check_relation(relation, catalog_instance)
-            except Exception as e: # pylint: disable=broad-except
-                if rank==0:
-                    self.record_result('Not able to evaluate `{}`! {}'.format(relation, e), failed=True)
-                continue
-
-            if result:
-                self.record_result('It is true that `{}`'.format(relation))
-            else:
-                self.record_result('It is NOT true that `{}`'.format(relation), failed=True)
-        
-
-        for d in self.uniqueness_to_check:
-        #    # note, we can check uniqueness in parallel, it's a bit more involved though 
-            quantity = label = d.get('quantity')
-            mask = d.get('mask')
-
-            quantities_needed = [quantity]
-            if mask is not None:
-                quantities_needed.append(mask)
-                label += '[{}]'.format(mask)
-
-            if not catalog_instance.has_quantities(quantities_needed):
-                if rank==0:
-                    self.record_result('{} does not exist'.format(' or '.join(quantities_needed)), failed=True)
-                continue
-
-            #PL: note separate read
-            data = catalog_instance.get_quantities(quantities_needed)
-            if rank==0:
-                if check_uniqueness(data[quantity], data.get(mask)):
-                    self.record_result('{} is all unique'.format(label))
-                else:
-                    self.record_result('{} has repeated entries!'.format(label), failed=True)
-        
-        #self.current_failed_count=1'''
         if rank==0:
             self.generate_summary(output_dir)
         else: 

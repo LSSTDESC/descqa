@@ -1,4 +1,4 @@
-subclass_name: readiness_test_parallel.CheckQuantities
+subclass_name: readiness_test_synchronous.CheckQuantities
 description: 'Plot histograms of listed quantities and perform range, finiteness, mean and standard deviation checks.'
 included_by_default: true
 
@@ -8,7 +8,6 @@ quantities_to_check:
     min: [-2.51, -2.49]
     max: [2.49, 2.51]
     f_inf: 0
-
 
   - quantities: ['blendedness']
     label: redshift
@@ -52,4 +51,5 @@ quantities_to_check:
     min: [null, 15]
     max: [25, null]
     f_inf: 0
+
 
