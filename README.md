@@ -11,8 +11,19 @@ A [web interface](https://portal.nersc.gov/cfs/lsst/descqa/) hosted on NERSC dis
 
 **! Important !** Starting from DESCQA v2 (current version), we have separated the configurations and readers of catalogs from DESCQA and moved them to a standalone repo, the [GCRCatalogs](https://github.com/LSSTDESC/gcr-catalogs) repo. We have also changed much of the validation tests. If you are looking for the catalogs and tests in DESCQA v1 (as presented in the [companion paper](https://arxiv.org/abs/1709.09665)), please see the [v1 subdirectory](v1).
 
+## Example of running a test in DESCQA
 
-## Quick start guide
+To run a sample DESCQA test from the command-line:
+
+```
+git clone git@github.com:LSSTDESC/descqa
+cd descqa
+sh run_master.sh -c cosmoDC2_v1.1.4_small -t SkyArea
+```
+
+See ["How to run DESCQA?" section in `CONTRIBUTING.md`](.CONTRIBUTING.md#how-to-run-descqa) for more options that you can use with the run script. 
+
+## Quick start guide to making tests
 
 1. First of all, try accessing the catalogs! You can find information about the catalogs in [this Confluence page](https://confluence.slac.stanford.edu/x/Z0uKDQ) and [this presentation](https://docs.google.com/presentation/d/1W5lZrQci9J4jaTdLWUIwkPKtq1lbDT3SzTh-YgIkl6k/edit?usp=sharing) ([video](https://youtu.be/4k9Yj6aI1uc)). However, the easiest way to start is to go to https://jupyter.nersc.gov and login with your NERSC account, and follow [this tutorial notebook](https://github.com/LSSTDESC/gcr-catalogs/blob/master/examples/GCRCatalogs%20Demo.ipynb) ([download link](https://raw.githubusercontent.com/LSSTDESC/gcr-catalogs/master/examples/GCRCatalogs%20Demo.ipynb), you can then upload the notebook through the jupyter interface).
 
