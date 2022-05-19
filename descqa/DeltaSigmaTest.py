@@ -46,7 +46,7 @@ class DeltaSigma(BaseValidationTest):
             cosmo = WMAP7
 
         # Create interpolation tables for efficient computation of sigma crit
-        z = np.linspace(0, self.zmax, int(self.zmax)*100)
+        z = np.linspace(0, self.zmax, int(self.zmax * 100) + 1)
         d1 = cosmo.angular_diameter_distance(z) # in Mpc
         angular_diameter_distance = interp1d(z, d1, kind='quadratic')
         d2 = cosmo.comoving_transverse_distance(z) # in Mpc
