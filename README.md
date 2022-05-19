@@ -21,7 +21,7 @@ cd descqa
 sh run_master.sh -c cosmoDC2_v1.1.4_small -t SkyArea
 ```
 
-If you are in an environment that has GCRCatalogs installed along with, such as `desc-python` at NERSC
+See ["How to run DESCQA?" section in `CONTRIBUTING.md`](.CONTRIBUTING.md#how-to-run-descqa) for more options that you can use with the run script. 
 
 ## Quick start guide to making tests
 
