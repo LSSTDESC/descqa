@@ -3,3 +3,7 @@ masscut: !!float "1e14"
 disp_func: 'biweight'
 c_axis: 'number'
 stellarcut: !!float "1e9"
+convert_fof: 0.92
+truncate_cat_name: true
+font_size: 19
+legend_size: 15

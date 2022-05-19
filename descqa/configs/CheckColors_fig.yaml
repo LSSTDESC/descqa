@@ -1,0 +1,23 @@
+subclass_name: CheckColors.CheckColors
+xcolor: 'ri'
+ycolor: 'gr'
+redshift_cut: 'redshift_true' 
+mag_fields_to_check: ['mag_{}_lsst'] #self.mag_fields_to_check = ('mag_{}','mag_{}_cModel')
+#path_val: '/global/projecta/projectdirs/lsst/groups/CS/descqa/data/rongpu/SpecPhoto_sdss_mgs_extinction_corrected.fits'
+#path_val: '/global/projecta/projectdirs/lsst/groups/CS/descqa/data/rongpu/DEEP2_uniq_Terapix_Subaru_trimmed_wights_added.fits'
+path_val: 'rongpu/DEEP2_uniq_Terapix_Subaru_trimmed_wights_added.fits'
+validation_catalog: 'DEEP2' #'DEEP2' #'SDSS' 
+redshift_cut_val: 'z_raw' #'z_raw'(DEEP2) #'z'(SDSS)
+mag_fields_val: '{}' #'modelMag_{}'(SDSS) #'{}'(DEEP2) 
+magcut: 24
+magcut_band: 'r'
+bands_val: {'u','g','r','i','z'}
+zlo: 0.1
+zhi: 0.9
+zbins: 4
+levels: [0.3, 3, 30, 100]
+kernel_iterations: 1000
+description: Plot color combinations according to input  
+truncate_cat_name: true
+truncate_z_label: true
+truncate_color_labels: true

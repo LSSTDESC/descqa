@@ -35,6 +35,8 @@ class SizeStellarMassLuminosity(BaseValidationTest):
         self.kwargs = kwargs
         self.observation = kwargs['observation']
         self.possible_mag_fields = kwargs['possible_mag_fields']
+        self.possible_native_luminosities = kwargs['possible_native_luminosities']
+        self.use_mag = kwargs.get('use_mag', False)
         self.test_name = kwargs['test_name']
         self.data_label = kwargs['data_label']
         self.z_bins = kwargs['z_bins']
@@ -46,7 +48,7 @@ class SizeStellarMassLuminosity(BaseValidationTest):
         self.truncate_cat_name = kwargs.get('truncate_cat_name', False)
         self.title_in_legend = kwargs.get('title_in_legend', False)
         self.font_size = kwargs.get('font_size', 16)
-        self.legend_size = kwargs.get('legend_size', 8)
+        self.legend_size = kwargs.get('legend_size', 11)
         self.legend_location = kwargs.get('legend_location', 'best')
         self.survey_label = kwargs.get('survey_label', '')
         self.no_title = kwargs.get('no_title', False)
@@ -69,14 +71,14 @@ class SizeStellarMassLuminosity(BaseValidationTest):
         
     @staticmethod
     def ConvertAbsMagLuminosity(AbsM, band):
-        '''AbsM: absolute magnitude, band: filter'''
+        '''AbsM: absolute magnitude, band: filter (V, CFHT_I, 'i' in AB, rest in Vega)'''
         AbsM = np.asarray(AbsM)
 
-        bands = {'U':5.61, 'B':5.48, 'V':4.83, 'R':4.42, 'I':4.08,
+        bands = {'U':5.61, 'B':5.48, 'V':4.80, 'R':4.42, 'I':4.08,
                  'J':3.64, 'H':3.32, 'K':3.28, 'g':5.33, 'r':4.67,
-                 'i':4.48, 'z':4.42, 'F300W':6.09, 'F450W':5.32, 'F555W':4.85,
+                 'i':4.52, 'z':4.42, 'F300W':6.09, 'F450W':5.32, 'F555W':4.85,
                  'F606W':4.66, 'F702W':4.32, 'F814W':4.15, 'CFHT_U':5.57,
-                 'CFHT_B':5.49, 'CFHT_V':4.81, 'CFHT_R':4.44, 'CFHT_I':4.06,
+                 'CFHT_B':5.49, 'CFHT_V':4.81, 'CFHT_R':4.44, 'CFHT_I':4.51,
                  'NIRI_J':3.64, 'NIRI_H':3.33, 'NIRI_K':3.29}
 
         if band in bands.keys():
@@ -96,18 +98,34 @@ class SizeStellarMassLuminosity(BaseValidationTest):
 
         colnames = dict()
         colnames['z'] = catalog_instance.first_available('redshift', 'redshift_true')
-        colnames['mag'] = catalog_instance.first_available(*self.possible_mag_fields)
+        xname = 'mag' if self.use_mag else 'lum'
+        if self.use_mag:
+            colnames[xname] = catalog_instance.first_available(*self.possible_mag_fields)
+        else:
+            colnames[xname] = catalog_instance.first_available(*self.possible_native_luminosities)
+        
         if self.observation == 'onecomp':
             colnames['size'] = catalog_instance.first_available('size', 'size_true')
         elif self.observation == 'twocomp':
             colnames['size_bulge'] = catalog_instance.first_available('size_bulge', 'size_bulge_true')
             colnames['size_disk'] = catalog_instance.first_available('size_disk', 'size_disk_true')
-        filtername = colnames['mag'].split('_')[(-1 if colnames['mag'].startswith('m') else -2)].upper()
-        band = colnames['mag'].split('_')[(2 if 'true' in colnames['mag'] else 1)]
-        filter_id = '{} {}'.format(filtername, band) if filtername != band else band
+        # parse filter names
+        if self.use_mag: 
+            filtername = colnames['mag'].split('_')[(-1 if colnames['mag'].startswith('m') else -2)].upper()
+            band = colnames['mag'].split('_')[(2 if 'true' in colnames['mag'] else 1)]
+        else:
+            filtername = ''
+            band = colnames[xname].split(':')[(-3 if colnames[xname].endswith('s') else -2)].upper()
+        if colnames[xname].startswith('m'):
+            filter_id = '{} {}'.format(filtername, band) if filtername != band else band
+        elif colnames[xname].startswith('M'):
+            filter_id = '{} $M_{}$'.format(filtername, band) if filtername != band else band
+        else:
+            filter_id = ''
 
         if not all(v for v in colnames.values()):
             return TestResult(skipped=True, summary='Missing requested quantities')
+
         #Check whether the columns are finite or not
         filters = [(np.isfinite, c) for c in colnames.values()]
 
@@ -150,7 +168,10 @@ class SizeStellarMassLuminosity(BaseValidationTest):
                 default_L_bin_edges = np.array([9, 9.5, 10, 10.5, 11, 11.5])
                 default_L_bins = (default_L_bin_edges[1:] + default_L_bin_edges[:-1]) / 2.
                 if self.observation == 'onecomp':
-                    logL_G = self.ConvertAbsMagLuminosity(catalog_data_this['mag'], band)
+                    if self.use_mag:
+                        logL_G = self.ConvertAbsMagLuminosity(catalog_data_this['mag'], band)
+                    else:
+                        logL_G = self.ConvertAbsMagLuminosity(-2.5*np.log10(catalog_data_this['lum']), band)
                     size_kpc = catalog_data_this['size'] * self._ARCSEC_TO_RADIAN * interpolate.splev(catalog_data_this['z'], spl) / (1 + catalog_data_this['z'])
                     binned_size_kpc = binned_statistic(logL_G, size_kpc, bins=default_L_bin_edges, statistic='mean')[0]
                     binned_size_kpc_err = binned_statistic(logL_G, size_kpc, bins=default_L_bin_edges, statistic='std')[0]
@@ -188,9 +209,9 @@ class SizeStellarMassLuminosity(BaseValidationTest):
                                     validation_this[:,3] - validation_this[:,5], lw=0, alpha=0.2, facecolor=colors[1])
 
                     ax.errorbar(default_L_bins, binned_bulgesize_kpc, binned_bulgesize_kpc_err, marker='o', ls='',
-                                c=colors[0], label=' '.join([catalog_name, filter_id]))
+                                c=colors[0], label=' '.join([catalog_name, filter_id, 'Bulge']))
                     ax.errorbar(default_L_bins+0.2, binned_disksize_kpc, binned_disksize_kpc_err, marker='o', ls='',
-                                c=colors[1], label=' '.join([catalog_name, filter_id]))
+                                c=colors[1], label=' '.join([catalog_name, filter_id, 'Disk']))
                     ax.set_yscale('log', nonposy='clip')
 
                     validation_bulge = self.compute_chisq(default_L_bins, binned_bulgesize_kpc, binned_bulgesize_kpc_err,
@@ -204,13 +225,14 @@ class SizeStellarMassLuminosity(BaseValidationTest):
                 if self.fig_xlim is not None:
                     ax.set_ylim(self.fig_ylim)
                 ax.legend(loc=self.legend_location, title=legend_title, fontsize=self.legend_size)
-
-            fig.add_subplot(111, frameon=False)
-            # hide tick and tick label of the big axes
-            plt.tick_params(labelcolor='none', which='both', top='off', bottom='off', left='off', right='off')
-            plt.grid(False)
-            plt.xlabel(self.fig_xlabel, size=self.font_size)
-            plt.ylabel(self.fig_ylabel, size=self.font_size)
+                ax.tick_params(labelbottom=True, direction='in', which='both')
+                for axlabel in ax.get_xticklabels():
+                    axlabel.set_visible(True)
+                ax.set_xlabel(self.fig_xlabel, size=self.font_size)
+                
+            # center axis labels
+            fig.text(0.05, 0.5, self.fig_ylabel, fontsize=self.font_size, ha="center", va="center", rotation=90)
+            #fig.text(0.5, 0.05, self.fig_xlabel, fontsize=self.font_size, ha="center", va="center")
             fig.subplots_adjust(hspace=0, wspace=0)
             if not self.no_title:
                 fig.suptitle('{} vs. {}'.format(catalog_name, self.data_label), fontsize='medium', y=0.93)

@@ -62,12 +62,15 @@ test_data:
 #  Mr_-18_-17: {data_col: 11, data_err_col: 12}
   
 # Plotting configuration.
+truncate_cat_name: true
+no_title: true
 survey_label: SDSS
 font_size: 16
 legend_size: 8
 fig_xlabel: '$r_p\quad[h^{-1}{\rm Mpc}]$'
 fig_ylabel: '$w_p(r_p)\quad[h^{-1}{\rm Mpc}]$'
 fig_ylim: [0.1, 3000]
+mask_large_errors: true
 test_sample_labels:
   Mr_-23_-22: '$-23 < M_r^h < -22$'
   Mr_-22_-21: '$-22 < M_r^h < -21$'

@@ -1,6 +1,7 @@
 import os
 import numpy as np
 from itertools import count
+import re
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
 from .utils import get_opt_binpoints
@@ -28,7 +29,11 @@ class SizeDistribution(BaseValidationTest):
         
         self.acceptable_keys = kwargs['possible_size_fields']
         self.acceptable_mag_keys = kwargs['possible_mag_fields']
-
+        self.fontsize = kwargs.get('fontsize', 15)
+        self.lgnd_fontsize = kwargs.get('lgnd_fontsize', 12)
+        self.truncate_cat_name = kwargs.get('truncate_cat_name', True)
+        self.truncate_key_name = kwargs.get('truncate_key_name', True)
+        
         self._color_iterator = ('C{}'.format(i) for i in count())
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
@@ -56,6 +61,9 @@ class SizeDistribution(BaseValidationTest):
             sizes = sizes[non_neg_mask]
         min_sizes = np.min(sizes)
         max_sizes = np.max(sizes)
+
+        if self.truncate_cat_name:
+            catalog_name = re.split('_', catalog_name)[0]
         
         # Compute N(size) and its slope at the small end.
         # Things seem to be roughly linear where N(size)>0.5*Ntot so use those points.
@@ -91,22 +99,27 @@ class SizeDistribution(BaseValidationTest):
         # plot a histogram of sizes. This is easier to see as log(sizes) so do that.
         fig, (hist_ax, cumul_ax) = plt.subplots(1, 2)
         fig.subplots_adjust(wspace=0.4)
+        xname = key if not self.truncate_key_name else re.split('_', key)[0]
         hist_ax.hist(np.log10(sizes), color=catalog_color, edgecolor='black', alpha=0.75,
-                     normed=True, bins=20)
-        hist_ax.set_xlabel("Log10({})".format(key))
-        hist_ax.set_ylabel("dN/d log({})".format(key))
+                     density=True, bins=20)
+        hist_ax.set_xlabel("$\\log_{{10}}(\\rm{{{}/arcsec}})$".format(xname), fontsize=self.fontsize)
+        hist_ax.set_ylabel("$dN/d\\log_{{10}}(\\rm{{{}/arcsec}})$".format(xname), fontsize=self.fontsize)
         
         # plot the CDF and the line fit
-        cumul_ax.plot(size_pts, cumul_N_norm, color=catalog_color)
-        cumul_ax.plot(size_pts[mask], (data_intercept+data_slope*size_pts[mask]), color='gray')
-        cumul_ax.set_xscale('log')
-        cumul_ax.text(0.95, 0.96,
-                      'validation=${:.3f}$\nslope=${:.3f}$'.format(validation_slope, data_slope),
-                      horizontalalignment='right', verticalalignment='top',
-                      transform=cumul_ax.transAxes)
-        cumul_ax.set_xlabel("{}".format(key))
-        cumul_ax.set_ylabel("N({})".format(key))
-
+        cumul_ax.plot(np.log10(size_pts), cumul_N_norm,
+                      color=catalog_color, label='{}: ${:.2f}$'.format(catalog_name, data_slope))
+        cumul_ax.plot(np.log10(size_pts[mask]), (data_intercept+data_slope*size_pts[mask]), color='gray',
+                      label='COSMOS: ${:.2f}$'.format(validation_slope))
+        #cumul_ax.set_xscale('log')
+        #cumul_ax.text(0.95, 0.96,
+        #              'COSMOS: ${:.2f}$\n{}: ${:.2f}$'.format(validation_slope, catalog_name, data_slope),
+        #              horizontalalignment='right', verticalalignment='top',
+        #              transform=cumul_ax.transAxes)
+        cumul_ax.set_xlabel("$\\log_{{10}}(\\rm{{{}/arcsec}})$".format(xname), fontsize=self.fontsize)
+        cumul_ax.set_ylabel("$N(\\rm{{{}}}$)".format(xname), fontsize=self.fontsize)
+        cumul_ax.legend(loc='upper right', title='Slopes', fontsize=self.lgnd_fontsize)
+        cumul_ax.set_ylim(-0.05, 1.4) #force room for legend
+        
         with open(os.path.join(output_dir, 'size_distribution_{}.txt'.format(catalog_name)), 'w'
                  ) as f:
             f.write("# Slope, intercept\n")

@@ -49,10 +49,10 @@ test_samples:
     Mag_r: {min: -20, max: -19}
     z: {min: 0.0269, max: 0.0642}
     color: 'Mag_g - Mag_r*0.97 < 0.21 - 0.03*Mag_shift'
-#  Mr_-19_-18_blue:
-#    Mag_r: {min: -19, max: -18}
-#    z: {min: 0.0173, max: 0.0417}
-#    color: 'Mag_g - Mag_r*0.97 < 0.21 - 0.03*Mag_shift'
+  Mr_-19_-18_blue:
+    Mag_r: {min: -19, max: -18}
+    z: {min: 0.0173, max: 0.0417}
+    color: 'Mag_g - Mag_r*0.97 < 0.21 - 0.03*Mag_shift'
   Mr_-23_-22_red:
     Mag_r: {min: -23, max: -22}
     z: {min: 0.1031, max: 0.2452}
@@ -69,10 +69,10 @@ test_samples:
     Mag_r: {min: -20, max: -19}
     z: {min: 0.0269, max: 0.0642}
     color: 'Mag_g - Mag_r*0.97 >= 0.21 - 0.03*Mag_shift'
-#  Mr_-19_-18_red:
-#    Mag_r: {min: -19, max: -18}
-#    z: {min: 0.0173, max: 0.0417}
-#    color: 'Mag_g - Mag_r*0.97 >= 0.21 - 0.03*Mag_shift'
+  Mr_-19_-18_red:
+    Mag_r: {min: -19, max: -18}
+    z: {min: 0.0173, max: 0.0417}
+    color: 'Mag_g - Mag_r*0.97 >= 0.21 - 0.03*Mag_shift'
 
 # Output file naming format for output of the resultant correlation values.
 output_filename_template: 'wp_rp_{}.dat'
@@ -87,60 +87,65 @@ test_data:
   Mr_-22_-21_blue: {data_col: 3, data_err_col: 4}
   Mr_-21_-20_blue: {data_col: 5, data_err_col: 6}
   Mr_-20_-19_blue: {data_col: 7, data_err_col: 8}
-#  Mr_-19_-18_blue: {data_col: 9, data_err_col: 10}
+  Mr_-19_-18_blue: {data_col: 9, data_err_col: 10}
   Mr_-23_-22_red:  {data_col: 11, data_err_col: 12}
   Mr_-22_-21_red:  {data_col: 13, data_err_col: 14}
   Mr_-21_-20_red:  {data_col: 15, data_err_col: 16}
   Mr_-20_-19_red:  {data_col: 17, data_err_col: 18}
-#  Mr_-19_-18_red:  {data_col: 19, data_err_col: 20}
+  Mr_-19_-18_red:  {data_col: 19, data_err_col: 20}
   
 # Plotting configuration.
-#truncate_cat_name: true
-#no_title: true
+truncate_cat_name: true
+no_title: true
 survey_label: SDSS
 font_size: 18
 legend_size: 13
 fig_xlabel: '$r_p\quad[h^{-1}{\rm Mpc}]$'
 fig_ylabel: '$w_p(r_p)\quad[h^{-1}{\rm Mpc}]$'
 fig_ylim: [0.1, 1500]
+mask_large_errors: true
+
 test_sample_labels:
   Mr_-23_-22_red: '$-23 < M_r^h < -22$ (red)'
   Mr_-22_-21_red: '$-22 < M_r^h < -21$ (red)'
   Mr_-21_-20_red: '$-21 < M_r^h < -20$ (red)'
   Mr_-20_-19_red: '$-20 < M_r^h < -19$ (red)'
-#  Mr_-19_-18_red: '$-19 < M_r^h < -18$ (red)'
+  Mr_-19_-18_red: '$-19 < M_r^h < -18$ (red)'
   Mr_-23_-22_blue: '$-23 < M_r^h < -22$ (blue)'
   Mr_-22_-21_blue: '$-22 < M_r^h < -21$ (blue)'
   Mr_-21_-20_blue: '$-21 < M_r^h < -20$ (blue)'
   Mr_-20_-19_blue: '$-20 < M_r^h < -19$ (blue)'
-#  Mr_-19_-18_blue: '$-19 < M_r^h < -18$ (blue)'
+  Mr_-19_-18_blue: '$-19 < M_r^h < -18$ (blue)'
   
-fig_subplots: [2, 2]
+fig_subplots: [2,3]
 fig_subplot_groups:
   - [Mr_-23_-22_red, Mr_-23_-22_blue]
   - [Mr_-22_-21_red, Mr_-22_-21_blue]
   - [Mr_-21_-20_red, Mr_-21_-20_blue]
   - [Mr_-20_-19_red, Mr_-20_-19_blue]
-#  - [Mr_-19_-18_red, Mr_-19_-18_blue]
-#  - []
+  - [Mr_-19_-18_red, Mr_-19_-18_blue]
+  - []
 
 pi_maxes: # Line of sight, wp(rp) binning for each sample.
   Mr_-23_-22_blue: 60.0
   Mr_-22_-21_blue: 60.0
   Mr_-21_-20_blue: 60.0
   Mr_-20_-19_blue: 60.0
-#  Mr_-19_-18_blue: 60.0
+  Mr_-19_-18_blue: 60.0
   Mr_-23_-22_red:  60.0
   Mr_-22_-21_red:  60.0
   Mr_-21_-20_red:  60.0
   Mr_-20_-19_red:  60.0
-#  Mr_-19_-18_red:  60.0
+  Mr_-19_-18_red:  60.0
 
 #Treecorr parameters
 min_sep: 0.15
 max_sep: 40
 bin_size: 0.45
 random_mult: 6
+var_method: jackknife
+#Patches for covariance estimate
+npatch: 10
 
 description: |
   Compare projected correlation functions of catalog and Zehavi et al (2011) SDSS r-band observations

@@ -99,7 +99,8 @@ class EmlineRatioTest(BaseValidationTest):
         self.runcat_name = []
 
         self.truncate_cat_name = kwargs.get('truncate_cat_name', False)
-
+        self.legend_size = kwargs.get('legend_size', 14)
+        self.vmax = kwargs.get('vmax', 1.5e3)
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
 
@@ -215,7 +216,7 @@ class EmlineRatioTest(BaseValidationTest):
         # Begin Test and Plotting
         #=========================================
 
-        fig = plt.figure(figsize=(16, 8))
+        fig = plt.figure(figsize=(16, 6.5))
         sp1 = fig.add_subplot(121)
         sp2 = fig.add_subplot(122)
 
@@ -257,8 +258,10 @@ class EmlineRatioTest(BaseValidationTest):
         sdss_draw_inds = np.random.choice(np.arange(len(dist1[0])), size=self.sdss_drawnum)
         dist1 = dist1[:, sdss_draw_inds]
 
-        sp1.hist2d(*dist1, bins=50, range=[[-1.2, 1.2], [-1.25, 1]], norm=LogNorm(), cmap='plasma_r')
-        sp2.hist2d(*dist2, bins=50, range=[[-1.2, 1.2], [-1.25, 1]], norm=LogNorm(), cmap='plasma_r')
+        h1 = sp1.hist2d(*dist1, bins=50, range=[[-1.2, 1.2], [-1.25, 1]], norm=LogNorm(vmax=self.vmax), cmap='plasma_r')
+        h2 = sp2.hist2d(*dist2, bins=50, range=[[-1.2, 1.2], [-1.25, 1]], norm=LogNorm(vmax=self.vmax), cmap='plasma_r')
+
+        print(' Maximum number densities: SDSS {:0.3g}; {} {:0.3g}'.format(np.max(h1[0]), catalog_name, np.max(h2[0])))
 
         # Shift the median of the simulated galaxies to match that of the SDSS galaxies
         # before performing the comparison
@@ -270,10 +273,11 @@ class EmlineRatioTest(BaseValidationTest):
         pvalue, KSstat = kstest_2d(dist1, medianmatch_dist2)
 
         # Plotting stuff
-
         sp1.set_xlabel(xlabel, fontsize=20)
         sp1.set_ylabel(ylabel, fontsize=20)
         sp2.set_xlabel(xlabel, fontsize=20)
+        sp1.tick_params(labelsize=16)
+        sp2.tick_params(labelsize=16)
         sp1.set_xlim(-1.2, 1.2)
         sp1.set_ylim(-1.25, 1)
         sp2.set_xlim(-1.2, 1.2)
@@ -281,9 +285,15 @@ class EmlineRatioTest(BaseValidationTest):
 
         sp2.set_yticklabels([])
 
+        fig.subplots_adjust(right=0.9)
+        cbar_ax = fig.add_axes([0.95, 0.1, 0.03, 0.75])
+        fig.colorbar(h2[3], cax=cbar_ax)
+        cbar_ax.tick_params(labelsize=16)
+
         plt.subplots_adjust(wspace=0.0)
 
-        sp2.text(0.02, 0.98, 'log p = %.2f\n' % np.log10(pvalue) + r'D$_\mathrm{KS}$' + ' = %.2f\nMed Shift = [%.2f, %.2f]' % (KSstat, *medianshift.T[0]), fontsize=14, transform=sp2.transAxes, ha='left', va='top', bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+        sp2.text(0.95, 0.98, 'log p = %.1f\n' % np.log10(pvalue) + r'D$_\mathrm{KS}$' + ' = %.2f\nMed Shift = [%.2f, %.2f]' % (KSstat, *medianshift.T[0]),
+                 fontsize=18, transform=sp2.transAxes, ha='right', va='top', bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
 
         sp1.text(0.98, 0.02, 'SDSS', fontsize=24, ha='right', va='bottom', transform=sp1.transAxes)
         sp2.text(0.98, 0.02, catalog_name, fontsize=24, ha='right', va='bottom', transform=sp2.transAxes)

@@ -3,5 +3,10 @@ log_Mlo: 9.
 log_Mhi: 12.
 Nbins: 25
 observation: 'PRIMUS_2013'
+truncate_cat_name: true
+fig_ysize: 16
+font_size: 26
+text_size: 24
+legend_size: 18
 description: 'Plot Stellar-Mass Function for various redshift bins and compare with PRIMUS data from Moustakas et. al. (2013)'
 included_by_default: true

@@ -113,6 +113,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         self.font_size = kwargs.get('font_size', 16)
         self.legend_size = kwargs.get('legend_size', 10)
         self.tick_size = kwargs.get('tick_size', 12)
+        self.adjust_ylim = kwargs.get('adjust_ylim', 1.3)
         self.rest_frame = rest_frame
         if self.rest_frame:
             possible_mag_fields = ('Mag_true_{}_lsst_z0',
@@ -129,7 +130,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
                                    'mag_true_{}_des',
                                   )
         self.possible_mag_fields = [f.format(band) for f in possible_mag_fields]
-        self.possible_redshifts = ['redshift_true_galaxy', 'redshift_true']
+        self.possible_redshifts = ['redshift_true_galaxy', 'redshift_true', 'redshift_truth']
         self.band = band
 
         #z-bounds and binning
@@ -418,8 +419,9 @@ class NumberDensityVersusRedshift(BaseValidationTest):
 
     def catalog_subplot(self, ax, meanz, data, errors, catalog_color, catalog_marker, catalog_label):
         ax.errorbar(meanz, data, yerr=errors, label=catalog_label, color=catalog_color, fmt=catalog_marker, ms=self.msize)
-
-
+        ymax = np.max(data + errors)
+        ax.set_ylim(0., self.adjust_ylim*ymax)
+        
     def validation_subplot(self, ax, meanz, z0, z0err, validation_label):
         #plot validation data if available
         ndata = meanz**2*np.exp(-meanz/z0)
@@ -447,16 +449,13 @@ class NumberDensityVersusRedshift(BaseValidationTest):
             ax.set_ylabel(self.yaxis, size=self.font_size)
 
         if nplot+1 <= self.nplots-self.ncolumns:  #x scales for last ncol plots only
-            #print "noticks",nplot
-            for axlabel in ax.get_xticklabels():
-                axlabel.set_visible(False)
-                #prevent overlapping yaxis labels
-                ax.yaxis.get_major_ticks()[0].label1.set_visible(False)
+            ax.tick_params(direction='in', which='both')
+            #prevent overlapping yaxis labels
+            ax.yaxis.get_major_ticks()[0].label1.set_visible(False)
         else:
+            print(nplot, ' visible')
             ax.set_xlabel('z', size=self.font_size)
             ax.tick_params(labelbottom=True)
-            for axlabel in ax.get_xticklabels():
-                axlabel.set_visible(True)
         ax.legend(loc='best', fancybox=True, framealpha=0.5, fontsize=self.legend_size, numpoints=1)
 
 
@@ -492,7 +491,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
 
     @staticmethod
     def post_process_plot(fig):
-        fig.subplots_adjust(hspace=0)
+        fig.subplots_adjust(hspace=0.0)
 
 
     @staticmethod

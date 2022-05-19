@@ -46,7 +46,7 @@ class EllipticityDistribution(BaseValidationTest):
                 'disk':{'B/T_min':0., 'B/T_max':0.2, 'mag_lo':24., 'Mag_hi':-21., 'Mag_lo':-17.},
                 'late':{'B/T_min':0.4, 'B/T_max':0.7, 'mag_lo':24., 'Mag_hi':-21., 'Mag_lo':-17.},
                 'irregular':{'B/T_min':0.0, 'B/T_max':1.0},
-                'ancillary_quantities':['bulge_to_total_ratio_i'],
+                'ancillary_quantities':['bulge_to_total_ratio_i', 'bulge_to_total_ratio_stellar'],
                 'ancillary_keys':['B/T'],
             },
         },
@@ -60,7 +60,7 @@ class EllipticityDistribution(BaseValidationTest):
     @staticmethod
     def e_squared(a, b):
         q = b/a
-        return  np.sqrt((1-q**2)/(1+q**2))
+        return  (1-q**2)/(1+q**2)
 
     #plotting constants
     lw2 = 2
@@ -110,7 +110,7 @@ class EllipticityDistribution(BaseValidationTest):
                                                         },
                                             'e_squared':{'possible_quantities':[['size', 'size_true'], ['size_minor', 'size_minor_true']],
                                                          'function':self.e_squared,
-                                                         'xaxis_label': r'$e = \sqrt{(1-q^2)/(1+q^2)}$',
+                                                         'xaxis_label': r'$e = (1-q^2)/(1+q^2)$',
                                                          'file_label':'e2',
                                                         },
                                            }
@@ -160,7 +160,7 @@ class EllipticityDistribution(BaseValidationTest):
                                             [possible_native_luminosities[band] for band in possible_native_luminosities if band in self.band_Mag]))
 
         #check for ancillary quantities
-        self.ancillary_quantities = self.validation_data.get('cuts', {}).get('ancillary_quantities', None)
+        self.possible_ancillary_quantities = self.validation_data.get('cuts', {}).get('ancillary_quantities', None)
 
         #setup subplot configuration
         self.init_plots()
@@ -235,8 +235,11 @@ class EllipticityDistribution(BaseValidationTest):
                 required_quantities.append(found_quantity)
         if not catalog_instance.has_quantities(required_quantities + self.filter_quantities):
             return TestResult(skipped=True, summary='Missing some required quantities: {}'.format(', '.join(required_quantities)))
-        if self.ancillary_quantities is not None and not catalog_instance.has_quantities(self.ancillary_quantities):
-            return TestResult(skipped=True, summary='Missing some ancillary quantities: {}'.format(', '.join(self.ancillary_quantities)))
+        ancillary_quantity = None
+        if self.possible_ancillary_quantities is not None:
+            ancillary_quantity = catalog_instance.first_available(*self.possible_ancillary_quantities)
+            if ancillary_quantity is None:
+                return TestResult(skipped=True, summary='Missing some ancillary quantities: {}'.format(', '.join(self.possible_ancillary_quantities)))
 
         mag_field = catalog_instance.first_available(*self.possible_mag_fields)
         if not mag_field:
@@ -245,8 +248,8 @@ class EllipticityDistribution(BaseValidationTest):
         if not Mag_field:
             return TestResult(skipped=True, summary='Missing needed quantities to make magnitude cuts')
         all_quantities = required_quantities +[mag_field, Mag_field] + self.filter_quantities
-        if self.ancillary_quantities is not None:
-            all_quantities = all_quantities + self.ancillary_quantities
+        if ancillary_quantity is not None:
+            all_quantities = all_quantities + [ancillary_quantity]
         print('Fetching quantities', all_quantities)
 
         mag_filtername = str(mag_field.split('_')[-2])
@@ -283,8 +286,8 @@ class EllipticityDistribution(BaseValidationTest):
                 if morphology is not None:
                     mask = (catalog_data[mag_field] < self.mag_lo.get(morphology))
                     mask &= (self.Mag_hi.get(morphology) < catalog_data[Mag_field]) & (catalog_data[Mag_field] < self.Mag_lo.get(morphology))
-                    if self.ancillary_quantities is not None:
-                        for aq, key  in zip_longest(self.ancillary_quantities, self.validation_data['cuts'].get('ancillary_keys')):
+                    if ancillary_quantity is not None:
+                        for aq, key  in zip_longest([ancillary_quantity], self.validation_data['cuts'].get('ancillary_keys')):
                             mask &= (self.validation_data['cuts'][morphology].get(key+'_min') < catalog_data[aq]) &\
                                     (catalog_data[aq] < self.validation_data['cuts'][morphology].get(key+'_max'))
 
@@ -330,7 +333,7 @@ class EllipticityDistribution(BaseValidationTest):
                 cutlabel = re.sub('-inf < ', '' , cutlabel) #truncate label with inf
 
                 ancillary_label = []
-                if self.ancillary_quantities is not None:
+                if ancillary_quantity is not None:
                     for key  in self.validation_data['cuts'].get('ancillary_keys'):
                         ancillary_label.append('${}<{}<{}$'.format(str(self.validation_data['cuts'][morphology].get(key+'_min')),\
                                                key, str(self.validation_data['cuts'][morphology].get(key+'_max'))))

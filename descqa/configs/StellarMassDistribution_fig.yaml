@@ -1,0 +1,6 @@
+subclass_name: StellarMassDistribution.StellarMassTest
+truncate_cat_name: true
+description: |
+  Distribution of steellar mass of DC2 catalogue compared with CMASS 
+  where the same color and magnitude cuts as CMASS are applied to DC2 galaxies.
+  Number density of DC2 galaxies is compared with that of CMASS and their distribution is plotted

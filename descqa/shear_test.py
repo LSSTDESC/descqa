@@ -50,8 +50,11 @@ class ShearTest(BaseValidationTest):
                  **kwargs):
         #pylint: disable=W0231
 
-        plt.rcParams['font.size'] = 9
-
+        self.axsize = kwargs.get('axsize', 17)
+        self.title_size = kwargs.get('title_size', 18)
+        self.legend_size = kwargs.get('legend_size', 15)
+        self.truncate_cat_name = kwargs.get('truncate_cat_name', True)
+        
         self.z = z
         #sep-bounds and binning
         self.min_sep = min_sep
@@ -70,13 +73,13 @@ class ShearTest(BaseValidationTest):
         self.N_clust = N_clust
         self.do_jackknife = do_jackknife
         # cut in redshift
-        self.filters = [(lambda z: (z > zlo) & (z < zhi), self.z)]
         self.summary_fig, self.summary_ax = plt.subplots(nrows=2, ncols=ntomo, sharex=True, squeeze=False, figsize=(ntomo*5, 5))
         self.ntomo = ntomo
         self.z_range = z_range
         self.zlo = zlo
         self.zhi = zhi
-
+        self.zmeans = np.linspace(self.zlo, self.zhi, self.ntomo+2)[1:-1]
+        
     def compute_nz(self, n_z):
         '''create interpolated n(z) distribution'''
         z_bins = np.linspace(self.zlo, self.zhi, 301)
@@ -87,6 +90,7 @@ class ShearTest(BaseValidationTest):
         n2 = interp1d(z, n / n2_sum, bounds_error=False, fill_value=0.0, kind='cubic')
         return n2
 
+    
 
     def theory_corr(self, n_z2, xvals, lmax2, chi_max, zlo2, zhi2, cosmo_cat):
         '''compute the correlation function from limber integration over the CAMB power spectrum'''
@@ -138,8 +142,7 @@ class ShearTest(BaseValidationTest):
         # note also that this is comparing against the (low) variance in the catalog which might not be a great comparison -no shape noise
         N_clust = self.N_clust
         nn = np.stack((catalog_data[self.ra][mask], catalog_data[self.dec][mask]), axis=1)
-        _, labs, _ = k_means(
-            n_clusters=N_clust, random_state=0, X=nn, n_jobs=-1)  # check random state, n_jobs is in debugging mode
+        _, labs, _ = k_means(n_clusters=N_clust, random_state=0, X=nn)  # check random state
         print("computing jack-knife errors")
         time_jack = time.time()
         # jack-knife code
@@ -206,11 +209,10 @@ class ShearTest(BaseValidationTest):
 
     # define theory from within this class
 
-    def post_process_plot(self, ax):
+    def post_process_plot(self, ax, fig):
         '''
         Post-processing routines on plot
         '''
-        zmeans = np.linspace(self.zlo, self.zhi, self.ntomo+2)[1:-1]
 
         # vmin and vmax are very rough DES-like limits (maximum and minimum scales)
         for i in range(self.ntomo):
@@ -218,14 +220,14 @@ class ShearTest(BaseValidationTest):
                 ax_this.set_xscale('log')
                 ax_this.axvline(vmin, ls='--', c='k')
                 ax_this.axvline(vmax, ls='--', c='k')
-            ax[-1][i].set_xlabel(r'$\theta \; {\rm (arcmin)}$')
-            ax[0][i].set_title('z = '+str(zmeans[i]))
-            ax[0][i].legend()
-            ax[-1][i].legend()
-        ax[0][0].set_ylabel(r'$\chi_{{{}}} \; (10^{{-6}})$'.format('+'))
-        ax[-1][0].set_ylabel(r'$\chi_{{{}}} \; (10^{{-6}})$'.format('-'))
+            ax[-1][i].set_xlabel(r'$\theta \; {\rm (arcmin)}$', size=self.axsize)
+            ax[0][i].set_title('z = {:.2f}'.format(self.zmeans[i]), size=self.title_size)
+            ax[0][i].legend(fontsize=self.legend_size, frameon=True)
+            ax[-1][i].legend(fontsize=self.legend_size, frameon=True)
+        ax[0][0].set_ylabel(r'$\xi_{{{}}} \; (10^{{-6}})$'.format('+'), size=self.axsize)
+        ax[-1][0].set_ylabel(r'$\xi_{{{}}} \; (10^{{-6}})$'.format('-'), size=self.axsize)
 
-
+        fig.subplots_adjust(hspace=0)
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         '''
@@ -238,42 +240,48 @@ class ShearTest(BaseValidationTest):
             return TestResult(skipped=True, summary='do not have needed shear quantities')
         if not catalog_instance.has_quantities([self.mag]):
             return TestResult(skipped=True, summary='do not have required magnitude quantities for cuts')
-        catalog_data = self.get_catalog_data(
-            catalog_instance, [self.z, self.ra, self.dec, self.e1, self.e2, self.kappa, self.mag], filters=self.filters)
 
         cosmo = getattr(catalog_instance, 'cosmology', WMAP7)
-
-        z_max = np.max(catalog_data[self.z])
-        if self.zhi>z_max:
-            print("updating zhi to "+ str(z_max)+ " from "+ str(self.zhi))
-            self.zhi = z_max
-            zhi = z_max
-        else:
-            zhi = self.zhi
-        chi_max = cosmo.comoving_distance(self.zhi+1.0).value
-        mask_mag = (catalog_data[self.mag][:]<self.maglim)  
-
-        # read in shear values and check limits
-        e1 = catalog_data[self.e1]
-        max_e1 = np.max(e1)
-        min_e1 = np.min(e1)
-        e2 = catalog_data[self.e2]
-        max_e2 = np.max(e2)
-        min_e2 = np.min(e2)
-        if ((min_e1 < (-1.)) or (max_e1 > 1.0)):
-            return TestResult(skipped=True, summary='e1 values out of range [-1,+1]')
-        if ((min_e2 < (-1.)) or (max_e2 > 1.0)):
-            return TestResult(skipped=True, summary='e2 values out of range [-1,+1]')
         ntomo = self.ntomo
         fig, ax = plt.subplots(nrows=2, ncols=ntomo, sharex=True, squeeze=False, figsize=(ntomo*5, 5))
-        zmeans = np.linspace(self.zlo, zhi, ntomo+2)[1:-1]
+        zmeans = np.linspace(self.zlo, self.zhi, ntomo+2)[1:-1]
+        #zmeans = np.linspace(self.zlo, zhi, ntomo+2)[1:-1]
+        if self.truncate_cat_name:
+            catalog_name = catalog_name.partition('_')[0]
+
         for ii in range(ntomo):
+            
             z_mean = zmeans[ii]
             zlo2 = z_mean - self.z_range
             zhi2 = z_mean + self.z_range
             print(zlo2, zhi2)
-            zmask = (catalog_data[self.z] < zhi2) & (catalog_data[self.z] > zlo2)
-            mask = zmask & mask_mag
+            
+            filter_tomo = [(lambda z: (z > zlo2) & (z < zhi2), self.z)]
+            catalog_data = self.get_catalog_data(
+                catalog_instance, [self.z, self.ra, self.dec, self.e1, self.e2, self.kappa, self.mag], filters=filter_tomo)
+
+            # before this made sense since it was for the full catalog but now it doesnt for each tomo bin.
+            #z_max = np.max(catalog_data[self.z])
+            #if self.zhi>z_max:
+            #    print("updating zhi to "+ str(z_max)+ " from "+ str(self.zhi))
+            #    self.zhi = z_max
+            #    zhi = z_max
+            #else:
+            #    zhi = self.zhi
+            chi_max = cosmo.comoving_distance(self.zhi+1.0).value
+            
+            mask = (catalog_data[self.mag][:]<self.maglim)  
+
+            # read in shear values and check limits
+            max_e1 = np.max(catalog_data[self.e1])
+            min_e1 = np.min(catalog_data[self.e1])
+            max_e2 = np.max(catalog_data[self.e2])
+            min_e2 = np.min(catalog_data[self.e2])
+            if ((min_e1 < (-1.)) or (max_e1 > 1.0)):
+                return TestResult(skipped=True, summary='e1 values out of range [-1,+1]')
+            if ((min_e2 < (-1.)) or (max_e2 > 1.0)):
+                return TestResult(skipped=True, summary='e2 values out of range [-1,+1]')
+
             # compute shear auto-correlation
             cat_s = treecorr.Catalog(
                 ra=catalog_data[self.ra][mask],
@@ -335,6 +343,8 @@ class ShearTest(BaseValidationTest):
             print(theory_minus)
             print(xip)
             print(xim)
+            print(r)
+            print(xvals)
 
 	    #The following are further treecorr correlation functions that could be added in later to extend the test
 	    #treecorr.NNCorrelation(nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin')
@@ -343,12 +353,23 @@ class ShearTest(BaseValidationTest):
 	    #treecorr.KKCorrelation(nbins=20, min_sep=2.5, max_sep=250, sep_units='arcmin')  # count-kappa  (i.e. <kappa>(R))
 
             for ax_this in (ax, self.summary_ax):
-                ax_this[0, ii].errorbar(r, xip, sig_jack, lw=0.6, marker='o', ls='', color="#3f9b0b", label=r'$\chi_{+}$')
-                ax_this[0, ii].plot(xvals, theory_plus, 'o', color="#9a0eea", label=r'$\chi_{+}$' + " theory")
-                ax_this[1, ii].errorbar(r, xim, sigm_jack, lw=0.6, marker='o', ls='', color="#3f9b0b", label=r'$\chi_{-}$')
-                ax_this[1, ii].plot(xvals, theory_minus, 'o', color="#9a0eea", label=r'$\chi_{-}$' + " theory")
+                ax_this[0, ii].errorbar(r, xip, sig_jack, lw=0.6, marker='o', ls='', color="#3f9b0b", label=r'$\xi_{+}$ ' + catalog_name)
+                ax_this[0, ii].plot(xvals, theory_plus, 'o', color="#9a0eea", label=r'$\xi_{+}$' + " theory")
+                ax_this[1, ii].errorbar(r, xim, sigm_jack, lw=0.6, marker='o', ls='', color="#3f9b0b", label=r'$\xi_{-}$ ' + catalog_name)
+                ax_this[1, ii].plot(xvals, theory_minus, 'o', color="#9a0eea", label=r'$\xi_{-}$' + " theory")
 
-        self.post_process_plot(ax)
+            results = {'theta':r, 'xip  ':xip, 'xim  ':xim, 'theta_theory':xvals, 'xip_theory':theory_plus, 'xim_theory':theory_minus, 'npairs':gg.npairs}
+            if do_jackknife:
+                results['xip_err'] = sig_jack
+                results['xim_err'] = sigm_jack
+            #save results for catalog and validation data in txt files
+            filelabel = 'z_{:.2f}'.format(self.zmeans[ii])
+            theory_keys = [k for k in results.keys() if 'theory' in k]
+            keys = ['theta'] + [k for k in results.keys() if 'xi' in k and 'theory' not in k] + theory_keys + ['npairs']
+            with open(os.path.join(output_dir, 'Shear_vs_theta_' + filelabel + '.txt'), 'ab') as f_handle: #open file in append binary mode
+                self.save_quantities(keys, results, f_handle, comment='z = {:.2f}'.format(self.zmeans[ii]))
+                        
+        self.post_process_plot(ax, fig)
         fig.savefig(os.path.join(output_dir, 'plot.png'))
         plt.close(fig)
 
@@ -361,7 +382,13 @@ class ShearTest(BaseValidationTest):
         else:
             return TestResult(score, passed=False)
 
+    @staticmethod
+    def save_quantities(keys, results, filename, comment=''):
+            header = 'Data columns for {} are:\n  {}'.format(comment, '  '.join(keys))
+            np.savetxt(filename, np.vstack((results[k] for k in keys)).T, fmt='%12.4e', header=header)
+
+
     def conclude_test(self, output_dir):
-        self.post_process_plot(self.summary_ax)
+        self.post_process_plot(self.summary_ax, self.summary_fig)
         self.summary_fig.savefig(os.path.join(output_dir, 'summary.png'))
         plt.close(self.summary_fig)
