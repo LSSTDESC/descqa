@@ -6,9 +6,9 @@ from . import config
 __all__ = ['prepare_bigtable']
 
 try:
-    unicode
+    unicode  # pylint: disable=used-before-assignment
 except NameError:
-    unicode = str  #pylint: disable=redefined-builtin
+    unicode = str  # pylint: disable=redefined-builtin
 
 
 def format_status_count(status_count):
