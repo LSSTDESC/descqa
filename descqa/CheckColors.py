@@ -272,7 +272,7 @@ class CheckColors(BaseValidationTest):
             if cam in mag_field:
                 filter_this = cam
 
-        ### Color transformation
+        # Color transformation
         color_trans = None
         color_trans_name = None
         if self.validation_catalog == 'DEEP2' and filter_this != 'lsst' and filter_this != 'cfht':
@@ -289,7 +289,7 @@ class CheckColors(BaseValidationTest):
         filter_title = r'\mathrm{{{}}}'.format(filter_this.upper())
 
         if color_trans:
-            #print('Transforming from %s to %s\n' % (self.validation_catalog,filter_this))
+            # print('Transforming from %s to %s\n' % (self.validation_catalog, filter_this))
             datamag_val_transformed = {}
             for band in self.bands_val:
                 try:
@@ -313,7 +313,7 @@ class CheckColors(BaseValidationTest):
     def plot_hexbin_plot_for_catalog(self, xcolor, ycolor, xcolor_val, ycolor_val,
                                      i, zlo, zhi, catalog_name, mag_field, output_dir,
                                      xmin=-1.0, xmax=1.5, ymin=-0.5, ymax=3.0):
-        ### plot hexbin plot for catalog
+        # plot hexbin plot for catalog
         fig, ax = plt.subplots()
         hb = ax.hexbin(xcolor, ycolor, gridsize=(100), cmap='GnBu', mincnt=1, bins='log')
         cb = fig.colorbar(hb, ax=ax)
@@ -321,19 +321,19 @@ class CheckColors(BaseValidationTest):
 
         hrange = [[xmin, xmax], [ymin, ymax]]
         counts, xbins, ybins = np.histogram2d(xcolor_val, ycolor_val, range=hrange, bins=[30, 30])
-        print(xbins, ybins)
+
         cntr1 = ax.contour(counts.transpose(), extent=[xmin, xmax, ymin, ymax],
                            colors='black', linestyles='solid', levels=self.levels)
         ax.clabel(cntr1, inline=True, fmt='%1.1f', fontsize=10)
         h1, _ = cntr1.legend_elements()
 
-        ### CompareDensity block (Wasserstein metric)
+        # CompareDensity block (Wasserstein metric)
         simdata = np.column_stack([xcolor, ycolor])
         valdata = np.column_stack([xcolor_val, ycolor_val])
         cd = CompareDensity(simdata, valdata)
         print('Compare density with Wasserstein metric', cd)
 
-        ### kernel comparison block
+        # kernel comparison block
         obj = kernelCompare(simdata, valdata)
         MMD, pValue = obj.compute(iterations=self.kernel_iterations)
         print("MMD statistics is {}".format(MMD))
@@ -360,7 +360,7 @@ class CheckColors(BaseValidationTest):
                 verticalalignment='top', color='black', fontsize='small')
         ax.text(0.05, 0.75, title3, transform=ax.transAxes,
                 verticalalignment='top', color='black', fontsize='small')
-        #ax.set_title('{} vs {}'.format(catalog_name, self.validation_catalog))
+        # ax.set_title('{} vs {}'.format(catalog_name, self.validation_catalog))
 
         plt.legend([h1[0]], [self.validation_catalog], loc=4)
         fig.tight_layout()
@@ -384,8 +384,6 @@ class CheckColors(BaseValidationTest):
             catalog_name = re.split('_', catalog_name)[0]
 
         for mag_field in self.mag_fields_to_check:
-            catval = self.update_catval_for_mag_field(mag_field, camlist, catval, datamag_val, filter_this)
-
             quantity_list = [mag_field.format(band) for band in self.bands]
             quantity_list.append(self.redshift_cut)
 
@@ -398,20 +396,19 @@ class CheckColors(BaseValidationTest):
             magx0 = dataall[mag_field.format(self.xcolor[0])]
             magx1 = dataall[mag_field.format(self.xcolor[1])]
             magy0 = dataall[mag_field.format(self.ycolor[0])]
-            magy1 = dataall[mag_field.format(self.xcolor[1])]
+            magy1 = dataall[mag_field.format(self.ycolor[1])]
+            mag_in_cut_band = dataall[mag_field.format(self.magcut_band)]
+            redshift = dataall[self.redshift_cut]
+
+            catval = self.update_catval_for_mag_field(mag_field, camlist, catval, datamag_val, filter_this)
+
             xcolor = np.array(magx0 - magx1)
             ycolor = np.array(magy0 - magy1)
             xcolor_val = np.array(catval['{}'.format(self.xcolor[0])] - catval['{}'.format(self.xcolor[1])])
             ycolor_val = np.array(catval['{}'.format(self.ycolor[0])] - catval['{}'.format(self.ycolor[1])])
 
-#            for i, zlo in enumerate(redshift_bins[:-1]):
-            for i, zlo in enumerate(redshift_bins):
-                if i == len(redshift_bins)-1:
-                    continue
-                zhi = redshift_bins[i+1]
-
-                this_bin = (dataall[self.redshift_cut] > zlo) & (dataall[self.redshift_cut] < zhi) \
-                    & (dataall[mag_field.format(self.magcut_band)] < self.magcut)
+            for i, (zlo, zhi) in enumerate(zip(redshift_bins[:-1], redshift_bins[1:])):
+                this_bin = (redshift > zlo) & (redshift < zhi) & (mag_in_cut_band < self.magcut)
                 this_bin_val = (catval['redshift'] > zlo) & (catval['redshift'] < zhi) \
                     & (catval[self.magcut_band] < self.magcut)
                 has_results = True
