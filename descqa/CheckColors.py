@@ -412,15 +412,15 @@ class CheckColors(BaseValidationTest):
 
                 self.get_xycolor_val_for_bin(dataall, i, zlo, zhi)
                 this_bin = (dataall[self.redshift_cut] > zlo) & (dataall[self.redshift_cut] < zhi) \
-                  & (dataall[mag_field.format(self.magcut_band)] < self.magcut)
+                    & (dataall[mag_field.format(self.magcut_band)] < self.magcut)
                 this_bin_val = (catval['redshift'] > zlo) & (catval['redshift'] < zhi) \
-                  & (catval[self.magcut_band] < self.magcut)
+                    & (catval[self.magcut_band] < self.magcut)
                 has_results = True
 
-                self.plot_hexbin_plot_for_catalog(self,
-                                             xcolor[this_bin], ycolor[this_bin],
-                                             xcolor_val[this_bin_val], ycolor_val[this_bin_val],
-                                             i, zlo, zhi, catalog_name, mag_field, output_dir)
+                self.plot_hexbin_plot_for_catalog(
+                    xcolor[this_bin], ycolor[this_bin],
+                    xcolor_val[this_bin_val], ycolor_val[this_bin_val],
+                    i, zlo, zhi, catalog_name, mag_field, output_dir)
 
         if not has_results:
             return TestResult(skipped=True)
