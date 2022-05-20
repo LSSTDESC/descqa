@@ -47,13 +47,13 @@ color_transformation['sdss2lsst']['u'] = '0.932 * u + 1.865'
 color_transformation['sdss2lsst']['g'] = '-0.11 * (g - r) + g + 0.001'
 color_transformation['sdss2lsst']['r'] = '-0.026 * (r - i) + r - 0.001'
 color_transformation['sdss2lsst']['i'] = '-0.01 * (i - z) + i'
-color_transformation['sdss2lsst']['z'] = '1.001 * z + 0.043' 
+color_transformation['sdss2lsst']['z'] = '1.001 * z + 0.043'
 #for these I combined the transformations above, CFHT actually should be MegaCam
 color_transformation['cfht2lsst']['u'] = '1.251 * u - 0.319 * g + 1.865'
 color_transformation['cfht2lsst']['g'] = 'g + 0.00837 * (g - r) + 0.028 * (g - r) * (g - r) + 0.0055 * (r - i) + 0.013'
 color_transformation['cfht2lsst']['r'] = 'r - 0.02 * (r - i) - 0.001'
 color_transformation['cfht2lsst']['i'] = 'i + 0.086 * (r - i) - 0.00943 * (i - z)'
-color_transformation['cfht2lsst']['z'] = '1.058 * z - 0.057 * i + 0.043' 
+color_transformation['cfht2lsst']['z'] = '1.058 * z - 0.057 * i + 0.043'
 
 class kernelCompare:
     def __init__(self,D1, D2):
@@ -63,7 +63,7 @@ class kernelCompare:
         self._scale = self._computeScale(self._XY)
         self._n1 = len(D1)
         self._n2 = len(D2)
-        
+
     def _computeScale(self,XY):
         '''Compute and determine the kernel parameter by
         mean absolute deviation
@@ -79,13 +79,13 @@ class kernelCompare:
         diffSq = np.sum(diff * diff,1)
         res = np.exp(-diffSq)
         return res
-    
+
     @staticmethod
     @jit(nopython=True)
     def _MMD2ufast( X, Y, scale):
-        '''Compute the unbiased MMD2u statistics in the paper. 
+        '''Compute the unbiased MMD2u statistics in the paper.
         $$Ek(x,x') + Ek(y,y') - 2Ek(x,y)$$
-        This function implemnts a fast version in linear time. 
+        This function implemnts a fast version in linear time.
         '''
         n1 = len(X)
         n2 = len(Y)
@@ -95,14 +95,14 @@ class kernelCompare:
             diffSq = np.sum(diff * diff)
             k1 += np.exp(-diffSq)
         k1 /= n1 - 1
-        
+
         k2 = 0.0
         for i in range(n2-1):
             diff = (Y[i,:] - Y[i+1,:])/scale
             diffSq = np.sum(diff * diff)
             k2 += np.exp(-diffSq)
         k2 /= n2 - 1
-        
+
         k3 = 0.0
         p = min(n1, n2)
         for i in range(p):
@@ -157,25 +157,25 @@ class kernelCompare:
         fig, ax = plt.subplots()
         vmax = np.max(np.abs(fGrid))
         vmax = max(vmax, 0.0005)
-        cs = plt.contourf(xSeq, ySeq, fGrid.T, 
+        cs = plt.contourf(xSeq, ySeq, fGrid.T,
                           cmap = plt.get_cmap("RdBu"),
                          norm = mpl.colors.Normalize(vmin=-vmax, vmax=vmax))
         fig.colorbar(cs, ax=ax, shrink=0.9)
-        
+
 def wass1dim(data1, data2, numBins = 200):
-    ''' Compare two one-dimensional arrays by the 
+    ''' Compare two one-dimensional arrays by the
     Wasserstein metric (https://en.wikipedia.org/wiki/Wasserstein_metric).
     The input data should have outliers removed.
-    
+
     Parameters
     ----------
         data1, data2: two one-dimensional arrays to compare.
         numBins: the number of bins.
-        
+
     Outputs
     -------
         result: the computed Wasserstein metric.
-        
+
     '''
     numBins = 200 ## number of bins
     upper = np.max( (data1.max(), data2.max() ) )
@@ -185,9 +185,9 @@ def wass1dim(data1, data2, numBins = 200):
     density2, _ = np.histogram(data2, density = False, bins = xbins)
     density1 = density1 / np.sum(density1)
     density2 = density2 / np.sum(density2)
-    
+
     # pairwise distance matrix between bins
-    distMat = distance_matrix(xbins[1:].reshape(numBins,1), 
+    distMat = distance_matrix(xbins[1:].reshape(numBins,1),
                               xbins[1:].reshape(numBins,1))
     M = distMat
     T = ot.emd(density1, density2, M) # optimal transport matrix
@@ -196,25 +196,25 @@ def wass1dim(data1, data2, numBins = 200):
 
 
 def CompareDensity(data1, data2):
-    ''' Compare two multi-dimensional arrays by the 
+    ''' Compare two multi-dimensional arrays by the
     Wasserstein metric (https://en.wikipedia.org/wiki/Wasserstein_metric).
     The input data should have outliers removed before applying this function.
-    The multidimensional input data is projected onto multiple directions. 
-    The Wasserstein metric is computed on each projected result. 
-    This function returns the averaged metrics and its standard error. 
-    
+    The multidimensional input data is projected onto multiple directions.
+    The Wasserstein metric is computed on each projected result.
+    This function returns the averaged metrics and its standard error.
+
     Parameters
     ----------
-        data1: the first multi-dimensional dataset. Each row is 
-                an observation. Each column is a covariate. 
+        data1: the first multi-dimensional dataset. Each row is
+                an observation. Each column is a covariate.
         data2: the second multi-dimensional dataset.
         numBins: the number of bins.
         K: the number of trial random projections.
-        
+
     Outputs
     -------
         mu, sigma: the average discrepancy measure and its standard error.
-        
+
     '''
     K = 40 #4000
     result = np.zeros(K)
@@ -238,9 +238,9 @@ class CheckColors(BaseValidationTest):
         self.kwargs = kwargs
         self.test_name = kwargs.get('test_name', 'CheckColors')
         self.mag_fields_to_check = kwargs['mag_fields_to_check']
-        self.redshift_cut = kwargs['redshift_cut']  
-        self.validation_catalog = kwargs['validation_catalog'] 
-        self.redshift_cut_val = kwargs['redshift_cut_val'] 
+        self.redshift_cut = kwargs['redshift_cut']
+        self.validation_catalog = kwargs['validation_catalog']
+        self.redshift_cut_val = kwargs['redshift_cut_val']
         self.mag_fields_val = kwargs['mag_fields_val']
         self.path_val = kwargs['path_val']
         self.truncate_cat_name = kwargs.get('truncate_cat_name', False)
@@ -251,22 +251,124 @@ class CheckColors(BaseValidationTest):
         if len(kwargs['xcolor']) != 2 or len(kwargs['ycolor']) != 2:
             print('Warning: color string is longer than 2 characters. Only first and second bands will be used.')
 
-        self.xcolor = kwargs['xcolor'] 
+        self.xcolor = kwargs['xcolor']
         self.ycolor = kwargs['ycolor']
         self.bands = set(kwargs['xcolor'] + kwargs['ycolor'])
-        self.bands_val = kwargs['bands_val']   
-        
+        self.bands_val = kwargs['bands_val']
+
         self.zlo = kwargs['zlo']
         self.zhi = kwargs['zhi']
         self.zbins = kwargs['zbins']
-        
+
         self.magcut = kwargs['magcut']
         self.magcut_band = kwargs['magcut_band']
-        
-        self.levels = kwargs['levels'] 
-        
+
+        self.levels = kwargs['levels']
+
         self.kernel_iterations = kwargs['kernel_iterations']
-        
+
+    def update_catval_for_mag_field(self, catalog_instance, mag_field, camlist, catval, datamag_val, filter_this):
+        for cam in camlist:
+            if cam in mag_field:
+                filter_this = cam
+
+        ### Color transformation
+        color_trans = None
+        color_trans_name = None
+        if self.validation_catalog == 'DEEP2' and filter_this != 'lsst' and filter_this != 'cfht':
+            color_trans_name = '{}2cfht'.format(filter_this)  #not sure this is right
+        elif self.validation_catalog == 'DEEP2' and filter_this == 'lsst':
+            color_trans_name = 'cfht2lsst'
+        elif self.validation_catalog == 'SDSS' and filter_this == 'des':
+            color_trans_name = 'des2sdss' #not sure this is right
+        elif self.validation_catalog == 'SDSS' and filter_this == 'lsst':
+            color_trans_name = 'sdss2lsst'
+        if color_trans_name:
+            color_trans = color_transformation[color_trans_name]
+
+        filter_title = r'\mathrm{{{}}}'.format(filter_this.upper())
+
+        if color_trans:
+            #print('Transforming from %s to %s\n' % (self.validation_catalog,filter_this))
+            datamag_val_transformed = {}
+            for band in self.bands_val:
+                try:
+                    datamag_val_transformed[band] = ne.evaluate(color_trans[band], local_dict=datamag_val, global_dict={})
+                except KeyError:
+                    continue
+
+            filter_title = (r'{}\rightarrow\mathrm{{{}}}'.format(filter_title, self.validation_catalog)
+                        if datamag_val_transformed else filter_title)
+            datamag_val_transformed['redshift'] = catval[self.redshift_cut_val] #to avoid confusion between z and redshift
+            catval = datamag_val_transformed
+            del datamag_val_transformed
+            del datamag_val
+        else:
+            datamag_val['redshift'] = catval[self.redshift_cut_val]
+            catval = datamag_val
+            del datamag_val
+
+        return catval
+
+    def plot_hexbin_plot_for_catalog(self, xcolor, ycolor, xcolor_val, ycolor_val,
+                                     i, zlo, zhi, catalog_name, mag_field, output_dir,
+                                     xmin=-1.0, xmax=1.5, ymin=-0.5, ymax=3.0):
+        ### plot hexbin plot for catalog
+        fig, ax = plt.subplots()
+        hb = ax.hexbin(xcolor, ycolor, gridsize=(100), cmap='GnBu', mincnt=1, bins='log')
+        cb = fig.colorbar(hb, ax=ax)
+        cb.set_label(catalog_name)
+
+        hrange = [[xmin, xmax], [ymin, ymax]]
+        counts, xbins, ybins = np.histogram2d(xcolor_val, ycolor_val, range=hrange, bins=[30, 30])
+        print(xbins, ybins)
+        cntr1 = ax.contour(counts.transpose(), extent=[xmin, xmax, ymin, ymax],
+                           colors='black', linestyles='solid', levels=self.levels)
+        ax.clabel(cntr1, inline=True, fmt='%1.1f', fontsize=10)
+        h1, _ = cntr1.legend_elements()
+
+        ### CompareDensity block (Wasserstein metric)
+        simdata = np.column_stack([xcolor, ycolor])
+        valdata = np.column_stack([xcolor_val, ycolor_val])
+        cd = CompareDensity(simdata, valdata)
+        print('Compare density with Wasserstein metric', cd)
+
+        ### kernel comparison block
+        obj = kernelCompare(simdata, valdata)
+        MMD, pValue = obj.compute(iterations=self.kernel_iterations)
+        print("MMD statistics is {}".format(MMD))
+        print("The p-value of the test is {}".format(pValue))
+        if self.truncate_color_labels:
+            ax.set_xlabel('${} - {}$'.format(self.xcolor[0], self.xcolor[1]))
+            ax.set_ylabel('${} - {}$'.format(self.ycolor[0], self.ycolor[1]))
+        else:
+            ax.set_xlabel('{} - {}'.format(mag_field.format(self.xcolor[0]), mag_field.format(self.xcolor[1])))
+            ax.set_ylabel('{} - {}'.format(mag_field.format(self.ycolor[0]), mag_field.format(self.ycolor[1])))
+        if self.truncate_z_label:
+            title = '${:.2} < z < {:.2}$'.format(zlo, zhi)
+        else:
+            title = "{} = {:.2} - {:.2}".format(self.redshift_cut, zlo, zhi)
+
+        ax.text(0.05, 0.95, title, transform=ax.transAxes,
+                verticalalignment='top', color='black', fontsize='small')
+        title1 = "Compare metric {:.4} +- {:.4}".format(cd[0],cd[1])
+        title2 = "Kernel comparison MMD {:.4}".format(MMD)
+        title3 = "p-value = {:.3}".format(pValue)
+        ax.text(0.05, 0.85, title1, transform=ax.transAxes,
+                verticalalignment='top', color='black', fontsize='small')
+        ax.text(0.05, 0.80, title2, transform=ax.transAxes,
+                verticalalignment='top', color='black', fontsize='small')
+        ax.text(0.05, 0.75, title3, transform=ax.transAxes,
+                verticalalignment='top', color='black', fontsize='small')
+        #ax.set_title('{} vs {}'.format(catalog_name, self.validation_catalog))
+
+        plt.legend([h1[0]], [self.validation_catalog], loc=4)
+        fig.tight_layout()
+        plot_basename = '{}_{}_{}_{}.png'.format(self.xcolor, self.ycolor, str(i), mag_field.replace('_{}_', '_'))
+        fig.savefig(os.path.join(output_dir, plot_basename))
+        plt.close(fig)
+
+
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
         has_results = False
         redshift_bins = np.linspace(self.zlo, self.zhi, num=self.zbins+1)
@@ -274,137 +376,50 @@ class CheckColors(BaseValidationTest):
         catval = Table.read(cat_path)
         labels_val = {band: self.mag_fields_val.format(band) for band in self.bands_val}
         datamag_val = {k: catval[v] for k, v in labels_val.items()}
-        camlist = ['lsst','des','cfht','sdss']
+        camlist = ['lsst', 'des', 'cfht', 'sdss']
         filter_this = None
-        
+
         # plot on both this plot and any summary plots
         if self.truncate_cat_name:
             catalog_name = re.split('_', catalog_name)[0]
-        
+
         for mag_field in self.mag_fields_to_check:
-            for cam in camlist:
-                if cam in mag_field:
-                    filter_this = cam
+            catval = self.update_catval_for_mag_field(mag_field, camlist, catval, datamag_val, filter_this)
 
             quantity_list = [mag_field.format(band) for band in self.bands]
             quantity_list.append(self.redshift_cut)
 
             if not catalog_instance.has_quantities(quantity_list):
-                print('Catalog is missing a quantity from',quantity_list)
+                print('Catalog is missing a quantity from', quantity_list)
                 continue
+
             dataall = catalog_instance.get_quantities(quantity_list)
-            #labels = {band: mag_field.format(band) for band in self.bands}
-            #datamag = {k: dataall[v] for k, v in labels.items()}
 
-            ### Color transformation
-            color_trans = None
-            color_trans_name = None
-            if self.validation_catalog == 'DEEP2' and filter_this != 'lsst' and filter_this != 'cfht':
-                color_trans_name = '{}2cfht'.format(filter_this) #not sure this is right
-            elif self.validation_catalog == 'DEEP2' and filter_this == 'lsst':
-                color_trans_name = 'cfht2lsst'
-            elif self.validation_catalog == 'SDSS' and filter_this == 'des':
-                color_trans_name = 'des2sdss' #not sure this is right
-            elif self.validation_catalog == 'SDSS' and filter_this == 'lsst':
-                color_trans_name = 'sdss2lsst'
-            if color_trans_name:
-                color_trans = color_transformation[color_trans_name]
+            magx0 = dataall[mag_field.format(self.xcolor[0])]
+            magx1 = dataall[mag_field.format(self.xcolor[1])]
+            magy0 = dataall[mag_field.format(self.ycolor[0])]
+            magy1 = dataall[mag_field.format(self.xcolor[1])]
+            xcolor = np.array(magx0 - magx1)[mask]
+            ycolor = np.array(magy0 - magy1)[mask]
+            xcolor_val = np.array(catval['{}'.format(self.xcolor[0])] - catval['{}'.format(self.xcolor[1])])
+            ycolor_val = np.array(catval['{}'.format(self.ycolor[0])] - catval['{}'.format(self.ycolor[1])])
 
-            filter_title = r'\mathrm{{{}}}'.format(filter_this.upper())
-
-            if color_trans:
-                #print('Transforming from %s to %s\n' % (self.validation_catalog,filter_this))
-                datamag_val_transformed = {}
-                for band in self.bands_val:
-                    try:
-                        datamag_val_transformed[band] = ne.evaluate(color_trans[band], local_dict=datamag_val, global_dict={})
-                    except KeyError:
-                        continue
-
-                filter_title = (r'{}\rightarrow\mathrm{{{}}}'.format(filter_title, self.validation_catalog)
-                            if datamag_val_transformed else filter_title)
-                datamag_val_transformed['redshift'] = catval[self.redshift_cut_val] #to avoid confusion between z and redshift
-                catval = datamag_val_transformed
-                del datamag_val_transformed
-                del datamag_val
-            else:
-                datamag_val['redshift'] = catval[self.redshift_cut_val]
-                catval = datamag_val
-                del datamag_val
-            
-            for i,zlo in enumerate(redshift_bins):
+#            for i, zlo in enumerate(redshift_bins[:-1]):
+            for i, zlo in enumerate(redshift_bins):
+                get_xycolor_val_for_bin(datall, i, zlo, zhi)
                 if i == len(redshift_bins)-1:
                     continue
                 zhi = redshift_bins[i+1]
-                mask = (dataall[self.redshift_cut] > zlo) & (dataall[self.redshift_cut] < zhi) & (dataall[mag_field.format(self.magcut_band)] < self.magcut)
-                mask_val = (catval['redshift'] > zlo) & (catval['redshift'] < zhi) & (catval[self.magcut_band] < self.magcut)
-                try:
-                    xcolor = np.array(dataall[mag_field.format(self.xcolor[0])][mask] - dataall[mag_field.format(self.xcolor[1])][mask])
-                    ycolor = np.array(dataall[mag_field.format(self.ycolor[0])][mask] - dataall[mag_field.format(self.ycolor[1])][mask])
-                    xcolor_val = np.array(catval['{}'.format(self.xcolor[0])][mask_val] - catval['{}'.format(self.xcolor[1])][mask_val])
-                    ycolor_val = np.array(catval['{}'.format(self.ycolor[0])][mask_val] - catval['{}'.format(self.ycolor[1])][mask_val])
-                except KeyError:
-                    print('Key not found')
-                    sys.exit()
+                this_bin = (dataall[self.redshift_cut] > zlo) \
+                  & (dataall[self.redshift_cut] < zhi) \
+                  & (dataall[mag_field.format(self.magcut_band)] < self.magcut)
+                this_bin_val = (catval['redshift'] > zlo) & (catval['redshift'] < zhi) & (catval[self.magcut_band] < self.magcut)
                 has_results = True
 
-                ### plot hexbin plot for catalog
-                fig, ax = plt.subplots()
-                hb = ax.hexbin(xcolor, ycolor, gridsize=(100), cmap='GnBu', mincnt=1, bins='log')
-                cb = fig.colorbar(hb, ax=ax)
-                cb.set_label(catalog_name)
-                # plot contour plot for validation
-                xmin = -1.0
-                xmax = 1.5
-                ymin = -0.5
-                ymax = 3.0
-
-                hrange = [[xmin,xmax],[ymin,ymax]]
-                counts,xbins,ybins = np.histogram2d(xcolor_val,ycolor_val,range=hrange,bins=[30,30]) 
-                print(xbins,ybins)
-                cntr1 = ax.contour(counts.transpose(), extent=[xmin,xmax,ymin,ymax],
-                                   colors='black',linestyles='solid',levels=self.levels)
-                ax.clabel(cntr1, inline=True, fmt='%1.1f', fontsize=10)                
-                h1,_ = cntr1.legend_elements()
-                
-                ### CompareDensity block (Wasserstein metric)
-                simdata = np.column_stack([xcolor,ycolor])
-                valdata = np.column_stack([xcolor_val,ycolor_val])
-                cd = CompareDensity(simdata,valdata)
-                print('Compare density with Wasserstein metric',cd) 
-                
-                ### kernel comparison block
-                obj = kernelCompare(simdata, valdata)
-                MMD, pValue = obj.compute(iterations=self.kernel_iterations)
-                print("MMD statistics is {}".format(MMD))
-                print("The p-value of the test is {}".format(pValue))
-                if self.truncate_color_labels:
-                    ax.set_xlabel('${} - {}$'.format(self.xcolor[0], self.xcolor[1]))
-                    ax.set_ylabel('${} - {}$'.format(self.ycolor[0], self.ycolor[1]))
-                else:
-                    ax.set_xlabel('{} - {}'.format(mag_field.format(self.xcolor[0]), mag_field.format(self.xcolor[1])))
-                    ax.set_ylabel('{} - {}'.format(mag_field.format(self.ycolor[0]), mag_field.format(self.ycolor[1])))
-                if self.truncate_z_label:
-                    title = '${:.2} < z < {:.2}$'.format(zlo, zhi)
-                else:
-                    title = "{} = {:.2} - {:.2}".format(self.redshift_cut, zlo, zhi)
-                ax.text(0.05, 0.95, title, transform=ax.transAxes, 
-                        verticalalignment='top', color='black', fontsize='small')
-                title1 = "Compare metric {:.4} +- {:.4}".format(cd[0],cd[1])
-                title2 = "Kernel comparison MMD {:.4}".format(MMD)
-                title3 = "p-value = {:.3}".format(pValue)
-                ax.text(0.05, 0.85, title1, transform=ax.transAxes, 
-                        verticalalignment='top', color='black', fontsize='small')
-                ax.text(0.05, 0.80, title2, transform=ax.transAxes, 
-                        verticalalignment='top', color='black', fontsize='small')
-                ax.text(0.05, 0.75, title3, transform=ax.transAxes, 
-                        verticalalignment='top', color='black', fontsize='small')
-                #ax.set_title('{} vs {}'.format(catalog_name, self.validation_catalog))
-
-                plt.legend([h1[0]], [self.validation_catalog], loc=4)
-                fig.tight_layout()
-                fig.savefig(os.path.join(output_dir, '{}_{}_{}_{}.png'.format(self.xcolor,               self.ycolor,str(i),mag_field.replace('_{}_', '_'))))
-                plt.close(fig)
+                plot_hexbin_plot_for_catalog(self,
+                                             xcolor[this_bin], ycolor[this_bin],
+                                             xcolor_val[this_bin_val], ycolor_val[this_bin_val],
+                                             i, zlo, zhi, catalog_name, mag_field, output_dir)
 
         if not has_results:
             return TestResult(skipped=True)
