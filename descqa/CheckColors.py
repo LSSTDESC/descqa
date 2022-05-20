@@ -410,7 +410,6 @@ class CheckColors(BaseValidationTest):
                     continue
                 zhi = redshift_bins[i+1]
 
-                self.get_xycolor_val_for_bin(dataall, i, zlo, zhi)
                 this_bin = (dataall[self.redshift_cut] > zlo) & (dataall[self.redshift_cut] < zhi) \
                     & (dataall[mag_field.format(self.magcut_band)] < self.magcut)
                 this_bin_val = (catval['redshift'] > zlo) & (catval['redshift'] < zhi) \
