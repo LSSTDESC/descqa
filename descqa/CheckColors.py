@@ -267,7 +267,7 @@ class CheckColors(BaseValidationTest):
 
         self.kernel_iterations = kwargs['kernel_iterations']
 
-    def update_catval_for_mag_field(self, catalog_instance, mag_field, camlist, catval, datamag_val, filter_this):
+    def update_catval_for_mag_field(self, mag_field, camlist, catval, datamag_val, filter_this):
         for cam in camlist:
             if cam in mag_field:
                 filter_this = cam
@@ -399,24 +399,25 @@ class CheckColors(BaseValidationTest):
             magx1 = dataall[mag_field.format(self.xcolor[1])]
             magy0 = dataall[mag_field.format(self.ycolor[0])]
             magy1 = dataall[mag_field.format(self.xcolor[1])]
-            xcolor = np.array(magx0 - magx1)[mask]
-            ycolor = np.array(magy0 - magy1)[mask]
+            xcolor = np.array(magx0 - magx1)
+            ycolor = np.array(magy0 - magy1)
             xcolor_val = np.array(catval['{}'.format(self.xcolor[0])] - catval['{}'.format(self.xcolor[1])])
             ycolor_val = np.array(catval['{}'.format(self.ycolor[0])] - catval['{}'.format(self.ycolor[1])])
 
 #            for i, zlo in enumerate(redshift_bins[:-1]):
             for i, zlo in enumerate(redshift_bins):
-                get_xycolor_val_for_bin(datall, i, zlo, zhi)
                 if i == len(redshift_bins)-1:
                     continue
                 zhi = redshift_bins[i+1]
-                this_bin = (dataall[self.redshift_cut] > zlo) \
-                  & (dataall[self.redshift_cut] < zhi) \
+
+                self.get_xycolor_val_for_bin(dataall, i, zlo, zhi)
+                this_bin = (dataall[self.redshift_cut] > zlo) & (dataall[self.redshift_cut] < zhi) \
                   & (dataall[mag_field.format(self.magcut_band)] < self.magcut)
-                this_bin_val = (catval['redshift'] > zlo) & (catval['redshift'] < zhi) & (catval[self.magcut_band] < self.magcut)
+                this_bin_val = (catval['redshift'] > zlo) & (catval['redshift'] < zhi) \
+                  & (catval[self.magcut_band] < self.magcut)
                 has_results = True
 
-                plot_hexbin_plot_for_catalog(self,
+                self.plot_hexbin_plot_for_catalog(self,
                                              xcolor[this_bin], ycolor[this_bin],
                                              xcolor_val[this_bin_val], ycolor_val[this_bin_val],
                                              i, zlo, zhi, catalog_name, mag_field, output_dir)
