@@ -86,16 +86,27 @@ class SkyArea(BaseValidationTest):
     """
     def __init__(self, **kwargs): #pylint: disable=W0231
         self.nside = kwargs.get('nside', 64)
+        self.ra_col = kwargs.get('ra_col', 'ra_true')
+        self.dec_col = kwargs.get('dec_col', 'dec_true')
         assert hp.isnsideok(self.nside), '`nside` value {} not correct'.format(self.nside)
 
+    def calc_healpix_set(self, catalog_instance, nside, ra_col, dec_col):
+        """
+        Calculating the healpixel for all of the data is the data I/O intensive step.
+        so we separate out this here into its own function.
+        """
+        pixels = set()
+        for d in catalog_instance.get_quantities([ra_col, dec_col], return_iterator=True):
+            pixels.update(hp.ang2pix(nside, d[ra_col], d[dec_col], lonlat=True))
 
-    def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
-        if not catalog_instance.has_quantities(['ra_true', 'dec_true']):
+        return pixels
+
+    def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir,
+                              output_plotname='skymap.png'):
+        if not catalog_instance.has_quantities([self.ra_col, self.dec_col]):
             return TestResult(skipped=True)
 
-        pixels = set()
-        for d in catalog_instance.get_quantities(['ra_true', 'dec_true'], return_iterator=True):
-            pixels.update(hp.ang2pix(self.nside, d['ra_true'], d['dec_true'], lonlat=True))
+        pixels = self.calc_healpix_set(catalog_instance, self.nside, self.ra_col, self.dec_col)
 
         frac = len(pixels) / hp.nside2npix(self.nside)
         skyarea = frac * np.rad2deg(np.rad2deg(4.0*np.pi))
@@ -105,6 +116,6 @@ class SkyArea(BaseValidationTest):
         hp_map[list(pixels)] = 0
 
         hp.mollview(hp_map, title=catalog_name, coord='C', cbar=None)
-        plt.savefig(os.path.join(output_dir, 'skymap.png'))
+        plt.savefig(os.path.join(output_dir, output_plotname))
         plt.close()
         return TestResult(inspect_only=True, summary='approx. {:.7g} sq. deg.'.format(skyarea))
