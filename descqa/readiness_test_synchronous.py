@@ -37,18 +37,18 @@ def check_uniqueness(x, mask=None):
         return check_uniqueness(x[mask])
 
 
-def find_outlier(x):
+def find_outlier(x,percentile_max):
     """
     return a bool array indicating outliers or not in *x*
     """
     # note: percentile calculation should be robust to outliers so doesn't need the full sample. This speeds the calculation up a lot. There is a chance of repeated values but for large datasets this is not significant. 
-    if len(x)>100000:
-        x_small = np.random.choice(x,size=10000)
+    if len(x)>percentile_max:
+        x_small = np.random.choice(x,size=percentile_max)
         l, m, h = np.percentile(x_small, norm.cdf([-1, 0, 1])*100)
     else:
         l, m, h = np.percentile(x_small, norm.cdf([-1, 0, 1])*100)
     d = (h-l) * 0.5
-    return (x > (m + d*3)) | (x < (m - d*3))
+    return np.sum((x > (m + d*3)) | (x < (m - d*3)))
 
 
 def calc_frac(x, func, total=None):
@@ -59,12 +59,12 @@ def calc_frac(x, func, total=None):
     return np.count_nonzero(func(x)) / total
 
 
-def calc_median(x):
+def calc_median(x,percentile_max):
     """
     calculate the median of sample, using sub-set for large datasets
     """
-    if len(x)>100000:
-        x_small = np.random.choice(x,size=10000)
+    if len(x)>percentile_max:
+        x_small = np.random.choice(x,size=percentile_max)
         return np.median(x_small)
     else:
         return np.median(x)
@@ -135,6 +135,7 @@ class CheckQuantities(BaseValidationTest):
         self.title_size = kwargs.get('title_size', 'small')
         self.font_size	= kwargs.get('font_size', 12)
         self.legend_size = kwargs.get('legend_size', 'x-small')
+        self.percentile_max = kwargs.get('percentile_max')
         
         if not any((
                 self.quantities_to_check,
@@ -208,7 +209,7 @@ class CheckQuantities(BaseValidationTest):
         return '<span {1}>{0}</span>'.format(results, 'class="fail"' if failed else '')
 
     def generate_summary(self, output_dir, aggregated=False):
-        if aggreated:
+        if aggregated:
             if not self.enable_aggregated_summary:
                 return
             header = self._aggregated_header
@@ -286,13 +287,12 @@ class CheckQuantities(BaseValidationTest):
                 self.record_result('Found no matching quantity for filtering on {}'.format(fq), failed=True)
                 continue
 
-        print(filters, filter_labels)
         lgnd_loc_dflt ='best'
-        import time 
 
 
         quantity_tot =[]
         label_tot=[]
+        kind_tot =[]
         plots_tot=[]
         for i, checks in enumerate(self.quantities_to_check):
             # total list of quantities 
@@ -318,42 +318,35 @@ class CheckQuantities(BaseValidationTest):
                 quantity_group_label = re.sub('_+', '_', re.sub(r'\W+', '_', quantity_pattern)).strip('_')
             plot_filename = 'p{:02d}_{}.png'.format(i, quantity_group_label)
             label_tot.append(quantity_group_label)
+            kind_tot.append(checks['kind'])
             plots_tot.append(plot_filename)
 
 
         quantities_this_new=[]
         for q in quantity_tot:
-            print(q)
             if len(q)>1:
                 for j in q:
                     quantities_this_new.append(j)
             else:
                 quantities_this_new.append(q[0])
         quantities_this_new = tuple(quantities_this_new)
-        print(quantities_this_new)
-        #quantities_this_new = np.array(quantities_this_new)
 
 
         if len(filters) > 0:
             catalog_data = catalog_instance.get_quantities(quantities_this_new,filters=filters,return_iterator=False, rank=rank, size=size)
         else:
             catalog_data = catalog_instance.get_quantities(quantities_this_new,return_iterator=False, rank=rank, size=size)
-        a = time.time()
 
+
+        idx_q = 0 
         for quantities_this in quantity_tot:
             fig = None; ax=None;
             if rank==0:
                 fig, ax = plt.subplots()
             has_plot = False
+            kind = kind_tot[idx_q]
 
-            #option 1
-            
-            #quantities_this_new = np.array(list(quantities_this))
-            #if len(filters) > 0:
-            #    catalog_data = catalog_instance.get_quantities(quantities_this_new,filters=filters,return_iterator=False, rank=rank, size=size)
-            #else: 
-            #    catalog_data = catalog_instance.get_quantities(quantities_this_new,return_iterator=False, rank=rank, size=size)
-            #a = time.time()
+
 
             for quantity in quantities_this:
                 #PL : only currently works for doubles 
@@ -367,42 +360,27 @@ class CheckQuantities(BaseValidationTest):
                     recvbuf = None
                 displs = np.array([sum(counts[:p]) for p in range(size)])
                 comm.Gatherv([value,MPI.DOUBLE], [recvbuf,counts,displs,MPI.DOUBLE],root=0)
-
-                #if rank==0:
-                #    comm.Gatherv([value,MPI.DOUBLE], [recvbuf,counts,displs,MPI.DOUBLE],root=0)
-                #else:
-                #    comm.Gatherv([value,MPI.DOUBLE], [recvbuf,counts,displs,MPI.DOUBLE],root=0)
                 need_plot = False
 
                 if rank==0:
-                    print(time.time()-a,'read data',rank)
-
-                a = time.time()
-                
-                if rank==0:
                     galaxy_count = len(recvbuf)
-                    self.record_result('Found {} entries in this catalog.'.format(galaxy_count))
-                    print(time.time()-a,'found entries')
-                    a = time.time()
+                    if idx_q==0:
+                        self.record_result('Found {} entries in this catalog.'.format(galaxy_count))
                     if checks.get('log'):
                         value = np.log10(recvbuf)
                     else:
                         value = recvbuf
                     value_finite = value[np.isfinite(value)]
-                    print(time.time()-a,'value_finite')
-                    a = time.time()
                     result_this_quantity = {}
                     for s, func in self.stats.items():
-                        print(s)
-                        b = time.time()
-                        # PL: note there are many faster ways to do this
                         if s == 'f_outlier':
-                            s_value_rank = calc_frac(value_finite, func)
+                            s_value = find_outlier(value,self.percentile_max)
+                        elif s == 'median':
+                            s_value = calc_median(value,self.percentile_max) 
                         elif s.startswith('f_'):
                             s_value = calc_frac(value, func)
                         else:
                             s_value = func(value_finite)
-                        print(time.time()-b,s)
                         val_min = np.min(value_finite)
                         val_max = np.max(value_finite)
                     
@@ -428,7 +406,6 @@ class CheckQuantities(BaseValidationTest):
                         )
                         if flag:
                             need_plot = True
-                    print(time.time()-a,'stats checks')
                     quantity_hashes[tuple(result_this_quantity[s][0] for s in self.stats)].add(quantity)
                     self.record_result(
                         result_this_quantity,
@@ -437,13 +414,12 @@ class CheckQuantities(BaseValidationTest):
                     )
                     
                     if (need_plot or self.always_show_plot) and rank==0:
-                    #    # PL: Changed - need to change this to a numpy function and then communicate it before plotting
                         ax.hist(value_finite, bins=100, histtype='step', fill=False, label=quantity, **next(self.prop_cycle))
                         has_plot = True
-                    b = time.time()
             
+
                 if has_plot and (rank==0):
-                    ax.set_xlabel(('log ' if checks.get('log') else '') + quantity_group_label, size=self.font_size)
+                    ax.set_xlabel(('log ' if checks.get('log') else '') + label_tot[idx_q], size=self.font_size)
                     ax.yaxis.set_ticklabels([])
                     if checks.get('plot_min') is not None: #zero values fail otherwise
                        ax.set_xlim(left=checks.get('plot_min'))
@@ -451,8 +427,10 @@ class CheckQuantities(BaseValidationTest):
                         ax.set_xlim(right=checks.get('plot_max'))
                     ax.set_title('{} {}'.format(catalog_name, version), fontsize=self.title_size)
                     fig.tight_layout()
-                    fig.savefig(os.path.join(output_dir, plot_filename))
+                    fig.savefig(os.path.join(output_dir, plots_tot[idx_q]))
                     plt.close(fig)
+            idx_q += 1
+
 
         if rank==0:
             self.generate_summary(output_dir)
