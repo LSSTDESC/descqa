@@ -1,0 +1,16 @@
+subclass_name: srv_colortest.CheckFluxes
+description: 'Check flags'
+included_by_default: true
+
+ra: 'ra'
+dec: 'dec'
+cmodel: 'cModelFlux_'
+cmodel_err: 'cModelFluxErr_'
+cmodel_flag: 'cModelFlux_flag_'
+
+bands:
+  - bands: ['r','u','i']
+
+catalog_filters:
+
+  - filters: ['mag_r < 28', 'mag_i < 28']

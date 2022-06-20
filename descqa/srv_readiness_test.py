@@ -331,7 +331,6 @@ class CheckQuantities(BaseValidationTest):
                 quantities_this_new.append(q[0])
         quantities_this_new = tuple(quantities_this_new)
         print(quantities_this_new)
-        #quantities_this_new = np.array(quantities_this_new)
 
 
         if len(filters) > 0:
@@ -346,14 +345,6 @@ class CheckQuantities(BaseValidationTest):
                 fig, ax = plt.subplots()
             has_plot = False
 
-            #option 1
-            
-            #quantities_this_new = np.array(list(quantities_this))
-            #if len(filters) > 0:
-            #    catalog_data = catalog_instance.get_quantities(quantities_this_new,filters=filters,return_iterator=False, rank=rank, size=size)
-            #else: 
-            #    catalog_data = catalog_instance.get_quantities(quantities_this_new,return_iterator=False, rank=rank, size=size)
-            #a = time.time()
 
             for quantity in quantities_this:
                 #PL : only currently works for doubles 
@@ -367,11 +358,6 @@ class CheckQuantities(BaseValidationTest):
                     recvbuf = None
                 displs = np.array([sum(counts[:p]) for p in range(size)])
                 comm.Gatherv([value,MPI.DOUBLE], [recvbuf,counts,displs,MPI.DOUBLE],root=0)
-
-                #if rank==0:
-                #    comm.Gatherv([value,MPI.DOUBLE], [recvbuf,counts,displs,MPI.DOUBLE],root=0)
-                #else:
-                #    comm.Gatherv([value,MPI.DOUBLE], [recvbuf,counts,displs,MPI.DOUBLE],root=0)
                 need_plot = False
 
                 if rank==0:

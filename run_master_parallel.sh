@@ -17,6 +17,7 @@ OUTPUTDIR="/global/cfs/cdirs/lsst/groups/CS/descqa/run/v2"
 set -o noglob
 
 # run master.py
+OMP_NUM_THREADS=1
 CMD="import descqarun; descqarun.main()"
 mpirun -n 8 $PYTHON -E -c "$CMD" "$OUTPUTDIR" "$@"
 #export OMP_NUM_THREADS=8

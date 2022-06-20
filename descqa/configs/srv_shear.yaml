@@ -1,0 +1,15 @@
+subclass_name: srv_s1s2.CheckShear
+description: 'Check shear values'
+included_by_default: true
+
+ra: 'ra'
+dec: 'dec'
+Ixx: 'Ixx_pixel'
+Iyy: 'Iyy_pixel'
+Ixy: 'Ixy_pixel'
+IxxPSF: 'IxxPSF_pixel'
+IyyPSF: 'IyyPSF_pixel'
+IxyPSF: 'IxyPSF_pixel'
+
+catalog_filters:
+  - filters: ['mag_r < 28', 'mag_i < 28','good','extendedness>0']
