@@ -19,7 +19,7 @@ set -o noglob
 # run master.py
 OMP_NUM_THREADS=1
 CMD="import descqarun; descqarun.main()"
-mpirun -n 8 $PYTHON -E -c "$CMD" "$OUTPUTDIR" "$@"
+mpirun -n 1 $PYTHON -E -c "$CMD" "$OUTPUTDIR" "$@"
 #export OMP_NUM_THREADS=8
 
 # end subshell

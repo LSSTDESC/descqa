@@ -1,5 +1,5 @@
-subclass_name: srv_s1s2.CheckShear
-description: 'Check shear values'
+subclass_name: srv_s1s2.CheckEllipticity
+description: 'Check ellipticity values and moments'
 included_by_default: true
 
 ra: 'ra'
@@ -10,6 +10,8 @@ Ixy: 'Ixy_pixel'
 IxxPSF: 'IxxPSF_pixel'
 IyyPSF: 'IyyPSF_pixel'
 IxyPSF: 'IxyPSF_pixel'
+psf_fwhm: 'psf_fwhm'
+bands: ['r','i','g','z','y']
 
 catalog_filters:
-  - filters: ['mag_r < 28', 'mag_i < 28','good','extendedness>0']
+  - filters: ['good','extendedness==1']
