@@ -1,0 +1,12 @@
+subclass_name: output_halos.CheckQuantities
+description: 'Read in and output halo quantities for Moritz.'
+included_by_default: false
+
+quantities_to_output:
+
+  - quantities: ['ra_true', 'dec_true', 'redshift', 'redshift_true', 'halo_mass', 'mag_r_lsst']
+
+catalog_filters:
+
+  - filters: ['is_central', 'halo_mass > 1.e11', 'redshift_true < 3', 'mag_r_lsst < 28']
+
