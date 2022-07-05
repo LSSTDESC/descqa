@@ -1,0 +1,5 @@
+subclass_name: ExternalTest.ExternalTest
+description: 'Placeholder for a test being executed through an external pipeline, for test framework logging purposes'
+is_pseudo: true
+
+report_directory: './'
