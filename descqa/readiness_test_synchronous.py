@@ -376,7 +376,7 @@ class CheckQuantities(BaseValidationTest):
                         if s == 'f_outlier':
                             s_value = find_outlier(value,self.percentile_max)
                         elif s == 'median':
-                            s_value = calc_median(value,self.percentile_max) 
+                            s_value = calc_median(value[np.logical_not(np.isnan(value))],self.percentile_max)
                         elif s.startswith('f_'):
                             s_value = calc_frac(value, func)
                         else:
