@@ -17,13 +17,17 @@ class ExternalTest(BaseValidationTest):
         self.report_directory = kwargs.get('report_directory', './')
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
-
+        test_result = None
         # copy plots and text files to output directory
-        cmd = 'cp {}/*.txt {}/.'.format(self.report_directory,output_dir)
-        os.system(cmd)
-        cmd = 'cp {}/*.png {}/.'.format(self.report_directory,output_dir)
-        os.system(cmd)
-        return None
+        try:
+            cmd = 'cp {}/*.txt {}/.'.format(self.report_directory,output_dir)
+            os.system(cmd)
+            cmd = 'cp {}/*.png {}/.'.format(self.report_directory,output_dir)
+            os.system(cmd)
+            test_result = True
+        except:
+            test_result = False
+        return TestResult(passed=test_result,score=0)
 
     def conclude_test(self, output_dir):
         return None
