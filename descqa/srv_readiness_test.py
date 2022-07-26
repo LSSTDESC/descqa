@@ -295,9 +295,9 @@ class CheckQuantities(BaseValidationTest):
         quantity_tot =[]
         label_tot=[]
         plots_tot=[]
+        checks_tot = []
         for i, checks in enumerate(self.quantities_to_check):
             # total list of quantities 
-
             quantity_patterns = checks['quantities'] if isinstance(checks['quantities'], (tuple, list)) else [checks['quantities']]
 
             quantities_this = set()
@@ -320,6 +320,7 @@ class CheckQuantities(BaseValidationTest):
             plot_filename = 'p{:02d}_{}.png'.format(i, quantity_group_label)
             label_tot.append(quantity_group_label)
             plots_tot.append(plot_filename)
+            checks_tot.append(checks)
 
 
         quantities_this_new=[]
