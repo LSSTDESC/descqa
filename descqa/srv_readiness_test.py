@@ -37,13 +37,13 @@ def check_uniqueness(x, mask=None):
         return check_uniqueness(x[mask])
 
 
-def find_outlier(x):
+def find_outlier(x, subset_size):
     """
     return a bool array indicating outliers or not in *x*
     """
     # note: percentile calculation should be robust to outliers so doesn't need the full sample. This speeds the calculation up a lot. There is a chance of repeated values but for large datasets this is not significant. 
-    if len(x)>100000:
-        x_small = np.random.choice(x,size=10000)
+    if len(x)> subset_size:
+        x_small = np.random.choice(x,size=subset_size)
         l, m, h = np.percentile(x_small, norm.cdf([-1, 0, 1])*100)
     else:
         l, m, h = np.percentile(x_small, norm.cdf([-1, 0, 1])*100)
@@ -59,12 +59,12 @@ def calc_frac(x, func, total=None):
     return np.count_nonzero(func(x)) / total
 
 
-def calc_median(x):
+def calc_median(x, subset_size):
     """
     calculate the median of sample, using sub-set for large datasets
     """
-    if len(x)>100000:
-        x_small = np.random.choice(x,size=10000)
+    if len(x)>subset_size:
+        x_small = np.random.choice(x,size=subset_size)
         return np.median(x_small)
     else:
         return np.median(x)
@@ -115,7 +115,7 @@ class CheckQuantities(BaseValidationTest):
     stats = OrderedDict((
         ('min', np.min),
         ('max', np.max),
-        ('median', np.median),
+        ('median', calc_median),
         ('mean', np.mean),
         ('std', np.std),
         ('f_inf', np.isinf),
@@ -135,6 +135,7 @@ class CheckQuantities(BaseValidationTest):
         self.title_size = kwargs.get('title_size', 'small')
         self.font_size	= kwargs.get('font_size', 12)
         self.legend_size = kwargs.get('legend_size', 'x-small')
+        self.subset_size = kwargs.get('subset_size',100000)
         
         if not any((
                 self.quantities_to_check,
@@ -347,17 +348,10 @@ class CheckQuantities(BaseValidationTest):
 
 
             for quantity in quantities_this:
-                #PL : only currently works for doubles 
+                #PL : only currently works for doubles and booleans right now 
                 value = catalog_data[quantity] 
-                count = len(value)
-                tot_num = comm.reduce(count)
-                counts = comm.allgather(count)
-                if rank==0:
-                    recvbuf = np.zeros(tot_num)
-                else:
-                    recvbuf = None
-                displs = np.array([sum(counts[:p]) for p in range(size)])
-                comm.Gatherv([value,MPI.DOUBLE], [recvbuf,counts,displs,MPI.DOUBLE],root=0)
+                recvbuf = send_to_master(value, 'double')
+
                 need_plot = False
 
                 if rank==0:
@@ -383,7 +377,9 @@ class CheckQuantities(BaseValidationTest):
                         b = time.time()
                         # PL: note there are many faster ways to do this
                         if s == 'f_outlier':
-                            s_value_rank = calc_frac(value_finite, func)
+                            s_value_rank = calc_frac(value_finite, self.subset_size)
+                        elif s == 'median':
+                            s_value_rank = calc_median(value_finite, self.subset_size)
                         elif s.startswith('f_'):
                             s_value = calc_frac(value, func)
                         else:

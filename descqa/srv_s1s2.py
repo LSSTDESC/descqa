@@ -257,15 +257,7 @@ class CheckEllipticity(BaseValidationTest):
             recvbuf={}
             for quantity in quantities:
                 data_rank[quantity] = catalog_data[quantity]
-                count = len(data_rank[quantity])
-                tot_num = comm.reduce(count)
-                counts = comm.allgather(count)
-                if rank==0:
-                    recvbuf[quantity] = np.zeros(tot_num)
-                else:
-                    recvbuf[quantity] = None
-                displs = np.array([sum(counts[:p]) for p in range(size)])
-                comm.Gatherv([data_rank[quantity],MPI.DOUBLE], [recvbuf[quantity], counts, displs, MPI.DOUBLE],root=0)
+                recvbuf[quantity] = send_to_master(data_rank[quantity],'double')
 
             e1,e2 = shear_from_moments(recvbuf[self.Ixx+'_'+band],recvbuf[self.Ixy+'_'+band],recvbuf[self.Iyy+'_'+band])
             e1psf,e2psf = shear_from_moments(recvbuf[self.IxxPSF+'_'+band],recvbuf[self.IxyPSF+'_'+band],recvbuf[self.IyyPSF+'_'+band])
