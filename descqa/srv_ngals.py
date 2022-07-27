@@ -207,7 +207,6 @@ class CheckNgals(BaseValidationTest):
             flag_val = checks['flag_val']
             quantities_this = flags_tot[i]
 
-            #        for quantities_this in flags_tot:
             fig = None; ax=None;
             if rank==0:
                 fig, ax = plt.subplots()
@@ -227,7 +226,9 @@ class CheckNgals(BaseValidationTest):
 
                     xbins = np.linspace(np.min(recvbuf_ra),np.max(recvbuf_ra),50)
                     ybins = np.linspace(np.min(recvbuf_dec),np.max(recvbuf_dec),50)
-                    area = (xbins[1]-xbins[0])*(ybins[1]-ybins[0])*(60.**2)*(np.sin(ybins[1]*np.pi/180.)-np.sin(ybins[0]*np.pi/180.)) 
+                    area = (xbins[1]-xbins[0])*(60.**2)*(np.sin(ybins[1]*np.pi/180.)-np.sin(ybins[0]*np.pi/180.))*180./np.pi 
+                    # area in square arcminutes
+
 
                     im = ax.hist2d(recvbuf_ra[recvbuf],recvbuf_dec[recvbuf], bins=(xbins,ybins),weights = 1./area*np.ones(len(recvbuf_ra[recvbuf])))
 
