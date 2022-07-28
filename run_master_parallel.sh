@@ -4,7 +4,7 @@
 (
 
 # make sure all commands are executed
-set -e
+#set -e
 
 # activate DESC python environment
 source /global/common/software/lsst/common/miniconda/setup_current_python.sh ""
