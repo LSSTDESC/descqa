@@ -264,7 +264,15 @@ class CheckQuantities(BaseValidationTest):
             catalog_name = catalog_name.partition("_")[0]
         version = getattr(catalog_instance, 'version', '') if not self.no_version else ''
 
+
+        filters=[]
+        for i, filt in enumerate(self.catalog_filters):
+            filters.append(filt['filters'])
+        filters = list(chain(*filters))
+
+
         # check filters
+        """
         filters = []
         filter_labels = ''
         for d in self.catalog_filters:
@@ -288,6 +296,7 @@ class CheckQuantities(BaseValidationTest):
                 continue
 
         print(filters, filter_labels)
+        """
         lgnd_loc_dflt ='best'
         import time 
 

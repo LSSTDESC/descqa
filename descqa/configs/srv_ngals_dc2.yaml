@@ -1,0 +1,25 @@
+subclass_name: srv_ngals.CheckNgals
+description: 'Check flags'
+included_by_default: true
+ra: 'ra'
+dec: 'dec'
+
+flags_to_check:
+
+  - quantities: 'cModelFlux_flag_i'
+    kind: 'bool'
+    flag_val: True
+
+  - quantities: 'cModelFlux_flag_r'
+    kind: 'bool'
+    flag_val: True
+
+  - quantities: 'good'
+    kind: 'bool'
+    flag_val: False
+
+
+catalog_filters:
+
+  - filters: ['mag_r < 25']
+

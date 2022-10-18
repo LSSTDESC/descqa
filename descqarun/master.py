@@ -451,7 +451,6 @@ def main():
         sys.path = [make_path_absolute(path) for path in args.paths] + sys.path
 
 
-
     global GCRCatalogs #pylint: disable=W0601
     sys.path.insert(0,'/global/homes/p/plarsen/plarsen_git/gcr-catalogs')
     GCRCatalogs = importlib.import_module('GCRCatalogs')
