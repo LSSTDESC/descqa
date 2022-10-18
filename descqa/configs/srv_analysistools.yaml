@@ -1,12 +1,12 @@
-subclass_name: srv_colortest2.CheckFluxes
-description: 'Check fluxes and magnitudes'
+subclass_name: srv_analysistools.TestMetric
+description: 'test install of analysis tools'
 included_by_default: true
 
 ra: 'ra'
 dec: 'dec'
-models: ['calib','cModel','gaap']
+models: ['cModel']
 
-bands: ['r','u','i','g','z','y']
+bands: ['r','i']
 
 catalog_filters:
 

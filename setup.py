@@ -27,7 +27,7 @@ setup(
         'Programming Language :: Python :: 3.6',
     ],
     keywords='DESCQA',
-    packages=['descqa'] # PL note: need to update version requirement for GCR
+    packages=['descqa'],
     install_requires=['future', 'pyyaml', 'jinja2'],
     extras_require={
         'full': ['numpy', 'scipy', 'matplotlib', 'GCR>=0.8.7', 'healpy', 'treecorr', 'camb', 'scikit-learn', 'pandas', 'astropy', 'POT', 'numba',

@@ -40,6 +40,8 @@ def send_to_master(value, kind):
             recvbuf = np.zeros(tot_num)
         elif kind=='bool':
             recvbuf = np.zeros(tot_num)!=0.0
+        elif kind=='int':
+            recvbuf = np.zeros(tot_num).astype(int)
         else:
             raise NotImplementedError
     else:

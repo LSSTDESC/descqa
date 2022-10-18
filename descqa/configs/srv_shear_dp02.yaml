@@ -14,4 +14,4 @@ psf_fwhm: 'psf_fwhm'
 bands: ['r','i','g','z','y']
 
 catalog_filters:
-  - filters: ['good','extendedness==1']
+  - filters: ['extendedness==1','detect_isPrimary']

@@ -1,0 +1,75 @@
+subclass_name: readiness_test_synchronous.CheckQuantities
+description: 'Plot histograms of listed quantities and perform range, finiteness, mean and standard deviation checks.'
+included_by_default: true
+
+subset_size: 1000000
+
+quantities_to_check:
+  - quantities: ['ra', 'dec']
+    kind: 'double'
+    label: 'deg'
+    min: [-2.51, -2.49]
+    max: [2.49, 2.51]
+    f_inf: 0
+    f_nan: 0
+    f_outlier: 0
+
+  - quantities: ['cModelFlux_i','cModelFlux_r','cModelFlux_g']
+    kind: 'double'
+    label: 'cModelFlux (i,r,g)'
+    min: [-0.2, 0]
+    max: [0, 0.2]
+    f_inf: 0
+    log: true
+    f_nan: 0
+    f_outlier: 0
+
+  - quantities: ['psFlux_i', 'psFlux_r','psFlux_g']
+    kind: 'double'
+    label: 'psFlux (i,r,g)'
+    min: [0, 0.001]
+    max: [179.99, 180]
+    f_inf: 0
+    log: true
+    f_nan: 0
+    f_outlier: 0
+
+  - quantities: ['mag_i','mag_r','mag_g']
+    kind: 'double'
+    label: 'mag_x (x=i,r,g)'
+    min: [null, 15]
+    max: [25, null]
+    f_inf: 0
+    f_nan: 0
+    f_outlier: 0
+
+  - quantities: 'blendedness'
+    kind: 'double'
+    label: 'blendedness'
+    min: [NULL, NULL]
+    max: [NULL, NULL]
+    f_inf: 0
+    f_nan: 0
+    f_outlier: 0
+
+
+  - quantities: 'psf_fwhm_r'
+    kind: 'double'
+    label: 'FWHM of r band'
+    min: [NULL, NULL]
+    max: [NULL, NULL]
+    f_inf: 0
+    f_nan: 0
+    f_outlier: 0
+
+
+  - quantities: ['shear_1', 'shear_2']
+    kind: 'double'
+    label: 'shear_12'
+    min: [null, -0.1]
+    max: [0.1, null] 
+    f_inf: 0
+    f_nan: 0
+    f_outlier: 0
+
+

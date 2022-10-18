@@ -2,7 +2,7 @@ from __future__ import print_function, division, unicode_literals, absolute_impo
 import os
 import re
 import fnmatch
-from itertools import cycle
+from itertools import cycle, chain
 from collections import defaultdict, OrderedDict
 import numpy as np
 import numexpr as ne
@@ -48,6 +48,7 @@ def find_outlier(x,subset_size):
         x_small = np.random.choice(x,size=subset_size)
         l, m, h = np.percentile(x_small, norm.cdf([-1, 0, 1])*100)
     else:
+        x_small = x
         l, m, h = np.percentile(x_small, norm.cdf([-1, 0, 1])*100)
     d = (h-l) * 0.5
     return np.sum((x > (m + d*3)) | (x < (m - d*3)))
@@ -155,9 +156,9 @@ class CheckQuantities(BaseValidationTest):
         if not all(d.get('quantity') for d in self.uniqueness_to_check):
             raise ValueError('yaml file error: `quantity` must exist for each item in `uniqueness_to_check`')
 
-        if self.catalog_filters:
-            if not all(d.get('quantity') for d in self.catalog_filters):
-                raise ValueError('yaml file error: `quantity` must exist for each item in `catalog_filters`')
+        #if self.catalog_filters:
+        #    if not all(d.get('quantity') for d in self.catalog_filters):
+        #        raise ValueError('yaml file error: `quantity` must exist for each item in `catalog_filters`')
 
             if not all(d.get('min') for d in self.catalog_filters) or all(d.get('max') for d in self.catalog_filters):
                 raise ValueError('yaml file error: `min` or `max` must exist for each item in `catalog_filters`')
@@ -266,8 +267,14 @@ class CheckQuantities(BaseValidationTest):
             catalog_name = catalog_name.partition("_")[0]
         version = getattr(catalog_instance, 'version', '') if not self.no_version else ''
 
+        filters=[]
+        for i, filt in enumerate(self.catalog_filters):
+            filters.append(filt['filters'])
+        filters = list(chain(*filters))
+
+        print(filters)
         # check filters
-        filters = []
+        """filters = []
         filter_labels = ''
         for d in self.catalog_filters:
             if rank==0:
@@ -288,7 +295,7 @@ class CheckQuantities(BaseValidationTest):
             else:
                 self.record_result('Found no matching quantity for filtering on {}'.format(fq), failed=True)
                 continue
-
+        """
         lgnd_loc_dflt ='best'
 
 

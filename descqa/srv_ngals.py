@@ -206,23 +206,38 @@ class CheckNgals(BaseValidationTest):
             kind = checks['kind']
             flag_val = checks['flag_val']
             quantities_this = flags_tot[i]
+            print(quantities_this)
 
-            fig = None; ax=None;
-            if rank==0:
-                fig, ax = plt.subplots()
+            fig = None; axs=None;
+            #if rank==0:
+                #fig, ax = plt.subplots()
 
             for quantity in quantities_this:
                 #PL : only currently works for doubles and booleans
+                if quantity=='good' and rank==0:
+                    print('good',catalog_data[quantity][0])
+                    print(flag_val)
                 value = catalog_data[quantity] 
                 recvbuf = send_to_master(value, kind)
-
+                if quantity=='good' and rank==0:
+                    print('good2',recvbuf[0])
+                
                 if rank==0:
-                    flag_val=False
+                    fig, axs = plt.subplots(1,2,sharey=True,figsize=(12,5))
+                    if flag_val==False or flag_val=='False':
+                        flag_val=False
+                    else:
+                        flag_val=True
+
                     result_this_quantity = {}
                     galaxy_count = len(recvbuf)
-                    recvbuf = np.logical_not(recvbuf)
+                    if flag_val:
+                        recvbuf = np.logical_not(recvbuf)
 
-                    frac = np.sum(recvbuf)/(len(recvbuf)+0.0)*100.
+                    if np.sum(recvbuf)>0:
+                        frac = np.sum(recvbuf)/len(recvbuf)*100.
+                    else: 
+                        frac = 0.
 
                     xbins = np.linspace(np.min(recvbuf_ra),np.max(recvbuf_ra),50)
                     ybins = np.linspace(np.min(recvbuf_dec),np.max(recvbuf_dec),50)
@@ -230,7 +245,9 @@ class CheckNgals(BaseValidationTest):
                     # area in square arcminutes
 
 
-                    im = ax.hist2d(recvbuf_ra[recvbuf],recvbuf_dec[recvbuf], bins=(xbins,ybins),weights = 1./area*np.ones(len(recvbuf_ra[recvbuf])))
+                    im = axs[0].hist2d(recvbuf_ra[recvbuf],recvbuf_dec[recvbuf], bins=(xbins,ybins),weights = 1./area*np.ones(len(recvbuf_ra[recvbuf])))
+                    im2 = axs[1].hist2d(recvbuf_ra[np.logical_not(recvbuf)],recvbuf_dec[np.logical_not(recvbuf)], bins=(xbins,ybins),weights = 1./area*np.ones(len(recvbuf_ra[np.logical_not(recvbuf)])))
+
 
                     result_this_quantity[0] = (
                              np.mean(im[0][im[0]>0]),
@@ -253,9 +270,16 @@ class CheckNgals(BaseValidationTest):
                        ax.set_xlim(left=checks.get('plot_min'))
                     if checks.get('plot_max') is not None:
                         ax.set_xlim(right=checks.get('plot_max'))
-                    ax.set_title('{} {}'.format(catalog_name, version), fontsize=self.title_size)
-                    fig.colorbar(im[3], ax=ax)
-                    ax.colorbar=True
+                    axs[0].set_title('True: {} on {}'.format(quantity, catalog_name), fontsize=self.title_size)
+                    axs[1].set_title('False: {} on {}'.format(quantity, catalog_name), fontsize=self.title_size)
+                    fig.colorbar(im2[3], ax=axs[1])
+                    axs[1].colorbar=True
+                    fig.colorbar(im[3], ax = axs[0])
+                    axs[0].colorbar=True
+                    axs[0].set_ylabel('dec (degrees)')
+                    axs[0].set_xlabel('RA (degrees)')
+                    axs[1].set_ylabel('dec (degrees)')
+                    axs[1].set_xlabel('RA (degrees)')
                     fig.tight_layout()
                     fig.savefig(os.path.join(output_dir, plots_tot[i]))
                     plt.close(fig)

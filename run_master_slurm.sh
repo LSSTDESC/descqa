@@ -10,7 +10,7 @@ echo "--------- Running SRUN script ---------"
 (
 
 # make sure all commands are executed
-set -e
+#set -e
 
 # activate DESC python environment
 source /global/common/software/lsst/common/miniconda/setup_current_python.sh ""
@@ -24,8 +24,8 @@ set -o noglob
 
 # run master.py
 CMD="import descqarun; descqarun.main()"
-export OMP_NUM_THREADS=1
-mpiexec -hostfile $HOSTFILE -n 64 $PYTHON -E -c "$CMD" "$OUTPUTDIR" "$@"
+export OMP_NUM_THREADS=8
+mpiexec -hostfile $HOSTFILE -n 8 $PYTHON -E -c "$CMD" "$OUTPUTDIR" "$@"
 
 # end subshell
 )
