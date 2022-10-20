@@ -6,11 +6,11 @@ ra: 'ra'
 dec: 'dec'
 models: ['cModel']
 
-bands: ['r','i']
+bands: ['r','i','g']
 
 catalog_filters:
 
-  - filters: ['detect_isIsolated','extendedness==0','detect_isPrimary']
+  - filters: ['detect_isIsolated','detect_isPrimary']
 
 mag_lim: 26
 snr_lim: 5.0

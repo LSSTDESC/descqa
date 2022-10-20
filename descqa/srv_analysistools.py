@@ -19,8 +19,10 @@ from .parallel import send_to_master
 import lsst.analysis.tools
 
 from lsst.analysis.tools.actions.scalar import MedianAction
-from lsst.analysis.tools.actions.vector import SnSelector, MagColumnNanoJansky
+from lsst.analysis.tools.actions.vector import SnSelector, MagColumnNanoJansky, MagDiff
 from lsst.analysis.tools.interfaces import AnalysisMetric
+from lsst.analysis.tools.analysisPlots.analysisPlots import WPerpPSFPlot
+from lsst.analysis.tools.tasks.base import _StandinPlotInfo
 
 comm = MPI.COMM_WORLD
 size = comm.Get_size()
@@ -30,34 +32,32 @@ rank = comm.Get_rank()
 __all__ = ['TestMetric','DemoMetric']
 
 
-class DemoMetric(AnalysisMetric):
-    def setDefaults(self):
-        super().setDefaults()
+def reconfigured_wperp():
+    ''''''
+    # call base class
+    wPerpAction = WPerpPSFPlot()
 
-        # select on high signal to noise obejcts
-        # add in a signal to noise selector
-        
-        
-        #self.prep.selectors.snSelector = SnSelector()
+    # reconfigure
+    wPerpAction.process.buildActions.x = MagDiff()
+    wPerpAction.process.buildActions.x.col1 = "g_psfFlux"
+    wPerpAction.process.buildActions.x.col2 = "r_psfFlux"
+    wPerpAction.process.buildActions.x.returnMillimags=False
+    wPerpAction.process.buildActions.y = MagDiff()
+    wPerpAction.process.buildActions.y.col1 = "r_psfFlux"
+    wPerpAction.process.buildActions.y.col2 = "i_psfFlux"
+    wPerpAction.process.buildActions.y.returnMillimags=False
+    wPerpAction.prep.selectors.snSelector.threshold = 100
+ 
+    # populate prep
+    wPerpAction.populatePrepFromProcess()
 
-        # set what key the selector should use when deciding SNR
-        #self.prep.selectors.snSelector.fluxType = "psfFlux"
+    # get list of quantities
+    key_list_full = list(wPerpAction.prep.getInputSchema())
+    key_list = [key_list_full[i][0] for i in range(len(key_list_full))]
 
-        # select what threshold value is desireable for the selector
-        #self.prep.selectors.snSelector.threshold = 100
+    return wPerpAction, key_list
 
-        # the final name in the qualification is used as a key to insert
-        # the calculation into KeyedData
-        self.process.buildActions.mags = MagColumnNanoJansky(vectorKey="psfFlux")
-        self.process.calculateActions.medianValueName = MedianAction(vectorKey="mags")
 
-        # tell the metic what the units are for the quantity
-        #self.produce.units = {"medianValueName": "Jy"}
-        self.produce.units = {"medianValueName": "mag"}
-
-        # Rename the quanity prior to producing the Metric
-        # (useful for resuable workflows that set a name toward the end of computation)
-        self.produce.newNames = {"medianValueName": "DemoMetric"}
 
 
 class TestMetric(BaseValidationTest):
@@ -168,6 +168,8 @@ class TestMetric(BaseValidationTest):
             self._individual_header.clear()
             self._individual_table.clear()
 
+
+
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
 
         all_quantities = sorted(map(str, catalog_instance.list_all_quantities(True)))
@@ -202,16 +204,26 @@ class TestMetric(BaseValidationTest):
 
         # doing everything together this time so we can combine flags
         quantities = []
-        print(type(self.models))
-        print(type(self.bands))
-        print(self.models[0])
-        for band in self.bands:
-            print(band)
-            for model in self.models:
-                print(model)
-                quantities.append(model+'Flux_'+band); quantities.append(model+'FluxErr_'+band); quantities.append(model+'Flux_flag_'+band) #fluxes
-                #quantities.append('mag_'+band + '_'+model); quantities.append('magerr_'+band+'_'+model); quantities.append('snr_'+band+'_'+model); #mags
-        quantities = tuple(quantities)
+
+        # note: add quantity list and analysis tools version to output for reproducibility 
+        if rank==0:
+            wPerpAction, key_list = reconfigured_wperp()
+            self.wPerpAction = wPerpAction
+
+            quantities_new = []
+            for key in key_list:
+                if '{band}' in key:
+                    for band in self.bands:
+                        quantities_new.append(key.format(band=band))
+                else:
+                    quantities_new.append(key)
+            quantities_new = np.unique(quantities_new)
+            print(quantities_new)
+        else:
+            quantities_new = np.array([])
+        quantities_new = comm.bcast(quantities_new, root=0)
+
+        quantities = tuple(quantities_new)
         # note that snr is defined on flux directly and not on magnitudes
 
         # reading in the data 
@@ -227,7 +239,7 @@ class TestMetric(BaseValidationTest):
         for quantity in quantities:
             data_rank[quantity] = catalog_data[quantity]
             print(len(data_rank[quantity]))
-            if 'flag' in quantity:
+            if ('flag' in quantity) or ('Flag' in quantity) or ('detect' in quantity):
                 recvbuf[quantity] = send_to_master(data_rank[quantity],'bool')
             else:
                 recvbuf[quantity] = send_to_master(data_rank[quantity],'double')
@@ -237,21 +249,25 @@ class TestMetric(BaseValidationTest):
 
 
         if rank==0:
-            fluxes = recvbuf['cModelFlux_r']
-            fluxerr = recvbuf['cModelFluxErr_r']
-            data = {"psfFlux": fluxes, "psfFluxErr": fluxerr}
-            self.metric = DemoMetric()(data)['DemoMetric'].quantity.value
+
+            #wPerpAction, key_list = reconfigured_wperp()
+
+            stage1 = self.wPerpAction.prep(recvbuf)
+            stage2 = self.wPerpAction.process(stage1)
+
+            plot = self.wPerpAction.produce(stage2, plotInfo=_StandinPlotInfo())
+
+            plt.savefig(output_dir+"stellarLocusTest.png")
+            plt.close()
 
         if rank==0:
             self.generate_summary(output_dir)
         else: 
             self.current_failed_count=0
         
-
-     
+        self.metric=0
         self.current_failed_count = comm.bcast(self.current_failed_count, root=0)
         self.metric = comm.bcast(self.metric, root=0)
-        #self.current_failed_count = metric['DemoMetric'].quantity.value
 
         return TestResult(passed=(self.current_failed_count == 0), score=self.metric)
 
