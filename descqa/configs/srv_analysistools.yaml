@@ -1,4 +1,4 @@
-subclass_name: srv_analysistools.TestMetric
+subclass_name: srv_analysistools.analysisToolsMetric
 description: 'test install of analysis tools'
 included_by_default: true
 
@@ -6,7 +6,7 @@ ra: 'ra'
 dec: 'dec'
 models: ['cModel']
 
-bands: ['r','i','g']
+bands: ['i']
 
 catalog_filters:
 
