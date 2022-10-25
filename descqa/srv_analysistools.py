@@ -14,7 +14,7 @@ from .base import BaseValidationTest, TestResult
 from .plotting import plt
 from .parallel import send_to_master
 
-from .reconfig_at import shapeSizeFractional
+from .reconfig_at import *
 comm = MPI.COMM_WORLD
 size = comm.Get_size()
 rank = comm.Get_rank()
@@ -173,7 +173,7 @@ class analysisToolsMetric(BaseValidationTest):
 
         # note: add quantity list and analysis tools version to output for reproducibility 
         if rank==0:
-            test=shapeSizeFractional()
+            test=WPerpPSF()
             test.reconfigure(band=self.bands[0])
             self.test = test
 
@@ -218,13 +218,15 @@ class analysisToolsMetric(BaseValidationTest):
         if rank==0:
 
             # call validation test run method
-            test.run(recvbuf,output_dir, metric=True, plot=True)
-            for key in test.metric_values.keys():
-                print(test.metric_values[key])
+            run_metric=False
+            run_plot=True
+            test.run(recvbuf,output_dir, metric=run_metric, plot=run_plot)
+            if run_metric:
+                for key in test.metric_values.keys():
+                    print(test.metric_values[key])
 
-
-            for key in test.metric_values.keys():
-                self.record_result({key: [test.metric_values[key], 'pass']},key)
+                for key in test.metric_values.keys():
+                    self.record_result({key: [test.metric_values[key], 'pass']},key)
                 
 
         if rank==0:

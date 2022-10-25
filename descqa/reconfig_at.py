@@ -5,6 +5,7 @@ from __future__ import unicode_literals, division, print_function, absolute_impo
 import numpy as np
 
 from lsst.analysis.tools.tasks.base import _StandinPlotInfo
+from lsst.analysis.tools.actions.vector import SnSelector, MagColumnNanoJansky, MagDiff
 from lsst.analysis.tools.analysisPlots.analysisPlots import ( 
     WPerpPSFPlot, 
     ShapeSizeFractionalDiffScatterPlot,
@@ -12,6 +13,7 @@ from lsst.analysis.tools.analysisPlots.analysisPlots import (
     E2DiffScatterPlot,
 )
 from lsst.analysis.tools.analysisMetrics import ( 
+    WPerpPSFMetric,
     ShapeSizeFractionalMetric,
     E1DiffMetric,
     E2DiffMetric,
@@ -19,42 +21,32 @@ from lsst.analysis.tools.analysisMetrics import (
 from .plotting import plt
 
 
-__all__ = ["shapeSizeFractional"]
+__all__ = [
+    "shapeSizeFractional",
+    "E1Diff",
+    "E2Diff",
+    "WPerpPSF",
+    ]
 
-class shapeSizeFractional():
+class analysisToolsReconfigure():
     return_types=["plot","metric"] # add metric names? 
-    band="r"
+    band="default"
     metric={}
     plot={}
     key_list=[]
-    def reconfigure(self,band="r"):
-        ''' Call analysis tools shapesize and reconfigure for DP0.2'''
-        self.band=band
-        # call base class
-        shapesize = ShapeSizeFractionalMetric()
-        shapesize_plot = ShapeSizeFractionalDiffScatterPlot()
-        shapesize_plot.produce.addSummaryPlot = False
-        # config 
-        shapesize_plot.prep.selectors.snSelector.bands = self.band
+    plot_name="defaultName.png"
 
-        #shapesize_plot.prep.bands=['r']
-    
-        # populate prep
-        shapesize.populatePrepFromProcess()
-        shapesize_plot.populatePrepFromProcess()
-
-        # get list of quantities
-        key_list_full = list(shapesize.prep.getInputSchema())
-        key_list = [key_list_full[i][0] for i in range(len(key_list_full))]
-        key_list_full2 = list(shapesize_plot.prep.getInputSchema())
-        key_list2 = [key_list_full2[i][0] for i in range(len(key_list_full2))]
+    def get_keys(self):
+        key_list_metric = list(self.metric.prep.getInputSchema())
+        key_list = [key_list_metric[i][0] for i in range(len(key_list_metric))]
+        key_list_plot = list(self.plot.prep.getInputSchema())
+        key_list2 = [key_list_plot[i][0] for i in range(len(key_list_plot))]
         key_list.extend(key_list2)
-
-        self.metric=shapesize
-        self.plot=shapesize_plot
         self.key_list=key_list
 
+
     def run(self,data,output_dir,metric=True, plot=True):
+        # run analysis_tools metric and plot code 
         if metric:
             self.metric_values = self.metric(data,band=self.band)
             for key in self.metric_values.keys():
@@ -63,57 +55,119 @@ class shapeSizeFractional():
             stage1 = self.plot.prep(data,band=self.band)
             stage2 = self.plot.process(data,band=self.band)
             plot = self.plot.produce(stage2, plotInfo=_StandinPlotInfo(), band=self.band,skymap='DC2')
-            plt.savefig(output_dir+"shapesizeTest.png")
+            plt.savefig(output_dir+self.plot_name)
             plt.close()
-      
 
+class shapeSizeFractional(analysisToolsReconfigure):
+    "Reconfig class for shapeSizeFractional metric from analysis tools"
+    #def __init__(self):
+    metric=ShapeSizeFractionalMetric()
+    plot=ShapeSizeFractionalDiffScatterPlot()
+    plot_name="shapeSizeFractional.png"
+    def reconfigure(self,band="r"):
+        ''' Call analysis tools shapesize and reconfigure for DP0.2'''
+        self.band=band
 
-def reconfigured_E1Diff(band):
-    ''' Call analysis tools wperpPSFPlot and reconfigure for DP0.2'''
-    # call base class
-    e1diff = E1DiffMetric()
-    e1diff_plot = E1DiffScatterPlot()
-    e1diff_plot.produce.addSummaryPlot = False
-    # config 
-    e1diff_plot.prep.selectors.snSelector.bands = band
+        # custom config 
+        self.plot.produce.addSummaryPlot = False
+        self.plot.prep.selectors.snSelector.bands = self.band
+        
+    
+        # populate prep
+        self.metric.populatePrepFromProcess()
+        self.plot.populatePrepFromProcess()
 
-    #shapesize_plot.prep.bands=['r']
- 
-    # populate prep
-    e1diff.populatePrepFromProcess()
-    e1diff_plot.populatePrepFromProcess()
+        # get list of quantities
+        self.get_keys()
 
+        
+class E1Diff(analysisToolsReconfigure):
+    "Reconfig class for E1Diff metric from analysis tools"
+    #def __init__(self):
+    metric=E1DiffMetric()
+    plot=E1DiffScatterPlot()
+    plot_name="E1Diff.png"
+    def reconfigure(self,band="r"):
+        ''' Call analysis tools shapesize and reconfigure for DP0.2'''
+        self.band=band
 
-    # get list of quantities
-    key_list_full = list(e1diff.prep.getInputSchema())
-    key_list = [key_list_full[i][0] for i in range(len(key_list_full))]
-    key_list_full2 = list(e1diff_plot.prep.getInputSchema())
-    key_list2 = [key_list_full2[i][0] for i in range(len(key_list_full2))]
-    key_list.extend(key_list2)
+        # custom config 
+        self.plot.produce.addSummaryPlot = False
+        self.plot.prep.selectors.snSelector.bands = self.band
+        
+    
+        # populate prep
+        self.metric.populatePrepFromProcess()
+        self.plot.populatePrepFromProcess()
 
-    return e1diff, e1diff_plot, key_list
+        # get list of quantities
+        self.get_keys()
+        
 
-def reconfigured_E2Diff(band):
-    ''' Call analysis tools wperpPSFPlot and reconfigure for DP0.2'''
-    # call base class
-    e2diff = E2DiffMetric()
-    e2diff_plot = E2DiffScatterPlot()
-    e2diff_plot.produce.addSummaryPlot = False
-    # config 
-    e2diff_plot.prep.selectors.snSelector.bands = band
+class E2Diff(analysisToolsReconfigure):
+    "Reconfig class for E2diff metric from analysis tools"
+    metric=E1DiffMetric()
+    plot=E1DiffScatterPlot()
+    plot_name="E1Diff.png"
+    def reconfigure(self,band="r"):
+        ''' Call analysis tools shapesize and reconfigure for DP0.2'''
+        self.band=band
 
-    #shapesize_plot.prep.bands=['r']
- 
-    # populate prep
-    e2diff.populatePrepFromProcess()
-    e2diff_plot.populatePrepFromProcess()
+        # custom config 
+        self.plot.produce.addSummaryPlot = False
+        self.plot.prep.selectors.snSelector.bands = self.band
+        
+    
+        # populate prep
+        self.metric.populatePrepFromProcess()
+        self.plot.populatePrepFromProcess()
 
+        # get list of quantities
+        self.get_keys()
 
-    # get list of quantities
-    key_list_full = list(e2diff.prep.getInputSchema())
-    key_list = [key_list_full[i][0] for i in range(len(key_list_full))]
-    key_list_full2 = list(e2diff_plot.prep.getInputSchema())
-    key_list2 = [key_list_full2[i][0] for i in range(len(key_list_full2))]
-    key_list.extend(key_list2)
+class WPerpPSF(analysisToolsReconfigure):
+    """Reconfig class for WPerpPsf metric from analysis tools
+    of note we need to replace ExtinctionCorrectedMagDiff with MagDiff 
+    for DC2 data
 
-    return e2diff, e2diff_plot, key_list
+    Also make sure config.yaml contains bands: ['g','r','i']
+    """
+    metric=WPerpPSFMetric()
+    plot=WPerpPSFPlot()
+    plot_name="WPerpPSF.png"
+    def reconfigure(self,band="r"):
+        ''' Call analysis tools WPerpPSF and reconfigure for DP0.2'''
+        self.band=band
+
+        # custom config 
+        self.plot.prep.selectors.flagSelector.bands=["g","r","i"]
+        self.plot.prep.selectors.snSelector.bands=[self.band]
+        self.plot.prep.selectors.snSelector.fluxType="{band}_psfFlux"
+
+        self.plot.process.buildActions.x = MagDiff()
+        self.plot.process.buildActions.x.col1 = "g_psfFlux"
+        self.plot.process.buildActions.x.col2 = "r_psfFlux"
+        self.plot.process.buildActions.x.returnMillimags=False
+        self.plot.process.buildActions.y = MagDiff()
+        self.plot.process.buildActions.y.col1 = "r_psfFlux"
+        self.plot.process.buildActions.y.col2 = "i_psfFlux"
+        self.plot.process.buildActions.y.returnMillimags=False
+        
+        self.metric.prep.selectors.snSelector.bands=[self.band]
+        self.metric.prep.selectors.snSelector.fluxType="{band}_psfFlux"
+
+        self.metric.process.buildActions.x = MagDiff()
+        self.metric.process.buildActions.x.col1 = "g_psfFlux"
+        self.metric.process.buildActions.x.col2 = "r_psfFlux"
+        self.metric.process.buildActions.x.returnMillimags=False
+        self.metric.process.buildActions.y = MagDiff()
+        self.metric.process.buildActions.y.col1 = "r_psfFlux"
+        self.metric.process.buildActions.y.col2 = "i_psfFlux"
+        self.metric.process.buildActions.y.returnMillimags=False
+    
+        # populate prep
+        self.metric.populatePrepFromProcess()
+        self.plot.populatePrepFromProcess()
+
+        # get list of quantities
+        self.get_keys()

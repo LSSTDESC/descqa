@@ -6,7 +6,7 @@ ra: 'ra'
 dec: 'dec'
 models: ['cModel']
 
-bands: ['i']
+bands: ['g','r','i']
 
 catalog_filters:
 
