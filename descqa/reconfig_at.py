@@ -29,7 +29,8 @@ __all__ = [
     ]
 
 class analysisToolsReconfigure():
-    return_types=["plot","metric"] # add metric names? 
+    # base class to run analysisTools tests in the DESCQA framework
+    return_types=["plot","metric"] # in future could use this to only try to run plot/metric if they exist
     band="default"
     metric={}
     plot={}
@@ -37,6 +38,10 @@ class analysisToolsReconfigure():
     plot_name="defaultName.png"
 
     def get_keys(self):
+        """this task takes the tests after they have been configured and 
+        populatePrepFromProcess() has been run and gets a list of columns needed 
+        that is used for input to the generic-catalog-reader
+        """
         key_list_metric = list(self.metric.prep.getInputSchema())
         key_list = [key_list_metric[i][0] for i in range(len(key_list_metric))]
         key_list_plot = list(self.plot.prep.getInputSchema())
