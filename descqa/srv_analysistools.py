@@ -14,53 +14,19 @@ from .base import BaseValidationTest, TestResult
 from .plotting import plt
 from .parallel import send_to_master
 
-#import lsst
-#import lsst.analysis
-import lsst.analysis.tools
-
-from lsst.analysis.tools.actions.scalar import MedianAction
-from lsst.analysis.tools.actions.vector import SnSelector, MagColumnNanoJansky, MagDiff
-from lsst.analysis.tools.interfaces import AnalysisMetric
-from lsst.analysis.tools.analysisPlots.analysisPlots import WPerpPSFPlot
-from lsst.analysis.tools.tasks.base import _StandinPlotInfo
-
+from .reconfig_at import *
 comm = MPI.COMM_WORLD
 size = comm.Get_size()
 rank = comm.Get_rank()
 
 
-__all__ = ['TestMetric','DemoMetric']
-
-
-def reconfigured_wperp():
-    ''''''
-    # call base class
-    wPerpAction = WPerpPSFPlot()
-
-    # reconfigure
-    wPerpAction.process.buildActions.x = MagDiff()
-    wPerpAction.process.buildActions.x.col1 = "g_psfFlux"
-    wPerpAction.process.buildActions.x.col2 = "r_psfFlux"
-    wPerpAction.process.buildActions.x.returnMillimags=False
-    wPerpAction.process.buildActions.y = MagDiff()
-    wPerpAction.process.buildActions.y.col1 = "r_psfFlux"
-    wPerpAction.process.buildActions.y.col2 = "i_psfFlux"
-    wPerpAction.process.buildActions.y.returnMillimags=False
-    wPerpAction.prep.selectors.snSelector.threshold = 100
- 
-    # populate prep
-    wPerpAction.populatePrepFromProcess()
-
-    # get list of quantities
-    key_list_full = list(wPerpAction.prep.getInputSchema())
-    key_list = [key_list_full[i][0] for i in range(len(key_list_full))]
-
-    return wPerpAction, key_list
+__all__ = ['analysisToolsMetric']
 
 
 
 
-class TestMetric(BaseValidationTest):
+
+class analysisToolsMetric(BaseValidationTest):
     """
     Check flux values and magnitudes
     """
@@ -101,7 +67,7 @@ class TestMetric(BaseValidationTest):
         self._individual_header = list()
         self._individual_table = list()
 
-        super(TestMetric, self).__init__(**kwargs)
+        super(analysisToolsMetric, self).__init__(**kwargs)
 
     def record_result(self, results, quantity_name=None, more_info=None, failed=None, individual_only=False):
         if isinstance(results, dict):
@@ -207,11 +173,12 @@ class TestMetric(BaseValidationTest):
 
         # note: add quantity list and analysis tools version to output for reproducibility 
         if rank==0:
-            wPerpAction, key_list = reconfigured_wperp()
-            self.wPerpAction = wPerpAction
+            test=WPerpPSF()
+            test.reconfigure(band=self.bands[0])
+            self.test = test
 
             quantities_new = []
-            for key in key_list:
+            for key in self.test.key_list:
                 if '{band}' in key:
                     for band in self.bands:
                         quantities_new.append(key.format(band=band))
@@ -250,15 +217,17 @@ class TestMetric(BaseValidationTest):
 
         if rank==0:
 
-            #wPerpAction, key_list = reconfigured_wperp()
+            # call validation test run method
+            run_metric=False
+            run_plot=True
+            test.run(recvbuf,output_dir, metric=run_metric, plot=run_plot)
+            if run_metric:
+                for key in test.metric_values.keys():
+                    print(test.metric_values[key])
 
-            stage1 = self.wPerpAction.prep(recvbuf)
-            stage2 = self.wPerpAction.process(stage1)
-
-            plot = self.wPerpAction.produce(stage2, plotInfo=_StandinPlotInfo())
-
-            plt.savefig(output_dir+"stellarLocusTest.png")
-            plt.close()
+                for key in test.metric_values.keys():
+                    self.record_result({key: [test.metric_values[key], 'pass']},key)
+                
 
         if rank==0:
             self.generate_summary(output_dir)
