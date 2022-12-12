@@ -283,6 +283,7 @@ class CheckNgals(BaseValidationTest):
                     fig.tight_layout()
                     fig.savefig(os.path.join(output_dir, plots_tot[i]))
                     plt.close(fig)
+        # check ngals on a SNR cut for depth variation over range of field 
 
 
         if rank==0:

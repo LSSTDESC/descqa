@@ -42,7 +42,8 @@ class CheckFluxes(BaseValidationTest):
         self.bands = kwargs.get('bands')
         self.mag_lim = kwargs.get('mag_lim')
         self.snr_lim = kwargs.get('snr_lim',0)
-
+        self.aps = kwargs.get('aps')
+        self.ap_list = kwargs.get('ap_list')
 
         if not any((
                 self.catalog_filters,
@@ -96,110 +97,92 @@ class CheckFluxes(BaseValidationTest):
         return '<span {1}>{0}</span>'.format(results, 'class="fail"' if failed else '')
 
 
-    def plot_mag_perband(self, mags, output_dir):
-        ''' make per band and per model plots  '''
-        # make flags on all bands and with flags
-        masks = {}
-        for model in self.models:
-            mask_init = mags['mag_r_'+model]<=self.mag_lim
-            for band in self.bands:
-                mask_init = mask_init&(mags['mag_'+band+'_'+model]<=self.mag_lim)
-                #mask_init = mask_init&(mags[model+'Flux_flag_'+band]==False)
-                mask_init = mask_init&(mags['snr_'+band+'_'+model]>=self.snr_lim) 
-            masks[model] = mask_init
-     
+    def plot_snr_ap(self, fluxes, output_dir):
         for band in self.bands:
+            n_ap=[]
+            snr_ap=[]
+            for ap in self.aps:
+                mask_ap = (fluxes['gaapFlux_flag_'+ap+'_'+band]==0)&(fluxes['snr_'+ap+'_'+band+'_gaap']>=self.snr_lim)
+                snr = fluxes['snr_'+ap+'_'+band+'_gaap'][mask_ap]
+                n_ap.append(len(snr))
+                snr_ap.append(np.median(snr))
             plt.figure()
-            plt.title('mag_'+band)
-            for model in self.models:
-                mask_band = mags['mag_'+band+'_'+model]<self.mag_lim
-                mask_band = mask_band & (mags['snr_'+band+'_'+model]>=self.snr_lim)
-                mag_vals = mags['mag_'+band+'_'+model][mask_band]#[masks[model]]
-                plt.hist(mag_vals,bins=np.linspace(22,self.mag_lim,100),alpha=0.5,label=model)
+            plt.plot(self.ap_list,snr_ap,label='median SNR')
+            plt.xlabel('aperture')
+            mask_optimal = (fluxes['gaapFlux_flag_'+band]==0)&(fluxes['snr_'+band+'_gaap']>=self.snr_lim)
+            snr_optimal = fluxes['snr_'+band+'_gaap'][mask_optimal]
+            plt.plot(self.ap_list[-1],np.median(snr_optimal),'o',label='optimal aperture SNR')
             plt.legend()
-            plt.xlabel('mag_'+band)
-            plt.savefig(os.path.join(output_dir,'mag_'+band+'.png'))
+            plt.savefig(os.path.join(output_dir,'snr_ap_'+band+'.png'))
+            plt.close()
+
+            plt.figure()
+            plt.plot(self.ap_list,n_ap,label='number of galaxies detected above SNR=5')
+            plt.xlabel('aperture')
+            plt.plot(self.ap_list[-1],len(snr_optimal),'o',label='number at optimal aperture')
+            plt.legend()
+            plt.savefig(os.path.join(output_dir,'n_ap_'+band+'.png'))
             plt.close()
 
         return 
-    
+
+    def plot_gi_ap(self, fluxes, output_dir):
+
+        for ap in self.aps:
+            mask_ap = (fluxes['snr_'+ap+'_g_gaap']>=self.snr_lim)& (fluxes['snr_'+ap+'_i_gaap']>=self.snr_lim)&(fluxes['snr_g_gaap']>=self.snr_lim)&(fluxes['snr_i_gaap']>=self.snr_lim) # passes SNR lim in both
+            g_min_i = fluxes['mag_'+ap+'_g_gaap'][mask_ap] - fluxes['mag_'+ap+'_i_gaap'][mask_ap]
+            g_min_i_opt = fluxes['mag_g_gaap'][mask_ap] - fluxes['mag_i_gaap'][mask_ap]
+            plt.figure()
+            plt.hist2d(g_min_i_opt,g_min_i,bins=np.linspace(-1,3,100))
+            plt.xlabel('g_min_i optimal')
+            plt.ylabel('g_min_i ap '+ap)
+            plt.savefig(os.path.join(output_dir,'g_min_i'+ap+'.png'))
+            plt.close()
+
+        return 
+
+    def plot_ri_gr_ap(self, fluxes, output_dir):
+
+        for ap in self.aps:
+            mask_ap = (fluxes['snr_'+ap+'_g_gaap']>=self.snr_lim)&(fluxes['snr_'+ap+'_r_gaap']>=self.snr_lim)& (fluxes['snr_'+ap+'_i_gaap']>=self.snr_lim)&(fluxes['snr_g_gaap']>=self.snr_lim)&(fluxes['snr_i_gaap']>=self.snr_lim)&(fluxes['snr_r_gaap']>=self.snr_lim) # passes SNR lim in both
+            g_min_r = fluxes['mag_'+ap+'_g_gaap'][mask_ap] - fluxes['mag_'+ap+'_r_gaap'][mask_ap]
+            g_min_r_opt = fluxes['mag_g_gaap'][mask_ap] - fluxes['mag_r_gaap'][mask_ap]
+            r_min_i = fluxes['mag_'+ap+'_r_gaap'][mask_ap] - fluxes['mag_'+ap+'_i_gaap'][mask_ap]
+            r_min_i_opt = fluxes['mag_r_gaap'][mask_ap] - fluxes['mag_i_gaap'][mask_ap]
 
 
-    def plot_color_permodel(self,mags,output_dir):
-        ''' '''
+            plt.figure()
+            plt.hist2d(g_min_r,r_min_i,bins=np.linspace(-1,3,100))
+            plt.xlabel('g_min_r ap '+ap )
+            plt.ylabel('r_min_i ap '+ap)
+            plt.savefig(os.path.join(output_dir,'gmr_rmi_'+ap+'.png'))
+            plt.close()
 
-        # color plots for each model
         plt.figure()
-        for model in self.models:
-            mask_init = (mags['mag_r_'+model]<=self.mag_lim)&(mags['mag_g_'+model]<=self.mag_lim)
-            g_min_r = mags['mag_g_'+model][mask_init] - mags['mag_r_'+model][mask_init]
-            plt.hist(g_min_r, bins = np.linspace(-2,2,100),label=model, alpha=0.5)
-        plt.legend()
-        plt.xlabel('g_min_r')
-        plt.savefig(os.path.join(output_dir,'gmr.png'))
+        plt.hist2d(g_min_r_opt,r_min_i_opt,bins=np.linspace(-1,3,100))
+        plt.xlabel('g_min_r optimal ' )
+        plt.ylabel('r_min_i optimal ')
+        plt.savefig(os.path.join(output_dir,'gmr_rmi_opt.png'))
         plt.close()
 
-        # color-color plots
-        for model in self.models:
-            plt.figure()
-            mask_init = (mags['mag_r_'+model]<=self.mag_lim)&(mags['mag_g_'+model]<=self.mag_lim)
-            mask_init = (mags['mag_i_'+model]<=self.mag_lim)
-            g_min_r = mags['mag_g_'+model][mask_init] - mags['mag_r_'+model][mask_init]
-            r_min_i = mags['mag_r_'+model][mask_init] - mags['mag_i_'+model][mask_init]
-            plt.hist2d(g_min_r, r_min_i, bins = np.linspace(-0.5,1.5,100))
-            plt.title(model)
-            plt.xlabel('g_min_r')
-            plt.ylabel('r_min_i')
-            plt.savefig(os.path.join(output_dir,'gmr_rmini_'+model+'.png'))
-            plt.close()
 
-        # comparison plots for color
-        model1 = self.models[0]
-        mask1 = (mags['mag_r_'+model1]<=self.mag_lim)&(mags['mag_g_'+model1]<=self.mag_lim)
-        for model in self.models[1:]:
-            mask2 = (mags['mag_r_'+model]<=self.mag_lim)&(mags['mag_g_'+model]<=self.mag_lim)
-            mask_tot = mask1&mask2
-            g_min_r1 = mags['mag_g_'+model1][mask_tot] - mags['mag_r_'+model1][mask_tot]
-            g_min_r2 = mags['mag_g_'+model][mask_tot] - mags['mag_r_'+model][mask_tot]
-            plt.figure()
-            plt.scatter(g_min_r1,g_min_r2-g_min_r1,s=0.01)
-            a1,b1,c1 = binned_statistic(g_min_r1,g_min_r2-g_min_r1,bins= np.linspace(-0.5,1.5,100),statistic='median')
-            plt.plot((b1[1:]+b1[:-1])/2.,a1,'r--')
-            plt.plot((b1[1:]+b1[:-1])/2.,np.zeros_like(a1),'k')
-            plt.xlabel(model1)
-            plt.ylabel(model+'-'+model1)
-            plt.xlim([-0.5,1.5])
-            plt.ylim([-2,2])
-            plt.savefig(os.path.join(output_dir,'gmr'+model1+'_'+model+'.png'))
-            plt.close()
-
-        # comparison plots for mag 
-        model1 = self.models[0]
-        for band in self.bands:
-            mask1 = (mags['mag_'+band+'_'+model1]<=self.mag_lim)&(mags['snr_'+band+'_'+model1]>=self.snr_lim)
-            #mask_init = mask_init&(mags[model+'Flux_flag_'+band]==False)
-            for model in self.models[1:]:
-                mask2 = (mags['mag_'+band+'_'+model]<=self.mag_lim)&(mags['snr_'+band+'_'+model]>=self.snr_lim)
-                mask_tot = mask1&mask2
-                g_min_r1 = mags['mag_'+band+'_'+model1][mask_tot]
-                g_min_r2 = mags['mag_'+band+'_'+model][mask_tot]
-                plt.figure()
-                plt.scatter(g_min_r1,g_min_r2-g_min_r1,s=0.01)
-                a1,b1,c1 = binned_statistic(g_min_r1,g_min_r2-g_min_r1,bins= np.linspace(18,self.mag_lim,100),statistic='median')
-                plt.plot((b1[1:]+b1[:-1])/2.,a1,'r--')
-                plt.plot((b1[1:]+b1[:-1])/2.,np.zeros_like(a1),'k')
-                plt.ylim([-1.5,1.5])
-                plt.xlim([18,self.mag_lim])
-                plt.xlabel(model1)
-                plt.ylabel(model +' - '+ model1)
-                plt.title('mag_'+band)
-                plt.savefig(os.path.join(output_dir,'mag_'+band+'_'+model1+'_'+model+'_scatter.png'))
-                plt.close()
-
-        return 
+        return
 
 
+    def plot_unresolved(self, fluxes, output_dir):
+        mag_r_ap05 = fluxes['mag_0p7_r_gaap']
+        mag_r_ap07 = fluxes['mag_1p0_r_gaap']
+        plt.figure()
+        plt.scatter(mag_r_ap05,mag_r_ap05-mag_r_ap07,s=0.1)
+        plt.xlim([15,26])
+        plt.ylim([-0.05,0.1])
+        plt.xlabel('mag_0p7_r_gaap')
+        plt.ylabel('mag_0p7_r_gaap-mag_1p0_r_gaap')
+        plt.savefig(os.path.join(output_dir,'unresolved.png'))
+        plt.close()
+        return
 
+        
 
 
     def generate_summary(self, output_dir, aggregated=False):
@@ -275,9 +258,16 @@ class CheckFluxes(BaseValidationTest):
         for band in self.bands:
             print(band)
             for model in self.models:
-                print(model)
-                quantities.append(model+'Flux_'+band); quantities.append(model+'FluxErr_'+band); quantities.append(model+'Flux_flag_'+band) #fluxes
-                quantities.append('mag_'+band + '_'+model); quantities.append('magerr_'+band+'_'+model); quantities.append('snr_'+band+'_'+model); #mags
+                # optimal ones
+                quantities.append(model+'Flux_'+band); quantities.append(model+'FluxErr_'+band); quantities.append(model+'Flux_flag_'+band);
+                quantities.append('mag_'+band + '_'+model); quantities.append('magerr_'+band+'_'+model);  #mags
+                quantities.append('snr_'+band+'_'+model);
+                for ap in self.aps:
+                    quantities.append(model+'Flux_'+ap+'_'+band); quantities.append(model+'FluxErr_'+ap+'_'+band); quantities.append(model+'Flux_flag_'+ap+'_'+band);
+                    quantities.append('mag_'+ap+'_'+band + '_'+model); quantities.append('magerr_'+ap+'_'+band+'_'+model);  #mags
+                    quantities.append('snr_'+ap+'_'+band+'_'+model);
+                    
+
         quantities = tuple(quantities)
         # note that snr is defined on flux directly and not on magnitudes
 
@@ -302,9 +292,10 @@ class CheckFluxes(BaseValidationTest):
         if rank==0:
             print(len(recvbuf[quantity]))
 
-        self.plot_mag_perband(recvbuf, output_dir)
-        self.plot_color_permodel(recvbuf, output_dir)
-
+        self.plot_snr_ap(recvbuf, output_dir)
+        self.plot_gi_ap(recvbuf, output_dir)
+        self.plot_unresolved(recvbuf, output_dir)
+        self.plot_ri_gr_ap(recvbuf, output_dir)
 
 
         if rank==0:
