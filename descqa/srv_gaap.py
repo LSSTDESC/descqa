@@ -6,9 +6,11 @@ from itertools import cycle
 from collections import defaultdict, OrderedDict
 import numpy as np
 import numexpr as ne
+import math
 from scipy.stats import norm, binned_statistic
 from mpi4py import MPI
 import time
+import matplotlib.colors as mcolors
 
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
@@ -44,6 +46,7 @@ class CheckFluxes(BaseValidationTest):
         self.snr_lim = kwargs.get('snr_lim',0)
         self.aps = kwargs.get('aps')
         self.ap_list = kwargs.get('ap_list')
+        self.color_list = list(mcolors.TABLEAU_COLORS.keys())
 
         if not any((
                 self.catalog_filters,
@@ -98,52 +101,101 @@ class CheckFluxes(BaseValidationTest):
 
 
     def plot_snr_ap(self, fluxes, output_dir):
+        '''
+        Plot the median SNR vs aperture width curve for each band, overplotting the SNR of the 
+        optimal elliptical aperture. This plots the total number of galaxies above a SNR threshold, 
+        the median SNR of those galaxies, and the sum of the SNR values. You expect the optimal aperture 
+        to do well compared to the circular apertures for these metrics, and the total SNR to be above 
+        or at that of the circular apertures. 
+        '''
+        fig= plt.figure(figsize = (8,24))
+        plt.subplot(311)
+        plt.title('median SNR')
+        plt.subplot(312)
+        plt.title('ngals above SNR')
+        plt.subplot(313)
+        plt.title('total SNR')
+
+        i = 0 
         for band in self.bands:
             n_ap=[]
             snr_ap=[]
+            snr_tot=[]
             for ap in self.aps:
                 mask_ap = (fluxes['gaapFlux_flag_'+ap+'_'+band]==0)&(fluxes['snr_'+ap+'_'+band+'_gaap']>=self.snr_lim)
                 snr = fluxes['snr_'+ap+'_'+band+'_gaap'][mask_ap]
                 n_ap.append(len(snr))
                 snr_ap.append(np.median(snr))
-            plt.figure()
-            plt.plot(self.ap_list,snr_ap,label='median SNR')
-            plt.xlabel('aperture')
+                snr_tot.append(np.sum(snr))
+            plt.subplot(311)
+            plt.plot(self.ap_list,snr_ap,label=band, c=self.color_list[i])
             mask_optimal = (fluxes['gaapFlux_flag_'+band]==0)&(fluxes['snr_'+band+'_gaap']>=self.snr_lim)
             snr_optimal = fluxes['snr_'+band+'_gaap'][mask_optimal]
-            plt.plot(self.ap_list[-1],np.median(snr_optimal),'o',label='optimal aperture SNR')
-            plt.legend()
-            plt.savefig(os.path.join(output_dir,'snr_ap_'+band+'.png'))
-            plt.close()
+            plt.plot(self.ap_list,np.median(snr_optimal)*np.ones(len(snr_ap)),'--', c=self.color_list[i])
+            plt.subplot(312)
+            plt.plot(self.ap_list,n_ap,label=band, c = self.color_list[i])
+            plt.plot(self.ap_list,len(snr_optimal)*np.ones(len(snr_ap)),'--', c = self.color_list[i])
+            plt.subplot(313)
+            plt.plot(self.ap_list,snr_tot,label=band, c=self.color_list[i])
+            plt.plot(self.ap_list,np.sum(snr_optimal)*np.ones(len(snr_ap)),'--', c=self.color_list[i])
+            i += 1
+        plt.xlabel('aperture')
+        plt.subplot(311)
+        plt.legend(loc = 'upper center')
 
-            plt.figure()
-            plt.plot(self.ap_list,n_ap,label='number of galaxies detected above SNR=5')
-            plt.xlabel('aperture')
-            plt.plot(self.ap_list[-1],len(snr_optimal),'o',label='number at optimal aperture')
-            plt.legend()
-            plt.savefig(os.path.join(output_dir,'n_ap_'+band+'.png'))
-            plt.close()
+        for ax in fig.get_axes():
+            ax.label_outer()
+
+        plt.savefig(os.path.join(output_dir,'snr_ap_'+band+'.png'))
+        plt.close()
+
+
 
         return 
 
     def plot_gi_ap(self, fluxes, output_dir):
+        '''
+        compare g-i color in circular apertures to that of the optimal aperture. You expect this to match at around the peak of the SNR 
+        curve in the above function, and diverge at large apertures where the outskirts of the galaxy contribute to the color. 
+        '''
+        fig, axs = plt.subplots(2,3,figsize=(12,8))
+        fig.suptitle('g - i aperture vs optimal')
+        count_plot = 0 
 
         for ap in self.aps:
+            idx1 = count_plot%2
+            idx2 = math.floor(count_plot/2)
+
             mask_ap = (fluxes['snr_'+ap+'_g_gaap']>=self.snr_lim)& (fluxes['snr_'+ap+'_i_gaap']>=self.snr_lim)&(fluxes['snr_g_gaap']>=self.snr_lim)&(fluxes['snr_i_gaap']>=self.snr_lim) # passes SNR lim in both
             g_min_i = fluxes['mag_'+ap+'_g_gaap'][mask_ap] - fluxes['mag_'+ap+'_i_gaap'][mask_ap]
             g_min_i_opt = fluxes['mag_g_gaap'][mask_ap] - fluxes['mag_i_gaap'][mask_ap]
-            plt.figure()
-            plt.hist2d(g_min_i_opt,g_min_i,bins=np.linspace(-1,3,100))
-            plt.xlabel('g_min_i optimal')
-            plt.ylabel('g_min_i ap '+ap)
-            plt.savefig(os.path.join(output_dir,'g_min_i'+ap+'.png'))
-            plt.close()
+            axs[idx1,idx2].hist2d(g_min_i_opt,g_min_i,bins=np.linspace(-1,3,100))
+            axs[idx1,idx2].set_title(ap)
+            axs[idx1,idx2].set_xlabel('g_min_i optimal')
+            axs[idx1,idx2].set_ylabel('g_min_i aperture ')
+            count_plot +=1 
+
+        for ax in fig.get_axes():
+            ax.label_outer()
+
+        plt.savefig(os.path.join(output_dir,'g_min_i_ap.png'))
+        plt.close()
 
         return 
 
     def plot_ri_gr_ap(self, fluxes, output_dir):
+        '''
+        Compare r-i / g-r color-color plot for different circular apertures and the optimal aperture. You expect to see for DC2 a 
+        wishbone-type image with distinct populations. At larger apertures this may get blurred as the signal to noise decreases. 
+        '''
 
+        fig, axs = plt.subplots(2,3,figsize=(12,8))
+        fig.suptitle('r - i vs g - r for apertures')
+        count_plot = 0
         for ap in self.aps:
+            idx1 = count_plot%2
+            idx2 = math.floor(count_plot/2)
+
             mask_ap = (fluxes['snr_'+ap+'_g_gaap']>=self.snr_lim)&(fluxes['snr_'+ap+'_r_gaap']>=self.snr_lim)& (fluxes['snr_'+ap+'_i_gaap']>=self.snr_lim)&(fluxes['snr_g_gaap']>=self.snr_lim)&(fluxes['snr_i_gaap']>=self.snr_lim)&(fluxes['snr_r_gaap']>=self.snr_lim) # passes SNR lim in both
             g_min_r = fluxes['mag_'+ap+'_g_gaap'][mask_ap] - fluxes['mag_'+ap+'_r_gaap'][mask_ap]
             g_min_r_opt = fluxes['mag_g_gaap'][mask_ap] - fluxes['mag_r_gaap'][mask_ap]
@@ -151,33 +203,44 @@ class CheckFluxes(BaseValidationTest):
             r_min_i_opt = fluxes['mag_r_gaap'][mask_ap] - fluxes['mag_i_gaap'][mask_ap]
 
 
-            plt.figure()
-            plt.hist2d(g_min_r,r_min_i,bins=np.linspace(-1,3,100))
-            plt.xlabel('g_min_r ap '+ap )
-            plt.ylabel('r_min_i ap '+ap)
-            plt.savefig(os.path.join(output_dir,'gmr_rmi_'+ap+'.png'))
-            plt.close()
+            axs[idx1,idx2].hist2d(g_min_r,r_min_i,bins=np.linspace(-1,3,100))
+            axs[idx1,idx2].set_title(ap)
+            axs[idx1,idx2].set_xlabel('g - r' )
+            axs[idx1,idx2].set_ylabel('r - i')
+            count_plot +=1 
 
-        plt.figure()
-        plt.hist2d(g_min_r_opt,r_min_i_opt,bins=np.linspace(-1,3,100))
-        plt.xlabel('g_min_r optimal ' )
-        plt.ylabel('r_min_i optimal ')
-        plt.savefig(os.path.join(output_dir,'gmr_rmi_opt.png'))
+        for ax in fig.get_axes():
+            ax.label_outer()
+
+        plt.savefig(os.path.join(output_dir,'rmi_gmr_ap.png'))
         plt.close()
 
+        plt.figure(figsize=(8,8))
+        plt.hist2d(g_min_r_opt,r_min_i_opt,bins=np.linspace(-1,3,100))
+        plt.title('r - i vs g - r for optimal aperture')
+        plt.xlabel('g - r' )
+        plt.ylabel('r - i')
+        plt.savefig(os.path.join(output_dir,'gmr_rmi_opt.png'))
+        plt.close()
 
         return
 
 
     def plot_unresolved(self, fluxes, output_dir):
-        mag_r_ap05 = fluxes['mag_0p7_r_gaap']
-        mag_r_ap07 = fluxes['mag_1p0_r_gaap']
-        plt.figure()
+        '''
+        Plotting unresolved sources, i.e. ones where the lowest apertures detect the same total magnitude. This 
+        suggests stellar contamination in the sample.  
+        '''
+        mag_r_ap05 = fluxes['mag_0p5_r_gaap']
+        mag_r_ap07 = fluxes['mag_0p7_r_gaap']
+        plt.figure(figsize = (8,8))
+        plt.title('unresolved sources in r-band')
+        plt.plot(np.linspace(15,26,100),np.zeros(100),'k--')
         plt.scatter(mag_r_ap05,mag_r_ap05-mag_r_ap07,s=0.1)
         plt.xlim([15,26])
         plt.ylim([-0.05,0.1])
-        plt.xlabel('mag_0p7_r_gaap')
-        plt.ylabel('mag_0p7_r_gaap-mag_1p0_r_gaap')
+        plt.xlabel('m_0p5')
+        plt.ylabel('m_0p5-m_0p7')
         plt.savefig(os.path.join(output_dir,'unresolved.png'))
         plt.close()
         return
@@ -269,7 +332,6 @@ class CheckFluxes(BaseValidationTest):
                     
 
         quantities = tuple(quantities)
-        # note that snr is defined on flux directly and not on magnitudes
 
         # reading in the data 
         if len(filters) > 0:
