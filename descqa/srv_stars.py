@@ -6,6 +6,8 @@ from itertools import cycle
 from collections import defaultdict, OrderedDict
 import numpy as np
 import numexpr as ne
+
+import seaborn as sns
 from scipy.stats import norm, binned_statistic
 from mpi4py import MPI
 import time
@@ -96,6 +98,75 @@ class CheckFluxes(BaseValidationTest):
         return '<span {1}>{0}</span>'.format(results, 'class="fail"' if failed else '')
 
 
+    def plot_snr_mag(self, mags, output_dir):
+        ''' Plot SNR vs magnitude  '''
+        for model in self.models:
+            model = 'psf'
+            for band in self.bands:
+                mask = (mags['mag_'+band+'_'+model]<=self.mag_lim)&(mags['snr_'+band+'_'+model]>1.0)
+                snr = mags['snr_'+band+'_'+model][mask]
+                mag = mags['mag_'+band+'_'+model][mask]
+                plt.figure(figsize = (8,8))
+                sns.set_style('white')
+                sns.kdeplot(x=mag,y=np.log10(snr),cmap="Blues", shade=True)
+                plt.plot(np.linspace(18,27,100),np.ones(100)*np.log10(5),'k--')
+                plt.xlim([18,27])
+                plt.xlabel('mag_'+band)
+                plt.ylabel('log10(snr)_'+band+'_'+model)
+                plt.savefig(os.path.join(output_dir,'snr_mag_'+band+'_'+model+'.png'))
+                plt.close()
+        return
+
+    def plot_forcedcomp(self, mags, output_dir):
+        '''plot forced vs unforced (free) magnitues'''
+        for band in self.bands:
+            if (band=='y') or (band=='z'):
+                continue
+            mask = (mags['psFlux_flag_free_'+band]==0)&(mags['psFlux_flag_'+band]==0)&(mags['mag_'+band+'_psf']<=self.mag_lim)
+            diff = mags['mag_'+band+'_psf'][mask] - mags['mag_'+band+'_psf_free'][mask]
+            mag = mags['mag_'+band+'_psf'][mask]
+            plt.figure(figsize = (8,8))
+            sns.set_style('white')
+            sns.kdeplot(x=mag,y=diff,cmap="Blues",shade=True)
+            plt.ylim([-0.05,0.05])
+            plt.xlim([18,27])
+            plt.plot(np.linspace(18,27,100),np.zeros(100),'k--')
+            plt.xlabel('PSF magnitude ('+band+' band)')
+            plt.ylabel('forced - free PSF magnitude')
+            plt.savefig(os.path.join(output_dir,'(un)forced_mag_'+band+'.png'))
+            plt.close()
+            #note '''unforced cmodel vs psf to get extendedness'''
+        return 
+
+    def plot_colorcolor(self, mags, output_dir):
+        ''' plot color color plots for stars '''
+        plt.figure(figsize=(8,8))
+        mask_init = (mags['mag_r_psf']<=self.mag_lim)&(mags['mag_g_psf']<=self.mag_lim)&(mags['mag_i_psf']<=self.mag_lim)
+        mask_init2 = (mags['mag_z_psf']<=self.mag_lim)&(mags['mag_y_psf']<=self.mag_lim)&(mags['mag_i_psf']<=self.mag_lim)
+        g_min_r = mags['mag_g_psf'][mask_init] - mags['mag_r_psf'][mask_init]
+        r_min_i = mags['mag_r_psf'][mask_init] - mags['mag_i_psf'][mask_init]
+        z_min_y = mags['mag_z_psf'][mask_init2] - mags['mag_y_psf'][mask_init2]
+        i_min_z = mags['mag_i_psf'][mask_init2] - mags['mag_z_psf'][mask_init2]
+
+        plt.figure(figsize=(8,8))
+        plt.hist2d(g_min_r, r_min_i, bins = np.linspace(-0.5,2.0,100))
+        plt.title('PSF color color')
+        plt.xlabel('g_min_r')
+        plt.ylabel('r_min_i')
+        plt.savefig(os.path.join(output_dir,'gmr_rmi_PSF.png'))
+        plt.close()
+
+        plt.figure(figsize=(8,8))
+        plt.hist2d(z_min_y, i_min_z, bins = np.linspace(-0.5,2.0,100))
+        plt.title('PSF color color')
+        plt.xlabel('z_min_y')
+        plt.ylabel('i_min_z')
+        plt.savefig(os.path.join(output_dir,'zmy_imz_PSF.png'))
+        plt.close()
+        return
+
+
+
     def plot_mag_perband(self, mags, output_dir):
         ''' make per band and per model plots  '''
         # make flags on all bands and with flags
@@ -129,7 +200,7 @@ class CheckFluxes(BaseValidationTest):
         ''' '''
 
         # color plots for each model
-        plt.figure(figsize=(8,8))
+        plt.figure()
         for model in self.models:
             mask_init = (mags['mag_r_'+model]<=self.mag_lim)&(mags['mag_g_'+model]<=self.mag_lim)
             g_min_r = mags['mag_g_'+model][mask_init] - mags['mag_r_'+model][mask_init]
@@ -141,7 +212,7 @@ class CheckFluxes(BaseValidationTest):
 
         # color-color plots
         for model in self.models:
-            plt.figure(figsize=(8,8))
+            plt.figure()
             mask_init = (mags['mag_r_'+model]<=self.mag_lim)&(mags['mag_g_'+model]<=self.mag_lim)
             mask_init = (mags['mag_i_'+model]<=self.mag_lim)
             g_min_r = mags['mag_g_'+model][mask_init] - mags['mag_r_'+model][mask_init]
@@ -161,7 +232,7 @@ class CheckFluxes(BaseValidationTest):
             mask_tot = mask1&mask2
             g_min_r1 = mags['mag_g_'+model1][mask_tot] - mags['mag_r_'+model1][mask_tot]
             g_min_r2 = mags['mag_g_'+model][mask_tot] - mags['mag_r_'+model][mask_tot]
-            plt.figure(figsize=(8,8))
+            plt.figure()
             plt.scatter(g_min_r1,g_min_r2-g_min_r1,s=0.01)
             a1,b1,c1 = binned_statistic(g_min_r1,g_min_r2-g_min_r1,bins= np.linspace(-0.5,1.5,100),statistic='median')
             plt.plot((b1[1:]+b1[:-1])/2.,a1,'r--')
@@ -183,7 +254,7 @@ class CheckFluxes(BaseValidationTest):
                 mask_tot = mask1&mask2
                 g_min_r1 = mags['mag_'+band+'_'+model1][mask_tot]
                 g_min_r2 = mags['mag_'+band+'_'+model][mask_tot]
-                plt.figure(figsize=(8,8))
+                plt.figure()
                 plt.scatter(g_min_r1,g_min_r2-g_min_r1,s=0.01)
                 a1,b1,c1 = binned_statistic(g_min_r1,g_min_r2-g_min_r1,bins= np.linspace(18,self.mag_lim,100),statistic='median')
                 plt.plot((b1[1:]+b1[:-1])/2.,a1,'r--')
@@ -278,6 +349,12 @@ class CheckFluxes(BaseValidationTest):
                 print(model)
                 quantities.append(model+'Flux_'+band); quantities.append(model+'FluxErr_'+band); quantities.append(model+'Flux_flag_'+band) #fluxes
                 quantities.append('mag_'+band + '_'+model); quantities.append('magerr_'+band+'_'+model); quantities.append('snr_'+band+'_'+model); #mags
+            quantities.append('psFlux_'+band); quantities.append('psFlux_free_'+band);
+            quantities.append('cModelFlux_free_'+band); quantities.append('cModelFlux_'+band);
+            quantities.append('mag_'+band+'_psf_free'); quantities.append('mag_'+band+'_psf');
+            quantities.append('psFlux_flag_free_'+band); quantities.append('psFlux_flag_'+band);
+            quantities.append('snr_'+band+'_psf');
+
         quantities = tuple(quantities)
         # note that snr is defined on flux directly and not on magnitudes
 
@@ -302,8 +379,12 @@ class CheckFluxes(BaseValidationTest):
         if rank==0:
             print(len(recvbuf[quantity]))
 
-        self.plot_mag_perband(recvbuf, output_dir)
-        self.plot_color_permodel(recvbuf, output_dir)
+      
+        self.plot_snr_mag(recvbuf, output_dir)
+        self.plot_forcedcomp(recvbuf, output_dir)
+        self.plot_colorcolor(recvbuf, output_dir)
+        #self.plot_mag_perband(recvbuf, output_dir)
+        #self.plot_color_permodel(recvbuf, output_dir)
 
 
 

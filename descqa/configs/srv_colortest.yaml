@@ -10,7 +10,7 @@ bands: ['r','u','i','g','z','y']
 
 catalog_filters:
 
-  - filters: ['detect_isIsolated','extendedness==0','detect_isPrimary']
+  - filters: ['detect_isIsolated','extendedness==1','detect_isPrimary']
 
 mag_lim: 26
 snr_lim: 5.0
