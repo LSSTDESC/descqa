@@ -466,16 +466,16 @@ def main():
 
 
     global GCRCatalogs #pylint: disable=W0601
-    #sys.path.insert(0,'/global/homes/p/plarsen/plarsen_git/gcr-catalogs')
-    sys.path.insert(0,'/global/u1/n/nsevilla/srv/gcr-catalogs')
+    sys.path.insert(0,'/global/homes/p/plarsen/plarsen_git/gcr-catalogs')
+    #sys.path.insert(0,'/global/u1/n/nsevilla/srv/gcr-catalogs')
     GCRCatalogs = importlib.import_module('GCRCatalogs')
 
-    #PL: note added assert, should do this for GCR too
-    #assert(GCRCatalogs.__path__==['/global/homes/p/plarsen/plarsen_git/gcr-catalogs/GCRCatalogs'])
-    assert(GCRCatalogs.__path__==['/global/u1/n/nsevilla/srv/gcr-catalogs/GCRCatalogs'])
+    #PL: noe added assert, should do this for GCR too
+    assert#(GCRCatalogs.__path__==['/global/homes/p/plarsen/plarsen_git/gcr-catalogs/GCRCatalogs'])
+    #assert(GCRCatalogs.__path__==['/global/u1/n/nsevilla/srv/gcr-catalogs/GCRCatalogs'])
     if hasattr(GCRCatalogs,'GCR'):
-        #assert(GCRCatalogs.GCR.__path__==['/global/homes/p/plarsen/plarsen_git/generic-catalog-reader/GCR'])
-        assert(GCRCatalogs.GCR.__path__==['/global/u1/n/nsevilla/srv/generic-catalog-reader/GCR'])
+        assert(GCRCatalogs.GCR.__path__==['/global/homes/p/plarsen/plarsen_git/generic-catalog-reader/GCR'])
+        #assert(GCRCatalogs.GCR.__path__==['/global/u1/n/nsevilla/srv/generic-catalog-reader/GCR'])
 
 
     '''global GCRCatalogs #pylint: disable=W0601
