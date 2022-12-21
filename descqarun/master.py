@@ -357,9 +357,23 @@ class DescqaTask(object):
                 if self.logger:
                     self.logger.debug(msg)
 
+                #verify if we need to skip the test from config
+                skip_test = self.get_description('is_pseudo')['validation_is_pseudo'][validation]
+                if skip_test:
+                    msg = '{} is not scheduled to run'.format(validation)
+                    self.logger.debug(msg)
+                    #create some output in self.output_dir
+                    with open('{}/{}_results.txt'.format(output_dir_this,validation), 'w') as f:
+                        f.write('This test has been skipped.\n') # to be filled with some info from config
+                    continue
+
                 test_result = None
                 with CatchExceptionAndStdStream(logfile, self.logger, msg):
+                    msg = 'Writing results to {}'.format(output_dir_this)
+                    self.logger.debug(msg)
                     test_result = validation_instance.run_on_single_catalog(catalog_instance, catalog, output_dir_this)
+                    msg = 'Test result for {} is {}'.format(validation, test_result)
+                    self.logger.debug(msg)
 
                 if rank==0:
                     self.set_result(test_result or 'RUN_VALIDATION_TEST_ERROR', validation, catalog)
@@ -452,13 +466,16 @@ def main():
 
 
     global GCRCatalogs #pylint: disable=W0601
-    sys.path.insert(0,'/global/homes/p/plarsen/plarsen_git/gcr-catalogs')
+    #sys.path.insert(0,'/global/homes/p/plarsen/plarsen_git/gcr-catalogs')
+    sys.path.insert(0,'/global/u1/n/nsevilla/srv/gcr-catalogs')
     GCRCatalogs = importlib.import_module('GCRCatalogs')
 
     #PL: note added assert, should do this for GCR too
-    assert(GCRCatalogs.__path__==['/global/homes/p/plarsen/plarsen_git/gcr-catalogs/GCRCatalogs'])
+    #assert(GCRCatalogs.__path__==['/global/homes/p/plarsen/plarsen_git/gcr-catalogs/GCRCatalogs'])
+    assert(GCRCatalogs.__path__==['/global/u1/n/nsevilla/srv/gcr-catalogs/GCRCatalogs'])
     if hasattr(GCRCatalogs,'GCR'):
-        assert(GCRCatalogs.GCR.__path__==['/global/homes/p/plarsen/plarsen_git/generic-catalog-reader/GCR'])
+        #assert(GCRCatalogs.GCR.__path__==['/global/homes/p/plarsen/plarsen_git/generic-catalog-reader/GCR'])
+        assert(GCRCatalogs.GCR.__path__==['/global/u1/n/nsevilla/srv/generic-catalog-reader/GCR'])
 
 
     '''global GCRCatalogs #pylint: disable=W0601
