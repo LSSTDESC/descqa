@@ -471,7 +471,7 @@ def main():
     GCRCatalogs = importlib.import_module('GCRCatalogs')
 
     #PL: noe added assert, should do this for GCR too
-    assert#(GCRCatalogs.__path__==['/global/homes/p/plarsen/plarsen_git/gcr-catalogs/GCRCatalogs'])
+    assert(GCRCatalogs.__path__==['/global/homes/p/plarsen/plarsen_git/gcr-catalogs/GCRCatalogs'])
     #assert(GCRCatalogs.__path__==['/global/u1/n/nsevilla/srv/gcr-catalogs/GCRCatalogs'])
     if hasattr(GCRCatalogs,'GCR'):
         assert(GCRCatalogs.GCR.__path__==['/global/homes/p/plarsen/plarsen_git/generic-catalog-reader/GCR'])
