@@ -1,0 +1,17 @@
+subclass_name: srv_colortest.CheckFluxes
+description: 'Check fluxes and magnitudes'
+included_by_default: true
+
+ra: 'ra'
+dec: 'dec'
+models: ['calib','cModel','gaap']
+
+bands: ['r','u','i','g','z','y']
+
+catalog_filters:
+
+  - filters: ['detect_isIsolated','extendedness==1','detect_isPrimary']
+
+mag_lim: 26
+snr_lim: 5.0
+compare: True

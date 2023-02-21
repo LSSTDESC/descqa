@@ -1,0 +1,17 @@
+subclass_name: srv_analysistools_ShapeSizeFractionalMetric.TestMetric
+description: 'test install of analysis tools'
+included_by_default: true
+
+ra: 'ra'
+dec: 'dec'
+models: ['cModel']
+
+bands: ['r','i','g']
+
+catalog_filters:
+
+  - filters: ['detect_isIsolated','detect_isPrimary']
+
+mag_lim: 26
+snr_lim: 5.0
+compare: True

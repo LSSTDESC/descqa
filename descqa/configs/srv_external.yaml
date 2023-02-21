@@ -1,0 +1,6 @@
+subclass_name: srv_external.srv_external
+description: 'Placeholder for a test being executed through an external pipeline, for test framework logging purposes'
+is_pseudo: false
+
+#report_directory: '/global/homes/n/nsevilla/plots/'
+report_directory: '/global/cfs/cdirs/lsst/www/txpipe/runs/2.2i-dr6c-2020-08-06/'

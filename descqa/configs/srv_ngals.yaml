@@ -1,0 +1,56 @@
+subclass_name: srv_ngals.CheckNgals
+description: 'Check flags'
+included_by_default: true
+ra: 'ra'
+dec: 'dec'
+
+flags_to_check:
+
+    #- quantities: 'deblend_skipped'
+    #kind: 'bool'
+    #flag_val: True
+
+    #  - quantities: 'refBand'
+    #kind: 'str'
+    #flag_val: 'r'
+    #
+    #- quantities: 'sky_object'
+    #kind: 'bool'
+    #flag_val: True
+
+  - quantities: 'cModelFlux_flag_i'
+    kind: 'bool'
+    flag_val: True
+
+  - quantities: 'cModelFlux_flag_r'
+    kind: 'bool'
+    flag_val: True
+
+    #- quantities: 'shape_flag'
+    #kind: 'bool'
+    #flag_val: True
+
+    #- quantities: 'xy_flag'
+    #kind: 'bool'
+    #flag_val: True
+
+  - quantities: 'detect_isIsolated'
+    kind: 'bool'
+    flag_val: True
+
+    #- quantities: 'i_pixelFlags_bad'
+    #kind: 'bool'
+    #flag_val: True
+
+    #  - quantities: 'i_pixelFlags_interpolatedCenter'
+    #kind: 'bool'
+    #flag_val: True
+
+  - quantities: 'good'
+    kind: 'bool'
+    flag_val: False
+
+
+catalog_filters:
+
+  - filters: ['extendedness==1','detect_isPrimary','mag_r < 25']

@@ -1,0 +1,17 @@
+subclass_name: srv_shear.CheckEllipticity
+description: 'Check ellipticity values and moments'
+included_by_default: true
+
+ra: 'ra'
+dec: 'dec'
+Ixx: 'Ixx_pixel'
+Iyy: 'Iyy_pixel'
+Ixy: 'Ixy_pixel'
+IxxPSF: 'IxxPSF_pixel'
+IyyPSF: 'IyyPSF_pixel'
+IxyPSF: 'IxyPSF_pixel'
+psf_fwhm: 'psf_fwhm'
+bands: ['r','i','g','z','y']
+
+catalog_filters:
+  - filters: ['good','extendedness==1']

@@ -1,0 +1,18 @@
+subclass_name: srv_stars.CheckFluxes
+description: 'Check fluxes and magnitudes'
+included_by_default: true
+
+ra: 'ra'
+dec: 'dec'
+models: ['cModel']
+
+bands: ['r','i','g','u','y','z']
+
+aps: ['0p5','0p7','1p0','1p5','2p5','3p0']
+ap_list: [0.5,0.7,1.0,1.5,2.5,3.0]
+catalog_filters:
+  - filters: ['detect_isIsolated', 'extendedness==0', 'detect_isPrimary']
+
+mag_lim: 26
+snr_lim: 5.0
+compare: True
