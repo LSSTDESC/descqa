@@ -230,9 +230,9 @@ class TestMetric(BaseValidationTest):
 
         # reading in the data 
         if len(filters) > 0:
-            catalog_data = catalog_instance.get_quantities(quantities,filters=filters,return_iterator=False, rank=rank, size=size)
+            catalog_data = catalog_instance.get_quantities(quantities,filters=filters,return_iterator=False)
         else:
-            catalog_data = catalog_instance.get_quantities(quantities,return_iterator=False, rank=rank, size=size)
+            catalog_data = catalog_instance.get_quantities(quantities,return_iterator=False)
         a = time.time()
 
         

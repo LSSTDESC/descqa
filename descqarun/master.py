@@ -251,7 +251,7 @@ class DescqaTask(object):
         logfile = [pjoin(self.get_path(validation, catalog), self.logfile_basename) for validation in self.validations_to_run]
         instance = None
         with CatchExceptionAndStdStream(logfile, self.logger, 'loading catalog `{}`'.format(catalog)):
-            instance = GCRCatalogs.load_catalog(catalog)
+            instance = GCRCatalogs.load_catalog(catalog, config_overwrite={'mpi_rank': rank, 'mpi_size': size})
         if instance is None:
             self.set_result('LOAD_CATALOG_ERROR', catalog=catalog)
         return instance
@@ -466,15 +466,20 @@ def main():
 
 
     global GCRCatalogs #pylint: disable=W0601
-    sys.path.insert(0,'/global/homes/p/plarsen/plarsen_git/gcr-catalogs')
+    sys.path.insert(0,'/global/homes/p/plarsen/plarsen_git/generic-catalog-reader_devel/gcr-catalogs')
+    #sys.path.insert(0,'/global/homes/p/plarsen/plarsen_git/gcr-catalogs')
     #sys.path.insert(0,'/global/u1/n/nsevilla/srv/gcr-catalogs')
     GCRCatalogs = importlib.import_module('GCRCatalogs')
 
     #PL: noe added assert, should do this for GCR too
-    assert(GCRCatalogs.__path__==['/global/homes/p/plarsen/plarsen_git/gcr-catalogs/GCRCatalogs'])
+    assert(GCRCatalogs.__path__==['/global/homes/p/plarsen/plarsen_git/generic-catalog-reader_devel/gcr-catalogs/GCRCatalogs'])
+    #assert(GCRCatalogs.__path__==['/global/homes/p/plarsen/plarsen_git/gcr-catalogs/GCRCatalogs'])
     #assert(GCRCatalogs.__path__==['/global/u1/n/nsevilla/srv/gcr-catalogs/GCRCatalogs'])
     if hasattr(GCRCatalogs,'GCR'):
-        assert(GCRCatalogs.GCR.__path__==['/global/homes/p/plarsen/plarsen_git/generic-catalog-reader/GCR'])
+        assert(GCRCatalogs.GCR.__path__==['/global/homes/p/plarsen/plarsen_git/generic-catalog-reader_devel/generic-catalog-reader/GCR'])
+        #assert(GCRCatalogs.GCR.__path__==['/global/homes/p/plarsen/plarsen_git/generic-catalog-reader_devel/GCR'])
+        #assert(GCRCatalogs.GCR.__path__==['/global/homes/p/plarsen/plarsen_git/generic-catalog-reader_devel/
+        #assert(GCRCatalogs.GCR.__path__==['/global/homes/p/plarsen/plarsen_git/generic-catalog-reader/GCR'])
         #assert(GCRCatalogs.GCR.__path__==['/global/u1/n/nsevilla/srv/generic-catalog-reader/GCR'])
 
 

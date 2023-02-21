@@ -345,9 +345,9 @@ class CheckQuantities(BaseValidationTest):
 
 
         if len(filters) > 0:
-            catalog_data = catalog_instance.get_quantities(quantities_this_new,filters=filters,return_iterator=False, rank=rank, size=size)
+            catalog_data = catalog_instance.get_quantities(quantities_this_new,filters=filters,return_iterator=False)
         else:
-            catalog_data = catalog_instance.get_quantities(quantities_this_new,return_iterator=False, rank=rank, size=size)
+            catalog_data = catalog_instance.get_quantities(quantities_this_new,return_iterator=False)
         a = time.time()
 
         for quantities_this in quantity_tot:
