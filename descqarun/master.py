@@ -466,26 +466,10 @@ def main():
 
 
     global GCRCatalogs #pylint: disable=W0601
-    sys.path.insert(0,'/global/homes/p/plarsen/plarsen_git/generic-catalog-reader_devel/gcr-catalogs')
-    #sys.path.insert(0,'/global/homes/p/plarsen/plarsen_git/gcr-catalogs')
-    #sys.path.insert(0,'/global/u1/n/nsevilla/srv/gcr-catalogs')
     GCRCatalogs = importlib.import_module('GCRCatalogs')
 
-    #PL: noe added assert, should do this for GCR too
-    assert(GCRCatalogs.__path__==['/global/homes/p/plarsen/plarsen_git/generic-catalog-reader_devel/gcr-catalogs/GCRCatalogs'])
-    #assert(GCRCatalogs.__path__==['/global/homes/p/plarsen/plarsen_git/gcr-catalogs/GCRCatalogs'])
-    #assert(GCRCatalogs.__path__==['/global/u1/n/nsevilla/srv/gcr-catalogs/GCRCatalogs'])
-    if hasattr(GCRCatalogs,'GCR'):
-        assert(GCRCatalogs.GCR.__path__==['/global/homes/p/plarsen/plarsen_git/generic-catalog-reader_devel/generic-catalog-reader/GCR'])
-        #assert(GCRCatalogs.GCR.__path__==['/global/homes/p/plarsen/plarsen_git/generic-catalog-reader_devel/GCR'])
-        #assert(GCRCatalogs.GCR.__path__==['/global/homes/p/plarsen/plarsen_git/generic-catalog-reader_devel/
-        #assert(GCRCatalogs.GCR.__path__==['/global/homes/p/plarsen/plarsen_git/generic-catalog-reader/GCR'])
-        #assert(GCRCatalogs.GCR.__path__==['/global/u1/n/nsevilla/srv/generic-catalog-reader/GCR'])
-
-
-    '''global GCRCatalogs #pylint: disable=W0601
-    GCRCatalogs = importlib.import_module('GCRCatalogs')
-    '''
+    # this assert statement ensures that the parallel reader is implemented
+    assert(GCRCatalogs.__version__=='1.5.1')
 
     global descqa #pylint: disable=W0601
     descqa = importlib.import_module('descqa')
@@ -512,7 +496,6 @@ def main():
             snapshot_dir = pjoin(output_dir, '_snapshot')
             os.mkdir(snapshot_dir)
 
-            #PL: not sure if this will crash
             check_copy(descqa.__path__[0], pjoin(snapshot_dir, 'descqa'))
             check_copy(GCRCatalogs.__path__[0], pjoin(snapshot_dir, 'GCRCatalogs'))
             if hasattr(GCRCatalogs, 'GCR'):
@@ -529,7 +512,7 @@ def main():
         if logger:
             logger.info('running validation tests...')
 
-        # note: you want this to run in parallel for the data read
+        # note this is running in parallel
         descqa_task.run()
 
         if logger:
