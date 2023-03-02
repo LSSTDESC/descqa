@@ -138,7 +138,6 @@ def make_output_dir(root_output_dir):
         i = max((int(s.partition('_')[-1] or 0) for s in os.listdir(parent_dir) if s.startswith(new_dir_name)))
         output_dir += '_{}'.format(i+1)
     output_dir = comm.bcast(output_dir,root=0)
-    print(output_dir,rank)
     
     if rank==0:
         os.mkdir(output_dir)
@@ -242,7 +241,8 @@ class DescqaTask(object):
             with CatchExceptionAndStdStream(logfile, self.logger, 'loading validation `{}`'.format(validation)):
                 instance = descqa.load_validation(validation)
             if instance is None:
-                self.set_result('VALIDATION_TEST_MODULE_ERROR', validation=validation)
+                if rank==0:
+                    self.set_result('VALIDATION_TEST_MODULE_ERROR', validation=validation)
             self._validation_instance_cache[validation] = instance
         return self._validation_instance_cache[validation]
 
@@ -253,7 +253,8 @@ class DescqaTask(object):
         with CatchExceptionAndStdStream(logfile, self.logger, 'loading catalog `{}`'.format(catalog)):
             instance = GCRCatalogs.load_catalog(catalog, config_overwrite={'mpi_rank': rank, 'mpi_size': size})
         if instance is None:
-            self.set_result('LOAD_CATALOG_ERROR', catalog=catalog)
+            if rank==0:
+                self.set_result('LOAD_CATALOG_ERROR', catalog=catalog)
         return instance
 
 
@@ -361,19 +362,23 @@ class DescqaTask(object):
                 skip_test = self.get_description('is_pseudo')['validation_is_pseudo'][validation]
                 if skip_test:
                     msg = '{} is not scheduled to run'.format(validation)
-                    self.logger.debug(msg)
-                    #create some output in self.output_dir
-                    with open('{}/{}_results.txt'.format(output_dir_this,validation), 'w') as f:
-                        f.write('This test has been skipped.\n') # to be filled with some info from config
+                    if self.logger:
+                        self.logger.debug(msg)
+                        #create some output in self.output_dir
+                        with open('{}/{}_results.txt'.format(output_dir_this,validation), 'w') as f:
+                            f.write('This test has been skipped.\n') # to be filled with some info from config
                     continue
 
                 test_result = None
                 with CatchExceptionAndStdStream(logfile, self.logger, msg):
                     msg = 'Writing results to {}'.format(output_dir_this)
-                    self.logger.debug(msg)
+                    if self.logger:
+                        self.logger.debug(msg)
+
                     test_result = validation_instance.run_on_single_catalog(catalog_instance, catalog, output_dir_this)
                     msg = 'Test result for {} is {}'.format(validation, test_result)
-                    self.logger.debug(msg)
+                    if self.logger:
+                        self.logger.debug(msg)
 
                 if rank==0:
                     self.set_result(test_result or 'RUN_VALIDATION_TEST_ERROR', validation, catalog)
@@ -484,6 +489,8 @@ def main():
     if logger:
         logger.debug('creating root output directory...')
     output_dir = make_output_dir(args.root_output_dir)
+
+
 
     # only create .lock file on rank 0 
     if rank==0:

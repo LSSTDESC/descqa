@@ -27,7 +27,7 @@ CMD="import descqarun; descqarun.main()"
 export OMP_NUM_THREADS=8
 export NUMEXPR_MAX_THREADS=8
 
-srun -n 4 $PYTHON -E -c "$CMD" "$OUTPUTDIR" "$@"
+srun -n 2 $PYTHON -E -c "$CMD" "$OUTPUTDIR" "$@"
 
 # end subshell
 )
