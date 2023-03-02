@@ -1,9 +1,9 @@
 #!/bin/bash
 
-HOSTS=.hosts-job$SLURM_JOB_ID
-HOSTFILE=.hostlist-job$SLURM_JOB_ID
-srun hostname -f > $HOSTS
-sort $HOSTS | uniq -c | awk '{print $2 ":" $1}' >> $HOSTFILE
+#HOSTS=.hosts-job$SLURM_JOB_ID
+#HOSTFILE=.hostlist-job$SLURM_JOB_ID
+#srun hostname -f > $HOSTS
+#sort $HOSTS | uniq -c | awk '{print $2 ":" $1}' >> $HOSTFILE
 echo "--------- Running SRUN script ---------"
 
 # go to a subshell
@@ -25,9 +25,11 @@ set -o noglob
 # run master.py
 CMD="import descqarun; descqarun.main()"
 export OMP_NUM_THREADS=8
-mpiexec -hostfile $HOSTFILE -n 8 $PYTHON -E -c "$CMD" "$OUTPUTDIR" "$@"
+export NUMEXPR_MAX_THREADS=8
+
+srun -n 4 $PYTHON -E -c "$CMD" "$OUTPUTDIR" "$@"
 
 # end subshell
 )
 
-rm $HOSTS $HOSTFILE
+#rm $HOSTS $HOSTFILE

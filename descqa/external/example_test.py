@@ -4,6 +4,9 @@
 This script has the simple functionality needed to tell the example run what data it needs, and then to use that to make a test plot
 '''
 
+import matplotlib.pyplot as plt
+import os
+
 def get_quantity_labels(bands):
     quantities = ['ra','dec']
     for band in bands:
@@ -16,8 +19,8 @@ def run_test(data, outdir):
 
     # save plots to the output directory as follows
     plt.figure()
-    plt.hist(data['ra'],data['dec'],bins=100)
-    plt.savefig(os.path.join(output_dir,'test_plot.png'))
+    plt.hist2d(data['ra'],data['dec'],bins=100)
+    plt.savefig(os.path.join(outdir,'test_plot.png'))
     plt.close()
 
     # return some sort of score and whether the test passed (default to 0 and True)
@@ -25,5 +28,6 @@ def run_test(data, outdir):
     passed = True
 
     return test_result, passed 
+
 
 

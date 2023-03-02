@@ -24,6 +24,8 @@ class CheckTest(BaseValidationTest):
         # arguments
         self.catalog_filters = kwargs.get('catalog_filters', [])
         self.bands = kwargs.get('bands')
+        self.no_version = kwargs.get('no_version', False)
+
 
         if not any((
                 self.catalog_filters,
@@ -69,7 +71,7 @@ class CheckTest(BaseValidationTest):
         # Here is where the test is actually being run 
         if rank==0:
             test_score, test_passed = run_test(data = recvbuf, outdir = output_dir)
-            self.test_score = score
+            self.test_score = test_score
             self.test_passed = test_passed
         else:
             self.test_score = 0 
@@ -80,4 +82,4 @@ class CheckTest(BaseValidationTest):
         return TestResult(passed=self.test_passed, score=self.test_score)
 
     def conclude_test(self, output_dir):
-        self.generate_summary(output_dir, aggregated=True)
+        return 
