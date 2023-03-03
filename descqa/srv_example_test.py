@@ -1,16 +1,25 @@
 from __future__ import print_function, division, unicode_literals, absolute_import
-
+import sys
 from .base import BaseValidationTest, TestResult
 
 from .external.example_test import get_quantity_labels
 from .external.example_test import run_test
 
-from mpi4py import MPI
-from .parallel import send_to_master
 
-comm = MPI.COMM_WORLD
-size = comm.Get_size()
-rank = comm.Get_rank()
+if 'mpi4py' in sys.modules:
+    from mpi4py import MPI
+    from .parallel import send_to_master
+    comm = MPI.COMM_WORLD
+    size = comm.Get_size()
+    rank = comm.Get_rank()
+    has_mpi = True
+    print('Using parallel script, invoking parallel read')
+else:
+    size = 1
+    rank = 0 
+    has_mpi = False
+    print('Using serial script')
+    
 
 __all__ = ['CheckTest']
 
@@ -63,10 +72,13 @@ class CheckTest(BaseValidationTest):
         recvbuf={}
         for quantity in quantities:
             data_rank[quantity] = catalog_data[quantity]
-            if 'flag' in quantity:
-                recvbuf[quantity] = send_to_master(data_rank[quantity],'bool')
+            if has_mpi:
+                if 'flag' in quantity:
+                    recvbuf[quantity] = send_to_master(data_rank[quantity],'bool')
+                else:
+                    recvbuf[quantity] = send_to_master(data_rank[quantity],'double')
             else:
-                recvbuf[quantity] = send_to_master(data_rank[quantity],'double')
+                recvbuf[quantity] = data_rank[quantity]
 
         # Here is where the test is actually being run 
         if rank==0:
@@ -76,8 +88,9 @@ class CheckTest(BaseValidationTest):
         else:
             self.test_score = 0 
             self.test_passed = False
-        self.test_score = comm.bcast(self.test_score, root=0)
-        self.test_passed = comm.bcast(self.test_passed, root=0)
+        if has_mpi:
+            self.test_score = comm.bcast(self.test_score, root=0)
+            self.test_passed = comm.bcast(self.test_passed, root=0)
 
         return TestResult(passed=self.test_passed, score=self.test_score)
 

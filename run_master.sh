@@ -16,8 +16,8 @@ OUTPUTDIR="/global/cfs/cdirs/lsst/groups/CS/descqa/run/v2"
 # to allow wildcards in arguments go to master.py
 set -o noglob
 
-# run master.py
-CMD="import descqarun; descqarun.main()"
+# run master.py, importing serial script to avoid MPI import 
+CMD="import descqarun_serial; descqarun_serial.main()"
 $PYTHON -E -c "$CMD" "$OUTPUTDIR" "$@"
 
 # end subshell

@@ -26,7 +26,7 @@ OMP_NUM_THREADS=8
 #CMD2="import sys; sys.path.insert(0,'/global/homes/p/plarsen/plarsen_git/descqa'); sys.path.insert(0,'/global/homes/p/plarsen/plarsen_git/gcr-catalogs'); sys.path.insert(0,'/global/homes/p/plarsen/plarsen_git/generic-catalog-reader'); sys.path.insert(0,'/global/homes/p/plarsen/plarsen_git/easyquery'); import GCR; import GCRCatalogs; import descqarun; descqarun.main()"
 #mpirun -n 1 
 CMD="import descqarun; descqarun.main()"
-mpirun -n 1 /global/homes/p/plarsen/plarsen_git/lsst_stack/conda/miniconda3-py38_4.9.2/envs/lsst-scipipe-4.0.0/bin/python -c "$CMD" "$OUTPUTDIR" "$@"
+srun -n 1 /global/homes/p/plarsen/plarsen_git/lsst_stack/conda/miniconda3-py38_4.9.2/envs/lsst-scipipe-4.0.0/bin/python -c "$CMD" "$OUTPUTDIR" "$@"
 #export OMP_NUM_THREADS=8
 
 # end subshell
