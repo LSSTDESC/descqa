@@ -12,10 +12,16 @@ import collections
 import fnmatch
 import subprocess
 
-from mpi4py import MPI
-comm = MPI.COMM_WORLD
-size = comm.Get_size()
-rank = comm.Get_rank()
+if 'mpi4py' in sys.modules:
+    from mpi4py import MPI
+    comm = MPI.COMM_WORLD
+    size = comm.Get_size()
+    rank = comm.Get_rank()
+    has_mpi = True
+else:
+    size = 1
+    rank = 0 
+    has_mpi = False
 
 
 try:
@@ -137,7 +143,8 @@ def make_output_dir(root_output_dir):
     if os.path.exists(output_dir) and rank==0:
         i = max((int(s.partition('_')[-1] or 0) for s in os.listdir(parent_dir) if s.startswith(new_dir_name)))
         output_dir += '_{}'.format(i+1)
-    output_dir = comm.bcast(output_dir,root=0)
+    if has_mpi:
+        output_dir = comm.bcast(output_dir,root=0)
     
     if rank==0:
         os.mkdir(output_dir)

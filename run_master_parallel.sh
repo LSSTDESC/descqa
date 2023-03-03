@@ -23,7 +23,7 @@ OUTPUTDIR="/global/cfs/cdirs/lsst/groups/CS/descqa/run/v2"
 set -o noglob
 
 # run master.py
-CMD="import descqarun; descqarun.main()"
+CMD="import mpi4py; import descqarun; descqarun.main()"
 export OMP_NUM_THREADS=8
 export NUMEXPR_MAX_THREADS=8
 
