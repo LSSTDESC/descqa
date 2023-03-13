@@ -1,0 +1,12 @@
+subclass_name: srv_example_test_GPU.CheckTest
+description: 'Example test'
+included_by_default: false
+
+ra: 'ra'
+dec: 'dec'
+bands: ['r','i','g','u','y','z']
+
+catalog_filters:
+  - filters: ['detect_isIsolated', 'extendedness==1', 'detect_isPrimary']
+
+
