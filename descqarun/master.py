@@ -100,6 +100,7 @@ class CatchExceptionAndStdStream():
 def create_logger(verbose=False):
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG if verbose else logging.INFO)
+    logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
     logFormatter = logging.Formatter('[%(levelname)-5.5s][%(asctime)s] %(message)s')
     consoleHandler = logging.StreamHandler(sys.stdout)
     consoleHandler.setFormatter(logFormatter)
@@ -546,6 +547,7 @@ def main():
     GCRCatalogs = importlib.import_module('GCRCatalogs')
 
     # this assert statement ensures that the parallel reader is implemented
+    #print(sys.path)
     assert(GCRCatalogs.__version__=='1.5.1')
 
     global descqa #pylint: disable=W0601
