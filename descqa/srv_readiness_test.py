@@ -218,7 +218,7 @@ class CheckQuantities(BaseValidationTest):
         return '<span {1}>{0}</span>'.format(results, 'class="fail"' if failed else '')
 
     def generate_summary(self, output_dir, aggregated=False):
-        if aggreated:
+        if aggregated:
             if not self.enable_aggregated_summary:
                 return
             header = self._aggregated_header
@@ -354,7 +354,8 @@ class CheckQuantities(BaseValidationTest):
 
 
         if len(filters) > 0:
-            catalog_data = catalog_instance.get_quantities(quantities_this_new,filters=filters,return_iterator=False)
+            catalog_data = catalog_instance.get_quantities(quantities_this_new,
+                                                           filters=filters,return_iterator=False)
         else:
             catalog_data = catalog_instance.get_quantities(quantities_this_new,return_iterator=False)
         a = time.time()
@@ -446,7 +447,8 @@ class CheckQuantities(BaseValidationTest):
                     
                     if (need_plot or self.always_show_plot) and rank==0:
                     #    # PL: Changed - need to change this to a numpy function and then communicate it before plotting
-                        ax.hist(value_finite, bins=100, histtype='step', fill=False, label=quantity, **next(self.prop_cycle))
+                        ax.hist(value_finite, bins=100, histtype='step', fill=False, 
+                                label=quantity, **next(self.prop_cycle))
                         has_plot = True
                     b = time.time()
             
