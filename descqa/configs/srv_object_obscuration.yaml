@@ -1,0 +1,10 @@
+subclass_name: srv_object_obs.ObjectObscurationTest
+description: 'Measure object obscuration'
+included_by_default: true
+ra: 'ra'
+dec: 'dec'
+reference_band: 'r'
+nbins: 10 
+distance: 20 #in arcsecs
+catalog_filters:
+  - filters: ['detect_isPrimary','mag_r < 25','mag_r > 17']
