@@ -272,7 +272,6 @@ class CheckQuantities(BaseValidationTest):
             filters.append(filt['filters'])
         filters = list(chain(*filters))
 
-        print(filters)
         # check filters
         """filters = []
         filter_labels = ''
@@ -348,7 +347,6 @@ class CheckQuantities(BaseValidationTest):
         else:
             catalog_data = catalog_instance.get_quantities(quantities_this_new,return_iterator=False)
 
-
         idx_q = 0 
         for quantities_this in quantity_tot:
             fig = None; ax=None;
@@ -359,10 +357,8 @@ class CheckQuantities(BaseValidationTest):
             kind = checks['kind']
             plot_filename = plots_tot[idx_q]
 
-
             for quantity in quantities_this:
-
-                value = catalog_data[quantity] 
+                value = catalog_data[quantity]
                 recvbuf = send_to_master(value, kind)
                 need_plot = False 
 
@@ -426,7 +422,7 @@ class CheckQuantities(BaseValidationTest):
                     ax.set_xlabel(('log ' if checks.get('log') else '') + label_tot[idx_q], size=self.font_size)
                     ax.yaxis.set_ticklabels([])
                     if checks.get('plot_min') is not None: #zero values fail otherwise
-                       ax.set_xlim(left=checks.get('plot_min'))
+                        ax.set_xlim(left=checks.get('plot_min'))
                     if checks.get('plot_max') is not None:
                         ax.set_xlim(right=checks.get('plot_max'))
                     ax.set_title('{} {}'.format(catalog_name, version), fontsize=self.title_size)
