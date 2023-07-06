@@ -340,17 +340,14 @@ class CheckQuantities(BaseValidationTest):
             plots_tot.append(plot_filename)
             checks_tot.append(checks)
 
-
         quantities_this_new=[]
         for q in quantity_tot:
-            print(q)
             if len(q)>1:
                 for j in q:
                     quantities_this_new.append(j)
             else:
                 quantities_this_new.append(q[0])
         quantities_this_new = tuple(quantities_this_new)
-        print(quantities_this_new)
 
 
         if len(filters) > 0:
@@ -358,6 +355,7 @@ class CheckQuantities(BaseValidationTest):
                                                            filters=filters,return_iterator=False)
         else:
             catalog_data = catalog_instance.get_quantities(quantities_this_new,return_iterator=False)
+            
         a = time.time()
 
         for quantities_this in quantity_tot:
@@ -400,7 +398,6 @@ class CheckQuantities(BaseValidationTest):
                     a = time.time()
                     result_this_quantity = {}
                     for s, func in self.stats.items():
-                        print(s)
                         b = time.time()
                         # PL: note there are many faster ways to do this
                         if s == 'f_outlier':
