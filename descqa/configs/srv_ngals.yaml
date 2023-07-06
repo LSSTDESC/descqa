@@ -1,5 +1,5 @@
 subclass_name: srv_ngals.CheckNgals
-description: 'Check flags'
+description: 'Measure density for different flags cuts'
 included_by_default: true
 ra: 'ra'
 dec: 'dec'
@@ -45,11 +45,6 @@ flags_to_check:
     #  - quantities: 'i_pixelFlags_interpolatedCenter'
     #kind: 'bool'
     #flag_val: True
-
-  - quantities: 'good'
-    kind: 'bool'
-    flag_val: False
-
 
 catalog_filters:
 
