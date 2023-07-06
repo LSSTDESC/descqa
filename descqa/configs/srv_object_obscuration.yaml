@@ -1,5 +1,5 @@
-subclass_name: srv_object_obs.ObjectObscurationTest
-description: 'Measure object obscuration'
+subclass_name: srv_object_obscuration.ObjectObscurationTest
+description: 'Measure object obscuration by a foreground bright objects'
 included_by_default: true
 ra: 'ra'
 dec: 'dec'
