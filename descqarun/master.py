@@ -185,11 +185,12 @@ class DescqaTask(object):
     config_basename = 'config.yaml'
     status_basename = 'STATUS'
 
-    def __init__(self, output_dir, validations_to_run, catalogs_to_run, logger):
+    def __init__(self, output_dir, validations_to_run, catalogs_to_run, simultaneous, logger):
         self.output_dir = output_dir
         self.logger = logger
         self.validations_to_run = self.select_subset(descqa.available_validations, validations_to_run)
         self.catalogs_to_run = self.select_subset(GCRCatalogs.get_available_catalogs(False), catalogs_to_run)
+        self.simultaneous = simultaneous
 
         if not self.validations_to_run or not self.catalogs_to_run:
             raise RuntimeError('Nothing to run... Aborted!')
@@ -227,8 +228,12 @@ class DescqaTask(object):
             for validation in self.validations_to_run:
                 os.mkdir(self.get_path(validation))
 
-                for catalog in self.catalogs_to_run:
-                    os.mkdir(self.get_path(validation, catalog))
+                if self.simultaneous:
+                    catalog_join = self.catalogs_to_run[0]+'_'+self.catalogs_to_run[1]
+                    os.mkdir(self.get_path(validation,catalog_join))
+                else:
+                    for catalog in self.catalogs_to_run:
+                        os.mkdir(self.get_path(validation, catalog))
 
                 with open(pjoin(self.get_path(validation), self.config_basename), 'w') as f:
                     f.write(yaml.dump(descqa.available_validations[validation], default_flow_style=False))
@@ -254,8 +259,9 @@ class DescqaTask(object):
         return self._validation_instance_cache[validation]
 
 
-    def get_catalog_instance(self, catalog):
-        logfile = [pjoin(self.get_path(validation, catalog), self.logfile_basename) for validation in self.validations_to_run]
+    def get_catalog_instance(self, catalog, logfile=None):
+        if not logfile:
+            logfile = [pjoin(self.get_path(validation, catalog), self.logfile_basename) for validation in self.validations_to_run]
         instance = None
         with CatchExceptionAndStdStream(logfile, self.logger, 'loading catalog `{}`'.format(catalog)):
             instance = GCRCatalogs.load_catalog(catalog, config_overwrite={'mpi_rank': rank, 'mpi_size': size})
@@ -348,20 +354,34 @@ class DescqaTask(object):
 
     def run_tests(self):
         run_at_least_one_catalog = False
-        for catalog in self.catalogs_to_run:
-            catalog_instance = self.get_catalog_instance(catalog)
-            if catalog_instance is None:
-                continue
 
-            run_at_least_one_catalog = True
+        if self.simultaneous:
+            if (len(self.catalogs_to_run)!=2):
+                msg = 'Simultaneous flag only supports two catalogs'
+                if self.logger:
+                    self.logger.error(msg)
+                raise RuntimeError(msg)
+            catalog_instances={}
+            catalog_join = self.catalogs_to_run[0]+'_'+self.catalogs_to_run[1]
+            logfile = [pjoin(self.get_path(validation, catalog_join), self.logfile_basename) for validation in self.validations_to_run]
+
+            for catalog in self.catalogs_to_run:
+                catalog_instances[catalog] = self.get_catalog_instance(catalog,logfile=logfile)
+                if catalog_instances[catalog] is None:
+                    msg = 'Failed to read in one of the catalogs'
+                    if self.logger:
+                        self.logger.error(msg)
+                    raise RuntimeError(msg)
+                run_at_least_one_catalog = True
+            
             for validation in self.validations_to_run:
                 validation_instance = self.get_validation_instance(validation)
                 if validation_instance is None:
                     continue
 
-                output_dir_this = self.get_path(validation, catalog)
+                output_dir_this = self.get_path(validation, catalog_join)
                 logfile = pjoin(output_dir_this, self.logfile_basename)
-                msg = 'running validation `{}` on catalog `{}`'.format(validation, catalog)
+                msg = 'running validation `{}` on catalogs `{}` and `{}`'.format(validation, self.catalogs_to_run[0], self.catalogs_to_run[1])
                 if self.logger:
                     self.logger.debug(msg)
 
@@ -375,20 +395,62 @@ class DescqaTask(object):
                         with open('{}/{}_results.txt'.format(output_dir_this,validation), 'w') as f:
                             f.write('This test has been skipped.\n') # to be filled with some info from config
                     continue
-
                 test_result = None
                 with CatchExceptionAndStdStream(logfile, self.logger, msg):
                     msg = 'Writing results to {}'.format(output_dir_this)
                     if self.logger:
                         self.logger.debug(msg)
 
-                    test_result = validation_instance.run_on_single_catalog(catalog_instance, catalog, output_dir_this)
+                    test_result = validation_instance.run_on_two_catalogs(catalog_instances, self.catalogs_to_run, output_dir_this)
                     msg = 'Test result for {} is {}'.format(validation, test_result)
                     if self.logger:
                         self.logger.debug(msg)
 
                 if rank==0:
-                    self.set_result(test_result or 'RUN_VALIDATION_TEST_ERROR', validation, catalog)
+                    self.set_result(test_result or 'RUN_VALIDATION_TEST_ERROR', validation, catalog_join)
+
+        else:
+            for catalog in self.catalogs_to_run:
+                catalog_instance = self.get_catalog_instance(catalog)
+                if catalog_instance is None:
+                    continue
+
+                run_at_least_one_catalog = True
+                for validation in self.validations_to_run:
+                    validation_instance = self.get_validation_instance(validation)
+                    if validation_instance is None:
+                         continue
+
+                    output_dir_this = self.get_path(validation, catalog)
+                    logfile = pjoin(output_dir_this, self.logfile_basename)
+                    msg = 'running validation `{}` on catalog `{}`'.format(validation, catalog)
+                    if self.logger:
+                        self.logger.debug(msg)
+
+                    #verify if we need to skip the test from config
+                    skip_test = self.get_description('is_pseudo')['validation_is_pseudo'][validation]
+                    if skip_test:
+                        msg = '{} is not scheduled to run'.format(validation)
+                        if self.logger:
+                            self.logger.debug(msg)
+                            #create some output in self.output_dir
+                            with open('{}/{}_results.txt'.format(output_dir_this,validation), 'w') as f:
+                                f.write('This test has been skipped.\n') # to be filled with some info from config
+                        continue
+
+                    test_result = None
+                    with CatchExceptionAndStdStream(logfile, self.logger, msg):
+                        msg = 'Writing results to {}'.format(output_dir_this)
+                        if self.logger:
+                            self.logger.debug(msg)
+
+                        test_result = validation_instance.run_on_single_catalog(catalog_instance, catalog, output_dir_this)
+                        msg = 'Test result for {} is {}'.format(validation, test_result)
+                        if self.logger:
+                            self.logger.debug(msg)
+
+                    if rank==0:
+                        self.set_result(test_result or 'RUN_VALIDATION_TEST_ERROR', validation, catalog)
 
         if not run_at_least_one_catalog:
             msg = 'No valid catalog to run! Abort!'
@@ -455,6 +517,9 @@ def main():
     parser.add_argument('-w', '--web-base-url', metavar='URL', default=config.base_url,
             help='Web interface base URL')
 
+    parser.add_argument('-s', '--simultaneous', action='store_true',
+            help='Feed both catalogs into the same test')
+
     args = parser.parse_args()
 
     # logger only created for rank 0 
@@ -520,7 +585,7 @@ def main():
 
             logger.debug('preparing to run validation tests...')
             
-        descqa_task = DescqaTask(output_dir, args.validations_to_run, args.catalogs_to_run, logger)
+        descqa_task = DescqaTask(output_dir, args.validations_to_run, args.catalogs_to_run, args.simultaneous, logger)
         master_status.update(descqa_task.get_description())
 
         if logger:

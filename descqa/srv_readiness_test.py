@@ -7,14 +7,23 @@ from collections import defaultdict, OrderedDict
 import numpy as np
 import numexpr as ne
 from scipy.stats import norm
-from mpi4py import MPI
 
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
 
-comm = MPI.COMM_WORLD
-size = comm.Get_size()
-rank = comm.Get_rank()
+if 'mpi4py' in sys.modules:
+    from mpi4py import MPI
+    from .parallel import send_to_master, get_kind
+    comm = MPI.COMM_WORLD
+    size = comm.Get_size()
+    rank = comm.Get_rank()
+    has_mpi = True
+    print('Using parallel script, invoking parallel read')
+else:
+    size = 1
+    rank = 0
+    has_mpi = False
+    print('Using serial script')
 
 
 __all__ = ['CheckQuantities']
@@ -358,9 +367,16 @@ class CheckQuantities(BaseValidationTest):
 
 
             for quantity in quantities_this:
-                #PL : only currently works for doubles and booleans right now 
                 value = catalog_data[quantity] 
-                recvbuf = send_to_master(value, 'double')
+                if has_mpi:
+                    if rank==0:
+                        kind = get_kind(value[0])
+                    else:
+                        kind = ''
+                    kind = comm.bcast(kind,root=0)
+                    recvbuf = send_to_master(value, kind)
+                else:
+                    recvbuf = value
 
                 need_plot = False
 
@@ -451,7 +467,8 @@ class CheckQuantities(BaseValidationTest):
         else: 
             self.current_failed_count=0
         
-        self.current_failed_count = comm.bcast(self.current_failed_count, root=0)
+        if has_mpi:
+            self.current_failed_count = comm.bcast(self.current_failed_count, root=0)
            
         return TestResult(passed=(self.current_failed_count == 0), score=self.current_failed_count)
 

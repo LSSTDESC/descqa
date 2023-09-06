@@ -6,37 +6,31 @@ from itertools import cycle
 from collections import defaultdict, OrderedDict
 import numpy as np
 import numexpr as ne
-from scipy.stats import norm, binned_statistic
-from mpi4py import MPI
 import time
-
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
-from .parallel import send_to_master
-
-comm = MPI.COMM_WORLD
-size = comm.Get_size()
-rank = comm.Get_rank()
 
 
-__all__ = ['CheckShear','shear_from_moments']
+if 'mpi4py' in sys.modules:
+    from mpi4py import MPI
+    from .parallel import send_to_master, get_kind
+    comm = MPI.COMM_WORLD
+    size = comm.Get_size()
+    rank = comm.Get_rank()
+    has_mpi = True
+    print('Using parallel script, invoking parallel read')
+else:
+    size = 1
+    rank = 0
+    has_mpi = False
+    print('Using serial script')
+
+__all__ = ['CompareMags']
 
 
-
-def shear_from_moments(Ixx,Ixy,Iyy,kind='eps'):
-    '''
-    Get shear components from second moments
-    '''
-    if kind=='eps':
-        denom = Ixx + Iyy + 2.*np.sqrt(Ixx*Iyy - Ixy**2)
-    elif kind=='chi':
-        denom = Ixx + Iyy 
-    return (Ixx-Iyy)/denom, 2*Ixy/denom
-
-
-class CheckEllipticity(BaseValidationTest):
+class CompareMags(BaseValidationTest):
     """
-    Check ellipticity values and second moments 
+    Compare measured magnitudes to the truth
     """
 
     def __init__(self, **kwargs):
@@ -49,26 +43,12 @@ class CheckEllipticity(BaseValidationTest):
         self.legend_size = kwargs.get('legend_size', 'x-small')
         self.ra = kwargs.get('ra')
         self.dec = kwargs.get('dec')
-        self.Ixx = kwargs.get('Ixx')
-        self.Ixy= kwargs.get('Ixy')
-        self.Iyy= kwargs.get('Iyy')
-        self.IxxPSF= kwargs.get('IxxPSF')
-        self.IxyPSF= kwargs.get('IxyPSF')
-        self.IyyPSF= kwargs.get('IyyPSF')
-        self.psf_fwhm = kwargs.get('psf_fwhm')
         self.bands = kwargs.get('bands')
 
         if not any((
                 self.catalog_filters,
         )):
             raise ValueError('you need to specify catalog_filters for these checks, add an extendedness flag, a good flag and a magnitude range')
-
-        self.enable_individual_summary = bool(kwargs.get('enable_individual_summary', True))
-        self.enable_aggregated_summary = bool(kwargs.get('enable_aggregated_summary', False))
-        self.always_show_plot = bool(kwargs.get('always_show_plot', True))
-
-        self.nbins = int(kwargs.get('nbins', 50))
-        self.prop_cycle = None
 
         self.current_catalog_name = None
         self.current_failed_count = None
@@ -77,7 +57,8 @@ class CheckEllipticity(BaseValidationTest):
         self._individual_header = list()
         self._individual_table = list()
 
-        super(CheckEllipticity, self).__init__(**kwargs)
+        super(CompareMags, self).__init__(**kwargs)
+
 
     def record_result(self, results, quantity_name=None, more_info=None, failed=None, individual_only=False):
         if isinstance(results, dict):
@@ -109,47 +90,6 @@ class CheckEllipticity(BaseValidationTest):
     def format_result_header(results, failed=False):
         return '<span {1}>{0}</span>'.format(results, 'class="fail"' if failed else '')
 
-    def plot_moments_band(self, Ixx,Ixy,Iyy,band,output_dir):
-        '''
-        Plot moments for each band
-        '''
-        plt.figure()
-        bins = np.logspace(-1.,1.5,100)
-        bins_mid = (bins[1:]+bins[:-1])/2.
-        Ixx_out, bin_edges = np.histogram(Ixx, bins=bins)
-        Ixy_out, bin_edges = np.histogram(Ixy, bins=bins)
-        Iyy_out, bin_edges = np.histogram(Iyy, bins=bins)
-        self.record_result((0,'moments_'+band),'moments_'+band,'moments_'+band+'.png')
-        plt.plot(bins_mid,Ixx_out,'b',label='Ixx')
-        plt.plot(bins_mid,Iyy_out,'r--',label='Iyy')
-        plt.plot(bins_mid,Ixy_out,'k-.',label='Ixy')
-        plt.yscale('log')
-        plt.xscale('log')
-        plt.title(band)
-        plt.legend()
-        plt.savefig(os.path.join(output_dir, 'moments_'+band+'.png'))
-        plt.close()
-        return
-
-    def plot_ellipticities_band(self,e1,e2,band,output_dir):
-        '''
-        Plot elliptiticies for each band
-        '''
-        plt.figure()
-        bins = np.linspace(0.,1.,51)
-        bins_mid = (bins[1:]+bins[:-1])/2.
-        e1_out, bin_edges = np.histogram(e1, bins=bins)
-        e2_out, bin_edges = np.histogram(e2, bins=bins)
-        self.record_result((0,'ell_'+band),'ell_'+band,'ell_'+band+'.png')
-        plt.plot(bins_mid,e1_out,'b',label='e1')
-        plt.plot(bins_mid,e2_out,'r--',label='e2')
-        plt.yscale('log')
-        #plt.xscale('log')
-        plt.title(band)
-        plt.legend()
-        plt.savefig(os.path.join(output_dir, 'ell_'+band+'.png'))
-        plt.close()
-        return
 
     def plot_psf(self,fwhm,band,output_dir):
         '''
@@ -254,16 +194,24 @@ class CheckEllipticity(BaseValidationTest):
                 catalog_data = catalog_instance.get_quantities(quantities,return_iterator=False)
             a = time.time()
 
-
             data_rank={}
             recvbuf={}
             for quantity in quantities:
                 data_rank[quantity] = catalog_data[quantity]
                 print(len(data_rank[quantity]))
-                recvbuf[quantity] = send_to_master(data_rank[quantity],'double')
-
+                if has_mpi:
+                    if rank==0:
+                        kind = get_kind(data_rank[quantity][0]) # assumes at least one element of data on rank 0
+                    else:
+                        kind = ''
+                    kind = comm.bcast(kind, root=0)
+                    recvbuf[quantity] = send_to_master(data_rank[quantity],kind)
+                else:
+                    recvbuf[quantity] = data_rank[quantity]
             if rank==0:
                 print(len(recvbuf[quantity]))
+
+
             e1,e2 = shear_from_moments(recvbuf[self.Ixx+'_'+band],recvbuf[self.Ixy+'_'+band],recvbuf[self.Iyy+'_'+band])
             e1psf,e2psf = shear_from_moments(recvbuf[self.IxxPSF+'_'+band],recvbuf[self.IxyPSF+'_'+band],recvbuf[self.IyyPSF+'_'+band])
              
@@ -278,67 +226,13 @@ class CheckEllipticity(BaseValidationTest):
             self.plot_psf(fwhm,band,output_dir)
 
 
-        # plot moments directly per filter. For good, star, galaxy
-        # FWHM of the psf
-        # calculate ellpiticities and make sure they're alright 
-        # look at different bands
-        # note that we want to look by magnitude or SNR to understand the longer tail in moments
-        # PSF ellipticity whisker plot?
-        # look at what validate_drp is
-
-        # s1/s2 plots
-
-        # look at full ellipticity distribution test as well
-        #https://github.com/LSSTDESC/descqa/blob/master/descqa/EllipticityDistribution.py
-        #DC2 validation github - PSF ellipticity
-        # https://github.com/LSSTDESC/DC2-analysis/blob/master/validation/Run_1.2p_PSF_tests.ipynb
-
-        #https://github.com/LSSTDESC/DC2-analysis/blob/master/validation/DC2_calexp_src_validation_1p2.ipynb
-
-        # Look at notes here:
-        #https://github.com/LSSTDESC/DC2-production/issues/340
-
-        # get PSF FWHM directly from data, note comments on here:
-        # https://github.com/LSSTDESC/DC2-analysis/blob/u/wmwv/DR6_dask_refactor/validation/validate_dc2_run2.2i_object_table_dask.ipynb about focussing of the "telescope"
-
-
-        '''mask_finite = np.isfinite(e1)&np.isfinite(e2)
-        bs_out = bs(e1[mask_finite],values = e2[mask_finite],bins=100,statistic='mean')
-        plt.figure()
-        quantity_hashes[0].add('s1s2')
-        self.record_result((0,'s1s2'),'s1s2','p_s1s2.png')
-        plt.plot(bs_out[1][1:],bs_out[0])
-        plt.savefig(os.path.join(output_dir, 'p_s1s2.png'))
-        plt.close()
-
-
-        plt.figure()        
-        quantity_hashes[0].add('s1')
-        self.record_result((0,'s1'),'s1','p_s1.png')
-        #plt.hist(e1,bins=np.linspace(-1.,1.,100))
-        plt.hist(e1psf,bins=100)#np.linspace(-1.,1.,100))
-        plt.savefig(os.path.join(output_dir, 'p_s1.png'))
-        plt.close()
-        plt.figure()
-        quantity_hashes[0].add('s2')
-        self.record_result((0,'s2'),'s2','p_s2.png')
-        #plt.hist(e2,bins=np.linspace(-1.,1.,100))
-        plt.hist(e2psf,bins=100)#np.linspace(-1.,1.,100))
-        plt.savefig(os.path.join(output_dir, 'p_s2.png'))
-        plt.close()'''
-        '''plt.figure()
-        quantity_hashes[0].add('s12')
-        self.record_result((0,'s12'),'s12','p_s12.png')
-        plt.hist2d(e1,e2,bins=100)
-        plt.savefig(os.path.join(output_dir, 'p_s12.png'))
-        plt.close()'''
-
         if rank==0:
             self.generate_summary(output_dir)
         else: 
             self.current_failed_count=0
         
-        self.current_failed_count = comm.bcast(self.current_failed_count, root=0)
+        if has_mpi:
+            self.current_failed_count = comm.bcast(self.current_failed_count, root=0)
            
         return TestResult(passed=(self.current_failed_count == 0), score=self.current_failed_count)
 

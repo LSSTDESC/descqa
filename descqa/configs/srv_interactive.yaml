@@ -1,0 +1,17 @@
+subclass_name: srv_interactive.CheckTest
+description: 'Interactive Plot'
+included_by_default: false
+
+ra: 'ra'
+dec: 'dec'
+bands: ['r','i','g','u','y','z']
+
+catalog_filters:
+  - filters: ['mag_i_cModel<26']
+secondary_catalog_filters:
+  - filters: ['mag_i_cModel<26','detect_isPrimary']
+
+    
+#[ 'extendedness==1', 'detect_isPrimary','mag_i_cModel<26']
+
+

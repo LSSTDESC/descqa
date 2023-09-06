@@ -5,15 +5,26 @@ import fnmatch
 from itertools import cycle, chain
 from collections import defaultdict
 import numpy as np
-from mpi4py import MPI
+import sys
 
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
-from .parallel import send_to_master, get_ra_dec
 
-comm = MPI.COMM_WORLD
-size = comm.Get_size()
-rank = comm.Get_rank()
+
+if 'mpi4py' in sys.modules:
+    from mpi4py import MPI
+    from .parallel import send_to_master, get_kind, get_ra_dec
+    comm = MPI.COMM_WORLD
+    size = comm.Get_size()
+    rank = comm.Get_rank()
+    has_mpi = True
+    print('Using parallel script, invoking parallel read')
+else:
+    size = 1
+    rank = 0
+    has_mpi = False
+    print('Using serial script')
+
 
 
 __all__ = ['CheckNgals']
@@ -194,7 +205,10 @@ class CheckNgals(BaseValidationTest):
         else:
             catalog_data = catalog_instance.get_quantities(quantities_this_new,return_iterator=False)
 
-        recvbuf_ra, recvbuf_dec = get_ra_dec(self.ra,self.dec,catalog_data)
+        if has_mpi:
+            recvbuf_ra, recvbuf_dec = get_ra_dec(self.ra,self.dec,catalog_data)
+        else:
+            recvbuf_ra = catalog_data[self.ra]; recvbuf_dec = catalog_data[self.dec]
 
         if rank==0:
             galaxy_count = len(recvbuf_ra)
@@ -218,7 +232,11 @@ class CheckNgals(BaseValidationTest):
                     print('good',catalog_data[quantity][0])
                     print(flag_val)
                 value = catalog_data[quantity] 
-                recvbuf = send_to_master(value, kind)
+                if has_mpi:
+                    recvbuf = send_to_master(value, kind)
+                else:
+                    recvbuf = value 
+
                 if quantity=='good' and rank==0:
                     print('good2',recvbuf[0])
                 
@@ -291,7 +309,8 @@ class CheckNgals(BaseValidationTest):
         else: 
             self.current_failed_count=0
 
-        self.current_failed_count = comm.bcast(self.current_failed_count, root=0)
+        if has_mpi:
+            self.current_failed_count = comm.bcast(self.current_failed_count, root=0)
            
         return TestResult(passed=(self.current_failed_count == 0), score=self.current_failed_count)
 

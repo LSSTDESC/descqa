@@ -7,16 +7,25 @@ from collections import defaultdict, OrderedDict
 import numpy as np
 import numexpr as ne
 from scipy.stats import norm, binned_statistic
-from mpi4py import MPI
 import time
+import sys
 
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
-from .parallel import send_to_master
 
-comm = MPI.COMM_WORLD
-size = comm.Get_size()
-rank = comm.Get_rank()
+if 'mpi4py' in sys.modules:
+    from mpi4py import MPI
+    from .parallel import send_to_master, get_kind
+    comm = MPI.COMM_WORLD
+    size = comm.Get_size()
+    rank = comm.Get_rank()
+    has_mpi = True
+    print('Using parallel script, invoking parallel read')
+else:
+    size = 1
+    rank = 0
+    has_mpi = False
+    print('Using serial script')
 
 
 __all__ = ['CheckShear','shear_from_moments']
@@ -254,16 +263,21 @@ class CheckEllipticity(BaseValidationTest):
                 catalog_data = catalog_instance.get_quantities(quantities,return_iterator=False)
             a = time.time()
 
-
             data_rank={}
             recvbuf={}
             for quantity in quantities:
                 data_rank[quantity] = catalog_data[quantity]
-                print(len(data_rank[quantity]))
-                recvbuf[quantity] = send_to_master(data_rank[quantity],'double')
+                if has_mpi:
+                    if rank==0:
+                        kind = get_kind(data_rank[quantity][0]) # assumes at least one element of data on rank 0
+                    else:
+                        kind = ''
+                    kind = comm.bcast(kind, root=0)
+                    recvbuf[quantity] = send_to_master(data_rank[quantity],kind)
+                else:
+                    recvbuf[quantity] = data_rank[quantity]
 
-            if rank==0:
-                print(len(recvbuf[quantity]))
+
             e1,e2 = shear_from_moments(recvbuf[self.Ixx+'_'+band],recvbuf[self.Ixy+'_'+band],recvbuf[self.Iyy+'_'+band])
             e1psf,e2psf = shear_from_moments(recvbuf[self.IxxPSF+'_'+band],recvbuf[self.IxyPSF+'_'+band],recvbuf[self.IyyPSF+'_'+band])
              
@@ -338,7 +352,8 @@ class CheckEllipticity(BaseValidationTest):
         else: 
             self.current_failed_count=0
         
-        self.current_failed_count = comm.bcast(self.current_failed_count, root=0)
+        if has_mpi:
+            self.current_failed_count = comm.bcast(self.current_failed_count, root=0)
            
         return TestResult(passed=(self.current_failed_count == 0), score=self.current_failed_count)
 

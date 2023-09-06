@@ -9,17 +9,26 @@ import numexpr as ne
 
 import seaborn as sns
 from scipy.stats import norm, binned_statistic
-from mpi4py import MPI
 import time
 
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
-from .parallel import send_to_master
+import sys
 
+if 'mpi4py' in sys.modules:
+    from mpi4py import MPI
+    from .parallel import send_to_master, get_kind
+    comm = MPI.COMM_WORLD
+    size = comm.Get_size()
+    rank = comm.Get_rank()
+    has_mpi = True
+    print('Using parallel script, invoking parallel read')
+else:
+    size = 1
+    rank = 0
+    has_mpi = False
+    print('Using serial script')
 
-comm = MPI.COMM_WORLD
-size = comm.Get_size()
-rank = comm.Get_rank()
 
 
 __all__ = ['CheckFluxes']
@@ -366,19 +375,24 @@ class CheckFluxes(BaseValidationTest):
             catalog_data = catalog_instance.get_quantities(quantities,return_iterator=False)
         a = time.time()
 
-        
         data_rank={}
         recvbuf={}
         for quantity in quantities:
             data_rank[quantity] = catalog_data[quantity]
             print(len(data_rank[quantity]))
-            if 'flag' in quantity:
-                recvbuf[quantity] = send_to_master(data_rank[quantity],'bool')
+            if has_mpi:
+                if rank==0:
+                    kind = get_kind(data_rank[quantity][0]) # assumes at least one element of data on rank 0
+                else:
+                    kind = ''
+                kind = comm.bcast(kind, root=0)
+                recvbuf[quantity] = send_to_master(data_rank[quantity],kind)
             else:
-                recvbuf[quantity] = send_to_master(data_rank[quantity],'double')
-
+                recvbuf[quantity] = data_rank[quantity]
         if rank==0:
             print(len(recvbuf[quantity]))
+       
+
 
       
         self.plot_snr_mag(recvbuf, output_dir)
@@ -394,7 +408,8 @@ class CheckFluxes(BaseValidationTest):
         else: 
             self.current_failed_count=0
         
-        self.current_failed_count = comm.bcast(self.current_failed_count, root=0)
+        if has_mpi:
+            self.current_failed_count = comm.bcast(self.current_failed_count, root=0)
            
         return TestResult(passed=(self.current_failed_count == 0), score=self.current_failed_count)
 

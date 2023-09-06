@@ -1,0 +1,12 @@
+subclass_name: srv_TheLastMetric.CheckTest
+description: 'Example test'
+included_by_default: false
+
+ra: 'ra'
+dec: 'dec'
+bands: ['mag_r_lsst','mag_i_lsst','mag_g_lsst','mag_u_lsst','mag_y_lsst','mag_z_lsst']
+
+catalog_filters:
+  - filters: ['mag_r_lsst < 26']
+
+

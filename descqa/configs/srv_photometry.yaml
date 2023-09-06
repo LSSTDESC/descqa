@@ -1,0 +1,20 @@
+subclass_name: srv_photometry_errors.MatchTest
+description: 'Interactive Plot'
+included_by_default: false
+
+ra: 'ra'
+dec: 'dec'
+bands: ['r','i','g']
+models: ['cModel']
+
+# currently not working with dc2, work out how to use that truth match properly 
+catalog_filters:
+  - filters: ['mag_i_cModel<26','extendedness==1']
+secondary_catalog_filters:
+  - filters: ['mag_i_cModel<26','detect_isPrimary', 'extendedness==1','detect_isIsolated']
+    #,##'detect_isPrimary', 'extendedness==1','detect_isIsolated']
+
+    
+#[ 'extendedness==1', 'detect_isPrimary','mag_i_cModel<26']
+
+

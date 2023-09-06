@@ -20,12 +20,15 @@ cpu=true
 analysistools=false
 
 # if you want to run the parallel version
-parallel=true
+parallel=false
+
+# if on compute nodes launching through srun, local=false
+local=true
 
 # number of threads and ranks to run on
 OMP_NUM_THREADS=4
 NUMEXPR_MAX_THREADS=4
-if parallel
+if $parallel
 then 
 RANKS=32
 else
@@ -35,7 +38,7 @@ fi
 #################################
 
 # activate DESC python environment
-if analysistools 
+if $analysistools 
 then 
 source /global/homes/p/plarsen/plarsen_git/lsst_stack/loadLSST.bash
 setup lsst_distrib
@@ -47,7 +50,7 @@ source /global/common/software/lsst/common/miniconda/setup_dev_python.sh ""
 #source /global/common/software/lsst/common/miniconda/setup_gpu_python.sh long term will likely change to this, check with Heather for current usage 
 fi
 
-if analysistools
+if $analysistools
 then
 PYTHON="/global/homes/p/plarsen/plarsen_git/lsst_stack/conda/miniconda3-py38_4.9.2/envs/lsst-scipipe-4.0.0/bin/python"
 else
@@ -60,7 +63,7 @@ OUTPUTDIR="/global/cfs/cdirs/lsst/groups/CS/descqa/run/v2"
 # to allow wildcards in arguments go to master.py
 set -o noglob
 
-if parallel
+if $parallel
 then
 CMD="import mpi4py; import descqarun; descqarun.main()"
 else
@@ -70,8 +73,12 @@ fi
 export OMP_NUM_THREADS
 export NUMEXPR_MAX_THREADS
 
+if $local
+then
+$PYTHON -E -c "$CMD" "$OUTPUTDIR" "$@"
+else
 srun -n $RANKS $PYTHON -E -c "$CMD" "$OUTPUTDIR" "$@"
-	
+fi	
 
 # end subshell
 )

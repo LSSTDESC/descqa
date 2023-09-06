@@ -1,14 +1,13 @@
 from __future__ import print_function, division, unicode_literals, absolute_import
 import sys
 from .base import BaseValidationTest, TestResult
-
-from .external.example_cuda_test import get_quantity_labels
-from .external.example_cuda_test import run_test
-
+from .external.interactive_plot_matchup import get_quantity_labels
+from .external.interactive_plot_matchup import run_test
+import numpy as np
 
 if 'mpi4py' in sys.modules:
     from mpi4py import MPI
-    from .parallel import send_to_master
+    from .parallel import send_to_master, get_kind
     comm = MPI.COMM_WORLD
     size = comm.Get_size()
     rank = comm.Get_rank()
@@ -21,11 +20,12 @@ else:
     print('Using serial script')
     
 
-__all__ = ['CheckTest']
+__all__ = ['MatchTest']
 
-class CheckTest(BaseValidationTest):
+
+class MatchTest(BaseValidationTest):
     """
-    Run a minimalist example test 
+    Run a simple matching test
     """
 
     def __init__(self, **kwargs):
@@ -43,7 +43,7 @@ class CheckTest(BaseValidationTest):
 
         self.current_catalog_name = None
 
-        super(CheckTest, self).__init__(**kwargs)
+        super(MatchTest, self).__init__(**kwargs)
 
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
@@ -58,9 +58,12 @@ class CheckTest(BaseValidationTest):
         for i, filt in enumerate(self.catalog_filters):
             filters = filt['filters']
    
-        # Here is where you define what data you need to read in
+
+        # quantities to read 
+
         quantities = get_quantity_labels(bands = self.bands)
         quantities = tuple(quantities)
+
 
         # reading in the data 
         if len(filters) > 0:
@@ -70,8 +73,15 @@ class CheckTest(BaseValidationTest):
         
         data_rank={}
         recvbuf={}
+
+        mask_tot = np.zeros(len(catalog_data[quantities[0]])).astype('bool')
         for quantity in quantities:
-            data_rank[quantity] = catalog_data[quantity]
+            if type(catalog_data[quantity])==np.ma.core.MaskedArray:
+                mask_tot += catalog_data[quantity].mask
+
+        for quantity in quantities:
+            data_rank[quantity] = catalog_data[quantity][~mask_tot]
+            #print(len(data_rank[quantity]),rank,flush=True)
             if has_mpi:
                 if rank==0:
                     kind = get_kind(data_rank[quantity][0]) # assumes at least one element of data on rank 0
@@ -82,10 +92,9 @@ class CheckTest(BaseValidationTest):
             else:
                 recvbuf[quantity] = data_rank[quantity]
 
-
         # Here is where the test is actually being run 
         if rank==0:
-            test_score, test_passed = run_test(data = recvbuf, outdir = output_dir)
+            test_score, test_passed = run_test(gc_data = recvbuf, outdir = output_dir)
             self.test_score = test_score
             self.test_passed = test_passed
         else:

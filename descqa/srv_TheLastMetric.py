@@ -2,13 +2,13 @@ from __future__ import print_function, division, unicode_literals, absolute_impo
 import sys
 from .base import BaseValidationTest, TestResult
 
-from .external.example_test import get_quantity_labels
-from .external.example_test import run_test
+from .external.TheLastMetric import get_quantity_labels
+from .external.TheLastMetric import run_test
 
 
 if 'mpi4py' in sys.modules:
     from mpi4py import MPI
-    from .parallel import send_to_master
+    from .parallel import send_to_master, get_kind
     comm = MPI.COMM_WORLD
     size = comm.Get_size()
     rank = comm.Get_rank()
@@ -72,13 +72,19 @@ class CheckTest(BaseValidationTest):
         recvbuf={}
         for quantity in quantities:
             data_rank[quantity] = catalog_data[quantity]
+            print(len(data_rank[quantity]))
             if has_mpi:
-                if 'flag' in quantity:
-                    recvbuf[quantity] = send_to_master(data_rank[quantity],'bool')
+                if rank==0:
+                    kind = get_kind(data_rank[quantity][0]) # assumes at least one element of data on rank 0
                 else:
-                    recvbuf[quantity] = send_to_master(data_rank[quantity],'double')
+                    kind = ''
+                kind = comm.bcast(kind, root=0)
+                recvbuf[quantity] = send_to_master(data_rank[quantity],kind)
             else:
                 recvbuf[quantity] = data_rank[quantity]
+        if rank==0:
+            print(len(recvbuf[quantity]))
+
 
         # Here is where the test is actually being run 
         if rank==0:

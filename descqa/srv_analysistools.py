@@ -12,12 +12,22 @@ import time
 
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
-from .parallel import send_to_master
 
 from .reconfig_at import *
-comm = MPI.COMM_WORLD
-size = comm.Get_size()
-rank = comm.Get_rank()
+
+if 'mpi4py' in sys.modules:
+    from mpi4py import MPI
+    from .parallel import send_to_master, get_kind
+    comm = MPI.COMM_WORLD
+    size = comm.Get_size()
+    rank = comm.Get_rank()
+    has_mpi = True
+    print('Using parallel script, invoking parallel read')
+else:       
+    size = 1
+    rank = 0
+    has_mpi = False
+    print('Using serial script')
 
 
 __all__ = ['analysisToolsMetric']
@@ -188,7 +198,8 @@ class analysisToolsMetric(BaseValidationTest):
             print(quantities_new)
         else:
             quantities_new = np.array([])
-        quantities_new = comm.bcast(quantities_new, root=0)
+        if has_mpi:
+            quantities_new = comm.bcast(quantities_new, root=0)
 
         quantities = tuple(quantities_new)
         # note that snr is defined on flux directly and not on magnitudes
@@ -206,11 +217,15 @@ class analysisToolsMetric(BaseValidationTest):
         for quantity in quantities:
             data_rank[quantity] = catalog_data[quantity]
             print(len(data_rank[quantity]))
-            if ('flag' in quantity) or ('Flag' in quantity) or ('detect' in quantity):
-                recvbuf[quantity] = send_to_master(data_rank[quantity],'bool')
+            if has_mpi:
+                if rank==0:
+                    kind = get_kind(data_rank[quantity][0]) # assumes at least one element of data on rank 0
+                else:
+                    kind = ''
+                kind = comm.bcast(kind, root=0)
+                recvbuf[quantity] = send_to_master(data_rank[quantity],kind)
             else:
-                recvbuf[quantity] = send_to_master(data_rank[quantity],'double')
-
+                recvbuf[quantity] = data_rank[quantity]
         if rank==0:
             print(len(recvbuf[quantity]))
 
@@ -233,10 +248,12 @@ class analysisToolsMetric(BaseValidationTest):
             self.generate_summary(output_dir)
         else: 
             self.current_failed_count=0
-        
         self.metric=0
-        self.current_failed_count = comm.bcast(self.current_failed_count, root=0)
-        self.metric = comm.bcast(self.metric, root=0)
+
+        if has_mpi:
+            self.current_failed_count = comm.bcast(self.current_failed_count, root=0)
+            self.metric = comm.bcast(self.metric, root=0)
+
 
         return TestResult(passed=(self.current_failed_count == 0), score=self.metric)
 

@@ -15,6 +15,18 @@ __all__ = [
     'get_ra_dec',
 ]
 
+def get_kind(val):
+    if type(val)==np.float64:
+        return 'double'
+    elif type(val)==np.float32:
+        return 'float'
+    elif type(val)==np.bool_ or type(val)==bool:
+        return 'bool'
+    elif type(val)==np.int64:
+        return 'int64'
+    elif type(val)==np.int32:
+        return 'int'
+
 
 def send_to_master(value, kind):
     """
@@ -41,7 +53,11 @@ def send_to_master(value, kind):
         elif kind=='bool':
             recvbuf = np.zeros(tot_num)!=0.0
         elif kind=='int':
-            recvbuf = np.zeros(tot_num).astype(int)
+            recvbuf = np.zeros(tot_num, dtype='int32')
+        elif kind=='int64':
+            recvbuf = np.zeros(tot_num, dtype='int64')
+        elif kind=='float':
+            recvbuf = np.zeros(tot_num, dtype='float32')
         else:
             raise NotImplementedError
     else:
