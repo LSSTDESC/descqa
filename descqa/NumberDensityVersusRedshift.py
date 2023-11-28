@@ -176,7 +176,6 @@ class NumberDensityVersusRedshift(BaseValidationTest):
 
         self._other_kwargs = kwargs
 
-        
     def init_plots(self, mlo, mhi):
         #get magnitude cuts based on validation data or default limits (only catalog data plotted)
         mag_lo = self.validation_data.get('mag_lo', [float(m) for m in range(int(mhi), int(mlo+1))])
