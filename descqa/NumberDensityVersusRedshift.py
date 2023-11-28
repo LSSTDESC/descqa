@@ -176,7 +176,6 @@ class NumberDensityVersusRedshift(BaseValidationTest):
 
         self._other_kwargs = kwargs
 
-
     def init_plots(self, mlo, mhi):
         #get magnitude cuts based on validation data or default limits (only catalog data plotted)
         mag_lo = self.validation_data.get('mag_lo', [float(m) for m in range(int(mhi), int(mlo+1))])
@@ -401,7 +400,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
 
     def get_jackknife_errors(self, N_jack, jackknife_data, N):
         nn = np.stack((jackknife_data[self.ra], jackknife_data[self.dec]), axis=1)
-        _, jack_labels, _ = k_means(n_clusters=N_jack, random_state=0, X=nn)
+        _, jack_labels, _ = k_means(n_clusters=N_jack, random_state=0, X=nn, n_init='auto')
 
         #make histograms for jackknife regions
         Njack_array = np.zeros((N_jack, len(self.zbins)-1), dtype=np.int)
@@ -513,7 +512,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
             else:
                 fields = ('meanz', keyname)
                 header = ', '.join(('Data columns are: <z>', keyname, ' '))
-            np.savetxt(filename, np.vstack((results[k] for k in fields)).T, fmt='%12.4e', header=header+comment)
+            np.savetxt(filename, np.vstack(list(results[k] for k in fields)).T, fmt='%12.4e', header=header+comment)
 
 
     def conclude_test(self, output_dir):

@@ -58,7 +58,7 @@ class DeltaSigma(BaseValidationTest):
         if self.data == 'sdss_lowz':
 
             # Singh et al (2015) (http://adsabs.harvard.edu/abs/2015MNRAS.450.2195S) measurements on the SDSS LOWZ sample.
-		
+
             res = catalog_instance.get_quantities(['redshift_true', 'ra', 'dec', 'shear_1', 'shear_2',
                     'mag_true_i_sdss', 'mag_true_z_sdss','mag_true_g_sdss', 'mag_true_r_sdss'])
 
@@ -101,10 +101,15 @@ class DeltaSigma(BaseValidationTest):
             fig2 = plt.figure(2, figsize=(12,5))
 
         if self.data == 'sdss_main':
-            res = catalog_instance.get_quantities(['redshift_true', 'ra', 'dec', 'shear_1', 'shear_2',
-                    'mag_true_i_sdss', 'mag_true_z_sdss','mag_true_g_sdss', 'mag_true_r_sdss', 'stellar_mass_bulge', 'stellar_mass_disk','Mag_true_g_sdss_z0','Mag_true_r_sdss_z0'])
+            if not catalog_instance.has_quantities(['stellar_mass']):
+                catalog_instance.add_derived_quantity('stellar_mass', np.add, 'stellar_mass_bulge', 'stellar_mass_disk')
+            res = catalog_instance.get_quantities([
+                 'redshift_true', 'ra', 'dec', 'shear_1', 'shear_2', 'stellar_mass',
+                 'mag_true_i_sdss', 'mag_true_z_sdss','mag_true_g_sdss', 'mag_true_r_sdss',
+                 'Mag_true_g_sdss_z0', 'Mag_true_r_sdss_z0',
+             ])
+            sm = res['stellar_mass']
             gr = res['Mag_true_g_sdss_z0'] - res['Mag_true_r_sdss_z0'] # larger number means redder
-            sm = res['stellar_mass_bulge'] + res['stellar_mass_disk']
             
             SM_min = np.array([10,10.7,11.2,11.6])
             SM_max = np.array([10.4,11.0,11.4,15.0])
@@ -175,7 +180,7 @@ class DeltaSigma(BaseValidationTest):
             gt = gt/counts
 
             outfile = os.path.join(output_dir, 'DS_'+str(self.data)+'_'+str(i)+'.dat')
-            np.savetxt(outfile, np.vstack((rp, gt)).T)
+            np.savetxt(outfile, np.vstack((rp.value, gt.value)).T)
 
             
             if self.data == 'sdss_lowz':

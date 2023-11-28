@@ -10,6 +10,11 @@ set -e
 source /global/common/software/lsst/common/miniconda/setup_current_python.sh ""
 PYTHON='python'
 
+# increase maximum number of threads (default is 8)
+export NUMEXPR_MAX_THREADS=256
+# set number of threads to prevent thread error
+export OMP_NUM_THREADS=64
+
 # set output directory
 OUTPUTDIR="/global/cfs/cdirs/lsst/groups/CS/descqa/run/v2"
 
