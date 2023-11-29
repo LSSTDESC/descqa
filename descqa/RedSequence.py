@@ -74,10 +74,8 @@ class RedSequence(BaseValidationTest):
             quantities_needed.add('r_host')
             quantities_needed.add('r_vir')
 
-        mag_fields = []
-        for i in range(len(self.bands)):
-            mag_fields.append(gc.first_available(*self.possible_mag_fields[i]))
-            quantities_needed.add(mag_fields[i])
+        mag_fields = [gc.first_available(*fields) for fields in self.possible_mag_fields]
+        quantities_needed.update(mag_fields)
 
         absolute_magnitude_field = gc.first_available(*self.possible_absmag_fields)
         quantities_needed.add(absolute_magnitude_field)
