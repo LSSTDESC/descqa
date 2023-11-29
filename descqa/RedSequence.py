@@ -83,7 +83,7 @@ class RedSequence(BaseValidationTest):
         absolute_magnitude_field = gc.first_available(*self.possible_absmag_fields)
         quantities_needed.add(absolute_magnitude_field)
 
-        if ((not np.all(gc.has_quantities(mag_fields))) and gc.has_quantities(quantities_needed)):
+        if not gc.has_quantities(quantities_needed):
             return
 
         return absolute_magnitude_field, mag_fields, quantities_needed
