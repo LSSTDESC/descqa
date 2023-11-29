@@ -1,0 +1,18 @@
+subclass_name: clf_redmapper.ConditionalLuminosityFunction_redmapper
+band1: i
+band_kcorrect: g,r,i,z
+bandshift: 0.3
+njack: 20
+abundance_matching: false
+description: Conditional luminosity function (in i band) for central and satellite galaxies
+included_by_default: true
+z_bins: 
+   - 0.1
+   - 0.2
+   - 0.3
+data_z_mins:
+   - 0.1
+   - 0.2
+data_z_maxs:
+   - 0.2
+   - 0.3
