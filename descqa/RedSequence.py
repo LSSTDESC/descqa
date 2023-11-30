@@ -4,7 +4,6 @@ from astropy.io import fits
 import numpy as np
 import sys
 import pickle
-import GCRCatalogs
 import os
 
 from .base import BaseValidationTest, TestResult
