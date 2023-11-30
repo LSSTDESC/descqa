@@ -92,6 +92,7 @@ class RedSequence(BaseValidationTest):
 
         if self.use_redmapper:
             try:
+                import GCRCatalogs
                 redmapper = GCRCatalogs.load_catalog(catalog_name+'_redmapper')
             except:
                 return TestResult(skipped=True)
