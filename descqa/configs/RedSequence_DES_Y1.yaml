@@ -1,0 +1,3 @@
+subclass_name: RedSequence.RedSequence
+validation_catalog: des_y1
+description: Compare the mock galaxy red sequeunce with DES Y1 redMaPPer red sequence
