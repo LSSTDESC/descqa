@@ -49,7 +49,7 @@ class RedSequence(BaseValidationTest):
 
         possible_mag_fields = ('mag_true_{}_lsst',
                                'mag_true_{}_des',
-                              'mag_true_{}_sdss',
+                               'mag_true_{}_sdss',
                               )
         self.possible_mag_fields = [[f.format(band) for f in possible_mag_fields] for band in self.bands]
 
