@@ -42,6 +42,8 @@ def shear_from_moments(Ixx,Ixy,Iyy,kind='eps'):
         denom = Ixx + Iyy 
     return (Ixx-Iyy)/denom, 2*Ixy/denom
 
+def size_from_moments(Ixx, Iyy):
+    return Ixx + Iyy
 
 class CheckEllipticity(BaseValidationTest):
     """
@@ -162,7 +164,7 @@ class CheckEllipticity(BaseValidationTest):
 
     def plot_psf(self,fwhm,band,output_dir):
         '''
-        Plot elliptiticies for each band
+        Plot PSF for each band
         '''
         plt.figure()
         bins = np.linspace(0.,1.5,201)
@@ -178,8 +180,37 @@ class CheckEllipticity(BaseValidationTest):
         plt.close()
         return
 
-
-
+    def plot_e1e2_residuals(self,e1,e2,epsf1,epsf2):
+        '''
+        Plot e1,e2 residuals with respect to model
+        '''
+        plt.figure()
+        bins = np.linspace(-1.,1.,201)
+        bins_mid = (bins[1:]+bins[:-1])/2.
+        e1residual_out, bin_edges = np.histogram(e1-epsf1, bins=bins)
+        e2residual_out, bin_edges = np.histogram(e2-epsf2, bins=bins)
+        self.record_result((0,'e1e2_residuals_'+band),'e1e2_residuals_'+band,'e1e2_residuals_'+band+'.png')
+        plt.plot(bins_mid,e1residual_out,'b',label='e1-e1psf')
+        plt.plot(bins_mid,e2residual_out,'r--',label='e2-e2psf')
+        plt.title('e1/e2 residuals vs model, band'+band)
+        plt.savefig(os.path.join(output_dir, 'e1e2_residuals_'+band+'.png'))
+        plt.close()
+        return
+        
+    def plot_Tfrac_residuals(self,T,Tpsf):
+        '''
+        Plot T fractional residuals with respect to model
+        '''
+        plt.figure()
+        bins = np.linspace(-0.1,0.1,201)
+        bins_mid = (bins[1:]+bins[:-1])/2.
+        tresidual_out, bin_edges = np.histogram((T-Tpsf)/Tpsf, bins=bins)
+        self.record_result((0,'tfrac_residuals_'+band),'tfrac_residuals_'+band,'tfrac_residuals_'+band+'.png')
+        plt.plot(bins_mid,tresidual_out,'b',label='(T-Tpsf)/Tpsf')
+        plt.title('T fractional residuals vs model, band'+band)
+        plt.savefig(os.path.join(output_dir, 'tfrac_residuals_'+band+'.png'))
+        plt.close()
+        return
 
     def generate_summary(self, output_dir, aggregated=False):
         if aggregated:
@@ -280,16 +311,19 @@ class CheckEllipticity(BaseValidationTest):
 
             e1,e2 = shear_from_moments(recvbuf[self.Ixx+'_'+band],recvbuf[self.Ixy+'_'+band],recvbuf[self.Iyy+'_'+band])
             e1psf,e2psf = shear_from_moments(recvbuf[self.IxxPSF+'_'+band],recvbuf[self.IxyPSF+'_'+band],recvbuf[self.IyyPSF+'_'+band])
+            T = size_from_moments(recvbuf[self.Ixx+'_'+band],recvbuf[self.Iyy+'_'+band])
+            Tpsf = size_from_moments(recvbuf[self.Ixx+'_'+band],recvbuf[self.Iyy+'_'+band])
              
             Ixx = recvbuf[self.Ixx+'_'+band]
             Iyy = recvbuf[self.Iyy+'_'+band]
             Ixy = recvbuf[self.Ixy+'_'+band]
             fwhm = recvbuf[self.psf_fwhm+'_'+band]
 
-
             self.plot_moments_band(Ixx,Ixy,Iyy,band,output_dir)
             self.plot_ellipticities_band(e1,e2,band,output_dir)
             self.plot_psf(fwhm,band,output_dir)
+            self.plot_e_residuals(e1,e2,e1psf,e2psf)
+            self.plot_Tfrac_residuals(T,Tpsf)
 
 
         # plot moments directly per filter. For good, star, galaxy
