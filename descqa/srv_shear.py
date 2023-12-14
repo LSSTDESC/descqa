@@ -278,14 +278,10 @@ class CheckEllipticity(BaseValidationTest):
         label_tot=[]
         plots_tot=[]
 
-        #quantities=[self.ra,self.dec,self.Ixx,self.Iyy,self.Ixy,self.IxxPSF, self.IyyPSF, self.IxyPSF]
-
         # doing everything per-band first of all
         for band in self.bands:
             quantities=[self.Ixx+'_'+band,self.Iyy+'_'+band,self.Ixy+'_'+band,self.IxxPSF+'_'+band, self.IyyPSF+'_'+band, self.IxyPSF+'_'+band, self.psf_fwhm+'_'+band]
             quantities = tuple(quantities)
-
-
 
             # reading in the data 
             if len(filters) > 0:
@@ -313,6 +309,8 @@ class CheckEllipticity(BaseValidationTest):
             e1psf,e2psf = shear_from_moments(recvbuf[self.IxxPSF+'_'+band],recvbuf[self.IxyPSF+'_'+band],recvbuf[self.IyyPSF+'_'+band])
             T = size_from_moments(recvbuf[self.Ixx+'_'+band],recvbuf[self.Iyy+'_'+band])
             Tpsf = size_from_moments(recvbuf[self.Ixx+'_'+band],recvbuf[self.Iyy+'_'+band])
+            de1 = e1-e1psf
+            de2 = e2-e2psf
              
             Ixx = recvbuf[self.Ixx+'_'+band]
             Iyy = recvbuf[self.Iyy+'_'+band]
@@ -324,62 +322,6 @@ class CheckEllipticity(BaseValidationTest):
             self.plot_psf(fwhm,band,output_dir)
             self.plot_e1e2_residuals(e1,e2,e1psf,e2psf,band,output_dir)
             self.plot_Tfrac_residuals(T,Tpsf,band,output_dir)
-
-
-        # plot moments directly per filter. For good, star, galaxy
-        # FWHM of the psf
-        # calculate ellpiticities and make sure they're alright 
-        # look at different bands
-        # note that we want to look by magnitude or SNR to understand the longer tail in moments
-        # PSF ellipticity whisker plot?
-        # look at what validate_drp is
-
-        # s1/s2 plots
-
-        # look at full ellipticity distribution test as well
-        #https://github.com/LSSTDESC/descqa/blob/master/descqa/EllipticityDistribution.py
-        #DC2 validation github - PSF ellipticity
-        # https://github.com/LSSTDESC/DC2-analysis/blob/master/validation/Run_1.2p_PSF_tests.ipynb
-
-        #https://github.com/LSSTDESC/DC2-analysis/blob/master/validation/DC2_calexp_src_validation_1p2.ipynb
-
-        # Look at notes here:
-        #https://github.com/LSSTDESC/DC2-production/issues/340
-
-        # get PSF FWHM directly from data, note comments on here:
-        # https://github.com/LSSTDESC/DC2-analysis/blob/u/wmwv/DR6_dask_refactor/validation/validate_dc2_run2.2i_object_table_dask.ipynb about focussing of the "telescope"
-
-
-        '''mask_finite = np.isfinite(e1)&np.isfinite(e2)
-        bs_out = bs(e1[mask_finite],values = e2[mask_finite],bins=100,statistic='mean')
-        plt.figure()
-        quantity_hashes[0].add('s1s2')
-        self.record_result((0,'s1s2'),'s1s2','p_s1s2.png')
-        plt.plot(bs_out[1][1:],bs_out[0])
-        plt.savefig(os.path.join(output_dir, 'p_s1s2.png'))
-        plt.close()
-
-
-        plt.figure()        
-        quantity_hashes[0].add('s1')
-        self.record_result((0,'s1'),'s1','p_s1.png')
-        #plt.hist(e1,bins=np.linspace(-1.,1.,100))
-        plt.hist(e1psf,bins=100)#np.linspace(-1.,1.,100))
-        plt.savefig(os.path.join(output_dir, 'p_s1.png'))
-        plt.close()
-        plt.figure()
-        quantity_hashes[0].add('s2')
-        self.record_result((0,'s2'),'s2','p_s2.png')
-        #plt.hist(e2,bins=np.linspace(-1.,1.,100))
-        plt.hist(e2psf,bins=100)#np.linspace(-1.,1.,100))
-        plt.savefig(os.path.join(output_dir, 'p_s2.png'))
-        plt.close()'''
-        '''plt.figure()
-        quantity_hashes[0].add('s12')
-        self.record_result((0,'s12'),'s12','p_s12.png')
-        plt.hist2d(e1,e2,bins=100)
-        plt.savefig(os.path.join(output_dir, 'p_s12.png'))
-        plt.close()'''
 
         if rank==0:
             self.generate_summary(output_dir)
