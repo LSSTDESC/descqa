@@ -180,7 +180,7 @@ class CheckEllipticity(BaseValidationTest):
         plt.close()
         return
 
-    def plot_e1e2_residuals(self,e1,e2,epsf1,epsf2):
+    def plot_e1e2_residuals(self,e1,e2,epsf1,epsf2,band,output_dir):
         '''
         Plot e1,e2 residuals with respect to model
         '''
@@ -197,7 +197,7 @@ class CheckEllipticity(BaseValidationTest):
         plt.close()
         return
         
-    def plot_Tfrac_residuals(self,T,Tpsf):
+    def plot_Tfrac_residuals(self,T,Tpsf,band,output_dir):
         '''
         Plot T fractional residuals with respect to model
         '''
@@ -322,8 +322,8 @@ class CheckEllipticity(BaseValidationTest):
             self.plot_moments_band(Ixx,Ixy,Iyy,band,output_dir)
             self.plot_ellipticities_band(e1,e2,band,output_dir)
             self.plot_psf(fwhm,band,output_dir)
-            self.plot_e_residuals(e1,e2,e1psf,e2psf)
-            self.plot_Tfrac_residuals(T,Tpsf)
+            self.plot_e1e2_residuals(e1,e2,e1psf,e2psf,band,output_dir)
+            self.plot_Tfrac_residuals(T,Tpsf,band,output_dir)
 
 
         # plot moments directly per filter. For good, star, galaxy
