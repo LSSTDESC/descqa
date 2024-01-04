@@ -398,7 +398,7 @@ class CheckEllipticity(BaseValidationTest):
             
             rowe_stats = np.empty([6])
             rowe_stats[0] = 0. #dummy value, so that in the rest of the array the index
-                               #coincides with the usual Rowe number
+                               #coincides with the usual Rowe number  
             
             if self.compute_rowe:
                 rowe_stats[1] = self.compute_rowe(1, ra, dec, (de1,de2), (de1,de2))
