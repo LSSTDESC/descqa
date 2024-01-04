@@ -9,9 +9,12 @@ import numexpr as ne
 from scipy.stats import norm, binned_statistic
 import time
 import sys
+import treecorr
 
 from .base import BaseValidationTest, TestResult
 from .plotting import plt
+import matplotlib.transforms as mtrans
+
 
 if 'mpi4py' in sys.modules:
     from mpi4py import MPI
@@ -45,6 +48,20 @@ def shear_from_moments(Ixx,Ixy,Iyy,kind='eps'):
 def size_from_moments(Ixx, Iyy):
     return Ixx + Iyy
 
+def compute_rowe(self, i, ra, dec, q1, q2):
+        n = len(ra)
+        print(f"Computing Rowe statistic rho_{i} from {n} objects")
+
+        corr = treecorr.GGCorrelation(self.config)
+        cat1 = treecorr.Catalog(
+            ra=ra, dec=dec, g1=q1[0], g2=q1[1], ra_units="deg", dec_units="deg"
+        )
+        cat2 = treecorr.Catalog(
+            ra=ra, dec=dec, g1=q2[0], g2=q2[1], ra_units="deg", dec_units="deg"
+        )
+        corr.process(cat1, cat2)
+        return corr.meanr, corr.xip, corr.varxip**0.5
+
 class CheckEllipticity(BaseValidationTest):
     """
     Check ellipticity values and second moments 
@@ -68,6 +85,7 @@ class CheckEllipticity(BaseValidationTest):
         self.IyyPSF= kwargs.get('IyyPSF')
         self.psf_fwhm = kwargs.get('psf_fwhm')
         self.bands = kwargs.get('bands')
+        self.compute_rowe = kwargs.get('rowe', False)
 
         if not any((
                 self.catalog_filters,
@@ -211,6 +229,60 @@ class CheckEllipticity(BaseValidationTest):
         plt.savefig(os.path.join(output_dir, 'tfrac_residuals_'+band+'.png'))
         plt.close()
         return
+    
+    def plot_rowe_stats(self,rowe_stats,output_dir):
+        '''
+        Plot Rowe coefficients
+        '''
+        filename = output_dir + "rowe134.png" 
+        ax = plt.subplot(1, 1, 1)
+        for j, i in enumerate([1, 3, 4]):
+            theta, xi, err = rowe_stats[i]
+            tr = mtrans.offset_copy(
+                ax.transData, filename, 0.05 * (j - 1), 0, units="inches"
+            )
+            plt.errorbar(
+                    theta,
+                    abs(xi),
+                    err,
+                    fmt=".",
+                    label=rf"$\rho_{i}$",
+                    capsize=3,
+                    transform=tr,
+            )
+            plt.bar(0.0, 2e-05, width=5, align="edge", color="gray", alpha=0.2)
+            plt.bar(5, 1e-07, width=245, align="edge", color="gray", alpha=0.2)
+            plt.xscale("log")
+            plt.yscale("log")
+            plt.xlabel(r"$\theta$")
+            plt.ylabel(r"$\xi_+(\theta)$")
+            plt.legend()
+            
+        filename = output_dir + "rowe25.png" 
+        ax = plt.subplot(1, 1, 1)
+        for j, i in enumerate([2, 5]):
+            theta, xi, err = rowe_stats[i]
+            tr = mtrans.offset_copy(
+                ax.transData, filename, 0.05 * j - 0.025, 0, units="inches"
+            )
+            plt.errorbar(
+                    theta,
+                    abs(xi),
+                    err,
+                    fmt=".",
+                    label=rf"$\rho_{i}$",
+                    capsize=3,
+                    transform=tr,
+            )
+            plt.bar(0.0, 2e-05, width=5, align="edge", color="gray", alpha=0.2)
+            plt.bar(5, 1e-07, width=245, align="edge", color="gray", alpha=0.2)
+            plt.xscale("log")
+            plt.yscale("log")
+            plt.xlabel(r"$\theta$")
+            plt.ylabel(r"$\xi_+(\theta)$")
+            plt.legend()   
+        
+        return
 
     def generate_summary(self, output_dir, aggregated=False):
         if aggregated:
@@ -309,6 +381,7 @@ class CheckEllipticity(BaseValidationTest):
             e1psf,e2psf = shear_from_moments(recvbuf[self.IxxPSF+'_'+band],recvbuf[self.IxyPSF+'_'+band],recvbuf[self.IyyPSF+'_'+band])
             T = size_from_moments(recvbuf[self.Ixx+'_'+band],recvbuf[self.Iyy+'_'+band])
             Tpsf = size_from_moments(recvbuf[self.Ixx+'_'+band],recvbuf[self.Iyy+'_'+band])
+            T_f = (T-Tpsf)/Tpsf
             de1 = e1-e1psf
             de2 = e2-e2psf
              
@@ -322,6 +395,20 @@ class CheckEllipticity(BaseValidationTest):
             self.plot_psf(fwhm,band,output_dir)
             self.plot_e1e2_residuals(e1,e2,e1psf,e2psf,band,output_dir)
             self.plot_Tfrac_residuals(T,Tpsf,band,output_dir)
+            
+            rowe_stats = np.empty([6])
+            rowe_stats[0] = 0. #dummy value, so that in the rest of the array the index
+                               #coincides with the usual Rowe number
+            
+            if self.compute_rowe:
+                rowe_stats[1] = self.compute_rowe(1, ra, dec, (de1,de2), (de1,de2))
+                rowe_stats[2] = self.compute_rowe(2, ra, dec, (e1,e2), (de1,de2))
+                rowe_stats[3] = self.compute_rowe(3, ra, dec, (e1,e2) * T_f, (e1,e2) * T_f)
+                rowe_stats[4] = self.compute_rowe(4, ra, dec, (de1,de2), (e1,e2) * T_f)
+                rowe_stats[5] = self.compute_rowe(5, ra, dec, (e1,e2), (e1,e2) * T_f)
+            
+                self.plot_rowe_stats(rowe_stats,output_dir)
+
 
         if rank==0:
             self.generate_summary(output_dir)
