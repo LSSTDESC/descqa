@@ -48,19 +48,6 @@ def shear_from_moments(Ixx,Ixy,Iyy,kind='eps'):
 def size_from_moments(Ixx, Iyy):
     return Ixx + Iyy
 
-def compute_rowe(self, i, ra, dec, q1, q2):
-        n = len(ra)
-        print(f"Computing Rowe statistic rho_{i} from {n} objects")
-
-        corr = treecorr.GGCorrelation(self.config)
-        cat1 = treecorr.Catalog(
-            ra=ra, dec=dec, g1=q1[0], g2=q1[1], ra_units="deg", dec_units="deg"
-        )
-        cat2 = treecorr.Catalog(
-            ra=ra, dec=dec, g1=q2[0], g2=q2[1], ra_units="deg", dec_units="deg"
-        )
-        corr.process(cat1, cat2)
-        return corr.meanr, corr.xip, corr.varxip**0.5
 
 class CheckEllipticity(BaseValidationTest):
     """
@@ -85,7 +72,16 @@ class CheckEllipticity(BaseValidationTest):
         self.IyyPSF= kwargs.get('IyyPSF')
         self.psf_fwhm = kwargs.get('psf_fwhm')
         self.bands = kwargs.get('bands')
-        self.compute_rowe = kwargs.get('rowe', False)
+        self.compute_rowe_flag = kwargs.get('rowe', True)
+        self.treecorr_config = {
+            "min_sep": 0.5,
+            "max_sep": 250.0,
+            "nbins": 20,
+            "bin_slop": 0.01,
+            "sep_units": "arcmin",
+            "psf_size_units": "sigma",
+        }
+        
 
         if not any((
                 self.catalog_filters,
@@ -236,10 +232,11 @@ class CheckEllipticity(BaseValidationTest):
         '''
         filename = output_dir + "rowe134.png" 
         ax = plt.subplot(1, 1, 1)
+        fig = plt.figure()
         for j, i in enumerate([1, 3, 4]):
             theta, xi, err = rowe_stats[i]
             tr = mtrans.offset_copy(
-                ax.transData, filename, 0.05 * (j - 1), 0, units="inches"
+                ax.transData, fig, 0.05 * (j - 1), 0, units="inches"
             )
             plt.errorbar(
                     theta,
@@ -248,8 +245,9 @@ class CheckEllipticity(BaseValidationTest):
                     fmt=".",
                     label=rf"$\rho_{i}$",
                     capsize=3,
-                    transform=tr,
             )
+            #        transform=tr,
+            #)
             plt.bar(0.0, 2e-05, width=5, align="edge", color="gray", alpha=0.2)
             plt.bar(5, 1e-07, width=245, align="edge", color="gray", alpha=0.2)
             plt.xscale("log")
@@ -257,13 +255,16 @@ class CheckEllipticity(BaseValidationTest):
             plt.xlabel(r"$\theta$")
             plt.ylabel(r"$\xi_+(\theta)$")
             plt.legend()
+        plt.savefig(filename)
+        plt.close()
             
         filename = output_dir + "rowe25.png" 
         ax = plt.subplot(1, 1, 1)
+        fig = plt.figure()
         for j, i in enumerate([2, 5]):
             theta, xi, err = rowe_stats[i]
             tr = mtrans.offset_copy(
-                ax.transData, filename, 0.05 * j - 0.025, 0, units="inches"
+                ax.transData, fig, 0.05 * j - 0.025, 0, units="inches"
             )
             plt.errorbar(
                     theta,
@@ -272,8 +273,9 @@ class CheckEllipticity(BaseValidationTest):
                     fmt=".",
                     label=rf"$\rho_{i}$",
                     capsize=3,
-                    transform=tr,
             )
+            #        transform=tr,
+            #)
             plt.bar(0.0, 2e-05, width=5, align="edge", color="gray", alpha=0.2)
             plt.bar(5, 1e-07, width=245, align="edge", color="gray", alpha=0.2)
             plt.xscale("log")
@@ -281,7 +283,9 @@ class CheckEllipticity(BaseValidationTest):
             plt.xlabel(r"$\theta$")
             plt.ylabel(r"$\xi_+(\theta)$")
             plt.legend()   
-        
+        plt.savefig(filename)
+        plt.close()
+
         return
 
     def generate_summary(self, output_dir, aggregated=False):
@@ -316,6 +320,16 @@ class CheckEllipticity(BaseValidationTest):
         if not aggregated:
             self._individual_header.clear()
             self._individual_table.clear()
+
+    def compute_rowe(self, i, ra, dec, q1, q2):
+        n = len(ra)
+        print(f"Computing Rowe statistic rho_{i} from {n} objects")
+
+        corr = treecorr.GGCorrelation(self.treecorr_config)
+        cat1 = treecorr.Catalog(ra=np.array(ra), dec=np.array(dec), g1=np.nan_to_num(q1[0], copy=True, nan=0.0, posinf=None, neginf=None), g2=np.nan_to_num(q1[1], copy=True, nan=0.0, posinf=None, neginf=None), ra_units="deg", dec_units="deg")
+        cat2 = treecorr.Catalog(ra=np.array(ra), dec=np.array(dec), g1=np.nan_to_num(q2[0], copy=True, nan=0.0, posinf=None, neginf=None), g2=np.nan_to_num(q2[1], copy=True, nan=0.0, posinf=None, neginf=None), ra_units="deg", dec_units="deg")
+        corr.process(cat1, cat2) #error is here
+        return corr.meanr, corr.xip, corr.varxip**0.5
 
     def run_on_single_catalog(self, catalog_instance, catalog_name, output_dir):
 
@@ -352,7 +366,7 @@ class CheckEllipticity(BaseValidationTest):
 
         # doing everything per-band first of all
         for band in self.bands:
-            quantities=[self.Ixx+'_'+band,self.Iyy+'_'+band,self.Ixy+'_'+band,self.IxxPSF+'_'+band, self.IyyPSF+'_'+band, self.IxyPSF+'_'+band, self.psf_fwhm+'_'+band]
+            quantities=[self.Ixx+'_'+band,self.Iyy+'_'+band,self.Ixy+'_'+band,self.IxxPSF+'_'+band, self.IyyPSF+'_'+band, self.IxyPSF+'_'+band, self.psf_fwhm+'_'+band, self.ra, self.dec]
             quantities = tuple(quantities)
 
             # reading in the data 
@@ -380,7 +394,7 @@ class CheckEllipticity(BaseValidationTest):
             e1,e2 = shear_from_moments(recvbuf[self.Ixx+'_'+band],recvbuf[self.Ixy+'_'+band],recvbuf[self.Iyy+'_'+band])
             e1psf,e2psf = shear_from_moments(recvbuf[self.IxxPSF+'_'+band],recvbuf[self.IxyPSF+'_'+band],recvbuf[self.IyyPSF+'_'+band])
             T = size_from_moments(recvbuf[self.Ixx+'_'+band],recvbuf[self.Iyy+'_'+band])
-            Tpsf = size_from_moments(recvbuf[self.Ixx+'_'+band],recvbuf[self.Iyy+'_'+band])
+            Tpsf = size_from_moments(recvbuf[self.IxxPSF+'_'+band],recvbuf[self.IyyPSF+'_'+band])
             T_f = (T-Tpsf)/Tpsf
             de1 = e1-e1psf
             de2 = e2-e2psf
@@ -396,18 +410,33 @@ class CheckEllipticity(BaseValidationTest):
             self.plot_e1e2_residuals(e1,e2,e1psf,e2psf,band,output_dir)
             self.plot_Tfrac_residuals(T,Tpsf,band,output_dir)
             
-            rowe_stats = np.empty([6])
-            rowe_stats[0] = 0. #dummy value, so that in the rest of the array the index
+        #rowe_stats = np.empty([6])
+        #rowe_stats[0] = 0. #dummy value, so that in the rest of the array the index
                                #coincides with the usual Rowe number  
+        rowe_stats = {}
+                
+        print(type(recvbuf))
+        print(recvbuf[self.ra])
             
-            if self.compute_rowe:
-                rowe_stats[1] = self.compute_rowe(1, ra, dec, (de1,de2), (de1,de2))
-                rowe_stats[2] = self.compute_rowe(2, ra, dec, (e1,e2), (de1,de2))
-                rowe_stats[3] = self.compute_rowe(3, ra, dec, (e1,e2) * T_f, (e1,e2) * T_f)
-                rowe_stats[4] = self.compute_rowe(4, ra, dec, (de1,de2), (e1,e2) * T_f)
-                rowe_stats[5] = self.compute_rowe(5, ra, dec, (e1,e2), (e1,e2) * T_f)
+        if self.compute_rowe_flag:
+            print("Computing Rowe_1")
+            rowe_stats[1] = self.compute_rowe(1, recvbuf[self.ra], recvbuf[self.dec], (de1,de2), (de1,de2))
+            print(rowe_stats[1])
+            print("Computing Rowe_2")
+            rowe_stats[2] = self.compute_rowe(2, recvbuf[self.ra], recvbuf[self.dec], (e1,e2), (de1,de2))
+            print(rowe_stats[2])
+            print("Computing Rowe_3")
+            rowe_stats[3] = self.compute_rowe(3, recvbuf[self.ra], recvbuf[self.dec], (e1,e2) * T_f, (e1,e2) * T_f)
+            print(rowe_stats[3])
+            print("Computing Rowe_4")
+            rowe_stats[4] = self.compute_rowe(4, recvbuf[self.ra], recvbuf[self.dec], (de1,de2), (e1,e2) * T_f)
+            print(rowe_stats[4])
+            print("Computing Rowe_5")
+            rowe_stats[5] = self.compute_rowe(5, recvbuf[self.ra], recvbuf[self.dec], (e1,e2), (e1,e2) * T_f)
+            print(rowe_stats[5])
             
-                self.plot_rowe_stats(rowe_stats,output_dir)
+            print("Now plotting")
+            self.plot_rowe_stats(rowe_stats,output_dir)
 
 
         if rank==0:
