@@ -207,8 +207,8 @@ class CheckEllipticity(BaseValidationTest):
         plt.plot(bins_mid,e1residual_out,'b',label='e1-e1psf')
         plt.plot(bins_mid,e2residual_out,'r--',label='e2-e2psf')
         plt.title('e1/e2 residuals vs model, band '+band)
-        plt.savefig(os.path.join(output_dir, 'e1e2_residuals_'+band+'.png'))
         plt.legend()
+        plt.savefig(os.path.join(output_dir, 'e1e2_residuals_'+band+'.png'))
         plt.close()
         return
         
@@ -223,8 +223,8 @@ class CheckEllipticity(BaseValidationTest):
         self.record_result((0,'tfrac_residuals_'+band),'tfrac_residuals_'+band,'tfrac_residuals_'+band+'.png')
         plt.plot(bins_mid,tresidual_out,'b',label='(T-Tpsf)/Tpsf')
         plt.title('T fractional residuals vs model, band '+band)
-        plt.savefig(os.path.join(output_dir, 'tfrac_residuals_'+band+'.png'))
         plt.legend()
+        plt.savefig(os.path.join(output_dir, 'tfrac_residuals_'+band+'.png'))
         plt.close()
         return
     
