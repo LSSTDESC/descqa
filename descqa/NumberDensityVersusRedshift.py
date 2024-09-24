@@ -106,7 +106,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         # pylint: disable=W0231
 
         #catalog quantities
-        self.truncate_cat_name = kwargs.get('truncate_cat_name', False)
+        self.truncate_cat_name = kwargs.get('truncate_cat_name', 0)
         self.replace_cat_name = kwargs.get('replace_cat_name', {})
         self.title_in_legend = kwargs.get('title_in_legend', False)
         self.legend_location = kwargs.get('legend_location', 'upper left')
@@ -250,8 +250,11 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         filelabel = '_'.join((filtername, self.band))
 
         #setup plots
-        if self.truncate_cat_name:
-            catalog_name = re.split('_', catalog_name)[0]
+        if self.truncate_cat_name > 0:
+            possible_names = re.split('_', catalog_name)
+            catalog_name = possible_names[0]
+            for n in range(1, self.truncate_cat_name):
+                catalog_name = '_'.join((catalog_name, possible_names[n]))
         if self.replace_cat_name:
             for k, v in self.replace_cat_name.items():
                 catalog_name = re.sub(k, v, catalog_name)
@@ -261,7 +264,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         catalog_marker = next(self.markers)
 
         #initialize arrays for storing histogram sums
-        N_array = np.zeros((self.nrows, self.ncolumns, len(self.zbins)-1), dtype=np.int)
+        N_array = np.zeros((self.nrows, self.ncolumns, len(self.zbins)-1), dtype=int)
         sumz_array = np.zeros((self.nrows, self.ncolumns, len(self.zbins)-1))
 
         jackknife_data = {}
@@ -403,7 +406,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         _, jack_labels, _ = k_means(n_clusters=N_jack, random_state=0, X=nn, n_init='auto')
 
         #make histograms for jackknife regions
-        Njack_array = np.zeros((N_jack, len(self.zbins)-1), dtype=np.int)
+        Njack_array = np.zeros((N_jack, len(self.zbins)-1), dtype=int)
         for nj in range(N_jack):
             Njack_array[nj] = np.histogram(jackknife_data[self.zlabel][jack_labels != nj], self.zbins)[0]
 

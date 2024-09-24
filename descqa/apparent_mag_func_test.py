@@ -43,7 +43,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         """
         # pylint: disable=super-init-not-called
 
-        self.truncate_cat_name = kwargs.get('truncate_cat_name', False)
+        self.truncate_cat_name = kwargs.get('truncate_cat_name', 0)
         self.title_in_legend = kwargs.get('title_in_legend', False)
         self.skip_label_detail = kwargs.get('skip_label_detail', False)
         self.font_size = kwargs.get('font_size', 16)
@@ -206,8 +206,11 @@ class ApparentMagFuncTest(BaseValidationTest):
         upper_ax, lower_ax = fig.add_axes(upper_rect), fig.add_axes(lower_rect)
 
         # plot on both this plot and any summary plots
-        if self.truncate_cat_name:
-            catalog_name = re.split('_', catalog_name)[0]
+        if self.truncate_cat_name > 0:
+            possible_names = re.split('_', catalog_name)
+            catalog_name = possible_names[0]
+            for n in range(1, self.truncate_cat_name):
+                catalog_name = '_'.join((catalog_name, possible_names[n]))
         if self.replace_cat_name:
             for k, v in self.replace_cat_name.items():      
                 catalog_name = re.sub(k, v, catalog_name)

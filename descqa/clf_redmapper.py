@@ -39,11 +39,11 @@ def count_galaxies_p_cen(cenmag, lumbins, p_cen):
     dlum = lumbins[1] - lumbins[0]
     minlum = lumbins[0] - dlum / 2.0
     chto_countArray = np.zeros([len(cenmag), nlum])
-    mybin = np.floor((cenmag[:, :] - minlum) / dlum).astype(np.int)
+    mybin = np.floor((cenmag[:, :] - minlum) / dlum).astype(int)
     p_cen = p_cen.reshape(-1, 1)
     ncen = np.zeros(p_cen.shape)
     ncen = np.hstack(((np.ones(p_cen.shape[0])).reshape(-1, 1), ncen[:, :-1])).astype(
-        np.int
+        int
     )
     weight = p_cen
 

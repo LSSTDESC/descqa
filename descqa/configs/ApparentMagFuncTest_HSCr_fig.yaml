@@ -5,7 +5,7 @@ observation: 'HSC'
 included_by_default: true
 print_title: false
 x_lower_limit: 19
-truncate_cat_name: true
+truncate_cat_name: 2
 font_size: 18
 legend_size: 12
 skip_label_detail: true

@@ -262,7 +262,7 @@ class EllipticityDistribution(BaseValidationTest):
                  fontsize=self.yfont_size) #setup a common axis label
 
         #initialize arrays for storing histogram sums
-        N_array = np.zeros((self.nrows, self.ncolumns, len(self.ebins)-1), dtype=np.int)
+        N_array = np.zeros((self.nrows, self.ncolumns, len(self.ebins)-1), dtype=int)
         sume_array = np.zeros((self.nrows, self.ncolumns, len(self.ebins)-1))
         sume2_array = np.zeros((self.nrows, self.ncolumns, len(self.ebins)-1))
         

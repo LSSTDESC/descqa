@@ -165,7 +165,7 @@ class StellarMassFunction(BaseValidationTest):
             catalog_name = catalog_name.partition("_")[0]
         
         #initialize arrays for storing histogram sums
-        N_array = np.zeros((self.nrows, self.ncolumns, len(self.Mbins)-1), dtype=np.int)
+        N_array = np.zeros((self.nrows, self.ncolumns, len(self.Mbins)-1), dtype=int)
         sumM_array = np.zeros((self.nrows, self.ncolumns, len(self.Mbins)-1))
         sumM2_array = np.zeros((self.nrows, self.ncolumns, len(self.Mbins)-1))
 
