@@ -114,6 +114,8 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         self.legend_size = kwargs.get('legend_size', 10)
         self.tick_size = kwargs.get('tick_size', 12)
         self.adjust_ylim = kwargs.get('adjust_ylim', 1.3)
+        self.include_reference = kwargs.get('include_reference', False)
+        self.insert_line_break = kwargs.get('insert_line_break', True)
         self.rest_frame = rest_frame
         if self.rest_frame:
             possible_mag_fields = ('Mag_true_{}_lsst_z0',
@@ -348,8 +350,11 @@ class NumberDensityVersusRedshift(BaseValidationTest):
                 Nerrors = np.sqrt(np.diag(covariance))
 
                 #make subplot
-                catalog_label = ' '.join((catalog_name, cut_label.replace(self.band, filtername + ' ' + self.band)))
-                validation_label = ' '.join((self.validation_data.get('label', ''), cut_label))
+                line_break = '\n' if self.insert_line_break else ''
+                catalog_label = ' '.join((catalog_name, line_break,
+                                          cut_label.replace(self.band, filtername + ' ' + self.band)))
+                val_label = self.validation_data.get('label', '') if self.include_reference else ''
+                validation_label = ' '.join((val_label, cut_label)) if val_label else cut_label
                 key = cut_label.replace('$', '').replace('\\leq', '<=')
                 results[key] = {'meanz': meanz, 'total':total, 'N':N, 'N+-':Nerrors}
                 self.catalog_subplot(ax_this, meanz, N, Nerrors, catalog_color, catalog_marker, catalog_label)

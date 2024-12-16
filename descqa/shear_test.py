@@ -385,7 +385,7 @@ class ShearTest(BaseValidationTest):
     @staticmethod
     def save_quantities(keys, results, filename, comment=''):
             header = 'Data columns for {} are:\n  {}'.format(comment, '  '.join(keys))
-            np.savetxt(filename, np.vstack((results[k] for k in keys)).T, fmt='%12.4e', header=header)
+            np.savetxt(filename, np.vstack(list(results[k] for k in keys)).T, fmt='%12.4e', header=header)
 
 
     def conclude_test(self, output_dir):

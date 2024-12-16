@@ -28,7 +28,7 @@ class EllipticityDistribution(BaseValidationTest):
             'band_Mag': ['V', 'r', 'g'],
             'zlo': 0.0,
             'zhi': 2.0,
-            'definition': 'e_squared',
+            'definition': 'e_distortion',
             'morphology': ('LRG', 'early', 'disk', 'late'),
             'filename_template': 'ellipticity/COSMOS/joachimi_et_al_2013/{}{}_{}.dat',
             'file-info': {
@@ -46,7 +46,8 @@ class EllipticityDistribution(BaseValidationTest):
                 'disk':{'B/T_min':0., 'B/T_max':0.2, 'mag_lo':24., 'Mag_hi':-21., 'Mag_lo':-17.},
                 'late':{'B/T_min':0.4, 'B/T_max':0.7, 'mag_lo':24., 'Mag_hi':-21., 'Mag_lo':-17.},
                 'irregular':{'B/T_min':0.0, 'B/T_max':1.0},
-                'ancillary_quantities':['bulge_to_total_ratio_i', 'bulge_to_total_ratio_stellar'],
+                'ancillary_quantities':['bulge_to_total_ratio_i', 'bulge_to_total_ratio_stellar',
+                                        'bulge_to_total_ratio'],
                 'ancillary_keys':['B/T'],
             },
         },
@@ -54,13 +55,17 @@ class EllipticityDistribution(BaseValidationTest):
     
     #define ellipticity functions
     @staticmethod
-    def e_default(e):
+    def e_shear(e):
         return e
 
     @staticmethod
-    def e_squared(a, b):
+    def e_distortion(a, b):
         q = b/a
         return  (1-q**2)/(1+q**2)
+
+    @staticmethod
+    def e_shear_to_distortion(e):
+        return 2*e/(1+e**2)
 
     #plotting constants
     lw2 = 2
@@ -86,6 +91,8 @@ class EllipticityDistribution(BaseValidationTest):
         self.yfont_size = kwargs.get('yfont_size', 14)
         self.legend_size = kwargs.get('legend_size', 6)
         self.legend_title_size = kwargs.get('legend_title_size', 8)
+        self.catalog_ellipticity_definition = kwargs.get('ellipticity_definition', 'e_shear')
+        self.convert_to_distortion = kwargs.get('convert_to_distortion', False)
 
         possible_mag_fields = ('mag_{}_lsst',
                                'mag_{}_sdss',
@@ -103,16 +110,16 @@ class EllipticityDistribution(BaseValidationTest):
         possible_native_luminosities = {'V':'otherLuminosities/totalLuminositiesStellar:V:rest',
                                        }
 
-        possible_ellipticity_definitions = {'e_default':{'possible_quantities':[['ellipticity', 'ellipticity_true']],
-                                                         'function':self.e_default,
-                                                         'xaxis_label': r'$e = (1-q)/(1+q)$',
-                                                         'file_label':'e',
-                                                        },
-                                            'e_squared':{'possible_quantities':[['size', 'size_true'], ['size_minor', 'size_minor_true']],
-                                                         'function':self.e_squared,
-                                                         'xaxis_label': r'$e = (1-q^2)/(1+q^2)$',
-                                                         'file_label':'e2',
-                                                        },
+        possible_ellipticity_definitions = {'e_shear':{'possible_quantities':[['ellipticity', 'ellipticity_true']],
+                                                       'function':self.e_shear,
+                                                       'xaxis_label': r'$e = (1-q)/(1+q)$',
+                                                       'file_label':'es',
+                                                      },
+                                            'e_distortion':{'possible_quantities':[['size', 'size_true'], ['size_minor', 'size_minor_true']],
+                                                            'function':self.e_distortion,
+                                                            'xaxis_label': r'$e = (1-q^2)/(1+q^2)$',
+                                                            'file_label':'ed',
+                                                           },
                                            }
         #binning
         self.N_ebins = N_ebins
@@ -150,10 +157,16 @@ class EllipticityDistribution(BaseValidationTest):
         self.Mag_hi = dict(zip(self.morphology, [self.validation_data.get('cuts', {}).get(m, {}).get('Mag_hi', Mag_hi) for m in self.morphology]))
 
         #check for ellipticity definitions
-        self.possible_quantities = possible_ellipticity_definitions[self.validation_data.get('definition', 'e_default')]['possible_quantities']
-        self.ellipticity_function = possible_ellipticity_definitions[self.validation_data.get('definition', 'e_default')].get('function')
-        self.xaxis_label = possible_ellipticity_definitions[self.validation_data.get('definition', 'e_default')].get('xaxis_label')
-        self.file_label = possible_ellipticity_definitions[self.validation_data.get('definition', 'e_default')].get('file_label')
+        self.possible_quantities = possible_ellipticity_definitions[self.validation_data.get('definition', 'e_shear')]['possible_quantities']
+        self.ellipticity_function = possible_ellipticity_definitions[self.validation_data.get('definition', 'e_shear')].get('function')
+        self.xaxis_label = possible_ellipticity_definitions[self.validation_data.get('definition', 'e_shear')].get('xaxis_label')
+        self.file_label = possible_ellipticity_definitions[self.validation_data.get('definition', 'e_shear')].get('file_label')
+
+        #check for ellipticity conversions and overwrite previous definitions
+        if self.convert_to_distortion and self.catalog_ellipticity_definition == 'e_shear':
+            self.possible_quantities = possible_ellipticity_definitions[self.catalog_ellipticity_definition]['possible_quantities']
+            self.ellipticity_function = self.e_shear_to_distortion
+            print('Converting from e_shear to e_distortion')
 
         #check for native quantities
         self.native_luminosities = dict(zip([band for band in possible_native_luminosities if band in self.band_Mag],\
@@ -235,6 +248,7 @@ class EllipticityDistribution(BaseValidationTest):
                 required_quantities.append(found_quantity)
         if not catalog_instance.has_quantities(required_quantities + self.filter_quantities):
             return TestResult(skipped=True, summary='Missing some required quantities: {}'.format(', '.join(required_quantities)))
+        print('Required quantities', required_quantities)
         ancillary_quantity = None
         if self.possible_ancillary_quantities is not None:
             ancillary_quantity = catalog_instance.first_available(*self.possible_ancillary_quantities)
@@ -477,7 +491,7 @@ class EllipticityDistribution(BaseValidationTest):
             else:
                 fields = ('e_ave', keyname)
                 header = ', '.join(('Data columns are: <e>', keyname, ' '))
-            np.savetxt(filename, np.vstack((results[k] for k in fields)).T, fmt='%12.4e', header=header+comment)
+            np.savetxt(filename, np.vstack([results[k] for k in fields]).T, fmt='%12.4e', header=header+comment)
 
 
     def conclude_test(self, output_dir):

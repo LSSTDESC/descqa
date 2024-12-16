@@ -52,6 +52,7 @@ class ApparentMagFuncTest(BaseValidationTest):
         self.print_title = kwargs.get('print_title', False)
         self.min_mag = kwargs.get('min_mag', 19.)
         self.replace_cat_name = kwargs.get('replace_cat_name', {})
+        self.exclude_sky_area = kwargs.get('exclude_sky_area', True)
         
         # catalog quantities needed
         possible_mag_fields = ('mag_{}_cModel',
@@ -214,9 +215,11 @@ class ApparentMagFuncTest(BaseValidationTest):
         if self.replace_cat_name:
             for k, v in self.replace_cat_name.items():      
                 catalog_name = re.sub(k, v, catalog_name)
-                
-        upper_ax.plot(mag_bins, sampled_N, '-', label=catalog_name + sky_area_label)
-        self.summary_upper_ax.plot(mag_bins, sampled_N, '-', label=catalog_name + sky_area_label)
+
+        cat_label = catalog_name if self.exclude_sky_area else catalog_name + sky_area_label
+                            
+        upper_ax.plot(mag_bins, sampled_N, '-', label=cat_label)
+        self.summary_upper_ax.plot(mag_bins, sampled_N, '-', label=cat_label)
 
         # plot validation data
         n = self.validation_data['n(<mag)']

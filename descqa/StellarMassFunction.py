@@ -320,7 +320,7 @@ class StellarMassFunction(BaseValidationTest):
             else:
                 fields = ('M'+keyname, keyname)
                 header = ', '.join(('Data columns are: <M>', keyname, ' '))
-            np.savetxt(filename, np.vstack((results[k] for k in fields)).T, fmt='%12.4e', header=header+comment)
+            np.savetxt(filename, np.vstack(list(results[k] for k in fields)).T, fmt='%12.4e', header=header+comment)
 
 
     def conclude_test(self, output_dir):

@@ -8,6 +8,7 @@ jackknife: True
 N_jack: 30
 use_diagonal_only: True
 truncate_cat_name: 2
+replace_cat_name: {'roman_rubin':'OpenUniverse2024'}
 legend_size: 12
 font_size: 18
 
