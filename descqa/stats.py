@@ -6,7 +6,7 @@ from scipy.stats import chi2
 
 def get_subvolume_indices(x, y, z, box_size, n_side):
     side_size = box_size/n_side
-    return np.ravel_multi_index(np.floor(np.vstack((x, y, z))/side_size).astype(int), (n_side,)*3, 'wrap')
+    return np.ravel_multi_index(np.floor(np.vstack(list(x, y, z))/side_size).astype(int), (n_side,)*3, 'wrap')
 
 
 def jackknife(data, jack_indices, n_jack, func, full_args=(), full_kwargs={}, jack_args=(), jack_kwargs={}): # pylint: disable=W0102

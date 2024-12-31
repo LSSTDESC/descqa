@@ -59,7 +59,7 @@ class kernelCompare:
     def __init__(self,D1, D2):
         self._D1 = D1
         self._D2 = D2
-        self._XY = np.vstack((D1, D2))
+        self._XY = np.vstack(list(D1, D2))
         self._scale = self._computeScale(self._XY)
         self._n1 = len(D1)
         self._n2 = len(D2)

@@ -180,7 +180,7 @@ class DeltaSigma(BaseValidationTest):
             gt = gt/counts
 
             outfile = os.path.join(output_dir, 'DS_'+str(self.data)+'_'+str(i)+'.dat')
-            np.savetxt(outfile, np.vstack((rp.value, gt.value)).T)
+            np.savetxt(outfile, np.vstack(list(rp.value, gt.value)).T)
 
             
             if self.data == 'sdss_lowz':
