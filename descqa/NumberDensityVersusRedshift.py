@@ -113,7 +113,7 @@ class NumberDensityVersusRedshift(BaseValidationTest):
         self.font_size = kwargs.get('font_size', 16)
         self.legend_size = kwargs.get('legend_size', 10)
         self.tick_size = kwargs.get('tick_size', 12)
-        self.adjust_ylim = kwargs.get('adjust_ylim', 1.3)
+        self.adjust_ylim = kwargs.get('adjust_ylim', 1.5)
         self.include_reference = kwargs.get('include_reference', False)
         self.insert_line_break = kwargs.get('insert_line_break', True)
         self.rest_frame = rest_frame
@@ -425,7 +425,8 @@ class NumberDensityVersusRedshift(BaseValidationTest):
 
 
     def catalog_subplot(self, ax, meanz, data, errors, catalog_color, catalog_marker, catalog_label):
-        ax.errorbar(meanz, data, yerr=errors, label=catalog_label, color=catalog_color, fmt=catalog_marker, ms=self.msize)
+        ax.errorbar(meanz, data, yerr=errors, label=catalog_label, color=catalog_color, fmt=catalog_marker,
+                    ms=self.msize)
         ymax = np.max(data + errors)
         ax.set_ylim(0., self.adjust_ylim*ymax)
         
@@ -463,7 +464,15 @@ class NumberDensityVersusRedshift(BaseValidationTest):
             print(nplot, ' visible')
             ax.set_xlabel('z', size=self.font_size)
             ax.tick_params(labelbottom=True)
-        ax.legend(loc='best', fancybox=True, framealpha=0.5, fontsize=self.legend_size, numpoints=1)
+
+        # set order with longest label first to prevent legend point looking like outlier
+        handles, labels = ax.get_legend_handles_labels()
+        by_length = sorted(labels, key=len)[::-1]
+        order = [labels.index(b) for b in by_length]
+        ax.legend([handles[idx] for idx in order],
+                  [labels[idx] for idx in order],
+                  loc='best', fancybox=True, framealpha=0.5, fontsize=self.legend_size,
+                  numpoints=1, frameon=True)
 
 
     @staticmethod
