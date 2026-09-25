@@ -40,7 +40,10 @@ class PrintFileTestCase(unittest.TestCase):
         root_dir = self._mkdir('results')
         outside_dir = self._mkdir('outside')
         self._write('outside/secret.txt', 'secret')
-        self._symlink(outside_dir, 'results/link')
+        try:
+            self._symlink(outside_dir, 'results/link')
+        except (OSError, NotImplementedError):
+            self.skipTest('symlinks are not available in this environment')
 
         output = self._print_file('link/secret.txt', root_dir)
 
