@@ -48,7 +48,8 @@ def print_file(target_file, root_dir=config.root_dir):
     root_dir = os.path.realpath(root_dir)
     target_file = os.path.realpath(os.path.join(root_dir, target_file))
     try:
-        assert os.path.commonpath([root_dir, target_file]) == root_dir
+        if os.path.commonpath([root_dir, target_file]) != root_dir:
+            raise AssertionError
         with open(target_file, 'rb') as f:
             file_content = f.read()
 
