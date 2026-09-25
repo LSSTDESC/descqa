@@ -45,9 +45,10 @@ def prepare_leftpanel(run, test=None, catalog=None, right=None):
 
 
 def print_file(target_file, root_dir=config.root_dir):
-    target_file = os.path.abspath(os.path.join(root_dir, target_file))
+    root_dir = os.path.realpath(root_dir)
+    target_file = os.path.realpath(os.path.join(root_dir, target_file))
     try:
-        assert target_file.startswith(root_dir)
+        assert os.path.commonpath([root_dir, target_file]) == root_dir
         with open(target_file, 'rb') as f:
             file_content = f.read()
 
