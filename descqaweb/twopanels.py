@@ -1,6 +1,7 @@
 from __future__ import unicode_literals, print_function
 import os
 import sys
+from pathlib import Path
 from . import config
 from .interface import DescqaRun, b64encode
 
@@ -45,21 +46,21 @@ def prepare_leftpanel(run, test=None, catalog=None, right=None):
 
 
 def print_file(target_file, root_dir=config.root_dir):
-    root_dir = os.path.realpath(root_dir)
-    target_file = os.path.realpath(os.path.join(root_dir, target_file))
+    root_dir = Path(root_dir).resolve()
+    target_file = (root_dir / target_file).resolve()
     try:
-        assert os.path.commonpath((root_dir, target_file)) == root_dir
-        with open(target_file, 'rb') as f:
+        target_file.relative_to(root_dir)
+        with target_file.open('rb') as f:
             file_content = f.read()
 
-    except (OSError, IOError, AssertionError):
+    except (OSError, IOError, ValueError):
         print('Content-Type: text/plain; charset=utf-8')
         print()
         sys.stdout.flush()
         print('[Error] Cannot open/read file {}'.format(target_file))
 
     else:
-        if target_file.lower().endswith('.png'):
+        if target_file.suffix.lower() == '.png':
             print('Content-Type: text/html; charset=utf-8')
             print()
             sys.stdout.flush()
@@ -68,10 +69,10 @@ def print_file(target_file, root_dir=config.root_dir):
             print('<img src="data:image/png;base64,{}" width="100%">'.format(b64encode(file_content)))
             print('</body></html>')
 
-        elif target_file.lower().endswith('.pdf'):
+        elif target_file.suffix.lower() == '.pdf':
             print('Content-Type: application/pdf')
             print('Content-Length: {}'.format(len(file_content)))
-            print('Content-Disposition: inline; filename="{}"'.format(os.path.basename(target_file)))
+            print('Content-Disposition: inline; filename="{}"'.format(target_file.name))
             print()
             sys.stdout.flush()
             try:
@@ -79,7 +80,7 @@ def print_file(target_file, root_dir=config.root_dir):
             except AttributeError:
                 print(file_content)
 
-        elif target_file.lower().endswith('.html'):
+        elif target_file.suffix.lower() == '.html':
             print('Content-Type: text/html; charset=utf-8')
             file_content = file_content.decode('utf-8')
             print('Content-Length: {}'.format(len(file_content)))
@@ -91,7 +92,7 @@ def print_file(target_file, root_dir=config.root_dir):
             print('Content-Type: text/plain; charset=utf-8')
             file_content = file_content.decode('utf-8')
             print('Content-Length: {}'.format(len(file_content)))
-            print('Content-Disposition: inline; filename="{}"'.format(os.path.basename(target_file)))
+            print('Content-Disposition: inline; filename="{}"'.format(target_file.name))
             print()
             sys.stdout.flush()
             print(file_content)
